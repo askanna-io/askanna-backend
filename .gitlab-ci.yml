@@ -1,6 +1,8 @@
 variables:
   SENTRY_DSN: https://sentry.askanna.eu/askanna/askanna_backend
   DATABASE_URL: postgresql://anna:pass@postgres/askanna_backend
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/0
 
 stages:
   - test
@@ -9,6 +11,8 @@ test:
   services:
     - name: postgres:12
       alias: postgres
+    - name: redis:5
+      alias: redis
   image: python:3-slim
   stage: test
   before_script:
