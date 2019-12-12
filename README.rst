@@ -10,6 +10,22 @@ Moved to settings_.
 
 .. _settings: http://cookiecutter-django.readthedocs.io/en/latest/settings.html
 
+Local Dev
+---------
+
+For local development, we have two options. One is using Docker and the
+configuration based on the `local.yml` file, and another one is by feeding our
+own environment variables.
+
+The latter can happen in many different ways, and currently we list two:
+
+- Switching variables via `PyCharm` configurations
+- Passing envs via a local .env file and switching on the related variable
+  `DJANGO_READ_DOT_ENV_FILE` in the base settings.
+
+We provide a `.env.example` that can be used to set all the required
+environment variables in all cases.
+
 Basic Commands
 --------------
 
