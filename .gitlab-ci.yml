@@ -11,5 +11,8 @@ test:
       alias: postgres
   image: python:3-slim
   stage: test
+  before_script:
+    - pip install -U pip
+    - pip install -r requirements/local.txt
   script:
     - pytest
