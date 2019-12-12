@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=askanna_backend
+POSTGRES_USER=rEDNtKUoDVCRPpRANkAKIMYYyshHEJbg
+POSTGRES_PASSWORD=FeN0sSUl1rZ5jStUGnrD04qF5JwsKgUpE3eQ3BjXgGQOqPSryHGj1i0FxGOGLAPY
