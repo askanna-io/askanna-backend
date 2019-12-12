@@ -3,6 +3,12 @@ variables:
   DATABASE_URL: postgresql://anna:pass@postgres/askanna_backend
   REDIS_URL: redis://redis:6379/0
   CELERY_BROKER_URL: redis://redis:6379/0
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: askanna_backend
+  POSTGRES_USER: anna
+  POSTGRES_PASSWORD: pass
+
 
 stages:
   - test
