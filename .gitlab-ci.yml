@@ -1,0 +1,15 @@
+variables:
+  SENTRY_DSN: https://sentry.askanna.eu/askanna/askanna_backend
+  DATABASE_URL: postgresql://anna:pass@postgres/askanna_backend
+
+stages:
+  - test
+
+test:
+  services:
+    - name: postgres:12
+      alias: postgres
+  image: python:3-slim
+  stage: test
+  script:
+    - pytest
