@@ -41,5 +41,4 @@ build_baseimage:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t gitlab.askanna.io:4567/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
     - docker push gitlab.askanna.io:4567/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME
-  when:
-    - manual
+  when: manual
