@@ -20,10 +20,9 @@ test:
       alias: postgres
     - name: redis:5
       alias: redis
-  image: python:3-slim
+  image: gitlab.askanna.io:4567/askanna/askanna_backend/base:master
   stage: test
   before_script:
-    - apt update && apt install -y libpq-dev build-essential g++
     - pip install -U pip
     - pip install -r requirements/local.txt
   script:
