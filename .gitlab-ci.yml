@@ -11,6 +11,7 @@ variables:
 
 
 stages:
+  - build
   - test
 
 test:
@@ -27,3 +28,19 @@ test:
     - pip install -r requirements/local.txt
   script:
     - pytest
+
+build_baseimage:
+  image: docker:git
+  stage: build
+  tags:
+    - normal
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t gitlab.askanna.io:4567/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
+    - docker push gitlab.askanna.io:4567/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME
+  when:
+    - manual
