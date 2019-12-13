@@ -48,6 +48,8 @@ RUN chown -R django /app
 
 USER django
 
+EXPOSE 5000
+
 WORKDIR /app
 
 ENTRYPOINT ["/entrypoint"]
