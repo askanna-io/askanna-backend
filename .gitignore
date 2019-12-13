@@ -334,3 +334,6 @@ askanna_backend/media/
 
 # sqlite3
 *.sqlite3
+
+# Exclude vscode config
+.vscode/
