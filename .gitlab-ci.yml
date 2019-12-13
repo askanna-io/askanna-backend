@@ -54,6 +54,6 @@ build_production:
     - docker:dind
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t ${CI_REGISTRY}/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile .
+    - docker build -t ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile .
     - docker push ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME
   when: manual
