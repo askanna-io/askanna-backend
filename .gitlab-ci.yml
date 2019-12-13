@@ -20,10 +20,9 @@ test:
       alias: postgres
     - name: redis:5
       alias: redis
-  image: python:3-slim
+  image: ${CI_REGISTRY}/askanna/askanna_backend/base:master
   stage: test
   before_script:
-    - apt update && apt install -y libpq-dev build-essential g++
     - pip install -U pip
     - pip install -r requirements/local.txt
   script:
@@ -40,6 +39,6 @@ build_baseimage:
     - docker:dind
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t gitlab.askanna.io:4567/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
-    - docker push gitlab.askanna.io:4567/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME
+    - docker build -t ${CI_REGISTRY}/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
+    - docker push ${CI_REGISTRY}/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME
   when: manual
