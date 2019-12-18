@@ -70,4 +70,4 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 
 # Local askanna additions
-INSTALLED_APPS += ["uploadfile"]  # noqa F405
+INSTALLED_APPS += ["askanna_backend.uploadfile"]  # noqa F405
