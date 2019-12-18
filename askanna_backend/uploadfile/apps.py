@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class UploadfileConfig(AppConfig):
-    name = 'uploadfile'
+    name = 'askanna_backend.uploadfile'
