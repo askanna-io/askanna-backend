@@ -22,6 +22,10 @@ if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
     env.read_env(str(ROOT_DIR.path(".env")))
 
+# Setup content paths, finding our askanna modules
+print(ROOT_DIR, APPS_DIR)
+sys.path.insert(0, str(APPS_DIR))
+
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
