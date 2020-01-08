@@ -72,4 +72,5 @@ CELERY_TASK_EAGER_PROPAGATES = True
 # Local askanna additions
 INSTALLED_APPS += [
     "uploadfile",
+    "job",
     "project",]  # noqa F405
