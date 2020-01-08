@@ -52,6 +52,7 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 # Local askanna additions
 INSTALLED_APPS += [
-    "uploadfile", 
+    "uploadfile",
+    "job",
     "project",
     ]  # noqa F405
