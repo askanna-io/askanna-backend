@@ -16,6 +16,7 @@ urlpatterns = [
     path("users/", include("askanna_backend.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     path("api/", include("askanna_backend.uploadfile.urls")),
+    path("api/", include("askanna_backend.project.urls")),
     # Your stuff: custom urls includes go here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
