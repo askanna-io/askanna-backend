@@ -2,12 +2,18 @@
 Base settings to build other settings files upon.
 """
 
+import sys
+
 import environ
 
 ROOT_DIR = (
     environ.Path(__file__) - 3
 )  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
 APPS_DIR = ROOT_DIR.path("askanna_backend")
+
+# Insert the APPS_DIR into PYTHON_PATH to allow easier import from our
+# apps housed in /app/askanna_backend
+sys.path.insert(0, str(APPS_DIR))
 
 env = environ.Env()
 
