@@ -1,11 +1,13 @@
-from django.conf.urls import url
+from django.conf.urls import url, include
 
-from project.api import views
+from rest_framework import routers
+
+from project.api.views import ProjectListView
+
+
+router = routers.DefaultRouter()
+router.register(r'project', ProjectListView)
 
 urlpatterns = [
-    url(
-        r'^project/list$',
-        views.ProjectListView.as_view(),
-        name='project-list'
-    ),
+    url(r'^v1/', include(router.urls)),
 ]

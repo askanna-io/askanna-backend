@@ -2,7 +2,7 @@ from django.conf.urls import url, include
 
 from rest_framework import routers
 
-from .views import DummyFileViewSet
+from uploadfile.views import DummyFileViewSet
 
 
 router = routers.DefaultRouter()

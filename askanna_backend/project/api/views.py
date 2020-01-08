@@ -1,26 +1,11 @@
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.generics import (CreateAPIView, UpdateAPIView,
-                                     RetrieveUpdateDestroyAPIView)
-from rest_framework.generics import RetrieveAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FileUploadParser
 
 from project.models import Project
 from project.api.serializers import ProjectSerializer
 
 
-class ProjectListView(RetrieveAPIView):
-    """
-    Read only view for a specific Dataset
-    """
-
-    model = Project
-    serializer_class = ProjectSerializer
+class ProjectListView(viewsets.ModelViewSet):
     queryset = Project.objects.all()
-    permission_classes = (
-        IsAuthenticated
-    )
-    authentication_classes = (
-        SessionAuthentication
-    )
-    permissions = ('project.view_project',)
-
+    serializer_class = ProjectSerializer

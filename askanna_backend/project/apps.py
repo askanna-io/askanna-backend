@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class ProjectConfig(AppConfig):
-    name = 'askanna_backend.project'
+    name = 'project'
     verbose_name = 'Project'
