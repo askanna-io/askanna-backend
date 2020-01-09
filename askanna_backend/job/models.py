@@ -2,8 +2,8 @@
 import uuid
 
 from django.db import models
-from django.contrib.postgres.fields import JSONField
 
+from core.fields import JSONField
 
 # Define a few enums that will represent options in the models.
 
