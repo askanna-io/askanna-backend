@@ -23,7 +23,6 @@ skip_glob = **/migrations/*.py
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
-insert_final_newline = true
 
 [*.{html,css,scss,json,yml}]
 indent_style = space
