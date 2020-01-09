@@ -2,10 +2,10 @@
 import uuid
 
 from django.db import models
-<<<<<<< HEAD
-=======
 from django.contrib.postgres.fields import JSONField
+=======
 
+from core.fields import JSONField
 
 # Define a few enums that will represent options in the models.
 
@@ -182,4 +182,3 @@ class JobOutput(models.Model):
     class Meta:
         verbose_name = 'Job Output'
         verbose_name_plural = 'Job Outputs'
->>>>>>> origin/18-add-initial-models-in-job-application
