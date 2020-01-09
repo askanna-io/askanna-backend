@@ -78,7 +78,8 @@ class JobBase(object):
 
 
 class Job(JobBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        self.pk = kwargs.get('pk', None)
 
 
 class JobDef(models.Model):
