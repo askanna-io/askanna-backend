@@ -73,4 +73,5 @@ CELERY_TASK_EAGER_PROPAGATES = True
 INSTALLED_APPS += [
     "uploadfile",
     "job",
+    "core",
     "project",]  # noqa F405
