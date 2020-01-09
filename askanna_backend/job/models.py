@@ -3,7 +3,6 @@ import uuid
 
 from django.db import models
 from django.contrib.postgres.fields import JSONField
-=======
 
 from core.fields import JSONField
 
