@@ -23,7 +23,6 @@ if READ_DOT_ENV_FILE:
     env.read_env(str(ROOT_DIR.path(".env")))
 
 # Setup content paths, finding our askanna modules
-print(ROOT_DIR, APPS_DIR)
 sys.path.insert(0, str(APPS_DIR))
 
 # GENERAL
@@ -80,11 +79,13 @@ THIRD_PARTY_APPS = [
     "allauth.socialaccount",
     "rest_framework",
     "django_celery_beat",
+    "drf_yasg",
 ]
 
 LOCAL_APPS = [
     "askanna_backend.users.apps.UsersConfig",
     # Your stuff: custom apps go here
+    "utils",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

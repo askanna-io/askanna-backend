@@ -1,3 +1,4 @@
 from django.shortcuts import render
 
-# Create your views here.
+# the following import allows us to work on the views simultaneously
+from job.views_actions import *
