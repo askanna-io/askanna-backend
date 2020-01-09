@@ -2,6 +2,7 @@
 import uuid
 
 from django.db import models
+from django.contrib.postgres.fields import JSONField
 
 from core.fields import JSONField
 
@@ -77,7 +78,8 @@ class JobBase(object):
 
 
 class Job(JobBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        self.pk = kwargs.get('pk', None)
 
 
 class JobDef(models.Model):

@@ -1,2 +1,13 @@
+from django.conf.urls import url, include
 
-urlpatterns = []
+from rest_framework import routers
+
+from job.views import JobActionView
+
+
+router = routers.DefaultRouter()
+router.register(r'job', JobActionView)
+
+urlpatterns = [
+    url(r'^v1/', include(router.urls)),
+]
