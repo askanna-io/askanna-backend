@@ -2,7 +2,7 @@ from django.conf.urls import url, include
 
 from rest_framework import routers
 
-from job.views import *
+from job.views import JobActionView
 
 
 router = routers.DefaultRouter()
