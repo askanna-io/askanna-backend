@@ -2,6 +2,9 @@ FROM python:3-alpine
 
 ENV PYTHONUNBUFFERED 1
 
+RUN addgroup -S django \
+    && adduser -S -G django django
+
 RUN apk update \
   # psycopg2 dependencies
   && apk add --virtual build-deps gcc python3-dev musl-dev \

@@ -57,3 +57,18 @@ build_production:
     - docker build -t ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile .
     - docker push ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME
   when: manual
+
+build_production_image_aio:
+  image: docker:git
+  stage: build
+  tags:
+    - normal
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile-aio .
+    - docker push ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME
+  when: manual
