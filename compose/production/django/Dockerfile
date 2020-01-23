@@ -1,5 +1,5 @@
 
-FROM gitlab.askanna.io:4567/askanna/askanna_backend/base:master
+FROM gitlab.askanna.io:4567/askanna/askanna-backend/base:master
 
 ENV PYTHONUNBUFFERED 1
 
