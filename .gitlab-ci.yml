@@ -9,6 +9,8 @@ variables:
   POSTGRES_USER: anna
   POSTGRES_PASSWORD: pass
 
+  DOCKER_REPO: ${CI_REGISTRY}/askanna/askanna-backend
+
 
 stages:
   - build
@@ -20,7 +22,7 @@ test:
       alias: postgres
     - name: redis:5
       alias: redis
-  image: ${CI_REGISTRY}/askanna/askanna_backend/base:master
+  image: $(DOCKER_REPO)/base:master
   stage: test
   before_script:
     - pip install -U pip
@@ -39,8 +41,8 @@ build_baseimage:
     - docker:dind
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t ${CI_REGISTRY}/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
-    - docker push ${CI_REGISTRY}/askanna/askanna_backend/base:$CI_COMMIT_REF_NAME
+    - docker build -t $(DOCKER_REPO)/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
+    - docker push $(DOCKER_REPO)/base:$CI_COMMIT_REF_NAME
   when: manual
 
 build_production:
@@ -54,6 +56,21 @@ build_production:
     - docker:dind
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile .
-    - docker push ${CI_REGISTRY}/askanna/askanna_backend:$CI_COMMIT_REF_NAME
+    - docker build -t $(DOCKER_REPO):$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile .
+    - docker push $(DOCKER_REPO):$CI_COMMIT_REF_NAME
+  when: manual
+
+build_production_image_aio:
+  image: docker:git
+  stage: build
+  tags:
+    - normal
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t $(DOCKER_REPO):$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile-aio .
+    - docker push $(DOCKER_REPO):$CI_COMMIT_REF_NAME
   when: manual
