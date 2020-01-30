@@ -51,6 +51,25 @@ locally. The next thing is to launch it:
 
 You can then access askanna_backend via http://localhost:8005/
 
+Running additional commands on docker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When running in a docker-compose setup, one cannot directly excecute commands on 
+the containers. E.g. you want to know whether the django service has all the migrations 
+applied. In a regular dev setup one would issue the following command:
+
+
+::
+
+  $ python manage.py showmigrations
+
+
+With docker-compose, one should apply the following command:
+
+::
+
+  $ docker-compose run django python manage.py showmigrations
+
 
 Basic Commands
 --------------
