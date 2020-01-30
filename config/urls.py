@@ -17,6 +17,9 @@ urlpatterns = [
     path("users/", include("users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
 
+    # Authentication support over django drf
+    path("rest-auth/", include('rest_auth.urls')),
+
     # API Urls
     path("api/", include("utils.urls")),
     path("api/", include("uploadfile.urls")),
