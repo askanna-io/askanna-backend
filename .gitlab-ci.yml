@@ -65,7 +65,7 @@ build_production:
       - schedules
 
 deploy_production:
-  image: python:3-slim
+  image: curlimages/curl
   stage: deploy
   tags:
     - normal
