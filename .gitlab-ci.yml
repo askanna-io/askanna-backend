@@ -15,6 +15,7 @@ variables:
 stages:
   - build
   - test
+  - deploy
 
 test:
   services:
@@ -62,3 +63,11 @@ build_production:
     refs:
       - master
       - schedules
+
+deploy_production:
+  image: python:3-slim
+  stage: deploy
+  tags:
+    - normal
+  script:
+    - curl --request POST --form token=${DEPLOY_TOKEN} --form ref=master https://gitlab.askanna.io/api/v4/projects/41/trigger/pipeline
