@@ -71,3 +71,7 @@ deploy_production:
     - normal
   script:
     - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master https://gitlab.askanna.io/api/v4/projects/41/trigger/pipeline
+  only:
+    refs:
+      - master
+      - schedules
