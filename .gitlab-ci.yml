@@ -13,6 +13,7 @@ variables:
 
 
 stages:
+  - build_master
   - build
   - test
   - deploy
@@ -31,9 +32,9 @@ test:
   script:
     - pytest
 
-build_baseimage:
+.build_baseimage: &build_baseimage
   image: docker:git
-  stage: build
+  stage: build_master
   tags:
     - normal
   variables:
@@ -44,6 +45,19 @@ build_baseimage:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t ${DOCKER_REPO}/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
     - docker push ${DOCKER_REPO}/base:$CI_COMMIT_REF_NAME
+
+build_master_base:
+  <<: *build_baseimage
+  only:
+    refs:
+      - master
+    changes:
+      - compose/Dockerfile-base
+      - requirements/base.txt
+      - requirements/production.txt
+
+build_branches_base:
+  <<: *build_baseimage
   when: manual
 
 build_production:
