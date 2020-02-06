@@ -93,6 +93,7 @@ LOCAL_APPS = [
     "job",
     "core",
     "project",
+    "package",
 
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
