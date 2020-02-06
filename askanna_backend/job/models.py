@@ -245,7 +245,7 @@ class JobPayload(models.Model):
     jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
                                to_field='uuid',
                                related_name='payload')
-    payload = JSONField(blank=True)
+    payload = JSONField(blank=True, null=True)
 
     active = models.BooleanField(default=True)
 
@@ -317,8 +317,8 @@ class JobOutput(models.Model):
                                   to_field='uuid',
                                   related_name='output')
     exit_code = models.IntegerField(default=0)
-    return_payload = JSONField(blank=True)
-    stdout = JSONField(blank=True)
+    return_payload = JSONField(blank=True, null=True)
+    stdout = JSONField(blank=True, null=True)
 
     created = models.DateTimeField(auto_now_add=True)
 
