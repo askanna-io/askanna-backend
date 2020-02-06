@@ -1,4 +1,5 @@
 from django.db import models
+from users.models import User
 
 # Create your models here.
 
@@ -11,6 +12,8 @@ class Package(models.Model):
     storage_location = models.CharField(max_length=1000)
     project_id = models.IntegerField(default=1, db_index=True)
     size = models.IntegerField(help_text="Size of this package in bytes")
+
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField()
@@ -53,8 +56,3 @@ class ChunkedPackagePart(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField()
-
-
-
-
-

@@ -85,7 +85,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "askanna_backend.users.apps.UsersConfig",
+    "users",
     # Your stuff: custom apps go here
     "utils",
 
