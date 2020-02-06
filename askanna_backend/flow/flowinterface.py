@@ -11,7 +11,6 @@ from flow.models import (
     FlowInterface,
 )
 
-from job.celerybackend import CeleryJob
 from job.models import get_job
 
 
@@ -114,7 +113,8 @@ class BaseFlow(FlowInterface):
         if self.flowdef:
             for job in self.flowdef.nodes.all():
                 # create the signature
-                _job = CeleryJob(uuid=job.uuid)
+                # _job = CeleryJob(uuid=job.uuid)
+                _job = get_job(uuid=job.uuid)
                 _function = _job._get_function()
 
                 # the Job interface can prepare the proper payload
