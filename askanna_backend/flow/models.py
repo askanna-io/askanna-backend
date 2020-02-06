@@ -104,7 +104,7 @@ class FlowRun(models.Model):
     # the jobids of the jobs included in the flowdef
     # TODO: check if we should keep a list of the jobids, or make
     # relationships. rather keep it simple for now
-    jobids = JSONField(blank=True)
+    jobids = JSONField(blank=True, null=True)
 
     created = models.DateTimeField(auto_now_add=True)
 
