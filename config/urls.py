@@ -25,6 +25,7 @@ urlpatterns = [
     path("api/", include("uploadfile.urls")),
     path("api/", include("project.urls")),
     path("api/", include("job.urls")),
+    path("api/", include("package.urls")),
     # Your stuff: custom urls includes go here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

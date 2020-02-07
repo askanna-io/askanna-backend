@@ -1,10 +1,11 @@
 from django.db import models
 from users.models import User
+import uuid
 
 # Create your models here.
 
 class Package(models.Model):
-    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False)
+    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
     filename = models.CharField(max_length=500)
    
     # Storage location can also e a bucket location
@@ -46,7 +47,7 @@ class Package(models.Model):
 
 
 class ChunkedPackagePart(models.Model):
-    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False)
+    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
     filename = models.CharField(max_length=500)
     size = models.IntegerField(help_text="Size of this chunk of the package")
     file_no = models.IntegerField()

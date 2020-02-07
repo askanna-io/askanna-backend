@@ -20,7 +20,7 @@ class PackageSerializer(serializers.ModelSerializer):
 
 class ChunkedPackagePartSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Package
+        model = ChunkedPackagePart
         fields = (
             'uuid', 
             'filename', 
