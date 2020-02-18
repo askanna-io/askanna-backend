@@ -108,7 +108,7 @@ deploy_branch:
     refs:
       - master
 
-deploy_branch:
+deploy_master:
   <<: *deploy
   environment:
     name: master
