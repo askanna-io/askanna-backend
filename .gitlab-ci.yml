@@ -104,11 +104,9 @@ deploy_branch:
     name: $CI_COMMIT_REF_NAME
     url: http://${CI_ENVIRONMENT_SLUG}-api.askanna.eu
     on_stop: stop_review
-  only:
-    refs:
-      - branches
   except:
-    - master
+    refs:
+      - master
 
 deploy_branch:
   <<: *deploy
