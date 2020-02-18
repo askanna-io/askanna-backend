@@ -115,7 +115,6 @@ deploy_branch:
   environment:
     name: master
     url: http://api.askanna.eu
-    on_stop: stop_review
   only:
     refs:
       - master
