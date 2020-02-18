@@ -17,7 +17,7 @@ class Package(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    deleted_at = models.DateTimeField()
+    deleted_at = models.DateTimeField(null=True)
 
     def unpack(self):
         """
@@ -56,4 +56,4 @@ class ChunkedPackagePart(models.Model):
     package = models.ForeignKey(Package, on_delete=models.SET_NULL, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    deleted_at = models.DateTimeField()
+    deleted_at = models.DateTimeField(null=True)
