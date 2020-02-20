@@ -92,6 +92,7 @@ LOCAL_APPS = [
 
     "uploadfile",
     "job",
+    "flow",
     "core",
     "project",
 
