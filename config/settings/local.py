@@ -70,6 +70,5 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 
 # Local askanna additions
-INSTALLED_APPS += [
-    'dummyload'
+INSTALLED_APPS += [    
 ]  # noqa F405
