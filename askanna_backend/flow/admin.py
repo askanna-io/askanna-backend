@@ -6,6 +6,7 @@ from flow.models import (
     FlowRun,
 )
 
+
 @admin.register(FlowDef)
 class FlowDefAdmin(admin.ModelAdmin):
     list_display = ['name', 'uuid', 'project', 'created']

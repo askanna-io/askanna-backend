@@ -21,7 +21,7 @@ FLOW_STATUS = (
     ('SUCCESS', 'SUCCESS'),
 )
 
-class FlowInterface(object):
+class FlowInterface(object):  # noqa
     """
     Implements main interface towards the Flow interface/concept
     """

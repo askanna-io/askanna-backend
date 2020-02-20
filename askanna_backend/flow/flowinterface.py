@@ -11,6 +11,7 @@ from flow.models import (
     FlowInterface,
 )
 
+from job.celerybackend import CeleryJob
 from job.models import get_job
 
 
@@ -31,10 +32,10 @@ def get_flow_pk(pk=None):
         raise Exception(f"get_flow_pk: there is no flowdef with {pk}")
 
     try:
-        flow = CustomFlow(uuid=flowdef.uuid)
+        flow = CeleryFlow(uuid=flowdef.uuid)
     except:
         # FIXME: too general at the moment
-        raise Exception(f"get_flow_pk: Cannot initialize CustomFlow with flowdef pk: {pk}")
+        raise Exception(f"get_flow_pk: Cannot initialize CeleryFlow with flowdef pk: {pk}")
 
     return flow
 
@@ -85,15 +86,12 @@ class BaseFlow(FlowInterface):
         if not self.flowrun:
             self.flowrun = FlowRun.objects.create(flowdef=self.flowdef)
 
-            #return True
             return
 
         self.dirty = True
-        #return True
 
     def __str__(self):
         return self.flowdef.__str__()
-
 
     def set_order(self, joblist):
         """
@@ -107,19 +105,23 @@ class BaseFlow(FlowInterface):
 
         return self.order
 
-
     def _tasks(self):
+        """
+        Iterate over the attached nodes, add them to an internal list and
+        attach it to the instance.
+        """
         _tasks = []
         if self.flowdef:
             for job in self.flowdef.nodes.all():
                 # create the signature
-                # _job = CeleryJob(uuid=job.uuid)
                 _job = get_job(uuid=job.uuid)
+
+                # the job interfaces will retrieve the appropriate function
+                # depending on the implementation of the job backend
                 _function = _job._get_function()
 
                 # the Job interface can prepare the proper payload
 
-                # skip payload for now, need to make it more robust
                 _tasks.append(_function)
 
             self.tasks = _tasks
@@ -132,6 +134,8 @@ class BaseFlow(FlowInterface):
               For the time being we use a naive approach, based on naming
               conventions.
         """
+
+        # FIXME: Currently ordering the tasks by name
         if self.order and self.tasks:
             _tasks = []
             _tasks = [task for x in self.order for task in self.tasks if x in task.name]
@@ -140,26 +144,6 @@ class BaseFlow(FlowInterface):
 
             # Ready for start
             self.ready = True
-
-    def set_signatures(self):
-        self.signatures = []
-        if self.tasks:
-            for task in self.tasks:
-                # prepare the proper payload, to pass it in the signature
-                # FIXME: see how to create the proper signatures here
-                _sig = task.s()
-
-                self.signatures.append(_sig)
-
-    def create_flow_sig(self):
-        if self.signatures:
-            if self.flowdef.flowtype == 'CHAIN':
-                self.flow = chain(*self.signatures)
-            elif self.flowdef.flowtype == 'GROUP':
-                self.flow = group(*self.signatures)
-
-            # Now flow is ready for execution, set dirty to True
-            self.dirty = True
 
     def _pre_start(self):
         """
@@ -192,16 +176,14 @@ class BaseFlow(FlowInterface):
             return self.ret.ready()
 
     def stop(self):
-        print("HHHHEEEYYYY SSSTOOOPPPPP")
         if self.flow and not self.ret.ready():
-            print("lalalalala")
             print(self.ree)
             self.ret.revoke()
 
     def kill(self):
         if self.flow and not self.ret.ready():
             self.ret.revoke(terminate=True,
-                             signal='SIGKILL')
+                            signal='SIGKILL')
 
     def result(self):
         results = {}
@@ -211,48 +193,58 @@ class BaseFlow(FlowInterface):
 
         return results
 
-class CustomFlow(BaseFlow):
+
+class CeleryFlow(BaseFlow):
+    """
+    Initial implementation of a Celery based flow.
+
+    The interfaces with the signatures are primarily related to Celery.
+
+    FIXME:
+        - Will move to dedicated backend, once happy with the state.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._jobs()
 
+    def create_flow_sig(self):
+        """
+        At the moment we support two types of flows, following the celery
+        primitives, aka: chain and group
+        """
+        if self.signatures:
+            if self.flowdef.flowtype == 'CHAIN':
+                self.flow = chain(*self.signatures)
+            elif self.flowdef.flowtype == 'GROUP':
+                self.flow = group(*self.signatures)
+
+            # Now flow is ready for execution, set dirty to True
+            self.dirty = True
+
     def _jobs(self):
+        """
+        Iterate over the attached JobDef, instantiate their related interfaces
+        and add them in an internal jobs list, attached to the flow interface.
+        """
         jobs = []
         if self.flowdef:
             for job in self.flowdef.nodes.all():
-                # FIXME: initialize withouth caring of the "type" of Job
-                #_job = CeleryJob(uuid=job.uuid)
                 _job = get_job(uuid=job.uuid)
                 jobs.append(_job)
 
         self.jobs = jobs
 
     def order_jobs(self):
+        """
+        Order jobs list based on ordering set in the self.order
+        """
         if self.order and self.jobs:
             _jobs = []
             _jobs = [job for x in self.order for job in self.jobs if x in job.name]
             self.jobs = _jobs
 
             self.ready = True
-
-    #def set_signatures(self):
-    #    self.signatures = []
-    #    if self.jobs and self.ready:
-    #        for job in self.jobs:
-    #            job._pre_start()
-    #            _task = job._get_function()
-    #            _payload = job.get_payload()
-
-    #            task_id = uuid.uuid4()
-    #            job.jobrun.jobid = task_id
-    #            job.jobrun.status = 'SUBMITTED'
-    #            job.jobrun.save()
-    #            job.dirty = True
-
-    #            _sig = signature(_task, kwargs=_payload, options={'task_id': task_id})
-
-    #            self.signatures.append(_sig)
 
     def set_signatures(self):
         """
@@ -270,35 +262,30 @@ class CustomFlow(BaseFlow):
         self.flowrun.jobids = jobids
         self.flowrun.save()
 
-
     def _temp_order(self):
         order = []
 
-        if self.flowdef.nodes.count() > 0:
-            for node in self.flowdef.nodes.order_by('name'):
+        if self.flowdef.nodes.count() > 0:  # noqa
+            for node in self.flowdef.nodes.order_by('name'):  # noqa
                 order.append(node.name)
 
         self.order = order
-
 
     def pre_start(self):
 
         self._jobs()
 
-        # 1. set order
+        # 1. set order of jobs
         self._temp_order()
 
         # 2. order tasks
-        #self.order_tasks()
         self.order_jobs()
 
         # 3. create the signatures
         self.set_signatures()
 
         # 4. create the flow signature
-        #self.create_flow_sig()
         # FIXME: see how to pass a custom known task_id for the whole chain
         # need to probably create a FlowRun that will keep the task_id of the
         # included jobs...
         self.create_flow_sig()
-
