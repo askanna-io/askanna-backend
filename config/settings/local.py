@@ -71,5 +71,4 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 # Local askanna additions
 INSTALLED_APPS += [
-    "flow",
 ]  # noqa F405
