@@ -11,19 +11,19 @@ from job.models import (
 
 @admin.register(JobDef)
 class JobDefAdmin(admin.ModelAdmin):
-    list_display = ['name', 'uuid', 'project', 'created']
+    list_display = ['name', 'uuid', 'function', 'project', 'created']
 
 
 @admin.register(JobPayload)
 class JobPayloadAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'created']
+    list_display = ['uuid', 'jobdef', 'created']
 
 
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'status', 'runtime', 'memory', 'created']
+    list_display = ['uuid', 'jobid', 'jobdef', 'payload', 'status', 'runtime', 'memory', 'created']
 
 
 @admin.register(JobOutput)
 class JobOutputAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'exit_code', 'created']
+    list_display = ['uuid', 'jobdef', 'return_payload', 'exit_code', 'created']
