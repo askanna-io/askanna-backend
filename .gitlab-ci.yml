@@ -102,7 +102,7 @@ deploy_branch:
   <<: *deploy
   environment:
     name: $CI_COMMIT_REF_NAME
-    url: http://${CI_ENVIRONMENT_SLUG}-api.askanna.eu
+    url: https://${CI_ENVIRONMENT_SLUG}-api.askanna.eu
     on_stop: stop_review
   except:
     refs:
@@ -112,7 +112,7 @@ deploy_master:
   <<: *deploy
   environment:
     name: master
-    url: http://api.askanna.eu
+    url: https://api.askanna.eu
   only:
     refs:
       - master
