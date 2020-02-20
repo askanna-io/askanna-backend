@@ -57,7 +57,6 @@ class JobBase(object):
                 return
 
             self.dirty = True
-            #return True  # probably a mistake to return bool
 
         else:
             # create a jobdef object

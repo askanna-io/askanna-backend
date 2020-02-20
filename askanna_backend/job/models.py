@@ -5,13 +5,13 @@ from django.db import models
 from django.contrib.postgres.fields import JSONField
 from django.utils.module_loading import import_string
 
-from core.fields import JSONField
+from core.fields import JSONField  # noqa
 
-from job.settings import JOB_BACKENDS
+from job.settings import JOB_BACKENDS  # noqa
 
 # Define a few enums that will represent options in the models.
 
-## Environment Options
+## Environment Options  # noqa
 ENV_CHOICES = (
     ('python2.7', 'python2.7'),
     ('python3.5', 'python3.5'),
@@ -19,7 +19,7 @@ ENV_CHOICES = (
     ('python3.7', 'python3.7'),
 )
 
-## Status of a job execution
+## Status of a job execution  # noqa
 JOB_STATUS = (
     ('SUBMITTED', 'SUBMITTED'),
     ('COMPLETED', 'COMPLETED'),
@@ -61,6 +61,7 @@ def get_job(uuid=None):
 
     return backend(uuid=uuid)
 
+
 def get_job_pk(pk=None):
     """
     Temp used to retrieve a job by pk/id
@@ -80,7 +81,6 @@ def get_job_pk(pk=None):
         raise Exception("Backend String error, cannot load, fix it")
 
     return backend(uuid=jobdef.uuid)
-
 
 
 class JobInterface(object):
@@ -122,6 +122,7 @@ class JobInterface(object):
 
     def reset(self):
         """
+        Reset a Job
         """
         raise NotImplementedError("This method requires implementation")
 
@@ -151,6 +152,13 @@ class JobInterface(object):
 
 
 class Job(JobInterface):
+    """
+    Concept of Job top-level instance, under review.
+
+    We are still looking out to see if a Job instance instatiation is needed,
+    or we can just use functions like `get_job()` to retrieve the proper
+    Class based on the backed used in the relevant `JobDef` object.
+    """
     def __init__(self, *args, **kwargs):
         self.pk = kwargs.get('pk', None)
 
@@ -175,13 +183,14 @@ class Job(JobInterface):
             self.initjob = backend(uuid=self.uuid)
 
 
-
 class JobDef(models.Model):
     """
     Consider this as the job registry storing the identity of the job itself.
 
     FIXME:
-        - the job name cannot be unique, since this would be across our system
+        - the job name cannot be unique, since this would be across our system,
+          different clients are very likely to use the same name, and this
+          should be fine. The uniqueness is based on the uuid.
     """
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=50)
@@ -241,7 +250,6 @@ class JobPayload(models.Model):
           active for the given JobDef.
     """
     uuid = models.UUIDField(default=uuid.uuid4, editable=False)
-    #jobdef = models.UUIDField(blank=True, null=True)
     jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
                                to_field='uuid',
                                related_name='payload')
@@ -274,10 +282,7 @@ class JobRun(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
                                to_field='uuid')
-    #payload = models.ForeignKey('job.JobPayload', on_delete=models.DO_NOTHING,
-    #                            blank=True, null=True)
     payload = models.UUIDField(blank=True, null=True, editable=False)
-    #output = models.ForeignKey('job.JobOutput', on_delete=models.DO_NOTHING)
     jobid = models.CharField(max_length=120, blank=True, null=True)
     status = models.CharField(max_length=20, choices=JOB_STATUS)
 

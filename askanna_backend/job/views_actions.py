@@ -3,11 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
 
+from drf_yasg import openapi
+
 from job.models import JobDef, Job, get_job_pk
 from job.serializers import JobSerializer
 
-
-from drf_yasg import openapi
 
 class JobActionView(viewsets.ModelViewSet):
     queryset = JobDef.objects.all()

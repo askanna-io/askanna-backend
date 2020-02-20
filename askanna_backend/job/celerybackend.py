@@ -1,8 +1,3 @@
-import uuid
-
-from job.jobinterface import JobBase
-from job.models import JobInterface, JobRun
-
 from config.celery_app import app as celery_application
 from celery.signals import (
     task_prerun,
@@ -11,11 +6,14 @@ from celery.signals import (
     task_success,
     task_failure,
 )
+from celery.utils import uuid as celuuid
 from celery import signature
 from django_celery_results.models import TaskResult
 
+from job.jobinterface import JobBase
+from job.models import JobInterface, JobRun
 
-# FIXME: Hack to make sure that the celery task registry has been
+# FIXME: Slight hack to make sure that the celery task registry has been
 # properly populated with all the tasks from the different apps. By
 # default the autodiscover uses a lazy approach, so we force the discover
 # to make sure we have the registry populated. Need to find a better way
@@ -78,7 +76,7 @@ class CeleryJob(JobInterface, JobBase):
         #    signature = task.s(**payload)
         #else:
         #    signature = task.s()
-        task_id = uuid.uuid4()
+        task_id = celuuid()
         self.jobid = task_id
 
         _signature = signature(task,
@@ -195,13 +193,13 @@ def update_failed_jobrun(sender=None, headers=None, body=None, **kwargs):
             jobrun.output.stdout = task_result.traceback
         jobrun.output.save()
 
+
 @task_postrun.connect
 def update_postrun_jobrun(sender=None, headers=None, body=None, **kwargs):
     task_id = kwargs.get('task_id', None)
     jobrun = JobRun.objects.get(jobid=task_id)
     state = kwargs.get('state', 'FAILED')
     jobrun.status = state
-    #jobrun.save()
 
     task_result = TaskResult.objects.get(task_id=task_id)
     calc_time = (task_result.date_done - jobrun.created).total_seconds()
