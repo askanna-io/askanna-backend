@@ -163,7 +163,8 @@ class CeleryJob(JobInterface, JobBase):
             # FIXME: find a more efficient way to do this
             # make sure we have the "refreshed" object from the DB
             self.jobrun.output.refresh_from_db()
-            return self.jobrun.output.return_payload
+            #return self.jobrun.output.return_payload
+            return self.get_result()
         else:
             # FIXME: see what a proper "empty" return value should be
             return 'None'
