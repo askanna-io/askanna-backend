@@ -12,6 +12,8 @@ from rest_framework.response import Response
 
 from resumable.files import ResumableFile
 
+from package.signals import package_upload_finish
+from package.listeners import *
 
 class PackageViewSet(viewsets.ModelViewSet):
     """
@@ -20,6 +22,26 @@ class PackageViewSet(viewsets.ModelViewSet):
 
     queryset = Package.objects.all()
     serializer_class = PackageSerializer
+
+    @action(detail=True, methods=["post"])
+    def finish_upload(self, request, **kwargs):
+        package = self.get_object()
+
+        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
+        target_location = FileSystemStorage(location=settings.PACKAGES_ROOT)
+        r = ResumableFile(storage_location, request.POST)
+        if r.is_complete:
+            # FIXME: do the following in a worker to offload load:
+            # store file to settings.PACKAGES_ROOT
+            # r.delete_chunks()
+            package_upload_finish.send(sender=self.__class__, postheaders=dict(request.POST.lists()))
+            target_location.save(r.filename, r)
+            r.delete_chunks()
+
+        # FIXME: make return message relevant
+        response = Response({"message": "package upload finished"}, status=200)
+        response["Cache-Control"] = "no-cache"
+        return response
 
 
 class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
@@ -36,14 +58,14 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         This prevents a new POST action from the client and we don't
         have to process this (saves time)
         """
-        storage_location = FileSystemStorage(location=settings.PACKAGES_ROOT)
+        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
 
         r = ResumableFile(storage_location, request.GET)
         response = None
         if r.chunk_exists:
             response = Response({"message": "chunk already exists"}, status=200)
         response = Response({"message": "chunk upload needed"}, status=404)
-        response['Cache-Control'] = 'no-cache'
+        response["Cache-Control"] = "no-cache"
         return response
 
     @action(detail=True, methods=["post", "get"])
@@ -52,16 +74,12 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         Receives one chunk in the POST request 
 
         """
-        print(kwargs)
         chunkpart = self.get_object()
 
         if request.method == "GET":
             return self.check_existence(request, **kwargs)
-
         chunk = request.FILES.get("file")
-        print(request.POST)
-
-        storage_location = FileSystemStorage(location=settings.PACKAGES_ROOT)
+        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
 
         r = ResumableFile(storage_location, request.POST)
         if r.chunk_exists:
@@ -75,11 +93,6 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         )
         chunkpart.save()
 
-        return Response({"uuid": str(chunkpart.uuid), "message": "chunk stored"}, status=200)
-
-
-# Userflow for uploading chunk
-# 1. create package entry
-# 2. create chunk entry (via api)
-# 3. update chunk entry
-# 4. repeat step 2-3 if more chunks
+        return Response(
+            {"uuid": str(chunkpart.uuid), "message": "chunk stored"}, status=200
+        )

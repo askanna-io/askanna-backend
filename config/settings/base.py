@@ -191,9 +191,12 @@ MEDIA_URL = "/media/"
 
 STORAGE_ROOT = ROOT_DIR.path("storage_root")
 PACKAGES_ROOT = str(STORAGE_ROOT("packages"))
+UPLOAD_ROOT = str(STORAGE_ROOT("upload"))
 
-if not os.path.isdir(PACKAGES_ROOT):
-    os.makedirs(PACKAGES_ROOT, exist_ok=True)
+# Create the folders if not exists
+for folder in [PACKAGES_ROOT, UPLOAD_ROOT]:
+    if not os.path.isdir(folder):
+        os.makedirs(folder, exist_ok=True)
 
 # TEMPLATES
 # ------------------------------------------------------------------------------
