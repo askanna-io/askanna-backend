@@ -81,6 +81,7 @@ THIRD_PARTY_APPS = [
     "rest_framework.authtoken",
     "rest_auth",
     "django_celery_beat",
+    "django_celery_results",
     "drf_yasg",
 ]
 
@@ -91,6 +92,8 @@ LOCAL_APPS = [
 
     "uploadfile",
     "job",
+    "flow",
+    "dummyload",
     "core",
     "project",
     "package",
@@ -274,7 +277,8 @@ if USE_TZ:
 # http://docs.celeryproject.org/en/latest/userguide/configuration.html#std:setting-broker_url
 CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 # http://docs.celeryproject.org/en/latest/userguide/configuration.html#std:setting-result_backend
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+# http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html#django-celery-results-using-the-django-orm-cache-as-a-result-backend
+CELERY_RESULT_BACKEND = env.str("CELERY_RESULT_BACKEND", default="django-db")
 # http://docs.celeryproject.org/en/latest/userguide/configuration.html#std:setting-accept_content
 CELERY_ACCEPT_CONTENT = ["json"]
 # http://docs.celeryproject.org/en/latest/userguide/configuration.html#std:setting-task_serializer
