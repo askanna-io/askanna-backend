@@ -39,10 +39,12 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         storage_location = FileSystemStorage(location=settings.PACKAGES_ROOT)
 
         r = ResumableFile(storage_location, request.GET)
+        response = None
         if r.chunk_exists:
-            return Response({"message": "chunk already exists"}, status=200)
-
-        return Response({"message": "chunk upload needed"}, status=404)
+            response = Response({"message": "chunk already exists"}, status=200)
+        response = Response({"message": "chunk upload needed"}, status=404)
+        response['Cache-Control'] = 'no-cache'
+        return response
 
     @action(detail=True, methods=["post", "get"])
     def chunk_receiver(self, request, **kwargs):
