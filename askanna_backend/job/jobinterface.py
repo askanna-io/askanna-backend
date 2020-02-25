@@ -191,3 +191,23 @@ class JobBase(object):
         if payload:
             return payload
         return None
+
+    def get_result(self):
+        """
+        Generate a result dictionary out of the interfaced models, like:
+            JobRun and JobOutput.
+
+        Creates a dictionary with infromation on the state of the job.
+        """
+
+        result = {}
+        result.update({'status': self.jobrun.status,
+                       'cputime': self.jobrun.runtime,
+                       'memory': self.jobrun.memory})
+
+        result.update({'return_payload': self.jobrun.output.return_payload,
+                       'stdout': self.jobrun.output.stdout,
+                       'exit_code': self.jobrun.output.exit_code,
+                       'created': self.jobrun.output.created})
+
+        return result
