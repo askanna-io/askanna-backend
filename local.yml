@@ -13,7 +13,6 @@ services:
     depends_on:
       - postgres
     volumes:
-      - /tmp/app:/tmp
       - .:/app
     env_file:
       - ./.envs/.local/.django
@@ -62,3 +61,7 @@ services:
     ports:
       - "5555:5555"
     command: /start-flower
+
+volumes:
+  static_volume:
+  media_volume:

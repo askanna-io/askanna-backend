@@ -9,7 +9,7 @@ class Package(models.Model):
     filename = models.CharField(max_length=500)
    
     # Storage location can also e a bucket location
-    # In case of local storage, always relative to the MEDIA_ROOT, never an abspath
+    # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
     storage_location = models.CharField(max_length=1000)
     project_id = models.IntegerField(default=1, db_index=True)
     size = models.IntegerField(help_text="Size of this package in bytes")
