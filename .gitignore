@@ -337,3 +337,6 @@ askanna_backend/media/
 
 # Exclude vscode config
 .vscode/
+
+# Exclude storage folder
+storage_root/
