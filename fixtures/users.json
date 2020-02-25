@@ -1,0 +1,98 @@
+[
+
+    {
+        "model": "users.user",
+        "pk": 1,
+        "fields": {
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$VFpiNFpoNlFhY3NC$1JHLFw9pc2Qx7TVFslN6aA",
+            "last_login": null,
+            "is_superuser": true,
+            "username": "anna",
+            "first_name": "Anna",
+            "last_name": "AskAnna",
+            "email": "devops@askanna.io",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2020-01-01T00:00:00.000Z",
+            "name": "",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "users.user",
+        "pk": 2,
+        "fields": {
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$VFpiNFpoNlFhY3NC$1JHLFw9pc2Qx7TVFslN6aA",
+            "last_login": null,
+            "is_superuser": true,
+            "username": "wyleung",
+            "first_name": "",
+            "last_name": "",
+            "email": "anthony@askanna.io",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2020-02-20T13:44:13.411Z",
+            "name": "",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "users.user",
+        "pk": 3,
+        "fields": {
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$OFNVU3Y2bklWdTRO$jTeAB/BiBjFz7PVwlAzGgw",
+            "last_login": null,
+            "is_superuser": true,
+            "username": "antonis",
+            "first_name": "",
+            "last_name": "",
+            "email": "antonis@askanna.io",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2020-02-20T13:44:33.754Z",
+            "name": "",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "users.user",
+        "pk": 4,
+        "fields": {
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$TEtjV0g5bHRaRUh3$g1GnMNv3UfDAU0Xgqsomfw",
+            "last_login": null,
+            "is_superuser": true,
+            "username": "robbert",
+            "first_name": "",
+            "last_name": "",
+            "email": "robbert@test.io",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2020-02-20T15:02:00.898Z",
+            "name": "",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "users.user",
+        "pk": 5,
+        "fields": {
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$bUEwN2lJOGJxRzg1$EGYUjzltYHDrA4wI16JAEg",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "Andrii",
+            "first_name": "",
+            "last_name": "",
+            "email": "andrii@askanna.io",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2020-02-20T15:59:46.432Z",
+            "name": "",
+            "groups": [],
+            "user_permissions": []
+        }
+    }
+]
