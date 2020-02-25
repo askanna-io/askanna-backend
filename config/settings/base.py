@@ -2,6 +2,7 @@
 Base settings to build other settings files upon.
 """
 
+import os
 import sys
 
 import environ
@@ -176,6 +177,23 @@ STATICFILES_FINDERS = [
 MEDIA_ROOT = str(APPS_DIR("media"))
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "/media/"
+
+# FILE STORAGE
+# ------------------------------------------------------------------------------
+# AskAnna implementation, we use the file storage to store:
+# - packages
+# - ...
+# Location of this file storage is NOT within the container as we need to have this
+# accessible by many other containers to serve or maintain/compute on
+# For clarity reasonse, we put this in the code root under `storage_root`
+# In which in production will mount to the host location or anything else
+# FIXME: replace this with a distributed file storage such as `minio` or `S3`
+
+STORAGE_ROOT = ROOT_DIR.path("storage_root")
+PACKAGES_ROOT = str(STORAGE_ROOT("packages"))
+
+if not os.path.isdir(PACKAGES_ROOT):
+    os.makedirs(PACKAGES_ROOT, exist_ok=True)
 
 # TEMPLATES
 # ------------------------------------------------------------------------------
