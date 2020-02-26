@@ -149,10 +149,34 @@ class CeleryJob(JobInterface, JobBase):
 
     def info(self):
         """
-        Returns the status of the last JobRun associated with the specified
-        JobDef.
+        Returns a complete information dictionary, providing full description
+        of the JobDef and the attached last instances of JobPayload, JobRun
+        and JobOutput objects.
+
+        This is the method that adds the complete context to the Job.
+
+        FIXME:
+            - check to see if we can use some serialization method from
+              Django or DRF
         """
-        return self.jobrun.status
+        info = {
+            'name': self.jobdef.name,
+            'project': self.jobdef.project,
+            'function': self.jobdef.function,
+            'backend': self.jobdef.backend,
+            'created': self.jobdef.created,
+            'payload': self.jobpayload.payload,
+            'lastrun': {
+                'status': self.jobrun.status,
+                'runtime': self.jobrun.runtime,
+                'memory': self.jobrun.memory,
+                'return_payload': self.jobrun.output.return_payload,
+                'stdout': self.jobrun.output.stdout,
+                'created': self.jobrun.created,
+                'finished': self.jobrun.output.created
+            },
+        }
+        return info
 
     def result(self):
         """
@@ -168,6 +192,20 @@ class CeleryJob(JobInterface, JobBase):
         else:
             # FIXME: see what a proper "empty" return value should be
             return 'None'
+
+    def status(self):
+        """
+        Returns the status of the last JobRun associated with the specified
+        JobDef.
+        """
+        return self.jobrun.status
+
+    def runs(self):
+        """
+        Returns queryset of all JobRun objects associated with the specified
+        JobDef.
+        """
+        return JobRun.objects.filter(jobdef=self.jobdef)
 
 
 @task_prerun.connect
@@ -211,6 +249,9 @@ def update_postrun_jobrun(sender=None, headers=None, body=None, **kwargs):
     jobrun.output.return_payload = task_result.result
     if task_result.traceback:
         jobrun.output.stdout = task_result.traceback
+
+    #update the execution time
+    jobrun.output.created = task_result.date_done
     jobrun.output.save()
 
 
