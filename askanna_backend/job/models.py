@@ -150,6 +150,18 @@ class JobInterface(object):
         """
         raise NotImplementedError("This method requires implementation")
 
+    def status(self):
+        """
+        Return the last known status of a run of a given Job.
+        """
+        raise NotImplementedError("This method requires implementation")
+
+    def runs(self):
+        """
+        Return the runs associated with a given Job.
+        """
+        raise NotImplementedError("This method requires implementation")
+
 
 class Job(JobInterface):
     """
