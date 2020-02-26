@@ -12,15 +12,54 @@ services:
     image: askanna_backend_local_django
     depends_on:
       - postgres
+      - rabbitmq_stats
     volumes:
       - .:/app
     env_file:
       - ./.envs/.local/.django
+      - ./.envs/.local/.rabbitmq
       - ./.envs/.local/.postgres
     ports:
       - "8005:8000"
     command: /start
 
+  rabbitmq_stats:
+    image: bitnami/rabbitmq:3.8
+    env_file:
+      - ./.envs/.local/.rabbitmq
+    environment:
+      - RABBITMQ_NODE_TYPE=stats
+      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_stats
+    volumes:
+      - 'rabbitmqstats_data:/bitnami'
+
+
+  rabbitmq_queue_disc1:
+    image: bitnami/rabbitmq:3.8
+    depends_on:
+      - rabbitmq_stats
+    env_file:
+      - ./.envs/.local/.rabbitmq
+    environment:
+      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@rabbitmq_stats
+      - RABBITMQ_NODE_TYPE=queue-disc
+      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_queue_disc1
+    volumes:
+      - 'rabbitmqdisc1_data:/bitnami'
+  
+  rabbitmq_queue_ram1:
+    image: bitnami/rabbitmq:3.8
+    depends_on:
+      - rabbitmq_stats
+    env_file:
+      - ./.envs/.local/.rabbitmq
+    environment:
+      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@rabbitmq_stats
+      - RABBITMQ_NODE_TYPE=queue-ram
+      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_queue_ram1
+    volumes:
+      - 'rabbitmqram1_data:/bitnami'    
+            
   postgres:
     build:
       context: .
@@ -41,7 +80,7 @@ services:
     depends_on:
       - redis
       - postgres
-      
+      - rabbitmq_stats
     ports: []
     command: /start-celeryworker
 
@@ -51,7 +90,7 @@ services:
     depends_on:
       - redis
       - postgres
-      
+      - rabbitmq_stats
     ports: []
     command: /start-celerybeat
 
@@ -65,3 +104,11 @@ services:
 volumes:
   static_volume:
   media_volume:
+  local_postgres_data:
+  local_postgres_data_backups:
+  rabbitmqstats_data:
+    driver: local
+  rabbitmqdisc1_data:
+    driver: local
+  rabbitmqram1_data:
+    driver: local

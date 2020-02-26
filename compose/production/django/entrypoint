@@ -6,8 +6,8 @@ set -o nounset
 
 
 
-# N.B. If only .env files supported variable expansion...
-export CELERY_BROKER_URL="${REDIS_URL}"
+# # N.B. If only .env files supported variable expansion...
+# export CELERY_BROKER_URL="${REDIS_URL}"
 
 
 if [ -z "${POSTGRES_USER}" ]; then
