@@ -1,3 +1,5 @@
+from django.db.transaction import on_commit
+
 from config.celery_app import app as celery_application
 from celery.signals import (
     task_prerun,
@@ -12,6 +14,7 @@ from django_celery_results.models import TaskResult
 
 from job.jobinterface import JobBase
 from job.models import JobInterface, JobRun
+
 
 # FIXME: Slight hack to make sure that the celery task registry has been
 # properly populated with all the tasks from the different apps. By
@@ -99,7 +102,9 @@ class CeleryJob(JobInterface, JobBase):
         #self._pre_start()
         self._make_signature()
 
-        celery_task = self.signature.delay()
+        # deals with db race conditions
+        # https://celery.readthedocs.io/en/latest/userguide/tasks.html#database-transactions
+        on_commit(lambda: self.signature.delay())
 
         # store the id of the celery task
         #self.jobrun.jobid = celery_task.id
