@@ -27,6 +27,11 @@ RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 COPY . /app
 
+# Install updated requirements over the requirements from base-image
+COPY ./requirements /requirements
+RUN pip install --no-cache-dir -r /requirements/production.txt \
+    && rm -rf /requirements
+
 RUN chown -R django /app
 
 USER django
