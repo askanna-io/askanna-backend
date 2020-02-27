@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FileUploadParser
 from drf_yasg import openapi
 
 from job.models import JobDef, Job, get_job_pk
-from job.serializers import JobSerializer
+from job.serializers import JobSerializer, JobRunTestSerializer
 
 
 class JobActionView(viewsets.ModelViewSet):
@@ -45,12 +45,11 @@ class JobActionView(viewsets.ModelViewSet):
         job.stop()
         return Response({'status': 'reset'})
 
-    @action(detail=True, methods=['get'], name='Job info')
+    @action(detail=True, methods=['post'], name='Job info')
     def info(self, request, pk=None):
         #job = Job(pk=pk)
         #job = get_job(uuid)
         job = get_job_pk(pk)
-        job.info()
         #return Response({'status': 'info'})
         return Response({'status': job.info()})
 
@@ -69,3 +68,14 @@ class JobActionView(viewsets.ModelViewSet):
         job = get_job_pk(pk)
         #job.result()
         return Response({'result': job.result()})
+
+    @action(detail=True, methods=['post'], name='Job Runs')
+    def runs(self, request, pk=None):
+        job = get_job_pk(pk)
+        runs = JobRunTestSerializer(job.runs(), many=True)
+        return Response(runs.data)
+
+    @action(detail=True, methods=['post'], name='Job Status')
+    def status(self, request, pk=None):
+        job = get_job_pk(pk)
+        return Response({'status': job.status()})

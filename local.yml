@@ -22,6 +22,9 @@ services:
     ports:
       - "8005:8000"
     command: /start
+    environment:
+      VIRTUAL_HOST: api.askanna.localhost
+      VIRTUAL_PORT: 5000
 
   rabbitmq_stats:
     image: bitnami/rabbitmq:3.8
@@ -82,6 +85,8 @@ services:
       - rabbitmq_stats
     ports: []
     command: /start-celeryworker
+    environment:
+      NOTSET: 1
 
   celerybeat:
     <<: *django
@@ -92,6 +97,8 @@ services:
       - rabbitmq_stats
     ports: []
     command: /start-celerybeat
+    environment:
+      NOTSET: 1
 
   flower:
     <<: *django
@@ -99,6 +106,8 @@ services:
     ports:
       - "5555:5555"
     command: /start-flower
+    environment:
+      NOTSET: 1
 
 volumes:
   static_volume:
