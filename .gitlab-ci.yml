@@ -72,10 +72,12 @@ build_production:
     - docker:19.03.5-dind
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t ${DOCKER_REPO}:$CI_COMMIT_REF_NAME -f compose/production/django/Dockerfile .
-    - docker push ${DOCKER_REPO}:$CI_COMMIT_REF_NAME
+    - docker build -t ${DOCKER_REPO}:$CI_COMMIT_REF_SLUG -f compose/production/django/Dockerfile .
+    - docker push ${DOCKER_REPO}:$CI_COMMIT_REF_SLUG
 
 stop_review:
+  variables:
+    GIT_STRATEGY: none
   stage: cleanup
   image: curlimages/curl
   environment:
@@ -86,17 +88,19 @@ stop_review:
   tags:
     - normal
   script:
-    - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_NAME} -F variables[action]=undeploy ${TRIGGER_URL}
+    - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy ${TRIGGER_URL}
   except:
     - master
 
 .deploy: &deploy
+  variables:
+    GIT_STRATEGY: none
   image: curlimages/curl
   stage: deploy
   tags:
     - normal
   script:
-    - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_NAME} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
+    - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
 
 deploy_branch:
   <<: *deploy
