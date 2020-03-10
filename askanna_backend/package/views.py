@@ -2,18 +2,19 @@ from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 
-from package.models import Package, ChunkedPackagePart
-from package.serializers import PackageSerializer, ChunkedPackagePartSerializer
 from rest_framework import viewsets
-from rest_framework.decorators import action
-
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from rest_framework_extensions.mixins import NestedViewSetMixin
+
 from resumable.files import ResumableFile
 
-from package.signals import package_upload_finish
 from package.listeners import *
+from package.models import Package, ChunkedPackagePart
+from package.serializers import PackageSerializer, ChunkedPackagePartSerializer
+from package.signals import package_upload_finish
+
 
 class PackageViewSet(viewsets.ModelViewSet):
     """
@@ -34,7 +35,9 @@ class PackageViewSet(viewsets.ModelViewSet):
             # FIXME: do the following in a worker to offload load:
             # store file to settings.PACKAGES_ROOT
             # r.delete_chunks()
-            package_upload_finish.send(sender=self.__class__, postheaders=dict(request.POST.lists()))
+            package_upload_finish.send(
+                sender=self.__class__, postheaders=dict(request.POST.lists())
+            )
             target_location.save(r.filename, r)
             r.delete_chunks()
 
@@ -96,3 +99,9 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         return Response(
             {"uuid": str(chunkpart.uuid), "message": "chunk stored"}, status=200
         )
+
+
+class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+
+    queryset = Package.objects.all()
+    serializer_class = PackageSerializer
