@@ -1,6 +1,8 @@
 from django.db import models
 
-# Create your models here.
+from django_extensions.db.models import ActivatorModel, TimeStampedModel, TitleDescriptionModel
 
-class Project(models.Model):
+
+class Project(ActivatorModel, TimeStampedModel, TitleDescriptionModel, models.Model):
     name = models.CharField(max_length=255)
+    workspace = models.IntegerField(default=1)
