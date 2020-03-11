@@ -31,3 +31,6 @@ drf-yasg==1.17.0  # https://drf-yasg.readthedocs.io/en/stable/readme.html
 drf-extensions==0.6.0  # https://github.com/chibisov/drf-extensions
 django-rest-auth==0.9.5  # https://github.com/Tivix/django-rest-auth
 django-celery-results==1.1.2  # https://github.com/celery/django-celery-results
+
+# Using models from django extensions
+django-extensions==2.2.5  # https://github.com/django-extensions/django-extensions
