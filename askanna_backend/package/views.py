@@ -12,7 +12,7 @@ from resumable.files import ResumableFile
 
 from package.listeners import *
 from package.models import Package, ChunkedPackagePart
-from package.serializers import PackageSerializer, ChunkedPackagePartSerializer
+from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail
 from package.signals import package_upload_finish
 
 
@@ -39,6 +39,8 @@ class PackageViewSet(viewsets.ModelViewSet):
                 sender=self.__class__, postheaders=dict(request.POST.lists())
             )
             target_location.save(r.filename, r)
+            package.storage_location=r.filename
+            package.save()
             r.delete_chunks()
 
         # FIXME: make return message relevant
@@ -105,3 +107,13 @@ class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
     queryset = Package.objects.all()
     serializer_class = PackageSerializer
+
+    # overwrite the default view and serializer for detail page
+    # we want to use an other serializer for this.
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer_kwargs = {}
+        serializer_kwargs['context'] = self.get_serializer_context()
+        serializer = PackageSerializerDetail(instance, **serializer_kwargs)
+        return Response(serializer.data)
+
