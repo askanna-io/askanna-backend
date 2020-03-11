@@ -117,3 +117,14 @@ class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
         serializer = PackageSerializerDetail(instance, **serializer_kwargs)
         return Response(serializer.data)
 
+    @action(detail=True, methods=["post"])
+    def download(self, request, **kwargs):
+        package = self.get_object()
+
+        return Response({
+            "action": "redirect",
+            "target": "https://{FQDN}/files/{LOCATION}".format(
+                FQDN=settings.ASKANNA_CDN_FQDN,
+                LOCATION=package.storage_location
+            )
+        })
