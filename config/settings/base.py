@@ -194,7 +194,11 @@ MEDIA_URL = "/media/"
 # In which in production will mount to the host location or anything else
 # FIXME: replace this with a distributed file storage such as `minio` or `S3`
 
-STORAGE_ROOT = env.str("ASKANNA_STORAGE_ROOT", ROOT_DIR.path("storage_root"))
+STORAGE_ROOT = ROOT_DIR.path("storage_root")
+
+if env.str("ASKANNA_STORAGE_ROOT", None):
+    STORAGE_ROOT = environ.Path(env.str("ASKANNA_STORAGE_ROOT"))
+
 PACKAGES_ROOT = str(STORAGE_ROOT("packages"))
 UPLOAD_ROOT = str(STORAGE_ROOT("upload"))
 
