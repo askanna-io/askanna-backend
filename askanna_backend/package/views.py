@@ -117,7 +117,7 @@ class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
         serializer = PackageSerializerDetail(instance, **serializer_kwargs)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["get"])
     def download(self, request, **kwargs):
         package = self.get_object()
 
