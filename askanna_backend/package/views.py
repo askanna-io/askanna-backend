@@ -123,7 +123,7 @@ class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
         return Response({
             "action": "redirect",
-            "target": "https://{FQDN}/files/{LOCATION}".format(
+            "target": "https://{FQDN}/files/packages/{LOCATION}".format(
                 FQDN=settings.ASKANNA_CDN_FQDN,
                 LOCATION=package.storage_location
             )
