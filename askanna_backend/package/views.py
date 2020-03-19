@@ -32,16 +32,15 @@ class PackageViewSet(viewsets.ModelViewSet):
         target_location = FileSystemStorage(location=settings.PACKAGES_ROOT)
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
-            # FIXME: do the following in a worker to offload load:
-            # store file to settings.PACKAGES_ROOT
-            # r.delete_chunks()
-            package_upload_finish.send(
-                sender=self.__class__, postheaders=dict(request.POST.lists())
-            )
+            # FIXME: do the following in a worker to offload load
             target_location.save(r.filename, r)
             package.storage_location=r.filename
             package.save()
             r.delete_chunks()
+
+            package_upload_finish.send(
+                sender=self.__class__, postheaders=dict(request.POST.lists()), package=package
+            )
 
         # FIXME: make return message relevant
         response = Response({"message": "package upload finished"}, status=200)
