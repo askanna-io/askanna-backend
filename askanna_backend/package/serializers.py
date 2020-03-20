@@ -40,6 +40,7 @@ class ChunkedPackagePartSerializer(serializers.ModelSerializer):
 
 class PackageSerializerDetail(serializers.ModelSerializer):
     files = serializers.SerializerMethodField("get_files_for_package")
+    cdn_base_url = serializers.SerializerMethodField("get_base_url")
 
     class Meta:
         model = Package
@@ -47,12 +48,24 @@ class PackageSerializerDetail(serializers.ModelSerializer):
             "uuid",
             "filename",
             "storage_location",
+            "cdn_base_url",
             "project_id",
             "size",
             "created_by",
             "created_at",
             "files",
         )
+
+    def get_base_url(self, instance):
+        """
+            Generate the url for where to find the "blob" files of the package.
+            This url points to the extracted version of the package hosted at the CDN server.
+            Please note the /files/blob/ prefix
+        """
+        return "https://{FQDN}/files/blob/{LOCATION}".format(
+                FQDN=settings.ASKANNA_CDN_FQDN,
+                LOCATION=instance.uuid
+            )
 
     def get_files_for_package(self, instance):
         """

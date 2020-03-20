@@ -241,7 +241,8 @@ class JobDef(models.Model):
         """
         Returns the state of the last JobRun.
         """
-        pass
+        backend = import_string(self.backend)
+        return backend(self.uuid).info()
 
 
 class JobPayload(models.Model):

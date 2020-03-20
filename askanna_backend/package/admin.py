@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from package.models import ChunkedPackagePart, Package
+
+admin.site.register(Package)
+admin.site.register(ChunkedPackagePart)
+
