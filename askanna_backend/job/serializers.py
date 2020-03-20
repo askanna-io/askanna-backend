@@ -13,6 +13,11 @@ class JobSerializer(serializers.ModelSerializer):
             'status',
         )
 
+class StartJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobDef
+        fields = '__all__'
+
 
 class JobRunTestSerializer(serializers.BaseSerializer):
     """

@@ -1,17 +1,41 @@
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
+from rest_framework.permissions import IsAuthenticated
+
+
 
 from drf_yasg import openapi
 
 from job.models import JobDef, Job, get_job_pk
-from job.serializers import JobSerializer, JobRunTestSerializer
+from job.serializers import JobSerializer, JobRunTestSerializer, StartJobSerializer
 
+
+class StartJobView(viewsets.GenericViewSet):
+    queryset = JobDef.objects.all()
+    lookup_field = 'uuid'
+    serializer_class = StartJobSerializer
+    permission_classes = [IsAuthenticated]
+
+    def do_ingest(self, request, uuid, **kwargs):
+        """
+        We accept any data that is sent in request.data
+        The provided `uuid` is really existing, as this is checked by the .get_object
+        We specificed the `lookup_field` to search for uuid.
+        """
+        jobdef = self.get_object()
+        print(kwargs)
+        print(request.data)
+        print(request.POST)
+        print(request.GET)
+        print(request.FILES)
+        return Response({"status": f"We are starting the job for {uuid}"})
 
 class JobActionView(viewsets.ModelViewSet):
     queryset = JobDef.objects.all()
     serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['post'], name='Start job')
     def start(self, request, pk=None):
