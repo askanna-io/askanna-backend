@@ -61,7 +61,7 @@
         "model": "users.user",
         "pk": 4,
         "fields": {
-            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$TEtjV0g5bHRaRUh3$g1GnMNv3UfDAU0Xgqsomfw",
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$dWdOYjZjczlSbkp4$VPWu10jZVBvHX99dp/6v0Q",
             "last_login": null,
             "is_superuser": true,
             "username": "robbert",
