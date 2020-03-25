@@ -61,7 +61,7 @@
         "model": "users.user",
         "pk": 4,
         "fields": {
-            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$TEtjV0g5bHRaRUh3$g1GnMNv3UfDAU0Xgqsomfw",
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$dWdOYjZjczlSbkp4$VPWu10jZVBvHX99dp/6v0Q",
             "last_login": null,
             "is_superuser": true,
             "username": "robbert",
@@ -90,6 +90,25 @@
             "is_staff": false,
             "is_active": true,
             "date_joined": "2020-02-20T15:59:46.432Z",
+            "name": "",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "users.user",
+        "pk": 6,
+        "fields": {
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$Y2hwNEY5VWxtYlM5$qHtvobb9F/RcTFHlPAplwQ",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "Vitas",
+            "first_name": "",
+            "last_name": "",
+            "email": "vitas@propositionhero.com",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2020-03-25T14:40:47.922Z",
             "name": "",
             "groups": [],
             "user_permissions": []
