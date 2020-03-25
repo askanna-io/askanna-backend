@@ -1,14 +1,12 @@
+import json
+
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 
-
-
-from drf_yasg import openapi
-
-from job.models import JobDef, Job, get_job_pk
+from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun
 from job.serializers import JobSerializer, JobRunTestSerializer, StartJobSerializer
 
 
@@ -28,9 +26,34 @@ class StartJobView(viewsets.GenericViewSet):
         print(kwargs)
         print(request.data)
         print(request.POST)
-        print(request.GET)
+        print(request.query_params) # same as request.GET from django
         print(request.FILES)
-        return Response({"status": f"We are starting the job for {uuid}"})
+
+        # validate whether request.data is really a json structure
+
+        # store incoming data as payload (in file format)
+        with open('/tmp/random.json', 'w') as f:
+            f.write(json.dumps(request.data))
+
+        # create new JobPayload
+        job_pl = JobPayload.object.create(
+            jobdef=jobdef,
+            payload=request.data,
+            owner=1 # FIXME: do a lookup on request.user
+            )
+
+        # create new Jobrun
+        jobrun = JobRun.objects.create(
+            jobdef=jobdef,
+            payload=job_pl.uuid)
+
+        # return the JobRun id
+
+        return Response({
+            "status": "started", 
+            "job_uuid": jobrun.uuid,
+            "status_uri": "https://api.askanna.io/api/v1/job/"
+        })
 
 class JobActionView(viewsets.ModelViewSet):
     queryset = JobDef.objects.all()
