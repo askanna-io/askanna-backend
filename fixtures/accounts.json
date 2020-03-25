@@ -48,5 +48,15 @@
             "verified": true,
             "primary": true
         }
+    },
+    {
+        "model": "account.emailaddress",
+        "pk": 6,
+        "fields": {
+            "user": 6,
+            "email": "vitas@propositionhero.com",
+            "verified": true,
+            "primary": true
+        }
     }
 ]
