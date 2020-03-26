@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
 
+from rest_framework_extensions.mixins import NestedViewSetMixin
+
 from drf_yasg import openapi
 
 from job.models import JobDef, Job, get_job_pk
@@ -79,3 +81,17 @@ class JobActionView(viewsets.ModelViewSet):
     def status(self, request, pk=None):
         job = get_job_pk(pk)
         return Response({'status': job.status()})
+
+class ProjectJobViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+
+    queryset = JobDef.objects.all()
+    serializer_class = JobSerializer
+
+    # overwrite the default view and serializer for detail page
+    # we want to use an other serializer for this.
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer_kwargs = {}
+        serializer_kwargs['context'] = self.get_serializer_context()
+        serializer = JobSerializer(instance, **serializer_kwargs)
+        return Response(serializer.data)
