@@ -97,12 +97,12 @@ LOCAL_APPS = [
     "utils",
 
     "uploadfile",
-    "job",
-    "flow",
     "dummyload",
     "core",
     "project",
     "package",
+    "job",
+    # "flow",
 
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -346,5 +346,6 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication'
-    ]
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
 }

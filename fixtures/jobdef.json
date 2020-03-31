@@ -1,0 +1,162 @@
+[
+    {
+        "model": "job.jobdef",
+        "pk": "01950dec-fb3d-405a-8557-c35995043a09",
+        "fields": {
+            "created": "2020-03-31T07:59:57.092Z",
+            "modified": "2020-03-31T08:04:05.886Z",
+            "title": "Test2",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "2z6q-Huj8-Ih6w-UTuY",
+            "name": "Test2",
+            "project": "a1074a55-6818-45aa-8362-be27f1b1435e",
+            "function": null,
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "1572e69f-4405-4214-9f83-7cf45af5856d",
+        "fields": {
+            "created": "2020-03-31T08:00:22.766Z",
+            "modified": "2020-03-31T08:04:01.723Z",
+            "title": "Test5",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "eTLc-RMRk-HcaV-3pWK",
+            "name": "Test5",
+            "project": "a1074a55-6818-45aa-8362-be27f1b1435e",
+            "function": null,
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "2ac57407-6cf7-4bac-9a17-02d27f4a566f",
+        "fields": {
+            "created": "2020-03-31T07:57:47.771Z",
+            "modified": "2020-03-31T08:03:10.596Z",
+            "title": "sleep",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "1Ihu-frKX-1QYm-g61d",
+            "name": "sleep",
+            "project": "f1e2144a-87f9-4936-8562-4304c51332ea",
+            "function": "dummyload.tasks.hello_retvalue",
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "384d0f99-8a47-483a-b33d-c8df9f08ecda",
+        "fields": {
+            "created": "2020-03-31T08:00:05.004Z",
+            "modified": "2020-03-31T08:03:56.702Z",
+            "title": "Test3",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "1iEm-oDYK-wbu4-d8ei",
+            "name": "Test3",
+            "project": "a1074a55-6818-45aa-8362-be27f1b1435e",
+            "function": null,
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "402356fb-660f-4ef8-b28c-4b18d00618ed",
+        "fields": {
+            "created": "2020-03-31T08:00:34.280Z",
+            "modified": "2020-03-31T08:03:40.176Z",
+            "title": "Test6",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "1x1e-s9Rg-EKH8-quia",
+            "name": "Test6",
+            "project": "8d0c8475-3985-46a0-aaef-e582ab47c70c",
+            "function": null,
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "5a632b44-3d12-4f48-8a35-7d570c42b08e",
+        "fields": {
+            "created": "2020-03-31T07:59:49.115Z",
+            "modified": "2020-03-31T08:03:33.643Z",
+            "title": "Test1",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "2kYd-2vJS-RKk5-6g5R",
+            "name": "Test1",
+            "project": "8d0c8475-3985-46a0-aaef-e582ab47c70c",
+            "function": null,
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "5b77db15-1213-4cbd-9ff5-40292ae15397",
+        "fields": {
+            "created": "2020-03-31T08:01:02.442Z",
+            "modified": "2020-03-31T08:03:06.157Z",
+            "title": "failcase",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "2mb4-iA7p-680u-Tpaw",
+            "name": "failcase",
+            "project": "f1e2144a-87f9-4936-8562-4304c51332ea",
+            "function": "dummyload.tasks.hello_error",
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    },
+    {
+        "model": "job.jobdef",
+        "pk": "fdf5d510-217b-439e-8672-00bb448a12fb",
+        "fields": {
+            "created": "2020-03-31T08:00:15.317Z",
+            "modified": "2020-03-31T08:03:26.789Z",
+            "title": "Test4",
+            "description": "",
+            "deleted": null,
+            "short_uuid": "7jDP-4U1r-u0I2-cxW2",
+            "name": "Test4",
+            "project": "8d0c8475-3985-46a0-aaef-e582ab47c70c",
+            "function": null,
+            "backend": "job.celerybackend.CeleryJob",
+            "visible": true,
+            "environment": "python3.5",
+            "env_variables": "",
+            "owner": null
+        }
+    }
+]

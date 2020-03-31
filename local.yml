@@ -10,9 +10,10 @@ services:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
     image: askanna_backend_local_django
+    restart: on-failure
     depends_on:
       - postgres
-      - rabbitmq_stats
+      # - rabbitmq_stats
     volumes:
       - .:/app
     env_file:
@@ -26,41 +27,41 @@ services:
       VIRTUAL_HOST: api.askanna.localhost
       VIRTUAL_PORT: 5000
 
-  rabbitmq_stats:
-    image: bitnami/rabbitmq:3.8
-    env_file:
-      - ./.envs/.local/.rabbitmq
-    environment:
-      - RABBITMQ_NODE_TYPE=stats
-      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_stats
-    volumes:
-      - rabbitmqstats_data:/bitnami
+#  rabbitmq_stats:
+#    image: bitnami/rabbitmq:3.8
+#    env_file:
+#      - ./.envs/.local/.rabbitmq
+#    environment:
+#      - RABBITMQ_NODE_TYPE=stats
+#      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_stats
+#    volumes:
+#      - rabbitmqstats_data:/bitnami
 
-  rabbitmq_queue_disc1:
-    image: bitnami/rabbitmq:3.8
-    depends_on:
-      - rabbitmq_stats
-    env_file:
-      - ./.envs/.local/.rabbitmq
-    environment:
-      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@rabbitmq_stats
-      - RABBITMQ_NODE_TYPE=queue-disc
-      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_queue_disc1
-    volumes:
-      - rabbitmqdisc1_data:/bitnami
-  
-  rabbitmq_queue_ram1:
-    image: bitnami/rabbitmq:3.8
-    depends_on:
-      - rabbitmq_stats
-    env_file:
-      - ./.envs/.local/.rabbitmq
-    environment:
-      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@rabbitmq_stats
-      - RABBITMQ_NODE_TYPE=queue-ram
-      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_queue_ram1
-    volumes:
-      - rabbitmqram1_data:/bitnami
+#  rabbitmq_queue_disc1:
+#    image: bitnami/rabbitmq:3.8
+#    depends_on:
+#      - rabbitmq_stats
+#    env_file:
+#      - ./.envs/.local/.rabbitmq
+#    environment:
+#      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@rabbitmq_stats
+#      - RABBITMQ_NODE_TYPE=queue-disc
+#      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_queue_disc1
+#    volumes:
+#      - rabbitmqdisc1_data:/bitnami
+
+#  rabbitmq_queue_ram1:
+#    image: bitnami/rabbitmq:3.8
+#    depends_on:
+#      - rabbitmq_stats
+#    env_file:
+#      - ./.envs/.local/.rabbitmq
+#    environment:
+#      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@rabbitmq_stats
+#      - RABBITMQ_NODE_TYPE=queue-ram
+#      - RABBITMQ_NODE_NAME=rabbit@rabbitmq_queue_ram1
+#    volumes:
+#      - rabbitmqram1_data:/bitnami
 
   postgres:
     build:
@@ -82,7 +83,7 @@ services:
     depends_on:
       - redis
       - postgres
-      - rabbitmq_stats
+      #- rabbitmq_stats
     ports: []
     command: /start-celeryworker
     environment:
@@ -94,7 +95,7 @@ services:
     depends_on:
       - redis
       - postgres
-      - rabbitmq_stats
+      #- rabbitmq_stats
     ports: []
     command: /start-celerybeat
     environment:
@@ -104,7 +105,7 @@ services:
     <<: *django
     image: askanna_backend_local_flower
     ports:
-      - "5555:5555"
+      - "5556:5555"
     command: /start-flower
     environment:
       NOTSET: 1

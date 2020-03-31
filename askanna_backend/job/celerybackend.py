@@ -166,7 +166,7 @@ class CeleryJob(JobInterface, JobBase):
         """
         info = {
             'name': self.jobdef.name,
-            'project': self.jobdef.project,
+            'project': self.jobdef.project.uuid,
             'function': self.jobdef.function,
             'backend': self.jobdef.backend,
             'created': self.jobdef.created,

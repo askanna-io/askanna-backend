@@ -9,9 +9,11 @@ REDIS_URL=redis://redis:6379/0
 # Celery
 # ------------------------------------------------------------------------------
 
-CELERY_BROKER_URL=amqp://bugs:carrot@rabbitmq_stats:5672/askanna
+CELERY_BROKER_URL=redis://redis:6379/0
 
 # Flower
 CELERY_FLOWER_USER=tvMtNTxQhSAKzMUZGAABqLbAZmRkMVNf
 CELERY_FLOWER_PASSWORD=KtQ40CpbtICJHvZ1xrfgJLYs9NEuCLXHgIeA0bwtxnH0ycxtLzD1AayJJLG4HIFP
 
+
+DATABASE_URL=postgresql://anna:pass@postgres/askanna_backend

@@ -24,7 +24,7 @@ urlpatterns = [
     path("", include("utils.urls")),
     path("", include("project.urls")),
     path("", include("job.urls")),
-    path("", include("flow.urls")),
+    # path("", include("flow.urls")),
     path("", include("package.urls")),
     # Your stuff: custom urls includes go here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
