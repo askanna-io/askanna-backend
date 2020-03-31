@@ -4,6 +4,10 @@ from job.models import JobDef, JobRun, JobPayload
 
 
 class JobSerializer(serializers.ModelSerializer):
+    project = serializers.SerializerMethodField('get_project')
+
+    def get_project(self, instance):
+        return str(instance.project.uuid)
     class Meta:
         model = JobDef
         fields = "__all__"
