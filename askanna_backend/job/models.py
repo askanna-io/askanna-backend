@@ -206,7 +206,7 @@ class JobDef(models.Model):
     """
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=50)
-    project = models.CharField(max_length=30, blank=True, null=True)  # TODO: connect to project app
+    project = models.ForeignKey('project.Project', on_delete=models.SET_NULL, blank=True, null=True)
     function = models.CharField(max_length=100, blank=True, null=True,
                                 help_text="Function to execute")
     backend = models.CharField(max_length=100, choices=JOB_BACKENDS,
