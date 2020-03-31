@@ -10,6 +10,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from resumable.files import ResumableFile
 
+from core.mixins import HybridUUIDMixin
 from package.listeners import *
 from package.models import Package, ChunkedPackagePart
 from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail
@@ -102,7 +103,7 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         )
 
 
-class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
     queryset = Package.objects.all()
     serializer_class = PackageSerializer
