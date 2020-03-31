@@ -14,7 +14,7 @@ class DeletedModel(models.Model):
     class Meta:
         abstract = True
 
-class BaseModel(TitleDescriptionModel, TimeStampedModel, DeletedModel, models.Model):
+class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
     uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
     short_uuid = models.CharField(max_length=32, blank=True)
@@ -29,6 +29,10 @@ class BaseModel(TitleDescriptionModel, TimeStampedModel, DeletedModel, models.Mo
             self.short_uuid = google_token.create_token(key='', uuid=self.uuid)
         super().save(*args, **kwargs)
 
+    class Meta:
+        abstract = True
+
+class BaseModel(TitleDescriptionModel, SlimBaseModel):
     class Meta:
         abstract = True
         ordering = ['-modified']

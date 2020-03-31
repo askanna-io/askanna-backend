@@ -12,6 +12,11 @@ class JobSerializer(serializers.ModelSerializer):
         model = JobDef
         fields = "__all__"
 
+class StartJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobDef
+        fields = '__all__'
+
 
 class JobRunSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField("get_version")
