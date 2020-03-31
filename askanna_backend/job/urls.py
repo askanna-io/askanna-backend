@@ -1,5 +1,5 @@
 from django.conf.urls import url, include
-from django.urls import path
+from django.urls import path, re_path
 
 from rest_framework import routers
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -22,5 +22,6 @@ router.register(r"jobrun", JobRunView)
 
 urlpatterns = [
     url(r'^v1/', include(router.urls)),
+    re_path(r'v1/run/(?P<uuid>[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4})', StartJobView.as_view({'post': 'do_ingest'})),
     path(r'v1/run/<uuid:uuid>', StartJobView.as_view({'post': 'do_ingest'}))
 ]
