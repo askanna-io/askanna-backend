@@ -31,6 +31,7 @@ class BaseModel(TitleDescriptionModel, TimeStampedModel, DeletedModel, models.Mo
 
     class Meta:
         abstract = True
+        ordering = ['-modified']
 
 class ActivatedModel(ActivatorModel, BaseModel):
     class Meta:

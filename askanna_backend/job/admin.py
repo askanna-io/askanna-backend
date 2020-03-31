@@ -11,7 +11,12 @@ from job.models import (
 
 @admin.register(JobDef)
 class JobDefAdmin(admin.ModelAdmin):
-    list_display = ['name', 'uuid', 'function', 'project', 'created']
+    list_display = ['name', 'uuid', 'short_uuid', 'function', 'project', 'created']
+    list_display_links = ('name', 'uuid', 'short_uuid',)
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid", "short_uuid"]
 
 
 @admin.register(JobPayload)

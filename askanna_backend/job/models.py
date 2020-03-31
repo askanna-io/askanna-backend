@@ -6,6 +6,7 @@ from django.contrib.postgres.fields import JSONField
 from django.utils.module_loading import import_string
 
 from core.fields import JSONField  # noqa
+from core.models import BaseModel
 
 from job.settings import JOB_BACKENDS  # noqa
 
@@ -195,7 +196,7 @@ class Job(JobInterface):
             self.initjob = backend(uuid=self.uuid)
 
 
-class JobDef(models.Model):
+class JobDef(BaseModel):
     """
     Consider this as the job registry storing the identity of the job itself.
 
@@ -204,17 +205,18 @@ class JobDef(models.Model):
           different clients are very likely to use the same name, and this
           should be fine. The uniqueness is based on the uuid.
     """
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    # uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=50)
-    project = models.ForeignKey('project.Project', on_delete=models.SET_NULL, blank=True, null=True)
+    project = models.ForeignKey(
+        "project.Project", on_delete=models.SET_NULL, blank=True, null=True)
     function = models.CharField(max_length=100, blank=True, null=True,
                                 help_text="Function to execute")
     backend = models.CharField(max_length=100, choices=JOB_BACKENDS,
                                default='job.celerybackend.CeleryJob')
 
     # FIXME: may be replaced by model_utils and TimeStampedModel if required
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    # created = models.DateTimeField(auto_now_add=True)
+    # modified = models.DateTimeField(auto_now=True)
 
     visible = models.BooleanField(default=True)  # FIXME: add rationale and default value
 

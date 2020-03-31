@@ -21,7 +21,7 @@ services:
       - ./.envs/.local/.rabbitmq
       - ./.envs/.local/.postgres
     ports:
-      - "8006:8000"
+      - "8005:8000"
     command: /start
     environment:
       VIRTUAL_HOST: api.askanna.localhost
