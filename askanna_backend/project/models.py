@@ -1,8 +1,8 @@
 from django.db import models
 
-from django_extensions.db.models import ActivatorModel, TimeStampedModel, TitleDescriptionModel
+from core.models import ActivatedModel
 
 
-class Project(ActivatorModel, TimeStampedModel, TitleDescriptionModel, models.Model):
+class Project(ActivatedModel):
     name = models.CharField(max_length=255)
     workspace = models.IntegerField(default=1)
