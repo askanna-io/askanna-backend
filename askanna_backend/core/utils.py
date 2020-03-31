@@ -1,4 +1,4 @@
-from collections import Mapping, Iterable
+from collections import Mapping
 from uuid import uuid4
 
 # From https://pythonhosted.org/shorten/user/examples.html
@@ -41,7 +41,7 @@ def bx_encode(n, alphabet):
     return "".join(digits)
 
 
-def bx_decode(string, alphabet, mapping=None):
+def bx_decode(string, alphabet=DEFAULT, mapping=None):
     """
     Transforms a string in :attr:`alphabet` to an integer.
 
@@ -86,24 +86,24 @@ def group(string, n):
     return [string[i : i + n] for i in range(0, len(string), n)]
 
 
-class GoogleTokenGenerator(object):
-    """\
-   This will produce 16 character alphabetic revokation tokens similar
-   to the ones Google uses for its application-specific passwords.
+class GoogleTokenGenerator:
+    """
+    This will produce 16 character alphabetic revokation tokens similar
+    to the ones Google uses for its application-specific passwords.
 
-   Google tokens are of the form:
+    Google tokens are of the form:
 
-      xxxx-xxxx-xxxx-xxxx
+        xxxx-xxxx-xxxx-xxxx
 
-   with alphabetic characters only.
-   """
+    with alphabetic characters only.
+    """
 
     alphabet = DEFAULT
 
     def create_token(self, key, uuid=None):
         token_length = 16
         group_size = 4
-        groups = token_length / group_size
+        groups = int(token_length / group_size)
 
         # Generate a random UUID if not given
         if not uuid:
