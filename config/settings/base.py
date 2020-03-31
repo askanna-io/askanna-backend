@@ -97,12 +97,12 @@ LOCAL_APPS = [
     "utils",
 
     "uploadfile",
-    "job",
-    "flow",
     "dummyload",
     "core",
     "project",
     "package",
+    "job",
+    # "flow",
 
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

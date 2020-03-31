@@ -11,7 +11,15 @@ class Package(models.Model):
     # Storage location can also e a bucket location
     # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
     storage_location = models.CharField(max_length=1000)
-    project_id = models.IntegerField(default=1, db_index=True)
+    project = models.ForeignKey(
+        "project.Project",
+        on_delete=models.SET_DEFAULT,
+        related_name="packages",
+        related_query_name="package",
+        null=True,
+        blank=True,
+        default=None
+        )
     size = models.IntegerField(help_text="Size of this package in bytes")
 
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)

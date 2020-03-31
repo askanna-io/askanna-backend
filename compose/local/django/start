@@ -8,4 +8,7 @@ set -o nounset
 python manage.py migrate
 python manage.py loaddata fixtures/users.json
 python manage.py loaddata fixtures/accounts.json
+python manage.py loaddata fixtures/projects.json
+python manage.py loaddata fixtures/jobdef.json
+
 python manage.py runserver_plus 0.0.0.0:8000

@@ -6,12 +6,7 @@ from job.models import JobDef, JobRun, JobPayload
 class JobSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobDef
-        fields = (
-            'id',
-            'uuid',
-            'name',
-            'status',
-        )
+        fields = "__all__"
 
 
 class JobRunTestSerializer(serializers.BaseSerializer):
