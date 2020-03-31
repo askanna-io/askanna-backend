@@ -8,8 +8,8 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from drf_yasg import openapi
 
 from core.mixins import HybridUUIDMixin
-from job.models import JobDef, Job, get_job_pk
-from job.serializers import JobSerializer, JobRunTestSerializer
+from job.models import JobDef, Job, get_job_pk, JobRun
+from job.serializers import JobSerializer, JobRunTestSerializer, JobRunSerializer
 
 
 class JobActionView(viewsets.ModelViewSet):
@@ -82,6 +82,12 @@ class JobActionView(viewsets.ModelViewSet):
     def status(self, request, pk=None):
         job = get_job_pk(pk)
         return Response({'status': job.status()})
+
+
+class JobRunView(viewsets.ModelViewSet):
+    queryset = JobRun.objects.all()
+    serializer_class = JobRunSerializer
+
 
 class ProjectJobViewSet(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 

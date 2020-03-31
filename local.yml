@@ -18,7 +18,6 @@ services:
       - .:/app
     env_file:
       - ./.envs/.local/.django
-      - ./.envs/.local/.rabbitmq
       - ./.envs/.local/.postgres
     ports:
       - "8005:8000"
@@ -115,6 +114,3 @@ volumes:
   media_volume:
   local_postgres_data:
   local_postgres_data_backups:
-  rabbitmqstats_data:
-  rabbitmqdisc1_data:
-  rabbitmqram1_data:

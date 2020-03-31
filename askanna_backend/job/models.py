@@ -205,7 +205,6 @@ class JobDef(BaseModel):
           different clients are very likely to use the same name, and this
           should be fine. The uniqueness is based on the uuid.
     """
-    # uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=50)
     project = models.ForeignKey(
         "project.Project", on_delete=models.SET_NULL, blank=True, null=True)
@@ -213,11 +212,6 @@ class JobDef(BaseModel):
                                 help_text="Function to execute")
     backend = models.CharField(max_length=100, choices=JOB_BACKENDS,
                                default='job.celerybackend.CeleryJob')
-
-    # FIXME: may be replaced by model_utils and TimeStampedModel if required
-    # created = models.DateTimeField(auto_now_add=True)
-    # modified = models.DateTimeField(auto_now=True)
-
     visible = models.BooleanField(default=True)  # FIXME: add rationale and default value
 
     environment = models.CharField(max_length=20, choices=ENV_CHOICES,
@@ -285,7 +279,7 @@ class JobPayload(models.Model):
         verbose_name_plural = 'Job Payloads'
 
 
-class JobRun(models.Model):
+class JobRun(BaseModel):
     """
     FIXME:
         - I don't think we need JobRun to have an active relationship to the
@@ -294,14 +288,12 @@ class JobRun(models.Model):
         - JobRun should have a 1:1 relationship, since there doesn't seem to
           be any reason where we should have a JobRun withouth a JobOutput.
     """
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    # uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
                                to_field='uuid')
     payload = models.UUIDField(blank=True, null=True, editable=False)
     jobid = models.CharField(max_length=120, blank=True, null=True)
     status = models.CharField(max_length=20, choices=JOB_STATUS)
-
-    created = models.DateTimeField(auto_now_add=True)
 
     # stats
     runtime = models.FloatField(default=0)  # FIXME: check with job system
