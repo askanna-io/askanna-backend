@@ -5,7 +5,8 @@ from rest_framework import routers
 from rest_framework.urlpatterns import format_suffix_patterns
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
-from job.views import JobActionView, StartJobView, ProjectJobViewSet
+from job.views import JobActionView, StartJobView, ProjectJobViewSet, JobRunView
+from project.api.views import ProjectListView
 from project.api.views import ProjectListViewShort
 
 router = DefaultRouter()
@@ -17,6 +18,7 @@ router = DefaultRouter()
 
 
 router.register(r"job", JobActionView)
+router.register(r"jobrun", JobRunView)
 
 urlpatterns = [
     url(r'^v1/', include(router.urls)),

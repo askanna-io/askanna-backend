@@ -18,6 +18,63 @@ class StartJobSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class JobRunSerializer(serializers.ModelSerializer):
+    version = serializers.SerializerMethodField("get_version")
+    project = serializers.SerializerMethodField("get_project")
+    owner = serializers.SerializerMethodField("get_user")
+    trigger = serializers.SerializerMethodField("get_user")
+    runner = serializers.SerializerMethodField("get_runner")
+    jobid = serializers.SerializerMethodField("get_jobid")
+
+    stdout = serializers.SerializerMethodField("get_stdout")
+
+    def get_stdout(self, instance):
+        return instance.output.stdout
+
+    def get_jobid(self, instance):
+        # FIXME: this is to fix empty jobids
+        return instance.short_uuid
+
+    def get_runner(self, instance):
+        # FIXME: replace with actual values
+        return {
+            "name": "Python 3.8",
+            "uuid": "1234-5678-9012-3456",
+            "cpu_time": 140.568,
+            "cpu_cores": 2,
+            "memory_mib": 568,
+            "job_status": 0,
+        }
+
+    def get_trigger(self, instance):
+        # FIXME: return the real trigger source
+        return "API"
+
+    def get_version(self, instance):
+        # FIXME: replace with actual version information
+        return {
+            "name": "latest",
+            "uuid": "2222-3333-2222-2222",
+        }
+
+    def get_project(self, instance):
+        project = instance.jobdef.project
+        return {
+            "name": project.name,
+            "uuid": project.short_uuid,
+        }
+
+    def get_user(self, instance):
+        # FIXME: replace with actual user information
+        return {
+            "name": "Anna",
+            "uuid": "5555-5555-5555-5555",
+        }
+    class Meta:
+        model = JobRun
+        fields = "__all__"
+
+
 class JobRunTestSerializer(serializers.BaseSerializer):
     """
     Possible serialization implementation for the JobRun objects associated
