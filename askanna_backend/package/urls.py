@@ -11,7 +11,7 @@ router = DefaultRouter()
 (
     router
     .register(r"project", ProjectListView, "project")
-    .register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project_id"])
+    .register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project"])
 )
 
 router.register(r"package", PackageViewSet)
