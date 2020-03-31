@@ -7,6 +7,7 @@ from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
 from rest_framework.permissions import IsAuthenticated
@@ -28,13 +29,31 @@ class StartJobView(viewsets.GenericViewSet):
     serializer_class = StartJobSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        query_val = self.kwargs.get("uuid", None)
-        if isinstance(query_val, uuid.UUID):
-            return super().get_queryset()
-        return super().get_queryset().filter(short_uuid=query_val)
+    # def get_queryset(self):
+    #     query_val = self.kwargs.get("uuid", None)
+    #     if query_val:
+    #         print(query_val)
+    #         return super().get_queryset()
+    #     short_uuid = self.kwargs.get('short_uuid', None)
+    #     print(short_uuid)
+    #     return super().get_queryset().filter(short_uuid=short_uuid)
 
-    def do_ingest(self, request, uuid, **kwargs):
+    def get_object(self):
+        # TODO: move this to a mixin
+        queryset = self.filter_queryset(self.get_queryset())
+        filter_kwargs = {}
+        query_val = self.kwargs.get("uuid", None)
+        if query_val:
+            filter_kwargs = {'uuid': query_val}
+        else:
+            filter_kwargs = {'short_uuid': self.kwargs.get('short_uuid')}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        return obj
+
+    def do_ingest_short(self, request, **kwargs):
+        return self.do_ingest(request, **kwargs)
+
+    def do_ingest(self, request, uuid=None, **kwargs):
         """
         We accept any data that is sent in request.data
         The provided `uuid` is really existing, as this is checked by the .get_object
