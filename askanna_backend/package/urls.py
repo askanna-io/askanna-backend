@@ -5,13 +5,13 @@ from package.views import (
     PackageViewSet,
     ProjectPackageViewSet,
 )
-from project.api.views import ProjectListView
+from project.api.views import ProjectListViewShort
 
 router = DefaultRouter()
 (
     router
-    .register(r"project", ProjectListView, "project")
-    .register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project"])
+    .register(r"project", ProjectListViewShort, "project")
+    .register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project__short_uuid"])
 )
 
 router.register(r"package", PackageViewSet)

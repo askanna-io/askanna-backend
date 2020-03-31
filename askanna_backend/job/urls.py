@@ -4,15 +4,15 @@ from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
 from job.views import JobActionView, ProjectJobViewSet
-from project.api.views import ProjectListView
+from project.api.views import ProjectListViewShort
 
 router = routers.DefaultRouter()
 
 router = DefaultRouter()
 (
     router
-    .register(r"project", ProjectListView, "project")
-    .register(r"jobs", ProjectJobViewSet, "project-job", parents_query_lookups=["project"])
+    .register(r"project", ProjectListViewShort, "project")
+    .register(r"jobs", ProjectJobViewSet, "project-job", parents_query_lookups=["project__short_uuid"])
 )
 
 
