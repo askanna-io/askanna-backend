@@ -6,6 +6,11 @@ from project.models import Project
 from project.api.serializers import ProjectSerializer
 
 
+class ProjectListViewShort(viewsets.ReadOnlyModelViewSet):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    lookup_field = 'short_uuid'
+
 class ProjectListView(viewsets.ReadOnlyModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
