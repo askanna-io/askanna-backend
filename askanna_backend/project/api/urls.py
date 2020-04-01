@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.conf.urls import url, include, re_path
 
 from rest_framework import routers
 
@@ -10,5 +10,5 @@ router = routers.DefaultRouter()
 router.register(r'project', ProjectListViewShort)
 
 urlpatterns = [
-    url(r'^v1/', include(router.urls)),
+    re_path(r'^(?P<version>(v1|v2))/', include(router.urls)),
 ]

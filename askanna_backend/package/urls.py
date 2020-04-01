@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.conf.urls import url, include, re_path
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 from package.views import (
     ChunkedPackagePartViewSet,
@@ -18,5 +18,5 @@ router.register(r"package", PackageViewSet)
 router.register(r"chunkpackagepart", ChunkedPackagePartViewSet)
 
 urlpatterns = [
-    url(r"^v1/", include(router.urls)),
+    re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
 ]

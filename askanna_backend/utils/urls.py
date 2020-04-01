@@ -7,7 +7,7 @@ from django.conf.urls import url, include
 from utils.views import OpenAPISchemaView
 
 urlpatterns = [
-    path(r'v1/', include([
+    re_path(r'^(?P<version>(v1|v2))/', include([
         # Redirect to docs by default
         re_path(r'^$', RedirectView.as_view(
             url=reverse_lazy('schema-swagger-ui'),

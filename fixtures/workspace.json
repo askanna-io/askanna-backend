@@ -1,0 +1,47 @@
+[
+    {
+        "model": "workspace.workspace",
+        "pk": "695fcc8b-ba8c-4575-a1e0-f0fcfc70a349",
+        "fields": {
+            "created": "2020-04-01T09:44:11.853Z",
+            "modified": "2020-04-01T09:44:11.853Z",
+            "title": "AskAnna",
+            "description": "",
+            "status": 1,
+            "activate_date": "2020-04-01T09:44:11.838Z",
+            "deactivate_date": null,
+            "deleted": null,
+            "short_uuid": "3Cpy-QMzd-MVko-1rDQ"
+        }
+    },
+    {
+        "model": "workspace.workspace",
+        "pk": "121257f5-805b-42d2-bbbf-a647774c66c3",
+        "fields": {
+            "created": "2020-04-01T09:45:02.233Z",
+            "modified": "2020-04-01T09:45:02.233Z",
+            "title": "Open",
+            "description": "",
+            "status": 1,
+            "activate_date": "2020-04-01T09:45:02.220Z",
+            "deactivate_date": null,
+            "deleted": null,
+            "short_uuid": "Y6FB-Vbzj-5q56-5d1I"
+        }
+    },
+    {
+        "model": "workspace.workspace",
+        "pk": "e2433fa9-56b8-451e-9649-4ba00b94d17a",
+        "fields": {
+            "created": "2020-04-01T09:46:19.708Z",
+            "modified": "2020-04-01T09:46:19.708Z",
+            "title": "Demo",
+            "description": "",
+            "status": 1,
+            "activate_date": "2020-04-01T09:46:19.697Z",
+            "deactivate_date": null,
+            "deleted": null,
+            "short_uuid": "6swz-ujcr-jQQw-SAdZ"
+        }
+    }
+]
