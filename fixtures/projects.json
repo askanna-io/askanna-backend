@@ -13,7 +13,7 @@
             "deleted": null,
             "short_uuid": "4I9d-ahIQ-8WkT-tT8C",
             "name": "AskAnna startup",
-            "workspace": 1
+            "workspace": "695fcc8b-ba8c-4575-a1e0-f0fcfc70a349"
         }
     },
     {
@@ -30,7 +30,7 @@
             "deleted": null,
             "short_uuid": "4tr5-yND3-WU1z-F1ry",
             "name": "AskAnna HQ",
-            "workspace": 1
+            "workspace": "695fcc8b-ba8c-4575-a1e0-f0fcfc70a349"
         }
     },
     {
@@ -47,7 +47,7 @@
             "deleted": null,
             "short_uuid": "7MQT-6309-9g3t-R5QR",
             "name": "AskAnna Sandbox",
-            "workspace": 1
+            "workspace": "695fcc8b-ba8c-4575-a1e0-f0fcfc70a349"
         }
     }
 ]
