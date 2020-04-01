@@ -48,7 +48,7 @@ def get_job(uuid=None):
         raise Exception("need to provide uuid for JobDef")
 
     try:
-        jobdef = JobDef.objects.get(uuid=uuid)
+        jobdef = JobDef.objects.get(short_uuid=uuid)
     except JobDef.DoesNotExist:
         # FIXME: raise custom proper Exception
         raise Exception(f"get_job: there is no jobdef with {uuid}")
@@ -60,7 +60,7 @@ def get_job(uuid=None):
         print("something is wrong with the backend string")
         raise Exception("Backend String error, cannot load, fix it")
 
-    return backend(uuid=uuid)
+    return backend(uuid=jobdef.uuid)
 
 
 def get_job_pk(pk=None):
