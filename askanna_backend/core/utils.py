@@ -1,6 +1,8 @@
 from collections import Mapping
 from uuid import uuid4
 
+from django.urls import register_converter
+
 # From https://pythonhosted.org/shorten/user/examples.html
 
 

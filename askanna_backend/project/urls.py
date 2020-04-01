@@ -4,12 +4,19 @@ from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRo
 
 from utils.urls import router
 from project.views import ProjectListViewShort
-
+from workspace.urls import workspace_route, router as wrouter
 
 project_route = router.register(
     r"project",
     ProjectListViewShort,
     basename="project"
+)
+
+workspace_route.register(
+    r"projects",
+    ProjectListViewShort,
+    basename="workspace-project",
+    parents_query_lookups=["workspace__short_uuid"],
 )
 
 urlpatterns = [
