@@ -6,3 +6,4 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         from core import signals
+        from core import utils

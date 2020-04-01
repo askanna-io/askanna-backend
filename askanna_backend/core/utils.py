@@ -115,3 +115,14 @@ class GoogleTokenGenerator:
         token = token.rjust(token_length, self.alphabet[0])
 
         return "-".join(group(token, group_size)[:groups])
+
+class ShortUUIDConverter:
+    regex = '[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return value
+
+register_converter(ShortUUIDConverter, 'shortuuid')
