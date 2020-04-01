@@ -11,7 +11,7 @@ from job.views import (
     JobRunView,
     JobJobRunView,
 )
-from project.api.urls import project_route, router as prouter
+from project.urls import project_route, router as prouter
 from utils.urls import router
 
 project_route.register(

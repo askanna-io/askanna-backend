@@ -1,11 +1,17 @@
-from django.contrib.auth.decorators import login_required
-from django.conf.urls import url
-from django.views.generic.base import RedirectView
+from django.conf.urls import url, include, re_path
 
-from project import views
+from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
-from project.api.urls import urlpatterns as api_urlpatterns
-from project.api.urls import project_route
+from utils.urls import router
+from project.api.views import ProjectListViewShort
+
+
+project_route = router.register(
+    r"project",
+    ProjectListViewShort,
+    basename="project"
+)
 
 urlpatterns = [
-] + api_urlpatterns
+    re_path(r'^(?P<version>(v1|v2))/', include(router.urls)),
+]
