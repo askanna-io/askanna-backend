@@ -104,74 +104,75 @@ class StartJobView(viewsets.GenericViewSet):
 
 class JobActionView(viewsets.ModelViewSet):
     queryset = JobDef.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=["post"], name="Start job")
-    def start(self, request, pk=None):
+    def start(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         job.start()
         return Response({"status": "started"})
 
     @action(detail=True, methods=["post"], name="Stop job")
-    def stop(self, request, pk=None):
+    def stop(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         job.stop()
         return Response({"status": "stopped"})
 
     @action(detail=True, methods=["post"], name="Pause job")
-    def pause(self, request, pk=None):
+    def pause(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         job.pause()
         return Response({"status": "paused"})
 
     @action(detail=True, methods=["post"], name="Reset job")
-    def reset(self, request, pk=None):
+    def reset(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         job.stop()
         return Response({"status": "reset"})
 
     @action(detail=True, methods=["post"], name="Job info")
-    def info(self, request, pk=None):
+    def info(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         # return Response({'status': 'info'})
         return Response({"status": job.info()})
 
     @action(detail=True, methods=["post"], name="Kill job")
-    def kill(self, request, pk=None):
+    def kill(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         job.kill()
         return Response({"status": "killed"})
 
     @action(detail=True, methods=["post"], name="Result job")
-    def result(self, request, pk=None):
+    def result(self, request, short_uuid, pk=None, **kwargs):
         # job = Job(pk=pk)
         # job = get_job(uuid)
-        job = get_job_pk(pk)
+        job = get_job(short_uuid)
         # job.result()
         return Response({"result": job.result()})
 
-    @action(detail=True, methods=["post"], name="Job Runs")
-    def runs(self, request, pk=None):
-        job = get_job_pk(pk)
+    @action(detail=True, methods=["get", "post"], name="Job Runs")
+    def runs(self, request, short_uuid, pk=None, **kwargs):
+        job = get_job(short_uuid)
         runs = JobRunTestSerializer(job.runs(), many=True)
         return Response(runs.data)
 
     @action(detail=True, methods=["post"], name="Job Status")
-    def status(self, request, pk=None):
-        job = get_job_pk(pk)
+    def status(self, request, short_uuid, pk=None, **kwargs):
+        job = get_job(short_uuid)
         return Response({"status": job.status()})
 
 
@@ -180,10 +181,16 @@ class JobRunView(viewsets.ModelViewSet):
     serializer_class = JobRunSerializer
 
 
+class JobJobRunView(
+    HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = JobRun.objects.all()
+    serializer_class = JobRunSerializer
+
+
+
 class ProjectJobViewSet(
     HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
 ):
-
     queryset = JobDef.objects.all()
     serializer_class = JobSerializer
 

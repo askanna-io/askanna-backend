@@ -1,10 +1,12 @@
 from django.conf import settings
+from django.conf.urls import url, include
 from django.urls import include, path, re_path, reverse_lazy
 from django.views.generic import RedirectView
-
-from django.conf.urls import url, include
+from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
 from utils.views import OpenAPISchemaView
+
+router = DefaultRouter()
 
 urlpatterns = [
     re_path(r'^(?P<version>(v1|v2))/', include([
@@ -26,4 +28,6 @@ urlpatterns = [
                 name='schema-redoc'),
         ])),
     ])),
+
+    re_path(r'^(?P<version>(v1|v2))/', include(router.urls)),
 ]
