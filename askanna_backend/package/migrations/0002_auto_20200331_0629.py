@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('project', '0003_auto_20200331_0531'),
+        ('project', '__first__'),
         ('package', '0001_initial'),
     ]
 

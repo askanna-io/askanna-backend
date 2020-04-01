@@ -5,7 +5,7 @@ from package.views import (
     PackageViewSet,
     ProjectPackageViewSet,
 )
-from project.api.views import ProjectListViewShort
+from project.views import ProjectListViewShort
 
 router = DefaultRouter()
 (

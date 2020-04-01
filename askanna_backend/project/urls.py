@@ -3,7 +3,7 @@ from django.conf.urls import url, include, re_path
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
 from utils.urls import router
-from project.api.views import ProjectListViewShort
+from project.views import ProjectListViewShort
 
 
 project_route = router.register(
