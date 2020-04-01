@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.conf.urls import url, include, re_path
 from django.urls import path, re_path, register_converter
 
 from rest_framework import routers
@@ -15,7 +15,7 @@ class ShortUUIDConverter:
 
     def to_python(self, value):
         return value
-    
+
     def to_url(self, value):
         return value
 
@@ -33,7 +33,7 @@ router.register(r"job", JobActionView)
 router.register(r"jobrun", JobRunView)
 
 urlpatterns = [
-    url(r'^v1/', include(router.urls)),
-    path(r'v1/run/<shortuuid:short_uuid>', StartJobView.as_view({'post': 'do_ingest_short'}), kwargs={'uuid': None}),
-    path(r'v1/run/<uuid:uuid>', StartJobView.as_view({'post': 'do_ingest'}))
+    re_path(r'^(?P<version>(v1|v2))/', include(router.urls)),
+    re_path(r'^(?P<version>(v1|v2))/run/<shortuuid:short_uuid>$', StartJobView.as_view({'post': 'do_ingest_short'}), kwargs={'uuid': None}),
+    re_path(r'^(?P<version>(v1|v2))/run/<uuid:uuid>$', StartJobView.as_view({'post': 'do_ingest'}))
 ]
