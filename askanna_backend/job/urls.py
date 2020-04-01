@@ -34,13 +34,13 @@ jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
     re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
-    re_path(
-        r"^(?P<version>(v1|v2))/run/<shortuuid:short_uuid>$",
+    path(
+        r"v1/run/<shortuuid:short_uuid>",
         StartJobView.as_view({"post": "do_ingest_short"}),
         kwargs={"uuid": None},
     ),
-    re_path(
-        r"^(?P<version>(v1|v2))/run/<uuid:uuid>$",
+    path(
+        r"v1/run/<uuid:uuid>",
         StartJobView.as_view({"post": "do_ingest"}),
     ),
 ]
