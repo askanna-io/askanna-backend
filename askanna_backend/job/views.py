@@ -81,7 +81,7 @@ class StartJobView(viewsets.GenericViewSet):
                 data={
                     "message_type": "error",
                     "message": "The JSON is not valid, please check and try again",
-                    "detail": e,
+                    "detail": str(e),
                 },
                 status=400,
             )
@@ -123,7 +123,8 @@ class StartJobView(viewsets.GenericViewSet):
                 "run_uuid": jobrun.short_uuid,
                 "created": jobrun.created,
                 "updated": jobrun.modified,
-                "next_url": "https://beta-api.askanna.io/v1/status/{}".format(
+                "next_url": "https://{}/v1/status/{}".format(
+                    request.META['HTTP_HOST'],
                     jobrun.short_uuid
                 ),
             }
