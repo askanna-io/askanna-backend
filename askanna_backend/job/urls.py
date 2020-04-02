@@ -10,6 +10,7 @@ from job.views import (
     ProjectJobViewSet,
     JobRunView,
     JobJobRunView,
+    JobPayloadView
 )
 from project.urls import project_route, router as prouter
 from utils.urls import router
@@ -28,8 +29,20 @@ job_route = router.register(r"job", JobActionView, basename="job")
 #     basename="job-runs",
 #     parents_query_lookups=["jobdef__short_uuid"],
 # )
+job_route.register(
+    r"payload",
+    JobPayloadView,
+    basename='job-payload',
+    parents_query_lookups=["jobdef__short_uuid"]
+)
 
 jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
+jobrun_route.register(
+    r"payload",
+    JobPayloadView,
+    basename='jobrun-payload',
+    parents_query_lookups=["jobrun__short_uuid"]
+)
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),

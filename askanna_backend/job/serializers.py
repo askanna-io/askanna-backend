@@ -17,6 +17,17 @@ class StartJobSerializer(serializers.ModelSerializer):
         model = JobDef
         fields = '__all__'
 
+class JobPayloadSerializer(serializers.ModelSerializer):
+
+    project = serializers.SerializerMethodField('get_project')
+
+    def get_project(self, instance):
+        return str(instance.jobdef.uuid)
+
+    class Meta:
+        model = JobPayload
+        # fields = '__all__'
+        exclude = ['storage_location']
 
 class JobRunSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField("get_version")
@@ -26,14 +37,20 @@ class JobRunSerializer(serializers.ModelSerializer):
     runner = serializers.SerializerMethodField("get_runner")
     jobid = serializers.SerializerMethodField("get_jobid")
 
+    payload = serializers.SerializerMethodField("get_payload")
+
     stdout = serializers.SerializerMethodField("get_stdout")
+
+    def get_payload(self, instance):
+        payload = JobPayloadSerializer(instance.payload, many=False)
+        return payload.data
 
     def get_stdout(self, instance):
         return instance.output.stdout
 
     def get_jobid(self, instance):
-        # FIXME: this is to fix empty jobids
-        return instance.short_uuid
+        # FIXME: this is to fix empty jobids from unran Celery jobs
+        return instance.jobid
 
     def get_runner(self, instance):
         # FIXME: replace with actual values
@@ -66,9 +83,14 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_user(self, instance):
         # FIXME: replace with actual user information
+        if instance.owner:
+            return {
+                "name": instance.owner,
+                "uuid": instance.owner.pk,
+            }
         return {
-            "name": "Anna",
-            "uuid": "5555-5555-5555-5555",
+            "name": None,
+            "uuid": None,
         }
     class Meta:
         model = JobRun
