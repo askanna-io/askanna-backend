@@ -69,11 +69,12 @@ class StartJobView(viewsets.GenericViewSet):
         # print(request.FILES)
 
         # validate whether request.data is really a json structure
+        if 'Content-Length' not in request.headers.keys():
+            raise ParseError(detail="'Content-Length' HTTP-header is required")
         try:
             assert isinstance(request.data, dict), "JSON not valid, please check and try again"
         except Exception as e:
-            print(e)
-            raise ParseError(detail="JSON not valid, please check and try again")
+            raise e
 
         # create new JobPayload
         job_pl = JobPayload.objects.create(
