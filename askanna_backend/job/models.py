@@ -229,6 +229,7 @@ class JobDef(BaseModel):
         return self.name
 
     class Meta:
+        ordering = ['-created']
         verbose_name = 'Job Definition'
         verbose_name_plural = 'Job Definitions'
 
@@ -261,16 +262,17 @@ class JobPayload(SlimBaseModel):
     jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
                                to_field='uuid',
                                related_name='payload')
-    payload = JSONField(blank=True, null=True)
-
-    active = models.BooleanField(default=True)
+    # Storage location can also be a bucket location
+    # In case of local storage, always relative to the PROJECTS_ROOT/payloads, never an abspath
+    storage_location = models.CharField(max_length=1000, null=True, blank=True)
 
     # FIXME: see what name to use, since there might be a conflict with
     # the permission system.
     # FIXME: replace with reference to User Object.
-    owner = models.CharField(max_length=100, blank=True, null=True)
+    owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
 
     class Meta:
+        ordering = ['-created']
         verbose_name = 'Job Payload'
         verbose_name_plural = 'Job Payloads'
 
@@ -302,6 +304,7 @@ class JobRun(BaseModel):
     owner = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
+        ordering = ['-created']
         verbose_name = 'Job Run'
         verbose_name_plural = 'Job Runs'
 

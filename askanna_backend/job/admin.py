@@ -21,7 +21,11 @@ class JobDefAdmin(admin.ModelAdmin):
 
 @admin.register(JobPayload)
 class JobPayloadAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'jobdef', 'created']
+    list_display = ['uuid', 'jobdef', 'created', 'owner']
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid"]
 
 
 @admin.register(JobRun)
