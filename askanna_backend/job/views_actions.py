@@ -88,7 +88,14 @@ class StartJobView(viewsets.GenericViewSet):
             jobdef.project.uuid.hex,
             job_pl.short_uuid
         ]
-        job_pl.storage_location=os.path.join(*store_path)
+
+        relative_storepath = [
+            jobdef.project.uuid.hex,
+            job_pl.short_uuid,
+            'payload.json'
+        ]
+
+        job_pl.storage_location = os.path.join(*relative_storepath)
         job_pl.save()
 
         # store incoming data as payload (in file format)
