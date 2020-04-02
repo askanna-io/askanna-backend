@@ -98,7 +98,7 @@ class JobRunTestSerializer(serializers.BaseSerializer):
           number, so it's better if we paginate this.
     """
     def to_representation(self, instance):
-        jobpayload = JobPayload.objects.get(uuid=instance.payload)
+        jobpayload = instance.payload
         return {
             'uuid': instance.uuid,
             'payload': jobpayload.payload,
