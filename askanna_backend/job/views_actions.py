@@ -7,6 +7,7 @@ from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import APIException, ParseError
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
@@ -68,20 +69,36 @@ class StartJobView(viewsets.GenericViewSet):
         # print(request.FILES)
 
         # validate whether request.data is really a json structure
+        try:
+            assert isinstance(request.data, dict), "JSON not valid, please check and try again"
+        except Exception as e:
+            print(e)
+            raise ParseError(detail="JSON not valid, please check and try again")
 
         # create new JobPayload
         job_pl = JobPayload.objects.create(
             jobdef=jobdef,
-            payload=request.data or {},
-            owner=1,  # FIXME: do a lookup on request.user
+            storage_location='',
+            owner=request.user
         )
 
-        # store incoming data as payload (in file format)
         store_path = [
             settings.PROJECTS_ROOT,
+            'payloads',
             jobdef.project.uuid.hex,
             job_pl.short_uuid
         ]
+
+        relative_storepath = [
+            jobdef.project.uuid.hex,
+            job_pl.short_uuid,
+            'payload.json'
+        ]
+
+        job_pl.storage_location = os.path.join(*relative_storepath)
+        job_pl.save()
+
+        # store incoming data as payload (in file format)
         os.makedirs(os.path.join(*store_path), exist_ok=True)
         with open(os.path.join(*store_path, 'payload.json'), "w") as f:
             f.write(json.dumps(request.data))
