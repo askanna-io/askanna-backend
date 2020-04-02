@@ -271,6 +271,8 @@ class JobPayload(SlimBaseModel):
     # FIXME: replace with reference to User Object.
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
 
+    def __str__(self):
+        return str(self.uuid)
     class Meta:
         ordering = ['-created']
         verbose_name = 'Job Payload'
