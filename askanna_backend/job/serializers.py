@@ -123,7 +123,7 @@ class JobRunTestSerializer(serializers.BaseSerializer):
         jobpayload = instance.payload
         return {
             'uuid': instance.uuid,
-            'payload': jobpayload,
+            'payload': str(jobpayload),
             'status': instance.status,
             'runtime': instance.runtime,
             'memory': instance.memory,
