@@ -29,7 +29,7 @@ def forwards_func(apps, schema_editor):
         os.makedirs(os.path.join(*store_path), exist_ok=True)
         with open(os.path.join(*store_path, 'payload.json'), "w") as f:
             f.write(json.dumps(jobpayload.payload))
-        jobpayload.storage_location = os.path.join(relative_storepath)
+        jobpayload.storage_location = str(os.path.join(*relative_storepath))
         jobpayload.save()
 
 
