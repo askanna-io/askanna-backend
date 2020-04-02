@@ -40,7 +40,8 @@ class JobBase(object):
 
             # Get the active payload for the given JobDef
             try:
-                self.jobpayload = self.jobdef.payload.filter(active=True).get()
+                # tmp fix until we have a default payload set
+                self.jobpayload = self.jobdef.payload.last()
             except MultipleObjectsReturned:
                 raise Exception("Custom: error when attaching the payload, too many objects")
 
@@ -52,7 +53,7 @@ class JobBase(object):
             # execution of the next run.
             if not self.jobrun:
                 self.jobrun = JobRun.objects.create(jobdef=self.jobdef,
-                                                    payload=self.jobpayload.uuid)
+                                                    payload=self.jobpayload)
                 # return True # probably a mistake to return bool
                 return
 

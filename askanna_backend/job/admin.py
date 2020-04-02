@@ -11,8 +11,12 @@ from job.models import (
 
 @admin.register(JobDef)
 class JobDefAdmin(admin.ModelAdmin):
-    list_display = ['name', 'uuid', 'short_uuid', 'function', 'project', 'created']
-    list_display_links = ('name', 'uuid', 'short_uuid',)
+    list_display = ["name", "uuid", "short_uuid", "function", "project", "created"]
+    list_display_links = (
+        "name",
+        "uuid",
+        "short_uuid",
+    )
 
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
@@ -21,7 +25,7 @@ class JobDefAdmin(admin.ModelAdmin):
 
 @admin.register(JobPayload)
 class JobPayloadAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'jobdef', 'created', 'owner']
+    list_display = ["uuid", "jobdef", "created", "owner"]
 
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
@@ -30,9 +34,23 @@ class JobPayloadAdmin(admin.ModelAdmin):
 
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'jobid', 'jobdef', 'payload', 'status', 'runtime', 'memory', 'created']
+    list_display = [
+        "uuid",
+        "jobid",
+        "jobdef",
+        "payload",
+        "status",
+        "runtime",
+        "memory",
+        "created",
+        "owner",
+    ]
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid", "owner"]
 
 
 @admin.register(JobOutput)
 class JobOutputAdmin(admin.ModelAdmin):
-    list_display = ['uuid', 'jobdef', 'return_payload', 'exit_code', 'created']
+    list_display = ["uuid", "jobdef", "return_payload", "exit_code", "created"]

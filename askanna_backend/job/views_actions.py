@@ -45,9 +45,9 @@ class StartJobView(viewsets.GenericViewSet):
         filter_kwargs = {}
         query_val = self.kwargs.get("uuid", None)
         if query_val:
-            filter_kwargs = {'uuid': query_val}
+            filter_kwargs = {"uuid": query_val}
         else:
-            filter_kwargs = {'short_uuid': self.kwargs.get('short_uuid')}
+            filter_kwargs = {"short_uuid": self.kwargs.get("short_uuid")}
         obj = get_object_or_404(queryset, **filter_kwargs)
         return obj
 
@@ -69,31 +69,38 @@ class StartJobView(viewsets.GenericViewSet):
         # print(request.FILES)
 
         # validate whether request.data is really a json structure
-        if 'Content-Length' not in request.headers.keys():
+        if "Content-Length" not in request.headers.keys():
             raise ParseError(detail="'Content-Length' HTTP-header is required")
         try:
-            assert isinstance(request.data, dict), "JSON not valid, please check and try again"
+            assert isinstance(
+                request.data, dict
+            ), "JSON not valid, please check and try again"
         except Exception as e:
-            raise e
+            return Response(
+                data={
+                    "message_type": "error",
+                    "message": "The JSON is not valid, please check and try again",
+                    "detail": e,
+                },
+                status=400
+            )
 
         # create new JobPayload
         job_pl = JobPayload.objects.create(
-            jobdef=jobdef,
-            storage_location='',
-            owner=request.user
+            jobdef=jobdef, storage_location="", owner=request.user
         )
 
         store_path = [
             settings.PROJECTS_ROOT,
-            'payloads',
+            "payloads",
             jobdef.project.uuid.hex,
-            job_pl.short_uuid
+            job_pl.short_uuid,
         ]
 
         relative_storepath = [
             jobdef.project.uuid.hex,
             job_pl.short_uuid,
-            'payload.json'
+            "payload.json",
         ]
 
         job_pl.storage_location = os.path.join(*relative_storepath)
@@ -101,11 +108,11 @@ class StartJobView(viewsets.GenericViewSet):
 
         # store incoming data as payload (in file format)
         os.makedirs(os.path.join(*store_path), exist_ok=True)
-        with open(os.path.join(*store_path, 'payload.json'), "w") as f:
+        with open(os.path.join(*store_path, "payload.json"), "w") as f:
             f.write(json.dumps(request.data))
 
         # create new Jobrun
-        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl.uuid)
+        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl)
 
         # return the JobRun id
         return Response(
@@ -115,7 +122,9 @@ class StartJobView(viewsets.GenericViewSet):
                 "run_uuid": jobrun.short_uuid,
                 "created": jobrun.created,
                 "updated": jobrun.modified,
-                "next_url": "https://beta-api.askanna.io/v1/status/{}".format(jobrun.short_uuid),
+                "next_url": "https://beta-api.askanna.io/v1/status/{}".format(
+                    jobrun.short_uuid
+                ),
             }
         )
 
@@ -199,11 +208,9 @@ class JobRunView(viewsets.ModelViewSet):
     serializer_class = JobRunSerializer
 
 
-class JobJobRunView(
-    HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
     serializer_class = JobRunSerializer
-
 
 
 class ProjectJobViewSet(
