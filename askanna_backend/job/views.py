@@ -221,6 +221,24 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = JobPayloadSerializer
     permission_classes = [IsAuthenticated]
 
+    # overwrite the default view and serializer for detail page
+    # We will retrieve the original sent payload from the filesystem and serve as JSON
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        store_path = [
+            settings.PROJECTS_ROOT,
+            "payloads",
+            instance.storage_location
+        ]
+
+        with open(os.path.join(*store_path)) as f:
+            return Response(json.loads(f.read()))
+        return Response({
+            "message_type": "error",
+            "message": "Payload was not found"
+        }, status=404)
+
 
 class ProjectJobViewSet(
     HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet

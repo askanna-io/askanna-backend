@@ -26,7 +26,8 @@ class JobPayloadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobPayload
-        fields = '__all__'
+        # fields = '__all__'
+        exclude = ['storage_location']
 
 class JobRunSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField("get_version")
@@ -36,7 +37,13 @@ class JobRunSerializer(serializers.ModelSerializer):
     runner = serializers.SerializerMethodField("get_runner")
     jobid = serializers.SerializerMethodField("get_jobid")
 
+    payload = serializers.SerializerMethodField("get_payload")
+
     stdout = serializers.SerializerMethodField("get_stdout")
+
+    def get_payload(self, instance):
+        payload = JobPayloadSerializer(instance.payload, many=False)
+        return payload.data
 
     def get_stdout(self, instance):
         return instance.output.stdout
