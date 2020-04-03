@@ -204,9 +204,10 @@ PACKAGES_ROOT = str(STORAGE_ROOT("packages"))
 UPLOAD_ROOT = str(STORAGE_ROOT("upload"))
 BLOB_ROOT = str(STORAGE_ROOT("blob"))
 PROJECTS_ROOT = str(STORAGE_ROOT("projects"))
+PAYLOADS_ROOT = str(STORAGE_ROOT.path("projects").path("payloads"))
 
 # Create the folders if not exists
-for folder in [PACKAGES_ROOT, UPLOAD_ROOT, BLOB_ROOT, PROJECTS_ROOT]:
+for folder in [PACKAGES_ROOT, UPLOAD_ROOT, BLOB_ROOT, PROJECTS_ROOT, PAYLOADS_ROOT]:
     if not os.path.isdir(folder):
         os.makedirs(folder, exist_ok=True)
 
