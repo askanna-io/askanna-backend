@@ -1,7 +1,7 @@
 import json
-import uuid
 import random
 import string
+import uuid
 
 from django.core.exceptions import MultipleObjectsReturned
 
@@ -87,27 +87,9 @@ class JobBase(object):
             # FIXME: this is an exception
             raise Exception("Custom: cannot use this without uuid")
 
-        # check if the uuid passed is for the same active payload
-        if self.jobpayload.uuid == uuid and self.jobpayload.active:
+        # check if the uuid passed is for the same payload
+        if self.jobpayload.uuid == uuid:
             return True
-        elif self.jobpayload.uuid == uuid and not self.jobpayload.active:
-            # get the current active, set it to false and activate the
-            # current one.
-            current_active = self.jobdef.payload.get(active=True)
-            current_active.active = False
-            current_active.save()
-            self.jobpayload.active = True
-            self.jobpayload.save()
-            return True
-
-        # set current active payload to false
-        self.jobpayload.active = False
-        self.jobpayload.save()
-
-        # Retrieve the payload with the proper uuid
-        new_payload = self.jobdef.payload.get(uuid=uuid)
-        new_payload.active = True
-        new_payload.save()
 
     def new_payload(self, payload, active=True):
         """
@@ -124,16 +106,12 @@ class JobBase(object):
             raise Exception("Only accept dictionary payloads for now")
 
         new_payload = JobPayload.objects.create(jobdef=self.jobdef,
-                                                payload=payload,
-                                                active=active,
+                                                payload=payload
                                                 owner=self.jobdef.owner)
 
         # get the current payload object and set active to False
         # also if active is true, attach payload to instance
         if active:
-            self.jobpayload.active = False
-            self.jobpayload.save()
-
             # replace payload
             self.jobpayload = new_payload
 
@@ -159,7 +137,7 @@ class JobBase(object):
         """
         if self.dirty:
             new_jobrun = JobRun.objects.create(jobdef=self.jobdef,
-                                               payload=self.jobpayload.uuid)
+                                               payload=self.jobpayload)
 
             self.jobrun = new_jobrun
 
