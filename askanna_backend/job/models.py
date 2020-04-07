@@ -265,9 +265,13 @@ class JobPayload(SlimBaseModel):
     jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
                                to_field='uuid',
                                related_name='payload')
-    # Storage location can also be a bucket location
-    # In case of local storage, always relative to the PROJECTS_ROOT/payloads, never an abspath
-    storage_location = models.CharField(max_length=1000, null=True, blank=True)
+
+    @property
+    def storage_location(self):
+        return os.path.join(
+            self.jobdef.project.uuid.hex,
+            self.short_uuid
+        )
 
     # FIXME: see what name to use, since there might be a conflict with
     # the permission system.
@@ -287,8 +291,7 @@ class JobPayload(SlimBaseModel):
 
         store_path = [
             settings.PAYLOADS_ROOT,
-            self.jobdef.project.uuid.hex,
-            self.short_uuid,
+            self.storage_location,
             "payload.json"
         ]
 

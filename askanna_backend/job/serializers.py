@@ -26,8 +26,7 @@ class JobPayloadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobPayload
-        # fields = '__all__'
-        exclude = ['storage_location']
+        fields = '__all__'
 
 class JobRunSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField("get_version")

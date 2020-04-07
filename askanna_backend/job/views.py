@@ -88,23 +88,13 @@ class StartJobView(viewsets.GenericViewSet):
 
         # create new JobPayload
         job_pl = JobPayload.objects.create(
-            jobdef=jobdef, storage_location="", owner=request.user
+            jobdef=jobdef, owner=request.user
         )
 
         store_path = [
             settings.PAYLOADS_ROOT,
-            jobdef.project.uuid.hex,
-            job_pl.short_uuid,
+            job_pl.storage_location
         ]
-
-        relative_storepath = [
-            jobdef.project.uuid.hex,
-            job_pl.short_uuid,
-            "payload.json",
-        ]
-
-        job_pl.storage_location = os.path.join(*relative_storepath)
-        job_pl.save()
 
         # store incoming data as payload (in file format)
         os.makedirs(os.path.join(*store_path), exist_ok=True)
@@ -243,9 +233,9 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
         instance = self.get_object()
 
         store_path = [
-            settings.PROJECTS_ROOT,
-            "payloads",
-            instance.storage_location
+            settings.PAYLOADS_ROOT,
+            instance.storage_location,
+            "payload.json"
         ]
 
         with open(os.path.join(*store_path)) as f:
