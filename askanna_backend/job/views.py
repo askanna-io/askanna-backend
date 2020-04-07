@@ -92,8 +92,7 @@ class StartJobView(viewsets.GenericViewSet):
         )
 
         store_path = [
-            settings.PROJECTS_ROOT,
-            "payloads",
+            settings.PAYLOADS_ROOT,
             jobdef.project.uuid.hex,
             job_pl.short_uuid,
         ]
@@ -139,11 +138,27 @@ class JobActionView(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], name="Start job")
     def start(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
+        """
+        Based on the incoming short_uuid, we retrieve the JobDef
+        Then we start and retrieve the JobRun for it.
+        """
         job = get_job(short_uuid)
-        job.start()
-        return Response({"status": "started"})
+        jobrun = job.start()
+
+        # return the JobRun id
+        return Response(
+            {
+                "message_type": "status",
+                "status": "queued",
+                "run_uuid": jobrun.short_uuid,
+                "created": jobrun.created,
+                "updated": jobrun.modified,
+                "next_url": "https://{}/v1/status/{}".format(
+                    request.META['HTTP_HOST'],
+                    jobrun.short_uuid
+                ),
+            }
+        )
 
     @action(detail=True, methods=["post"], name="Stop job")
     def stop(self, request, short_uuid, pk=None, **kwargs):

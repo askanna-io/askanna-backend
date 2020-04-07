@@ -106,6 +106,7 @@ class CeleryJob(JobInterface, JobBase):
         # https://celery.readthedocs.io/en/latest/userguide/tasks.html#database-transactions
         on_commit(lambda: self.signature.delay())
 
+        return self.jobrun
         # store the id of the celery task
         #self.jobrun.jobid = celery_task.id
         #self.jobrun.status = 'SUBMITTED'
