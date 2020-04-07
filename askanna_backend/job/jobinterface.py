@@ -106,7 +106,7 @@ class JobBase(object):
             raise Exception("Only accept dictionary payloads for now")
 
         new_payload = JobPayload.objects.create(jobdef=self.jobdef,
-                                                payload=payload
+                                                payload=payload,
                                                 owner=self.jobdef.owner)
 
         # get the current payload object and set active to False
