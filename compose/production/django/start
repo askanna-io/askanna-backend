@@ -12,5 +12,7 @@ python manage.py loaddata fixtures/workspace.json
 python manage.py loaddata fixtures/projects.json
 python manage.py loaddata fixtures/jobdef.json
 
+python manage.py install_fixture
+
 python manage.py collectstatic --noinput
 /usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app
