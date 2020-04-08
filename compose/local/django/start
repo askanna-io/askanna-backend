@@ -12,5 +12,6 @@ python manage.py loaddata fixtures/workspace.json
 python manage.py loaddata fixtures/projects.json
 python manage.py loaddata fixtures/jobdef.json
 
+python manage.py install_fixture
 
 python manage.py runserver_plus 0.0.0.0:8000

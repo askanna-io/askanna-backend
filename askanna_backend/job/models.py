@@ -17,21 +17,21 @@ from job.settings import JOB_BACKENDS  # noqa
 
 ## Environment Options  # noqa
 ENV_CHOICES = (
-    ('python2.7', 'python2.7'),
-    ('python3.5', 'python3.5'),
-    ('python3.6', 'python3.6'),
-    ('python3.7', 'python3.7'),
+    ("python2.7", "python2.7"),
+    ("python3.5", "python3.5"),
+    ("python3.6", "python3.6"),
+    ("python3.7", "python3.7"),
 )
 
 ## Status of a job execution  # noqa
 JOB_STATUS = (
-    ('SUBMITTED', 'SUBMITTED'),
-    ('COMPLETED', 'COMPLETED'),
-    ('PENDING', 'PENDING'),
-    ('PAUSED', 'PAUSED'),
-    ('IN_PROGRESS', 'IN_PROGRESS'),
-    ('FAILED', 'FAILED'),
-    ('SUCCESS', 'SUCCESS'),
+    ("SUBMITTED", "SUBMITTED"),
+    ("COMPLETED", "COMPLETED"),
+    ("PENDING", "PENDING"),
+    ("PAUSED", "PAUSED"),
+    ("IN_PROGRESS", "IN_PROGRESS"),
+    ("FAILED", "FAILED"),
+    ("SUCCESS", "SUCCESS"),
 )
 
 
@@ -175,10 +175,11 @@ class Job(JobInterface):
     or we can just use functions like `get_job()` to retrieve the proper
     Class based on the backed used in the relevant `JobDef` object.
     """
-    def __init__(self, *args, **kwargs):
-        self.pk = kwargs.get('pk', None)
 
-        self.uuid = kwargs.get('uuid', None)
+    def __init__(self, *args, **kwargs):
+        self.pk = kwargs.get("pk", None)
+
+        self.uuid = kwargs.get("uuid", None)
 
         if self.uuid:
             try:
@@ -208,17 +209,33 @@ class JobDef(BaseModel):
           different clients are very likely to use the same name, and this
           should be fine. The uniqueness is based on the uuid.
     """
+
     name = models.CharField(max_length=50)
     project = models.ForeignKey(
-        "project.Project", on_delete=models.SET_NULL, blank=True, null=True)
-    function = models.CharField(max_length=100, blank=True, null=True,
-                                help_text="Function to execute")
-    backend = models.CharField(max_length=100, choices=JOB_BACKENDS,
-                               default='job.celerybackend.CeleryJob')
-    visible = models.BooleanField(default=True)  # FIXME: add rationale and default value
+        "project.Project", on_delete=models.SET_NULL, blank=True, null=True
+    )
+    default_payload = models.ForeignKey(
+        "job.JobPayload",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        help_text="Default payload to use when not provided",
+        related_name="jobdefault",
+    )
 
-    environment = models.CharField(max_length=20, choices=ENV_CHOICES,
-                                   default='python3.5')
+    function = models.CharField(
+        max_length=100, blank=True, null=True, help_text="Function to execute"
+    )
+    backend = models.CharField(
+        max_length=100, choices=JOB_BACKENDS, default="job.celerybackend.CeleryJob"
+    )
+    visible = models.BooleanField(
+        default=True
+    )  # FIXME: add rationale and default value
+
+    environment = models.CharField(
+        max_length=20, choices=ENV_CHOICES, default="python3.5"
+    )
 
     # FIXME: Should env_variables be in the JobDef, or JobPayload?
     env_variables = models.TextField(blank=True, null=True)
@@ -232,9 +249,9 @@ class JobDef(BaseModel):
         return self.name
 
     class Meta:
-        ordering = ['-created']
-        verbose_name = 'Job Definition'
-        verbose_name_plural = 'Job Definitions'
+        ordering = ["-created"]
+        verbose_name = "Job Definition"
+        verbose_name_plural = "Job Definitions"
 
     @property
     def status(self):
@@ -262,16 +279,14 @@ class JobPayload(SlimBaseModel):
         - set the active flag to reflect on the payload that is set to
           active for the given JobDef.
     """
-    jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
-                               to_field='uuid',
-                               related_name='payload')
+
+    jobdef = models.ForeignKey(
+        "job.JobDef", on_delete=models.CASCADE, to_field="uuid", related_name="payload"
+    )
 
     @property
     def storage_location(self):
-        return os.path.join(
-            self.jobdef.project.uuid.hex,
-            self.short_uuid
-        )
+        return os.path.join(self.jobdef.project.uuid.hex, self.short_uuid)
 
     # FIXME: see what name to use, since there might be a conflict with
     # the permission system.
@@ -289,20 +304,15 @@ class JobPayload(SlimBaseModel):
             # FIXME: refactor job system to provide filetype
         """
 
-        store_path = [
-            settings.PAYLOADS_ROOT,
-            self.storage_location,
-            "payload.json"
-        ]
+        store_path = [settings.PAYLOADS_ROOT, self.storage_location, "payload.json"]
 
-        with open(os.path.join(*store_path), 'r') as f:
+        with open(os.path.join(*store_path), "r") as f:
             return json.loads(f.read())
 
-
     class Meta:
-        ordering = ['-created']
-        verbose_name = 'Job Payload'
-        verbose_name_plural = 'Job Payloads'
+        ordering = ["-created"]
+        verbose_name = "Job Payload"
+        verbose_name_plural = "Job Payloads"
 
 
 class JobRun(BaseModel):
@@ -314,8 +324,8 @@ class JobRun(BaseModel):
         - JobRun should have a 1:1 relationship, since there doesn't seem to
           be any reason where we should have a JobRun withouth a JobOutput.
     """
-    jobdef = models.ForeignKey('job.JobDef', on_delete=models.CASCADE,
-                               to_field='uuid')
+
+    jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, null=True)
 
     # Clarification, jobid holds the job-id of Celery
@@ -332,9 +342,9 @@ class JobRun(BaseModel):
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
 
     class Meta:
-        ordering = ['-created']
-        verbose_name = 'Job Run'
-        verbose_name_plural = 'Job Runs'
+        ordering = ["-created"]
+        verbose_name = "Job Run"
+        verbose_name_plural = "Job Runs"
 
 
 class JobOutput(SlimBaseModel):
@@ -348,11 +358,14 @@ class JobOutput(SlimBaseModel):
           for a given jobdef, withouth having to pass through the JobRun
           object.
     """
+
     jobdef = models.UUIDField(blank=True, null=True, editable=False)
-    jobrun = models.OneToOneField('job.JobRun',
-                                  on_delete=models.DO_NOTHING,
-                                  to_field='uuid',
-                                  related_name='output')
+    jobrun = models.OneToOneField(
+        "job.JobRun",
+        on_delete=models.DO_NOTHING,
+        to_field="uuid",
+        related_name="output",
+    )
     exit_code = models.IntegerField(default=0)
     return_payload = JSONField(blank=True, null=True)
     stdout = JSONField(blank=True, null=True)
@@ -363,5 +376,5 @@ class JobOutput(SlimBaseModel):
     owner = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
-        verbose_name = 'Job Output'
-        verbose_name_plural = 'Job Outputs'
+        verbose_name = "Job Output"
+        verbose_name_plural = "Job Outputs"
