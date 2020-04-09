@@ -32,6 +32,12 @@ class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
     class Meta:
         abstract = True
 
+class SlimBaseForAuthModel(SlimBaseModel):
+
+    uuid = models.UUIDField(db_index=True, editable=False, default=uuid.uuid4)
+    class Meta:
+        abstract = True
+
 class BaseModel(TitleDescriptionModel, SlimBaseModel):
     class Meta:
         abstract = True
