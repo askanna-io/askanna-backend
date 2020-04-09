@@ -214,13 +214,10 @@ class JobDef(BaseModel):
     project = models.ForeignKey(
         "project.Project", on_delete=models.SET_NULL, blank=True, null=True
     )
-    default_payload = models.ForeignKey(
-        "job.JobPayload",
-        on_delete=models.SET_NULL,
+    default_payload = models.UUIDField(
         blank=True,
         null=True,
-        help_text="Default payload to use when not provided",
-        related_name="jobdefault",
+        help_text="Default payload to use when not provided"
     )
 
     function = models.CharField(

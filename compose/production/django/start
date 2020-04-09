@@ -11,6 +11,7 @@ python manage.py loaddata fixtures/accounts.json
 python manage.py loaddata fixtures/workspace.json
 python manage.py loaddata fixtures/projects.json
 python manage.py loaddata fixtures/jobdef.json
+python manage.py loaddata fixtures/jobpayload.json
 
 python manage.py install_fixture
 
