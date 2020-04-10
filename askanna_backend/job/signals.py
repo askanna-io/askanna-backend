@@ -1,5 +1,12 @@
+import os
+import sys
+
+from celery import shared_task
+
+from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils.module_loading import import_string
 
 from job.models import (
     JobDef,
@@ -8,6 +15,42 @@ from job.models import (
     JobOutput,
 )
 
+from package.models import Package
+
+@shared_task(bind=True)
+def start_jobrun(self, jobrun_uuid):
+    print(f"Received message to start jobrun {jobrun_uuid}")
+    # print(self.request)
+
+    # First save current Celery id to the jobid field
+    jr = JobRun.objects.get(pk=jobrun_uuid)
+    jr.jobid = self.request.id
+    jr.save(update_fields=['jobid'])
+
+    # What is the jobdef specified?
+    jd = jr.jobdef
+    pl = jr.payload
+
+    # print("JobRun", jr)
+    # print("JobDef", jd)
+    # print("Payload", pl, pl.storage_location)
+    # print("Project", jd.project) # needed to get latest packages
+    # print("Function", jd.function) # function to execute
+
+    # FIXME: when versioning is in, point to version in JobRun
+    package = Package.objects.filter(project=jd.project).last()
+
+    # compose the path to the package in the project
+    # This points to the blob location where the package is
+    package_path = os.path.join( settings.BLOB_ROOT, str(package.uuid) )
+    # Add this to the python path for this session, to resolve to the package code
+    sys.path.insert(0, package_path)
+
+    print("*"*30)
+    function_name = jd.function
+    user_function = import_string(function_name)
+    print(user_function(**pl.payload))
+    print("*"*30)
 
 # @receiver(post_save, sender=JobDef)
 # def create_job_payload_for_new_jobdef_signal(sender, instance, created, **kwargs):  # noqa
@@ -28,21 +71,30 @@ from job.models import (
 #             raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
 
 
-@receiver(post_save, sender=JobRun)
-def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs):  # noqa
-    """
-    Create a JobOutput everytime a JobRun gets created.
+# @receiver(post_save, sender=JobRun)
+# def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs):  # noqa
+#     """
+#     Create a JobOutput everytime a JobRun gets created.
 
-    FIXME:
-        - check with the owner approach, if the property name or field changes
-          in relation to the permission system approach, we will have to
-          adjust accordingly.
+#     FIXME:
+#         - check with the owner approach, if the property name or field changes
+#           in relation to the permission system approach, we will have to
+#           adjust accordingly.
+#     """
+#     if created:
+#         try:
+#             JobOutput.objects.create(jobrun=instance,
+#                                      jobdef=instance.jobdef.uuid,
+#                                      owner=instance.owner)
+#         except Exception as exc:
+#             # FIXME: need custom exception for more context
+#             raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
+
+@receiver(post_save, sender=JobRun)
+def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
+    """
+    Every time a new record is created, send the new job to celery
     """
     if created:
-        try:
-            JobOutput.objects.create(jobrun=instance,
-                                     jobdef=instance.jobdef.uuid,
-                                     owner=instance.owner)
-        except Exception as exc:
-            # FIXME: need custom exception for more context
-            raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
+        # print(instance.uuid, instance.short_uuid)
+        start_jobrun.delay(instance.uuid)
