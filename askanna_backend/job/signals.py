@@ -20,7 +20,6 @@ from package.models import Package
 @shared_task(bind=True)
 def start_jobrun(self, jobrun_uuid):
     print(f"Received message to start jobrun {jobrun_uuid}")
-    # print(self.request)
 
     # First save current Celery id to the jobid field
     jr = JobRun.objects.get(pk=jobrun_uuid)
@@ -31,12 +30,6 @@ def start_jobrun(self, jobrun_uuid):
     jd = jr.jobdef
     pl = jr.payload
 
-    # print("JobRun", jr)
-    # print("JobDef", jd)
-    # print("Payload", pl, pl.storage_location)
-    # print("Project", jd.project) # needed to get latest packages
-    # print("Function", jd.function) # function to execute
-
     # FIXME: when versioning is in, point to version in JobRun
     package = Package.objects.filter(project=jd.project).last()
 
@@ -46,11 +39,25 @@ def start_jobrun(self, jobrun_uuid):
     # Add this to the python path for this session, to resolve to the package code
     sys.path.insert(0, package_path)
 
-    print("*"*30)
-    function_name = jd.function
-    user_function = import_string(function_name)
-    print(user_function(**pl.payload))
-    print("*"*30)
+    sys_modules_before = list(sys.modules)
+
+    try:
+        print("*"*30)
+        function_name = jd.function
+        user_function = import_string(function_name)
+        print(user_function(**pl.payload))
+        print("*"*30)
+    except Exception as e:
+        print(e)
+
+    sys_modules_after = list(sys.modules)
+    added_keys = list(set(sys_modules_after) - set(sys_modules_before))
+    
+    for k in added_keys:
+        sys.modules.pop(k)
+
+    sys.path.remove(package_path)
+
 
 # @receiver(post_save, sender=JobDef)
 # def create_job_payload_for_new_jobdef_signal(sender, instance, created, **kwargs):  # noqa
