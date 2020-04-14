@@ -53,6 +53,8 @@ class Package(models.Model):
         # do something to determine full size, here also no full unpack needed, we need to read the metadata of the zip archive
         return 0
 
+    class Meta:
+        ordering = ['created_at']
 
 class ChunkedPackagePart(models.Model):
     uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)

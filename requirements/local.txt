@@ -29,3 +29,7 @@ django-coverage-plugin==1.6.0  # https://github.com/nedbat/django_coverage_plugi
 pytest-django==3.7.0  # https://github.com/pytest-dev/pytest-django
 
 bumpversion~=0.5.3  # https://github.com/peritus/bumpversion
+
+# For autoreload on code change
+argh
+watchdog
