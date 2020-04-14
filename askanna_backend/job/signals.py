@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.module_loading import import_string
+from django.db.transaction import on_commit
 
 from job.models import (
     JobDef,
@@ -24,7 +25,8 @@ def start_jobrun(self, jobrun_uuid):
     # First save current Celery id to the jobid field
     jr = JobRun.objects.get(pk=jobrun_uuid)
     jr.jobid = self.request.id
-    jr.save(update_fields=['jobid'])
+    jr.status = 'PENDING'
+    jr.save(update_fields=['jobid', 'status'])
 
     # What is the jobdef specified?
     jd = jr.jobdef
@@ -104,4 +106,4 @@ def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
     """
     if created:
         # print(instance.uuid, instance.short_uuid)
-        start_jobrun.delay(instance.uuid)
+        on_commit(lambda: start_jobrun.delay(instance.uuid))
