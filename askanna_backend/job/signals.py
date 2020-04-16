@@ -80,24 +80,25 @@ def start_jobrun(self, jobrun_uuid):
 #             raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
 
 
-# @receiver(post_save, sender=JobRun)
-# def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs):  # noqa
-#     """
-#     Create a JobOutput everytime a JobRun gets created.
+@receiver(post_save, sender=JobRun)
+def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs):  # noqa
+    """
+    Create a JobOutput everytime a JobRun gets created.
 
-#     FIXME:
-#         - check with the owner approach, if the property name or field changes
-#           in relation to the permission system approach, we will have to
-#           adjust accordingly.
-#     """
-#     if created:
-#         try:
-#             JobOutput.objects.create(jobrun=instance,
-#                                      jobdef=instance.jobdef.uuid,
-#                                      owner=instance.owner)
-#         except Exception as exc:
-#             # FIXME: need custom exception for more context
-#             raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
+    FIXME:
+        - check with the owner approach, if the property name or field changes
+          in relation to the permission system approach, we will have to
+          adjust accordingly.
+    """
+    if created:
+        try:
+            JobOutput.objects.create(jobrun=instance,
+                                     jobdef=instance.jobdef,
+                                     owner=instance.owner)
+        except Exception as exc:
+            # FIXME: need custom exception for more context
+            raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
+
 
 @receiver(post_save, sender=JobRun)
 def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
