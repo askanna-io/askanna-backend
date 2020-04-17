@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 
 from askanna_backend.users.forms import UserChangeForm, UserCreationForm
 
+from users.models import Membership
+
 User = get_user_model()
 
 
@@ -17,3 +19,5 @@ class UserAdmin(auth_admin.UserAdmin):
     ) + auth_admin.UserAdmin.fieldsets
     list_display = ["username", "name", "uuid", "short_uuid", "is_superuser"]
     search_fields = ["name", "uuid", "short_uuid"]
+
+admin.site.register(Membership)
