@@ -215,12 +215,14 @@ class JobRunView(viewsets.ModelViewSet):
     serializer_class = JobRunSerializer
     permission_classes = [IsAuthenticated]
 
+    # FIXME: limit queryset to jobs the user can see, apply membership filter
 
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
     serializer_class = JobRunSerializer
     permission_classes = [IsAuthenticated]
 
+    # FIXME: limit queryset to jobs the user can see, apply membership filter
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobPayload.objects.all()
