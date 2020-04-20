@@ -27,6 +27,7 @@ class MySchema(AutoSchema):
 class WorkspaceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Workspace.objects.all()
     serializer_class = WorkspaceSerializer
+    lookup_field = "short_uuid"
     schema = MySchema()
     permission_classes = [IsAuthenticated]
 
