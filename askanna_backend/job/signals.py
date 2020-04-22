@@ -93,7 +93,7 @@ def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs)
     if created:
         try:
             JobOutput.objects.create(jobrun=instance,
-                                     jobdef=instance.jobdef,
+                                     jobdef=instance.jobdef.uuid,
                                      owner=instance.owner)
         except Exception as exc:
             # FIXME: need custom exception for more context
