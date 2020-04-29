@@ -357,3 +357,11 @@ REST_FRAMEWORK = {
 
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
 }
+
+# Django large payload receipt
+
+# https://docs.djangoproject.com/en/2.2/ref/settings/#std:setting-DATA_UPLOAD_MAX_MEMORY_SIZE
+# https://github.com/encode/django-rest-framework/issues/4760#issuecomment-562059446
+# allow 250M to be used in request.body
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024*1024*250
+
