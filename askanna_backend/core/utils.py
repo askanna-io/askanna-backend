@@ -1,4 +1,5 @@
 from collections import Mapping
+import os
 from uuid import uuid4
 
 from django.urls import register_converter
@@ -128,3 +129,16 @@ class ShortUUIDConverter:
         return value
 
 register_converter(ShortUUIDConverter, 'shortuuid')
+
+
+
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
+def get_config(filename:str) -> dict:
+    # FIXME: put this into a general askanna-utils to read askanna.yml
+    config = load(open(os.path.expanduser(filename), 'r'), Loader=Loader)
+    return config

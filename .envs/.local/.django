@@ -20,3 +20,4 @@ DATABASE_URL=postgresql://anna:pass@postgres/askanna_backend
 
 ASKANNA_HOST_TMP_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/tmp
 ASKANNA_HOST_BLOB_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/blob
+ASKANNA_HOST_PAYLOAD_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/projects/payloads
