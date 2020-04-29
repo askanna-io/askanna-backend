@@ -281,6 +281,11 @@ class JobPayload(SlimBaseModel):
         "job.JobDef", on_delete=models.CASCADE, to_field="uuid", related_name="payload"
     )
 
+
+    @property
+    def full_storage_location(self):
+        return os.path.join(settings.PAYLOADS_ROOT, self.storage_location, 'payload.json')
+
     @property
     def storage_location(self):
         return os.path.join(self.jobdef.project.uuid.hex, self.short_uuid)

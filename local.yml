@@ -16,6 +16,7 @@ services:
       # - rabbitmq_stats
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres

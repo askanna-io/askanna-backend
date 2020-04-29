@@ -17,3 +17,6 @@ CELERY_FLOWER_PASSWORD=KtQ40CpbtICJHvZ1xrfgJLYs9NEuCLXHgIeA0bwtxnH0ycxtLzD1AayJJ
 
 
 DATABASE_URL=postgresql://anna:pass@postgres/askanna_backend
+
+ASKANNA_HOST_TMP_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/tmp
+ASKANNA_HOST_BLOB_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/blob
