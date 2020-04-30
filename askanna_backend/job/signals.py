@@ -155,13 +155,15 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     os.makedirs(tmp_dir)
     entrypoint_file = os.path.join(tmp_dir, 'askanna-entrypoint.sh')
     print(entrypoint_file)
+
+    # FIXME: remember to use jinja2 for templating, this is easier for now
     with open(entrypoint_file, 'w') as f:
         f.write("#!/bin/bash\n")
         f.write("cd /code\n")
         f.write(f"echo 'askanna-runner for project {pr.title} running on {pr.short_uuid}'\n")
         for command in job_commands:
             print_command = command.replace('"', '\"')
-            command = command.replace("{{ PAYLOAD_PATH }}", '$ASKANNA_PAYLOAD')
+            command = command.replace("{{ PAYLOAD_PATH }}", '$ASKANNA_PAYLOAD_PATH')
             f.write(f"echo '{print_command}'\n")
             f.write( command )
             f.write( "\n")
@@ -217,7 +219,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     env_variables = {"SECRET": 1}
     env_variables.update(
         **{
-            "ASKANNA_PAYLOAD": "/input/payload.json",
+            "ASKANNA_PAYLOAD_PATH": "/input/payload.json",
         }
     )
 
