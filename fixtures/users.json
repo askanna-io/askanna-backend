@@ -10,7 +10,7 @@
             "username": "anna",
             "first_name": "Anna",
             "last_name": "AskAnna",
-            "email": "devops@askanna.io",
+            "email": "devops+anna@askanna.io",
             "is_staff": true,
             "is_active": true,
             "date_joined": "2020-01-01T00:00:00.000Z",
