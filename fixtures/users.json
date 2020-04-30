@@ -52,7 +52,7 @@
         "model": "users.user",
         "pk": 3,
         "fields": {
-            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$OFNVU3Y2bklWdTRO$jTeAB/BiBjFz7PVwlAzGgw",
+            "password": "argon2$argon2i$v=19$m=512,t=2,p=2$OFNVU3Y2bklWdTRO$jTeAB/BiBjFz7PVwlAzGg0",
             "last_login": null,
             "is_superuser": true,
             "username": "devops",
