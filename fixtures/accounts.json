@@ -4,7 +4,7 @@
         "pk": 1,
         "fields": {
             "user": 1,
-            "email": "devops@askanna.io",
+            "email": "devops+anna@askanna.io",
             "verified": true,
             "primary": true
         }
@@ -24,7 +24,7 @@
         "pk": 3,
         "fields": {
             "user": 3,
-            "email": "antonis@askanna.io",
+            "email": "devops@askanna.io",
             "verified": true,
             "primary": true
         }
