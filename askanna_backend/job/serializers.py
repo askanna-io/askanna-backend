@@ -29,6 +29,7 @@ class JobPayloadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class JobRunSerializer(serializers.ModelSerializer):
+    package = serializers.SerializerMethodField("get_package")
     version = serializers.SerializerMethodField("get_version")
     project = serializers.SerializerMethodField("get_project")
     owner = serializers.SerializerMethodField("get_user")
@@ -39,6 +40,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     payload = serializers.SerializerMethodField("get_payload")
 
     stdout = serializers.SerializerMethodField("get_stdout")
+    jobdef = serializers.SerializerMethodField("get_jobdef")
 
     def get_payload(self, instance):
         payload = JobPayloadSerializer(instance.payload, many=False)
@@ -46,6 +48,13 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_stdout(self, instance):
         return instance.output.stdout
+
+    def get_jobdef(self, instance):
+        jobdef = instance.jobdef
+        return {
+            "name": jobdef.name,
+            "uuid": jobdef.short_uuid,
+        }
 
     def get_jobid(self, instance):
         # FIXME: this is to fix empty jobids from unran Celery jobs
@@ -73,6 +82,20 @@ class JobRunSerializer(serializers.ModelSerializer):
             "uuid": "2222-3333-2222-2222",
         }
 
+    def get_package(self, instance):
+        # FIXME: replace with actual data after models refactor
+        # package = instance.package
+        package = instance.project.packages.last()
+        if package:
+            return {
+                "name": package.name,
+                "uuid": package.uuid,
+            }
+        return {
+            "name": "latest",
+            "uuid": None
+        }
+
     def get_project(self, instance):
         project = instance.jobdef.project
         return {
@@ -81,11 +104,10 @@ class JobRunSerializer(serializers.ModelSerializer):
         }
 
     def get_user(self, instance):
-        # FIXME: replace with actual user information
         if instance.owner:
             return {
                 "name": instance.owner,
-                "uuid": instance.owner.pk,
+                "uuid": instance.owner.short_uuid,
             }
         return {
             "name": None,
