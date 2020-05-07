@@ -212,6 +212,7 @@ class JobActionView(viewsets.ModelViewSet):
 
 class JobRunView(viewsets.ModelViewSet):
     queryset = JobRun.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsAuthenticated]
 
@@ -219,6 +220,7 @@ class JobRunView(viewsets.ModelViewSet):
 
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsAuthenticated]
 
@@ -252,6 +254,7 @@ class ProjectJobViewSet(
     HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
 ):
     queryset = JobDef.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
 
