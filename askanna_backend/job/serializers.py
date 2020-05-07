@@ -80,7 +80,7 @@ class JobRunSerializer(serializers.ModelSerializer):
         package = instance.jobdef.project.packages.last()
         if package:
             return {
-                "name": package.name,
+                "name": package.filename,
                 "uuid": package.uuid,
             }
         return {
