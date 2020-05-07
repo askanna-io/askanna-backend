@@ -23,12 +23,12 @@ project_route.register(
 )
 
 job_route = router.register(r"job", JobActionView, basename="job")
-# job_route.register(
-#     r"runs",
-#     JobJobRunView,
-#     basename="job-runs",
-#     parents_query_lookups=["jobdef__short_uuid"],
-# )
+job_route.register(
+    r"runs",
+    JobJobRunView,
+    basename="job-runs",
+    parents_query_lookups=["jobdef__short_uuid"],
+)
 job_route.register(
     r"payload",
     JobPayloadView,

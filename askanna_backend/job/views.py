@@ -18,7 +18,6 @@ from core.mixins import HybridUUIDMixin
 from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun
 from job.serializers import (
     JobSerializer,
-    JobRunTestSerializer,
     StartJobSerializer,
     JobRunSerializer,
     JobPayloadSerializer,
@@ -197,12 +196,6 @@ class JobActionView(viewsets.ModelViewSet):
         job = get_job(short_uuid)
         # job.result()
         return Response({"result": job.result()})
-
-    @action(detail=True, methods=["get", "post"], name="Job Runs")
-    def runs(self, request, short_uuid, pk=None, **kwargs):
-        job = get_job(short_uuid)
-        runs = JobRunTestSerializer(job.runs(), many=True)
-        return Response(runs.data)
 
     @action(detail=True, methods=["post"], name="Job Status")
     def status(self, request, short_uuid, pk=None, **kwargs):
