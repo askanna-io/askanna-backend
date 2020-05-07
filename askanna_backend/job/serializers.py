@@ -29,6 +29,7 @@ class JobPayloadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class JobRunSerializer(serializers.ModelSerializer):
+    package = serializers.SerializerMethodField("get_package")
     version = serializers.SerializerMethodField("get_version")
     project = serializers.SerializerMethodField("get_project")
     owner = serializers.SerializerMethodField("get_user")
@@ -71,6 +72,20 @@ class JobRunSerializer(serializers.ModelSerializer):
         return {
             "name": "latest",
             "uuid": "2222-3333-2222-2222",
+        }
+
+    def get_package(self, instance):
+        # FIXME: replace with actual data after models refactor
+        # package = instance.package
+        package = instance.project.packages.last()
+        if package:
+            return {
+                "name": package.name,
+                "uuid": package.uuid,
+            }
+        return {
+            "name": "latest",
+            "uuid": None
         }
 
     def get_project(self, instance):
