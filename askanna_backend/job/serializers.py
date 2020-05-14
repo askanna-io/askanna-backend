@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from job.models import JobDef, JobRun, JobPayload
+from job.models import JobDef, JobRun, JobPayload, JobArtifact
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -77,6 +77,7 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_version(self, instance):
         # FIXME: replace with actual version information
+        # stick version to the package version
         return {
             "name": "latest",
             "uuid": "2222-3333-2222-2222",
@@ -116,6 +117,34 @@ class JobRunSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobRun
         fields = "__all__"
+
+
+
+
+class JobArtifactSerializer(serializers.ModelSerializer):
+
+    project = serializers.SerializerMethodField('get_project')
+    jobrun = serializers.SerializerMethodField('get_jobrun')
+
+    def get_project(self, instance):
+        project = instance.jobdef.project
+        return {
+            "name": project.name,
+            "uuid": project.short_uuid,
+        }
+
+    def get_jobrun(self, instance):
+        jobrun = instance.jobrun
+        return {
+            "name": jobrun.name,
+            "uuid": jobrun.short_uuid,
+        }
+
+    class Meta:
+        model = JobArtifact
+        fields = '__all__'
+
+
 
 
 class JobRunTestSerializer(serializers.BaseSerializer):

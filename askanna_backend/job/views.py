@@ -3,6 +3,7 @@ import os
 import uuid
 
 from django.conf import settings
+from django.http import StreamingHttpResponse
 from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
@@ -15,8 +16,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from core.mixins import HybridUUIDMixin
-from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun
+from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact
 from job.serializers import (
+    JobArtifactSerializer,
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
@@ -259,3 +261,25 @@ class ProjectJobViewSet(
         serializer_kwargs["context"] = self.get_serializer_context()
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
+
+class JobArtifactView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = JobArtifact.objects.all()
+    serializer_class = JobArtifactSerializer
+    permission_classes = [IsAuthenticated]
+
+    # overwrite the default view and serializer for detail page
+    # We will retrieve the artifact and send binary
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        try:
+            response = StreamingHttpResponse(instance.read, content_type="")
+            response['Content-Disposition'] = "attachment; filename=artifact.zip"
+            response['Content-Length'] = instance.size
+        except Exception as e:
+            pass
+
+        return Response({
+            "message_type": "error",
+            "message": "Artifact was not found"
+        }, status=404)
