@@ -44,5 +44,6 @@ class JobOutput(SlimBaseModel):
     owner = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
+        ordering = ["-created"]
         verbose_name = "Job Output"
         verbose_name_plural = "Job Outputs"

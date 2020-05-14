@@ -1,4 +1,5 @@
 from .const import JOB_STATUS, ENV_CHOICES
+from .jobartifact import JobArtifact
 from .jobdef import JobDef, JOB_BACKENDS
 from .jobpayload import JobPayload
 from .joboutput import JobOutput

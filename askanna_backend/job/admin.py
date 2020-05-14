@@ -2,6 +2,7 @@
 from django.contrib import admin
 
 from job.models import (
+    JobArtifact,
     JobDef,
     JobPayload,
     JobRun,
@@ -32,6 +33,14 @@ class JobPayloadAdmin(admin.ModelAdmin):
     search_fields = ["uuid"]
 
 
+@admin.register(JobArtifact)
+class JobArtifactAdmin(admin.ModelAdmin):
+    list_display = ["uuid", "jobdef", "jobrun", "created"]
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid", "short_uuid"]
+
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):
     list_display = [
@@ -53,4 +62,8 @@ class JobRunAdmin(admin.ModelAdmin):
 
 @admin.register(JobOutput)
 class JobOutputAdmin(admin.ModelAdmin):
-    list_display = ["uuid", "jobdef", "return_payload", "exit_code", "created"]
+    list_display = ["uuid", "jobdef", "jobrun", "exit_code", "created"]
+
+    date_hierarchy = "created"
+    list_filter = ("created", "exit_code")
+    search_fields = ["uuid", "short_uuid", "owner"]

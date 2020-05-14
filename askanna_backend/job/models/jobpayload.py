@@ -11,20 +11,7 @@ from core.models import BaseModel, SlimBaseModel
 
 class JobPayload(SlimBaseModel):
     """
-    Let's assume that we use this to store the payload for a given JobDef.
-
-    Needs to be separare from JobRun, since the same `JobPayload` can be
-    used in multiple JobRuns.
-
-    FIXME:
-        - check the form and structure of the "payload". We can argue that
-          we only need to care of passing a serialized structure to the job.
-          The name of this structure is always `payload` and that object
-          will need to be deserialized within the job itself if needed.
-        - should we create functions here for tinkering with payloads?
-          like serialization/deserialization, type checking, etc...
-        - set the active flag to reflect on the payload that is set to
-          active for the given JobDef.
+    Input for a JobRun
     """
 
     jobdef = models.ForeignKey(
@@ -35,9 +22,6 @@ class JobPayload(SlimBaseModel):
     def storage_location(self):
         return os.path.join(self.jobdef.project.uuid.hex, self.short_uuid)
 
-    # FIXME: see what name to use, since there might be a conflict with
-    # the permission system.
-    # FIXME: replace with reference to User Object.
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
 
     def __str__(self):

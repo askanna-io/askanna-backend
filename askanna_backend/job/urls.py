@@ -10,6 +10,7 @@ from job.views import (
     ProjectJobViewSet,
     JobRunView,
     JobJobRunView,
+    JobArtifactView,
     JobPayloadView
 )
 from project.urls import project_route, router as prouter
@@ -41,6 +42,12 @@ jobrun_route.register(
     r"payload",
     JobPayloadView,
     basename='jobrun-payload',
+    parents_query_lookups=["jobrun__short_uuid"]
+)
+jobrun_route.register(
+    r"artifact",
+    JobArtifactView,
+    basename='jobrun-artifact',
     parents_query_lookups=["jobrun__short_uuid"]
 )
 
