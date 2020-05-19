@@ -5,6 +5,7 @@ from django.conf import settings
 from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from rest_framework_extensions.mixins import NestedViewSetMixin
@@ -12,47 +13,27 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
-from core.views import BaseChunkedPartViewSet
-from package.listeners import *
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
+# from package.listeners import *
 from package.models import Package, ChunkedPackagePart
 from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail
 from package.signals import package_upload_finish
 
 
-class PackageViewSet(mixins.CreateModelMixin,
+class PackageViewSet(BaseUploadFinishMixin, mixins.CreateModelMixin,
                         mixins.ListModelMixin,
                         mixins.RetrieveModelMixin,
                         viewsets.GenericViewSet):
     """
-    List all apckages and allow to finish upload action
+    List all packages and allow to finish upload action
     """
-
     queryset = Package.objects.all()
     serializer_class = PackageSerializer
+    permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=["post"])
-    def finish_upload(self, request, **kwargs):
-        package = self.get_object()
-
-        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
-        target_location = FileSystemStorage(location=settings.PACKAGES_ROOT)
-        r = ResumableFile(storage_location, request.POST)
-        if r.is_complete:
-            target_location.save(r.filename, r)
-            package.storage_location=r.filename
-            package.created_by = request.user
-            package.save(update_fields=['storage_location', 'created_by'])
-            r.delete_chunks()
-
-            package_upload_finish.send(
-                sender=self.__class__, postheaders=dict(request.POST.lists()), package=package
-            )
-
-        # FIXME: make return message relevant
-        response = Response({"message": "package upload finished"}, status=200)
-        response["Cache-Control"] = "no-cache"
-        return response
-
+    upload_target_location = settings.PACKAGES_ROOT
+    upload_finished_signal = package_upload_finish
+    upload_finished_message = "package upload finished"
 
 class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
     """
@@ -60,6 +41,7 @@ class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
     """
     queryset = ChunkedPackagePart.objects.all()
     serializer_class = ChunkedPackagePartSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin, 
@@ -67,6 +49,7 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
 
     queryset = Package.objects.all()
     serializer_class = PackageSerializer
+    permission_classes = [IsAuthenticated]
 
     # overwrite the default view and serializer for detail page
     # we want to use an other serializer for this.

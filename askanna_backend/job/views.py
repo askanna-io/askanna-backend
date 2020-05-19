@@ -19,7 +19,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
-from core.views import BaseChunkedPartViewSet
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact, ChunkedArtifactPart
 from job.serializers import (
     ChunkedArtifactPartSerializer,
@@ -284,7 +284,7 @@ class ProjectJobViewSet(
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
 
-class JobArtifactView(NestedViewSetMixin, mixins.CreateModelMixin,
+class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin, mixins.CreateModelMixin,
                         mixins.ListModelMixin,
                         mixins.RetrieveModelMixin,
                         viewsets.GenericViewSet):
@@ -294,6 +294,9 @@ class JobArtifactView(NestedViewSetMixin, mixins.CreateModelMixin,
     queryset = JobArtifact.objects.all()
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
+    upload_target_location = settings.ARTIFACTS_ROOT
+    upload_finished_signal = artifact_upload_finish
+    upload_finished_message = "artifact upload finished"
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the artifact and send binary
@@ -313,31 +316,6 @@ class JobArtifactView(NestedViewSetMixin, mixins.CreateModelMixin,
             "message_type": "error",
             "message": "Artifact was not found"
         }, status=404)
-
-    @action(detail=True, methods=["post"])
-    def finish_upload(self, request, **kwargs):
-        obj = self.get_object()
-
-        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
-        target_location = FileSystemStorage(location=settings.ARTIFACTS_ROOT)
-        r = ResumableFile(storage_location, request.POST)
-        if r.is_complete:
-            target_location.save(r.filename, r)
-            obj.storage_location = r.filename
-            obj.created_by = request.user
-            obj.save(update_fields=['storage_location', 'created_by'])
-            r.delete_chunks()
-
-            artifact_upload_finish.send(
-                sender=self.__class__, 
-                postheaders=dict(request.POST.lists()), 
-                obj=obj
-            )
-
-        # FIXME: make return message relevant
-        response = Response({"message": "artifact upload finished"}, status=200)
-        response["Cache-Control"] = "no-cache"
-        return response
 
 
 class ChunkedArtifactViewSet(BaseChunkedPartViewSet):

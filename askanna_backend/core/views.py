@@ -67,3 +67,33 @@ class BaseChunkedPartViewSet(HybridUUIDMixin, NestedViewSetMixin,
             "uuid": str(chunkpart.uuid), 
             "message": "chunk stored"
             }, status=200)
+
+class BaseUploadFinishMixin:
+    upload_target_location = ""
+    upload_finished_signal = None
+    upload_finished_message = "upload completed"
+
+    @action(detail=True, methods=["post"])
+    def finish_upload(self, request, **kwargs):
+        obj = self.get_object()
+
+        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
+        target_location = FileSystemStorage(location=self.upload_target_location)
+        r = ResumableFile(storage_location, request.POST)
+        if r.is_complete:
+            target_location.save(r.filename, r)
+            obj.storage_location = r.filename
+            obj.created_by = request.user
+            obj.save(update_fields=['storage_location', 'created_by'])
+            r.delete_chunks()
+
+            if self.upload_finished_signal:
+                self.upload_finished_signal.send(
+                    sender=self.__class__, 
+                    postheaders=dict(request.POST.lists()), 
+                    obj=obj
+                )
+
+        response = Response({"message": self.upload_finished_message}, status=200)
+        response["Cache-Control"] = "no-cache"
+        return response
