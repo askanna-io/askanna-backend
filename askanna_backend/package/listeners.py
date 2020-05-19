@@ -9,14 +9,8 @@ from package.signals import package_upload_finish
 
 @receiver(package_upload_finish)
 def handle_upload(sender, signal, postheaders, package, **kwargs):
-    # print(sender)
-    # print(signal)
-    # print(postheaders)
-    # print(kwargs)
-    # print("DISPATCH UPLOAD PROCESSING TO WORKER")
-
     # extract from package_root to blob_root under the package uuid
-
+    # this is for the fileview
     source_location = settings.PACKAGES_ROOT
     target_location = settings.BLOB_ROOT
 

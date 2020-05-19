@@ -54,7 +54,7 @@ class Package(models.Model):
         return 0
 
     class Meta:
-        ordering = ['created_at']
+        ordering = ['-created_at']
 
 class ChunkedPackagePart(models.Model):
     uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
@@ -67,3 +67,6 @@ class ChunkedPackagePart(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True)
+
+    class Meta:
+        ordering = ["-created_at"]
