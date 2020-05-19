@@ -22,6 +22,8 @@ class JobPayload(SlimBaseModel):
     def storage_location(self):
         return os.path.join(self.jobdef.project.uuid.hex, self.short_uuid)
 
+    size = models.PositiveIntegerField(editable=False, default=0)
+    lines = models.PositiveIntegerField(editable=False, default=0)
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
 
     def __str__(self):

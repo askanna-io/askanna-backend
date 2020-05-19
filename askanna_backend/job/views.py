@@ -3,7 +3,7 @@ import os
 import uuid
 
 from django.conf import settings
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
@@ -88,8 +88,18 @@ class StartJobView(viewsets.GenericViewSet):
             )
 
         # create new JobPayload
+        size = len(request.data)
+        lines = 0
+        try:
+            lines = len(json.dumps(json.loads(request.data), indent=1).splitlines())
+        except:
+            pass
+
         job_pl = JobPayload.objects.create(
-            jobdef=jobdef, owner=request.user
+            jobdef=jobdef, 
+            size=size,
+            lines=lines,
+            owner=request.user
         )
 
         store_path = [
@@ -231,18 +241,30 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        store_path = [
-            settings.PAYLOADS_ROOT,
-            instance.storage_location,
-            "payload.json"
-        ]
+        if instance:
+            return Response(instance.payload)
 
-        with open(os.path.join(*store_path)) as f:
-            return Response(json.loads(f.read()))
         return Response({
             "message_type": "error",
             "message": "Payload was not found"
         }, status=404)
+
+    @action(detail=True, methods=["get"], name="Get partial payload")
+    def get_partial(self, request, *args, **kwargs):
+        """
+        Slice the payload with offset+limit lines
+
+        offset: defaults to 0
+        limit: defaults to 500
+        """
+        offset = request.query_params.get('offset', 0)
+        limit = request.query_params.get('limit', 500)
+
+        instance = self.get_object()
+
+        json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
+        lines = json_obj[offset:limit]
+        return HttpResponse("\n".join(lines), content_type='application/json')
 
 
 class ProjectJobViewSet(
