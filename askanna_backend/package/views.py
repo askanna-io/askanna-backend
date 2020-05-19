@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 
+from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,9 +18,12 @@ from package.serializers import PackageSerializer, ChunkedPackagePartSerializer,
 from package.signals import package_upload_finish
 
 
-class PackageViewSet(viewsets.ModelViewSet):
+class PackageViewSet(mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        viewsets.GenericViewSet):
     """
-    A simple ViewSet for viewing and editing accounts.
+    List all apckages and allow to finish upload action
     """
 
     queryset = Package.objects.all()
@@ -49,7 +53,11 @@ class PackageViewSet(viewsets.ModelViewSet):
         return response
 
 
-class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
+class ChunkedPackagePartViewSet(HybridUUIDMixin, NestedViewSetMixin, 
+                        mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        viewsets.GenericViewSet):
     """
     A simple ViewSet for viewing and editing accounts.
     """
@@ -74,7 +82,7 @@ class ChunkedPackagePartViewSet(viewsets.ModelViewSet):
         return response
 
     @action(detail=True, methods=["post", "get"])
-    def chunk_receiver(self, request, **kwargs):
+    def chunk(self, request, **kwargs):
         """
         Receives one chunk in the POST request 
 

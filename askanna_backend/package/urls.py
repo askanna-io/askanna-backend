@@ -6,17 +6,16 @@ from package.views import (
     ProjectPackageViewSet,
 )
 from project.views import ProjectListViewShort
+from project.urls import project_route, router as prouter
 
 router = DefaultRouter()
-(
-    router
-    .register(r"project", ProjectListViewShort, "project")
-    .register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project__short_uuid"])
-)
 
 router.register(r"package", PackageViewSet)
-router.register(r"chunkpackagepart", ChunkedPackagePartViewSet)
+
+project_route.register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project__short_uuid"])
+project_route.register(r"packagechunk", ChunkedPackagePartViewSet, "project-packagechunk", parents_query_lookups=["project__short_uuid"])
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
+    re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
 ]
