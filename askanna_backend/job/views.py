@@ -88,8 +88,18 @@ class StartJobView(viewsets.GenericViewSet):
             )
 
         # create new JobPayload
+        size = len(request.data)
+        lines = 0
+        try:
+            lines = len(json.dumps(json.loads(request.data), indent=1).splitlines())
+        except:
+            pass
+
         job_pl = JobPayload.objects.create(
-            jobdef=jobdef, owner=request.user
+            jobdef=jobdef, 
+            size=size,
+            lines=lines,
+            owner=request.user
         )
 
         store_path = [
