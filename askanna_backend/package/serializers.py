@@ -13,29 +13,13 @@ from package.models import Package, ChunkedPackagePart
 class PackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Package
-        fields = (
-            "uuid",
-            "filename",
-            "storage_location",
-            "project",
-            "size",
-            "created_by",
-            "created_at",
-        )
+        fields = "__all__"
 
 
 class ChunkedPackagePartSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChunkedPackagePart
-        fields = (
-            "uuid",
-            "filename",
-            "size",
-            "file_no",
-            "is_last",
-            "package",
-            "created_at",
-        )
+        fields = "__all__"
 
 
 class PackageSerializerDetail(serializers.ModelSerializer):
@@ -44,17 +28,7 @@ class PackageSerializerDetail(serializers.ModelSerializer):
 
     class Meta:
         model = Package
-        fields = (
-            "uuid",
-            "filename",
-            "storage_location",
-            "cdn_base_url",
-            "project",
-            "size",
-            "created_by",
-            "created_at",
-            "files",
-        )
+        fields = "__all__"
 
     def get_base_url(self, instance):
         """

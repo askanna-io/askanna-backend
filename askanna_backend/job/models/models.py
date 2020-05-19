@@ -108,6 +108,8 @@ class Job(JobInterface):
 
         self.uuid = kwargs.get("uuid", None)
 
+        from job.models import JobDef
+
         if self.uuid:
             try:
                 jobdef = JobDef.objects.get(uuid=self.uuid)
