@@ -1,9 +1,6 @@
 from django.conf.urls import url, include, re_path
 from django.urls import path, re_path, register_converter
 
-from rest_framework.urlpatterns import format_suffix_patterns
-from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
-
 from job.views import (
     JobActionView,
     StartJobView,
@@ -11,7 +8,8 @@ from job.views import (
     JobRunView,
     JobJobRunView,
     JobArtifactView,
-    JobPayloadView
+    JobPayloadView,
+    ChunkedArtifactViewSet,
 )
 from project.urls import project_route, router as prouter
 from utils.urls import router
@@ -33,22 +31,29 @@ job_route.register(
 job_route.register(
     r"payload",
     JobPayloadView,
-    basename='job-payload',
-    parents_query_lookups=["jobdef__short_uuid"]
+    basename="job-payload",
+    parents_query_lookups=["jobdef__short_uuid"],
 )
 
 jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
 jobrun_route.register(
     r"payload",
     JobPayloadView,
-    basename='jobrun-payload',
-    parents_query_lookups=["jobrun__short_uuid"]
+    basename="jobrun-payload",
+    parents_query_lookups=["jobrun__short_uuid"],
 )
-jobrun_route.register(
+artifact_route = jobrun_route.register(
     r"artifact",
     JobArtifactView,
-    basename='jobrun-artifact',
-    parents_query_lookups=["jobrun__short_uuid"]
+    basename="jobrun-artifact",
+    parents_query_lookups=["jobrun__short_uuid"],
+)
+
+artifact_route.register(
+    r"artifactchunk",
+    ChunkedArtifactViewSet,
+    basename="artifact-artifactchunk",
+    parents_query_lookups=["jobrun__short_uuid", "artifact__uuid"],
 )
 
 urlpatterns = [
@@ -59,8 +64,5 @@ urlpatterns = [
         StartJobView.as_view({"post": "do_ingest_short"}),
         kwargs={"uuid": None},
     ),
-    path(
-        r"v1/run/<uuid:uuid>",
-        StartJobView.as_view({"post": "do_ingest"}),
-    ),
+    path(r"v1/run/<uuid:uuid>", StartJobView.as_view({"post": "do_ingest"}),),
 ]

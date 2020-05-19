@@ -3,6 +3,7 @@ import os
 import uuid
 
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from django.http import StreamingHttpResponse, HttpResponse
 from drf_yasg import openapi
 
@@ -15,15 +16,20 @@ from rest_framework.parsers import MultiPartParser, FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from resumable.files import ResumableFile
+
 from core.mixins import HybridUUIDMixin
-from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact
+from core.views import BaseChunkedPartViewSet
+from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact, ChunkedArtifactPart
 from job.serializers import (
+    ChunkedArtifactPartSerializer,
     JobArtifactSerializer,
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
     JobPayloadSerializer,
 )
+from job.signals import artifact_upload_finish
 
 
 class StartJobView(viewsets.GenericViewSet):
@@ -63,12 +69,6 @@ class StartJobView(viewsets.GenericViewSet):
         We specificed the `lookup_field` to search for uuid.
         """
         jobdef = self.get_object()
-        # print(kwargs)
-        # print(request.data)
-        # print(request.POST)
-        # print(request.user)
-        # print(request.query_params)  # same as request.GET from django
-        # print(request.FILES)
 
         # validate whether request.data is really a json structure
         if "Content-Length" not in request.headers.keys():
@@ -284,7 +284,13 @@ class ProjectJobViewSet(
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
 
-class JobArtifactView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class JobArtifactView(NestedViewSetMixin, mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        viewsets.GenericViewSet):
+    """
+    List all artifacts and allow to finish upload action
+    """
     queryset = JobArtifact.objects.all()
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
@@ -300,8 +306,43 @@ class JobArtifactView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
             response['Content-Length'] = instance.size
         except Exception as e:
             pass
+        else:
+            return response
 
         return Response({
             "message_type": "error",
             "message": "Artifact was not found"
         }, status=404)
+
+    @action(detail=True, methods=["post"])
+    def finish_upload(self, request, **kwargs):
+        obj = self.get_object()
+
+        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
+        target_location = FileSystemStorage(location=settings.ARTIFACTS_ROOT)
+        r = ResumableFile(storage_location, request.POST)
+        if r.is_complete:
+            target_location.save(r.filename, r)
+            obj.storage_location = r.filename
+            obj.created_by = request.user
+            obj.save(update_fields=['storage_location', 'created_by'])
+            r.delete_chunks()
+
+            artifact_upload_finish.send(
+                sender=self.__class__, 
+                postheaders=dict(request.POST.lists()), 
+                obj=obj
+            )
+
+        # FIXME: make return message relevant
+        response = Response({"message": "artifact upload finished"}, status=200)
+        response["Cache-Control"] = "no-cache"
+        return response
+
+
+class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
+    """
+    Allow chunked uploading of artifacts
+    """
+    queryset = ChunkedArtifactPart.objects.all()
+    serializer_class = ChunkedArtifactPartSerializer

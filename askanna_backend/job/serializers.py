@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from job.models import JobDef, JobRun, JobPayload, JobArtifact
+from job.models import JobDef, JobRun, JobPayload, JobArtifact, ChunkedArtifactPart
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -145,6 +145,10 @@ class JobArtifactSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ChunkedArtifactPartSerializer(serializers.BaseSerializer):
+    class Meta:
+        model = ChunkedArtifactPart
+        fields = "__all__"
 
 
 class JobRunTestSerializer(serializers.BaseSerializer):
