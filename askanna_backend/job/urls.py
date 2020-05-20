@@ -53,7 +53,7 @@ artifact_route.register(
     r"artifactchunk",
     ChunkedArtifactViewSet,
     basename="artifact-artifactchunk",
-    parents_query_lookups=["jobrun__short_uuid", "artifact__uuid"],
+    parents_query_lookups=["artifact__jobrun__short_uuid", "artifact__uuid"],
 )
 
 urlpatterns = [

@@ -73,6 +73,10 @@ class BaseUploadFinishMixin:
     upload_finished_signal = None
     upload_finished_message = "upload completed"
 
+
+    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+        pass
+
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
         obj = self.get_object()
@@ -82,9 +86,7 @@ class BaseUploadFinishMixin:
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
             target_location.save(r.filename, r)
-            obj.storage_location = r.filename
-            obj.created_by = request.user
-            obj.save(update_fields=['storage_location', 'created_by'])
+            self.post_finish_upload_update_instance(request, obj, r)
             r.delete_chunks()
 
             if self.upload_finished_signal:
