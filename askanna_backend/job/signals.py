@@ -13,13 +13,16 @@ from django.utils.module_loading import import_string
 from django.db.transaction import on_commit
 
 from core.utils import get_config
+import django.dispatch
+
+artifact_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
+
 from job.models import (
     JobDef,
     JobRun,
     JobPayload,
     JobOutput,
 )
-
 from package.models import Package
 
 

@@ -207,6 +207,7 @@ HOST_BLOB_ROOT = str(STORAGE_ROOT("blob"))
 HOST_PAYLOAD_ROOT = str(STORAGE_ROOT.path("projects").path("payloads"))
 
 TMP_ROOT = str(STORAGE_ROOT("tmp"))
+ARTIFACTS_ROOT = str(STORAGE_ROOT("artifacts"))
 PACKAGES_ROOT = str(STORAGE_ROOT("packages"))
 UPLOAD_ROOT = str(STORAGE_ROOT("upload"))
 BLOB_ROOT = str(STORAGE_ROOT("blob"))
@@ -223,7 +224,7 @@ if env.str("ASKANNA_HOST_PAYLOAD_ROOT", None):
     HOST_PAYLOAD_ROOT = env.str("ASKANNA_HOST_PAYLOAD_ROOT")
 
 # Create the folders if not exists
-for folder in [PACKAGES_ROOT, UPLOAD_ROOT, BLOB_ROOT, PROJECTS_ROOT, PAYLOADS_ROOT, TMP_ROOT]:
+for folder in [ARTIFACTS_ROOT, PACKAGES_ROOT, UPLOAD_ROOT, BLOB_ROOT, PROJECTS_ROOT, PAYLOADS_ROOT, TMP_ROOT]:
     if not os.path.isdir(folder):
         os.makedirs(folder, exist_ok=True)
 

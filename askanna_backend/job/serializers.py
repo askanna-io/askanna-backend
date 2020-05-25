@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from job.models import JobDef, JobRun, JobPayload
+from job.models import JobDef, JobRun, JobPayload, JobArtifact, ChunkedArtifactPart
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -29,6 +29,7 @@ class JobPayloadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class JobRunSerializer(serializers.ModelSerializer):
+    package = serializers.SerializerMethodField("get_package")
     version = serializers.SerializerMethodField("get_version")
     project = serializers.SerializerMethodField("get_project")
     owner = serializers.SerializerMethodField("get_user")
@@ -39,6 +40,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     payload = serializers.SerializerMethodField("get_payload")
 
     stdout = serializers.SerializerMethodField("get_stdout")
+    jobdef = serializers.SerializerMethodField("get_jobdef")
 
     def get_payload(self, instance):
         payload = JobPayloadSerializer(instance.payload, many=False)
@@ -46,6 +48,13 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_stdout(self, instance):
         return instance.output.stdout
+
+    def get_jobdef(self, instance):
+        jobdef = instance.jobdef
+        return {
+            "name": jobdef.name,
+            "uuid": jobdef.short_uuid,
+        }
 
     def get_jobid(self, instance):
         # FIXME: this is to fix empty jobids from unran Celery jobs
@@ -68,9 +77,24 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_version(self, instance):
         # FIXME: replace with actual version information
+        # stick version to the package version
         return {
             "name": "latest",
             "uuid": "2222-3333-2222-2222",
+        }
+
+    def get_package(self, instance):
+        # FIXME: replace with actual data after models refactor
+        # package = instance.package
+        package = instance.jobdef.project.packages.last()
+        if package:
+            return {
+                "name": package.filename,
+                "uuid": package.uuid,
+            }
+        return {
+            "name": "latest",
+            "uuid": None
         }
 
     def get_project(self, instance):
@@ -81,11 +105,10 @@ class JobRunSerializer(serializers.ModelSerializer):
         }
 
     def get_user(self, instance):
-        # FIXME: replace with actual user information
         if instance.owner:
             return {
                 "name": instance.owner,
-                "uuid": instance.owner.pk,
+                "uuid": instance.owner.short_uuid,
             }
         return {
             "name": None,
@@ -93,6 +116,43 @@ class JobRunSerializer(serializers.ModelSerializer):
         }
     class Meta:
         model = JobRun
+        fields = "__all__"
+
+
+
+
+class JobArtifactSerializer(serializers.ModelSerializer):
+
+    project = serializers.SerializerMethodField('get_project')
+    # jobrun = serializers.SerializerMethodField('get_jobrun')
+
+    def get_project(self, instance):
+        project = instance.jobrun.jobdef.project
+        return {
+            "name": project.name,
+            "uuid": project.short_uuid,
+        }
+
+    def get_jobrun(self, instance):
+        jobrun = instance.jobrun
+        return {
+            "name": jobrun.name,
+            "uuid": jobrun.short_uuid,
+        }
+
+    class Meta:
+        model = JobArtifact
+        fields = "__all__"
+
+class JobArtifactSerializerForInsert(serializers.ModelSerializer):
+    class Meta:
+        model = JobArtifact
+        fields = "__all__"
+
+
+class ChunkedArtifactPartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChunkedArtifactPart
         fields = "__all__"
 
 
