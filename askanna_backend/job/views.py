@@ -90,10 +90,11 @@ class StartJobView(viewsets.GenericViewSet):
             )
 
         # create new JobPayload
-        size = len(request.data)
+        json_string = json.dumps(request.data)
+        size = len(json_string)
         lines = 0
         try:
-            lines = len(json.dumps(json.loads(request.data), indent=1).splitlines())
+            lines = len(json.dumps(request.data, indent=1).splitlines())
         except:
             pass
 
@@ -112,7 +113,7 @@ class StartJobView(viewsets.GenericViewSet):
         # store incoming data as payload (in file format)
         os.makedirs(os.path.join(*store_path), exist_ok=True)
         with open(os.path.join(*store_path, "payload.json"), "w") as f:
-            f.write(json.dumps(request.data))
+            f.write(json_string)
 
         # create new Jobrun
         jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl)
