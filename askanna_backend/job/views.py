@@ -3,10 +3,12 @@ import os
 import uuid
 
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from django.http import StreamingHttpResponse, HttpResponse
 from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, ParseError
 from rest_framework.generics import get_object_or_404
@@ -15,15 +17,21 @@ from rest_framework.parsers import MultiPartParser, FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from resumable.files import ResumableFile
+
 from core.mixins import HybridUUIDMixin
-from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
+from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact, ChunkedArtifactPart
 from job.serializers import (
+    ChunkedArtifactPartSerializer,
     JobArtifactSerializer,
+    JobArtifactSerializerForInsert,
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
     JobPayloadSerializer,
 )
+from job.signals import artifact_upload_finish
 
 
 class StartJobView(viewsets.GenericViewSet):
@@ -63,12 +71,6 @@ class StartJobView(viewsets.GenericViewSet):
         We specificed the `lookup_field` to search for uuid.
         """
         jobdef = self.get_object()
-        # print(kwargs)
-        # print(request.data)
-        # print(request.POST)
-        # print(request.user)
-        # print(request.query_params)  # same as request.GET from django
-        # print(request.FILES)
 
         # validate whether request.data is really a json structure
         if "Content-Length" not in request.headers.keys():
@@ -284,10 +286,39 @@ class ProjectJobViewSet(
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
 
-class JobArtifactView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin, 
+                        mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        viewsets.GenericViewSet):
+    """
+    List all artifacts and allow to finish upload action
+    """
     queryset = JobArtifact.objects.all()
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
+    upload_target_location = settings.ARTIFACTS_ROOT
+    upload_finished_signal = artifact_upload_finish
+    upload_finished_message = "artifact upload finished"
+
+
+    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+        pass
+
+    # overwrite create row, we need to add the jobrun
+    def create(self, request, *args, **kwargs):
+        jobrun = JobRun.objects.get(short_uuid=self.kwargs.get('parent_lookup_jobrun__short_uuid'))
+        data = request.data.copy()
+        data.update(**{
+            'jobrun': str(jobrun.pk),
+        })
+
+        serializer = JobArtifactSerializerForInsert(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the artifact and send binary
@@ -300,8 +331,32 @@ class JobArtifactView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
             response['Content-Length'] = instance.size
         except Exception as e:
             pass
+        else:
+            return response
 
         return Response({
             "message_type": "error",
             "message": "Artifact was not found"
         }, status=404)
+
+
+class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
+    """
+    Allow chunked uploading of artifacts
+    """
+    queryset = ChunkedArtifactPart.objects.all()
+    serializer_class = ChunkedArtifactPartSerializer
+
+    # overwrite create row, we need to add the jobrun
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data.update(**{
+            'artifact': self.kwargs.get('parent_lookup_artifact__uuid')
+        })
+        print(data)
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

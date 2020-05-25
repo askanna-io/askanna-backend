@@ -13,11 +13,6 @@ class JobArtifact(SlimBaseModel):
     """
     Output of a JobRun stored into an archive
     """
-
-    jobdef = models.ForeignKey(
-        "job.JobDef", on_delete=models.CASCADE, to_field="uuid", related_name="artifact"
-    )
-
     jobrun = models.ForeignKey(
         "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="artifact"
     )

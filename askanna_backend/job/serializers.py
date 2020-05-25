@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from job.models import JobDef, JobRun, JobPayload, JobArtifact
+from job.models import JobDef, JobRun, JobPayload, JobArtifact, ChunkedArtifactPart
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -124,10 +124,10 @@ class JobRunSerializer(serializers.ModelSerializer):
 class JobArtifactSerializer(serializers.ModelSerializer):
 
     project = serializers.SerializerMethodField('get_project')
-    jobrun = serializers.SerializerMethodField('get_jobrun')
+    # jobrun = serializers.SerializerMethodField('get_jobrun')
 
     def get_project(self, instance):
-        project = instance.jobdef.project
+        project = instance.jobrun.jobdef.project
         return {
             "name": project.name,
             "uuid": project.short_uuid,
@@ -142,9 +142,18 @@ class JobArtifactSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobArtifact
-        fields = '__all__'
+        fields = "__all__"
+
+class JobArtifactSerializerForInsert(serializers.ModelSerializer):
+    class Meta:
+        model = JobArtifact
+        fields = "__all__"
 
 
+class ChunkedArtifactPartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChunkedArtifactPart
+        fields = "__all__"
 
 
 class JobRunTestSerializer(serializers.BaseSerializer):

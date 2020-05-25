@@ -9,13 +9,16 @@ from django.dispatch import receiver
 from django.utils.module_loading import import_string
 from django.db.transaction import on_commit
 
+import django.dispatch
+
+artifact_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
+
 from job.models import (
     JobDef,
     JobRun,
     JobPayload,
     JobOutput,
 )
-
 from package.models import Package
 
 @shared_task(bind=True)
