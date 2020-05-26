@@ -14,7 +14,7 @@ from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
-# from package.listeners import *
+from package.listeners import *
 from package.models import Package, ChunkedPackagePart
 from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail
 from package.signals import package_upload_finish

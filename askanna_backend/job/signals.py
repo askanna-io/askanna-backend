@@ -11,6 +11,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.module_loading import import_string
 from django.db.transaction import on_commit
+from django.template.loader import render_to_string
+
 
 from core.utils import get_config
 import django.dispatch
@@ -86,7 +88,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     op = jr.output
 
     # FIXME: when versioning is in, point to version in JobRun
-    package = Package.objects.filter(project=pr).last()
+    package = Package.objects.filter(project=pr).order_by('-created').first()
 
     # compose the path to the package in the project
     # This points to the blob location where the package is
@@ -98,11 +100,10 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
 
     # get path to payload
-    payload_path = pl.full_storage_location
     host_payload_path = os.path.join(settings.HOST_PAYLOAD_ROOT, pl.storage_location)
     print(host_payload_path)
 
-    # read config from askanna.yml if any
+    # read config from askanna.yml
     config_file_path = os.path.join(package_path, "askanna.yml")
     if not os.path.exists(config_file_path):
         print("askanna.yml not found")
@@ -157,19 +158,21 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     host_tmp_dir = os.path.join(settings.HOST_TMP_ROOT, jr.short_uuid)
     os.makedirs(tmp_dir)
     entrypoint_file = os.path.join(tmp_dir, 'askanna-entrypoint.sh')
-    print(entrypoint_file)
 
-    # FIXME: remember to use jinja2 for templating, this is easier for now
+    commands = []
+    for command in job_commands:
+        print_command = command.replace('"', '\"')
+        command = command.replace("{{ PAYLOAD_PATH }}", '$ASKANNA_PAYLOAD_PATH')
+        commands.append({
+            'command': command,
+            'print_command': print_command
+        })
+
+    entrypoint_string = render_to_string("entrypoint.sh", {
+        "commands": commands
+    })
     with open(entrypoint_file, 'w') as f:
-        f.write("#!/bin/bash\n")
-        f.write("cd /code\n")
-        f.write(f"echo 'askanna-runner for project {pr.title} running on {pr.short_uuid}'\n")
-        for command in job_commands:
-            print_command = command.replace('"', '\"')
-            command = command.replace("{{ PAYLOAD_PATH }}", '$ASKANNA_PAYLOAD_PATH')
-            f.write(f"echo '{print_command}'\n")
-            f.write( command )
-            f.write( "\n")
+        f.write(entrypoint_string)
 
     # # chmod +x on entrypoint file
     st = os.stat(entrypoint_file)
@@ -223,6 +226,9 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     env_variables.update(
         **{
             "ASKANNA_PAYLOAD_PATH": "/input/payload.json",
+            "JOBRUN_SHORT_UUID": jr.short_uuid,
+            "JOBRUN_JOBNAME": jd.name,
+            "PACKAGE_UUID": str(package.uuid)
         }
     )
 
