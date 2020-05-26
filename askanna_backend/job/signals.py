@@ -98,7 +98,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # configure hostname for this project docker container
     hostname = pr.short_uuid
 
-
     # get path to payload
     host_payload_path = os.path.join(settings.HOST_PAYLOAD_ROOT, pl.storage_location)
     print(host_payload_path)
@@ -110,9 +109,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         return
 
     askanna_config = get_config(config_file_path)
-    
-    print(askanna_config)
-
     # see whether we are on the right job
     yaml_config = askanna_config.get(jd.name)
     if not yaml_config:
@@ -215,7 +211,18 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     #     print(log)
 
     # get runner image
-    runner_image = "python:3"
+    # FIXME: allow user to define which one to use
+    runner_image = "gitlab.askanna.io:4567/askanna/askanna-cli:3.6-slim-master"
+
+    # pull image first
+    client.images.pull(
+        runner_image,
+        auth_config={
+            'username': settings.ASKANNA_DOCKER_USER,
+            'password': settings.ASKANNA_DOCKER_PASS
+        }
+    )
+
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
         "echo",
@@ -228,7 +235,8 @@ def start_jobrun_dockerized(self, jobrun_uuid):
             "ASKANNA_PAYLOAD_PATH": "/input/payload.json",
             "JOBRUN_SHORT_UUID": jr.short_uuid,
             "JOBRUN_JOBNAME": jd.name,
-            "PACKAGE_UUID": str(package.uuid)
+            "PACKAGE_UUID": str(package.uuid),
+            "PAYLOAD_UUID": str(pl.uuid)
         }
     )
 

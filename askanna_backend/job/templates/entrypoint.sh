@@ -1,5 +1,7 @@
 #!/bin/bash
 
+askanna --version
+
 # first navigate to the folder where user code is located
 cd /code
 

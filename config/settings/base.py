@@ -382,3 +382,7 @@ REST_FRAMEWORK = {
 # allow 250M to be used in request.body
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024*1024*250
 
+
+# AskAnna Docker settings
+ASKANNA_DOCKER_USER = env.str("ASKANNA_DOCKER_USER")
+ASKANNA_DOCKER_PASS = env.str("ASKANNA_DOCKER_PASS")
