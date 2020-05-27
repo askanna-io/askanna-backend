@@ -22,14 +22,17 @@ class JobArtifact(SlimBaseModel):
     @property
     def storage_location(self):
         return os.path.join(
-            self.jobdef.project.uuid.hex,
-            self.jobdef.uuid.hex,
-            self.jobrun.uuid.hex,
-            self.short_uuid,
+            self.jobrun.jobdef.project.uuid.hex,
+            self.jobrun.jobdef.uuid.hex,
+            self.jobrun.uuid.hex
         )
 
     def __str__(self):
         return str(self.uuid)
+
+    @property
+    def filename(self):
+        return "artifact_{}.zip".format(self.uuid.hex)
 
     @property
     def read(self):
@@ -40,7 +43,7 @@ class JobArtifact(SlimBaseModel):
         store_path = [
             settings.ARTIFACTS_ROOT, 
             self.storage_location, 
-            "artifact.zip"
+            self.filename
         ]
 
         with open(os.path.join(*store_path), "rb") as f:

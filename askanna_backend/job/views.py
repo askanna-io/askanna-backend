@@ -297,13 +297,22 @@ class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin,
     queryset = JobArtifact.objects.all()
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
+
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = artifact_upload_finish
     upload_finished_message = "artifact upload finished"
 
 
+    def store_as_filename(self, resumable_filename: str, obj) -> str:
+        return obj.filename
+
+    def get_upload_target_location(self, request, obj, **kwargs) -> str:
+        return os.path.join(self.upload_target_location, obj.storage_location)
+
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        pass
+        update_fields=['size']
+        instance_obj.size = resume_obj.size
+        instance_obj.save(update_fields=update_fields)
 
     # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):

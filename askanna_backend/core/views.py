@@ -77,15 +77,21 @@ class BaseUploadFinishMixin:
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         pass
 
+    def get_upload_target_location(self, request, obj, **kwargs):
+        return self.upload_target_location
+    
+    def store_as_filename(self, resumable_filename, obj):
+        return resumable_filename
+
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
         obj = self.get_object()
 
         storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
-        target_location = FileSystemStorage(location=self.upload_target_location)
+        target_location = FileSystemStorage(location=self.get_upload_target_location(request=request, obj=obj))
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
-            target_location.save(r.filename, r)
+            target_location.save(self.store_as_filename(r.filename, obj), r)
             self.post_finish_upload_update_instance(request, obj, r)
             r.delete_chunks()
 

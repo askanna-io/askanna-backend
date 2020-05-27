@@ -22,5 +22,5 @@ cd /code
 
 askanna artifact
 
-echo "Artifact uploade to AskAnna"
+echo "Artifact uploaded to AskAnna"
 echo "Job finished"
