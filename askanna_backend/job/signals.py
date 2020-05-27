@@ -115,7 +115,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     jr_token = jr.owner.auth_token.key
 
     # FIXME: fix scheme to https
-    aa_remote = "http://{fqdn}/v1/".format(fqdn=settings.ASKANNA_API_FQDN)
+    aa_remote = "https://{fqdn}/v1/".format(fqdn=settings.ASKANNA_API_FQDN)
 
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
