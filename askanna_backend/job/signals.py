@@ -88,12 +88,11 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     op = jr.output
 
     # FIXME: when versioning is in, point to version in JobRun
-    package = Package.objects.filter(project=pr).order_by('-created').first()
+    package = Package.objects.filter(project=pr).order_by("-created").first()
 
     # compose the path to the package in the project
     # This points to the blob location where the package is
     package_path = os.path.join(settings.BLOB_ROOT, str(package.uuid))
-    host_package_path = os.path.join(settings.HOST_BLOB_ROOT, str(package.uuid))
 
     # configure hostname for this project docker container
     hostname = pr.short_uuid
@@ -111,23 +110,15 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         print(f"{jd.name} is not specified in this askanna.yml, cannot start job")
         return
 
-    job_commands = yaml_config.get('job')
-    function_command = yaml_config.get('function')
+    job_commands = yaml_config.get("job")
+    function_command = yaml_config.get("function")
 
     # we don't allow both function and job commands to be set
     if job_commands and function_command:
         print("cannot define both job and function")
         return
 
-    if job_commands:
-        print(job_commands)
-
-    if function_command:
-        print(function_command)
-        # prep script to start this function command
-
     # start composing docker
-
 
     # compose the entrypoint.sh for both single line command
     # and multiline command
@@ -135,67 +126,43 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # FIXME: allow configuration of the socket and potential replace library to connect to kubernetes
     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
     # create volume to store askanna code
-    volume_1 = client.volumes.create(name=f'vol-{jr.short_uuid}', driver='local',
-        labels={"project": pr.short_uuid,
-        "askanna-vol": "yes"})
-    volume_2 = client.volumes.create(name=f'package-{jr.short_uuid}', driver='local',
-        labels={"project": pr.short_uuid,
-        "askanna-vol": "package"})
+    volume_1 = client.volumes.create(
+        name=f"vol-{jr.short_uuid}",
+        driver="local",
+        labels={"project": pr.short_uuid, "askanna-vol": "yes"},
+    )
 
     # print(volume_1.attrs)
-    # print(volume_2.attrs)
 
     # create entrypoint
     tmp_dir = os.path.join(settings.TMP_ROOT, jr.short_uuid)
     host_tmp_dir = os.path.join(settings.HOST_TMP_ROOT, jr.short_uuid)
     os.makedirs(tmp_dir)
-    entrypoint_file = os.path.join(tmp_dir, 'askanna-entrypoint.sh')
+    entrypoint_file = os.path.join(tmp_dir, "askanna-entrypoint.sh")
 
     commands = []
     for command in job_commands:
-        print_command = command.replace('"', '\"')
-        command = command.replace("{{ PAYLOAD_PATH }}", '$PAYLOAD_PATH')
-        commands.append({
-            'command': command,
-            'print_command': print_command
-        })
+        print_command = command.replace('"', '"')
+        command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
+        commands.append({"command": command, "print_command": print_command})
 
-    entrypoint_string = render_to_string("entrypoint.sh", {
-        "commands": commands,
-        "pr": pr
-    })
-    with open(entrypoint_file, 'w') as f:
+    entrypoint_string = render_to_string(
+        "entrypoint.sh", {"commands": commands, "pr": pr}
+    )
+    with open(entrypoint_file, "w") as f:
         f.write(entrypoint_string)
 
     # # chmod +x on entrypoint file
     st = os.stat(entrypoint_file)
     os.chmod(entrypoint_file, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    # rsync this to the volume_1
+    # rsync this to the volume_1 with just the entrypoint.sh
     rsync_container = client.containers.run(
-        'netroby/alpine-rsync',
+        "netroby/alpine-rsync",
         "ash -c 'rsync -avx --progress /from/ /to/'",
         volumes={
             host_tmp_dir: {"bind": "/from", "mode": "ro"},
             volume_1.name: {"bind": "/to", "mode": "rw"},
-        },
-        stdout=True,
-        stderr=True,
-        detach=True,
-        # auto_remove=True,
-        # remove=True,  # remove container after run
-    )
-
-    # for log in rsync_container.logs(stream=True, timestamps=True):
-    #     print(log)
-
-    # rsync this to the volume_2 (copy of code)
-    rsync_container = client.containers.run(
-        'netroby/alpine-rsync',
-        "ash -c 'rsync -avx --progress /from/ /to/'",
-        volumes={
-            host_package_path: {"bind": "/from", "mode": "ro"},
-            volume_2.name: {"bind": "/to", "mode": "rw"},
         },
         stdout=True,
         stderr=True,
@@ -215,33 +182,38 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     client.images.pull(
         runner_image,
         auth_config={
-            'username': settings.ASKANNA_DOCKER_USER,
-            'password': settings.ASKANNA_DOCKER_PASS
-        }
+            "username": settings.ASKANNA_DOCKER_USER,
+            "password": settings.ASKANNA_DOCKER_PASS,
+        },
     )
 
     # jr_token is the token of the user who started the run
     jr_token = jr.owner.auth_token.key
+
+    # FIXME: fix scheme to https
+    aa_remote = "http://{fqdn}/v1/".format(fqdn=settings.ASKANNA_API_FQDN)
 
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
         "echo",
         f"askanna-runner for project {pr.title} running on {pr.short_uuid}",
     ]
+    runner_variables = {
+        "AA_TOKEN": jr_token,
+        "AA_REMOTE": aa_remote,
+        "JOBRUN_UUID": str(jr.uuid),
+        "JOBRUN_SHORT_UUID": jr.short_uuid,
+        "JOBRUN_JOBNAME": jd.name,
+        "PROJECT_UUID": str(pr.uuid),
+        "PROJECT_SHORT_UUID": str(pr.short_uuid),
+        "PACKAGE_UUID": str(package.uuid),
+        "PAYLOAD_UUID": str(pl.uuid),
+        "PAYLOAD_PATH": "/input/payload.json",
+    }
+
     # set environment variables
     env_variables = {"SECRET": 1}
-    env_variables.update(
-        **{
-            "AA_TOKEN": jr_token,
-            "AA_REMOTE": "http://192.168.0.195:8005/v1/",
-            "JOBRUN_UUID": str(jr.uuid),
-            "JOBRUN_SHORT_UUID": jr.short_uuid,
-            "JOBRUN_JOBNAME": jd.name,
-            "PACKAGE_UUID": str(package.uuid),
-            "PAYLOAD_UUID": str(pl.uuid),
-            "PAYLOAD_PATH": '/input/payload.json'
-        }
-    )
+    env_variables.update(**runner_variables)
 
     container = client.containers.run(
         runner_image,
@@ -250,7 +222,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         entrypoint="/askanna/askanna-entrypoint.sh",
         volumes={
             volume_1.name: {"bind": "/askanna", "mode": "ro"},
-            volume_2.name: {"bind": "/code", "mode": "rw"},
+            # volume_2.name: {"bind": "/code", "mode": "rw"},
         },
         hostname=hostname,
         stdout=True,
@@ -263,15 +235,14 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # logs = container.logs()
     op.stdout = []
     for idx, log in enumerate(container.logs(stream=True, timestamps=True)):
-        logline = [idx] + log.decode('utf-8').split(sep=' ', maxsplit=1)
-        logline[-1] = logline[-1].strip()
+        logline = [idx] + log.decode("utf-8").split(sep=" ", maxsplit=1)
+        logline[-1] = logline[-1].rstrip()
         print(logline)
         op.stdout.append(logline)
 
     op.save()
 
     # volume_1.remove()
-    # volume_2.remove()
 
 
 # @receiver(post_save, sender=JobDef)

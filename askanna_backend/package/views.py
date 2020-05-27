@@ -73,7 +73,8 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
 
         return Response({
             "action": "redirect",
-            "target": "https://{FQDN}/files/packages/{LOCATION}".format(
+            "target": "{scheme}://{FQDN}/files/packages/{LOCATION}".format(
+                scheme=request.scheme,
                 FQDN=settings.ASKANNA_CDN_FQDN,
                 LOCATION=package.storage_location
             )
