@@ -362,7 +362,6 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
         data.update(**{
             'artifact': self.kwargs.get('parent_lookup_artifact__uuid')
         })
-        print(data)
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
