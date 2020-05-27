@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import StreamingHttpResponse, HttpResponse
+from django.template.loader import render_to_string
 from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
@@ -20,6 +21,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
+from core.utils import get_config
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact, ChunkedArtifactPart
 from job.serializers import (
@@ -32,6 +34,7 @@ from job.serializers import (
     JobPayloadSerializer,
 )
 from job.signals import artifact_upload_finish
+from package.models import Package
 
 
 class StartJobView(viewsets.GenericViewSet):
@@ -224,6 +227,57 @@ class JobRunView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
+
+    @action(detail=True, methods=["get"], name="JobRun Manifest")
+    def manifest(self, request, short_uuid, **kwargs):
+        # FIXME: only the jobrun.owner should be able to see this
+        instance = self.get_object()
+        jr = instance
+
+        # What is the jobdef specified?
+        jd = jr.jobdef
+        pr = jd.project
+
+        # FIXME: when versioning is in, point to version in JobRun
+        package = Package.objects.filter(project=pr).order_by("-created").first()
+
+        # compose the path to the package in the project
+        # This points to the blob location where the package is
+        package_path = os.path.join(settings.BLOB_ROOT, str(package.uuid))
+
+
+        # read config from askanna.yml
+        config_file_path = os.path.join(package_path, "askanna.yml")
+        if not os.path.exists(config_file_path):
+            print("askanna.yml not found")
+            return HttpResponse("")
+
+        askanna_config = get_config(config_file_path)
+        # see whether we are on the right job
+        yaml_config = askanna_config.get(jd.name)
+        if not yaml_config:
+            print(f"{jd.name} is not specified in this askanna.yml, cannot start job")
+            return HttpResponse("")
+
+        job_commands = yaml_config.get("job")
+        function_command = yaml_config.get("function")
+
+        # we don't allow both function and job commands to be set
+        if job_commands and function_command:
+            print("cannot define both job and function")
+            return HttpResponse("")
+
+        commands = []
+        for command in job_commands:
+            print_command = command.replace('"', '"')
+            command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
+            commands.append({"command": command, "print_command": print_command})
+
+        entrypoint_string = render_to_string(
+            "entrypoint.sh", {"commands": commands, "pr": pr}
+        )
+
+        return HttpResponse(entrypoint_string)
 
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()

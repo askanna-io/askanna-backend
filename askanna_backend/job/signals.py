@@ -90,93 +90,17 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # FIXME: when versioning is in, point to version in JobRun
     package = Package.objects.filter(project=pr).order_by("-created").first()
 
-    # compose the path to the package in the project
-    # This points to the blob location where the package is
-    package_path = os.path.join(settings.BLOB_ROOT, str(package.uuid))
-
     # configure hostname for this project docker container
     hostname = pr.short_uuid
 
-    # read config from askanna.yml
-    config_file_path = os.path.join(package_path, "askanna.yml")
-    if not os.path.exists(config_file_path):
-        print("askanna.yml not found")
-        return
-
-    askanna_config = get_config(config_file_path)
-    # see whether we are on the right job
-    yaml_config = askanna_config.get(jd.name)
-    if not yaml_config:
-        print(f"{jd.name} is not specified in this askanna.yml, cannot start job")
-        return
-
-    job_commands = yaml_config.get("job")
-    function_command = yaml_config.get("function")
-
-    # we don't allow both function and job commands to be set
-    if job_commands and function_command:
-        print("cannot define both job and function")
-        return
-
     # start composing docker
-
-    # compose the entrypoint.sh for both single line command
-    # and multiline command
 
     # FIXME: allow configuration of the socket and potential replace library to connect to kubernetes
     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    # create volume to store askanna code
-    volume_1 = client.volumes.create(
-        name=f"vol-{jr.short_uuid}",
-        driver="local",
-        labels={"project": pr.short_uuid, "askanna-vol": "yes"},
-    )
-
-    # print(volume_1.attrs)
-
-    # create entrypoint
-    tmp_dir = os.path.join(settings.TMP_ROOT, jr.short_uuid)
-    host_tmp_dir = os.path.join(settings.HOST_TMP_ROOT, jr.short_uuid)
-    os.makedirs(tmp_dir)
-    entrypoint_file = os.path.join(tmp_dir, "askanna-entrypoint.sh")
-
-    commands = []
-    for command in job_commands:
-        print_command = command.replace('"', '"')
-        command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
-        commands.append({"command": command, "print_command": print_command})
-
-    entrypoint_string = render_to_string(
-        "entrypoint.sh", {"commands": commands, "pr": pr}
-    )
-    with open(entrypoint_file, "w") as f:
-        f.write(entrypoint_string)
-
-    # # chmod +x on entrypoint file
-    st = os.stat(entrypoint_file)
-    os.chmod(entrypoint_file, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-    # rsync this to the volume_1 with just the entrypoint.sh
-    rsync_container = client.containers.run(
-        "netroby/alpine-rsync",
-        "ash -c 'rsync -avx --progress /from/ /to/'",
-        volumes={
-            host_tmp_dir: {"bind": "/from", "mode": "ro"},
-            volume_1.name: {"bind": "/to", "mode": "rw"},
-        },
-        stdout=True,
-        stderr=True,
-        detach=True,
-        # auto_remove=True,
-        # remove=True,  # remove container after run
-    )
-
-    # for log in rsync_container.logs(stream=True, timestamps=True):
-    #     print(log)
 
     # get runner image
     # FIXME: allow user to define which one to use
-    runner_image = "gitlab.askanna.io:4567/askanna/askanna-cli:3.6-slim-master"
+    runner_image = "gitlab.askanna.io:4567/askanna/askanna-cli:3.7-slim-master"
 
     # pull image first
     client.images.pull(
@@ -195,9 +119,11 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
-        "echo",
-        f"askanna-runner for project {pr.title} running on {pr.short_uuid}",
+        "/bin/bash",
+        "-c",
+        "askanna jobrun-manifest --output /dev/stdout | bash"
     ]
+
     runner_variables = {
         "AA_TOKEN": jr_token,
         "AA_REMOTE": aa_remote,
@@ -219,10 +145,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         runner_image,
         runner_command,
         environment=env_variables,
-        entrypoint="/askanna/askanna-entrypoint.sh",
-        volumes={
-            volume_1.name: {"bind": "/askanna", "mode": "ro"}
-        },
         hostname=hostname,
         stdout=True,
         stderr=True,
@@ -238,7 +160,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         logline[-1] = logline[-1].rstrip()
         print(logline)
         op.stdout.append(logline)
-
     op.save()
 
     # volume_1.remove()

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 askanna --version
 
 mkdir -p /input > /dev/null
