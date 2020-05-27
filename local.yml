@@ -24,6 +24,7 @@ services:
       - "8005:8000"
     command: /start
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       VIRTUAL_HOST: api.askanna.localhost
       VIRTUAL_PORT: 5000
 

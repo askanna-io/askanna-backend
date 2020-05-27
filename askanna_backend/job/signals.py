@@ -221,8 +221,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         environment=env_variables,
         entrypoint="/askanna/askanna-entrypoint.sh",
         volumes={
-            volume_1.name: {"bind": "/askanna", "mode": "ro"},
-            # volume_2.name: {"bind": "/code", "mode": "rw"},
+            volume_1.name: {"bind": "/askanna", "mode": "ro"}
         },
         hostname=hostname,
         stdout=True,

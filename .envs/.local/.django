@@ -19,5 +19,10 @@ CELERY_FLOWER_PASSWORD=KtQ40CpbtICJHvZ1xrfgJLYs9NEuCLXHgIeA0bwtxnH0ycxtLzD1AayJJ
 DATABASE_URL=postgresql://anna:pass@postgres/askanna_backend
 
 ASKANNA_HOST_TMP_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/tmp
-ASKANNA_HOST_BLOB_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/blob
-ASKANNA_HOST_PAYLOAD_ROOT=/home/wyleung/Documents/PycharmProjects/askanna-backend/storage_root/projects/payloads
+
+# The following variables can be set in a .env
+# ASKANNA_API_FQDN=localhost
+# ASKANNA_CDN_FQDN=localhost
+
+# ASKANNA_DOCKER_USER=robot
+# ASKANNA_DOCKER_PASS=robotpass
