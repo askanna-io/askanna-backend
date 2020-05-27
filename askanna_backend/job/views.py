@@ -115,7 +115,7 @@ class StartJobView(viewsets.GenericViewSet):
             f.write(json.dumps(request.data))
 
         # create new Jobrun
-        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl)
+        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl, owner=request.user)
 
         # return the JobRun id
         return Response(

@@ -98,10 +98,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # configure hostname for this project docker container
     hostname = pr.short_uuid
 
-    # get path to payload
-    host_payload_path = os.path.join(settings.HOST_PAYLOAD_ROOT, pl.storage_location)
-    print(host_payload_path)
-
     # read config from askanna.yml
     config_file_path = os.path.join(package_path, "askanna.yml")
     if not os.path.exists(config_file_path):
@@ -158,14 +154,15 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     commands = []
     for command in job_commands:
         print_command = command.replace('"', '\"')
-        command = command.replace("{{ PAYLOAD_PATH }}", '$ASKANNA_PAYLOAD_PATH')
+        command = command.replace("{{ PAYLOAD_PATH }}", '$PAYLOAD_PATH')
         commands.append({
             'command': command,
             'print_command': print_command
         })
 
     entrypoint_string = render_to_string("entrypoint.sh", {
-        "commands": commands
+        "commands": commands,
+        "pr": pr
     })
     with open(entrypoint_file, 'w') as f:
         f.write(entrypoint_string)
@@ -223,6 +220,9 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         }
     )
 
+    # jr_token is the token of the user who started the run
+    jr_token = jr.owner.auth_token.key
+
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
         "echo",
@@ -232,11 +232,14 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     env_variables = {"SECRET": 1}
     env_variables.update(
         **{
-            "ASKANNA_PAYLOAD_PATH": "/input/payload.json",
+            "AA_TOKEN": jr_token,
+            "AA_REMOTE": "http://192.168.0.195:8005/v1/",
+            "JOBRUN_UUID": str(jr.uuid),
             "JOBRUN_SHORT_UUID": jr.short_uuid,
             "JOBRUN_JOBNAME": jd.name,
             "PACKAGE_UUID": str(package.uuid),
-            "PAYLOAD_UUID": str(pl.uuid)
+            "PAYLOAD_UUID": str(pl.uuid),
+            "PAYLOAD_PATH": '/input/payload.json'
         }
     )
 
@@ -248,7 +251,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         volumes={
             volume_1.name: {"bind": "/askanna", "mode": "ro"},
             volume_2.name: {"bind": "/code", "mode": "rw"},
-            host_payload_path: {"bind": "/input", "mode": "ro"},
         },
         hostname=hostname,
         stdout=True,
@@ -262,6 +264,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     op.stdout = []
     for idx, log in enumerate(container.logs(stream=True, timestamps=True)):
         logline = [idx] + log.decode('utf-8').split(sep=' ', maxsplit=1)
+        logline[-1] = logline[-1].strip()
         print(logline)
         op.stdout.append(logline)
 
