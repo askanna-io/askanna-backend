@@ -88,6 +88,7 @@ services:
     ports: []
     command: /start-celeryworker
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       NOTSET: 1
 
   celerybeat:
@@ -100,6 +101,7 @@ services:
     ports: []
     command: /start-celerybeat
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       NOTSET: 1
 
   flower:
@@ -109,6 +111,7 @@ services:
       - "5556:5555"
     command: /start-flower
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       NOTSET: 1
 
 volumes:
