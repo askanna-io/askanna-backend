@@ -141,6 +141,9 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     env_variables = {"SECRET": 1}
     env_variables.update(**runner_variables)
 
+    jr.status = "IN_PROGRESS"
+    jr.save(update_fields=["status"])
+
     container = client.containers.run(
         runner_image,
         runner_command,
@@ -162,8 +165,8 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         op.stdout.append(logline)
     op.save()
 
-    # volume_1.remove()
-
+    jr.status = "COMPLETED"
+    jr.save(update_fields=["status"])
 
 # @receiver(post_save, sender=JobDef)
 # def create_job_payload_for_new_jobdef_signal(sender, instance, created, **kwargs):  # noqa
