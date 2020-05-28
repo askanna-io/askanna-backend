@@ -50,6 +50,7 @@ REGULAR_USER=django
 if [ -S ${DOCKER_SOCKET} ]; then
     FILE_GID=$(stat -c '%g' ${DOCKER_SOCKET})
     FILE_GNAME=$(stat -c '%G' ${DOCKER_SOCKET})
+    whoami
     addgroup django ${FILE_GNAME}
 fi
 
