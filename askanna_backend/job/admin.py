@@ -35,11 +35,12 @@ class JobPayloadAdmin(admin.ModelAdmin):
 
 @admin.register(JobArtifact)
 class JobArtifactAdmin(admin.ModelAdmin):
-    list_display = ["uuid", "jobrun", "created"]
+    list_display = ["uuid", "jobrun", "created", "size"]
 
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid", "short_uuid"]
+
 
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):

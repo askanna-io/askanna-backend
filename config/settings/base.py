@@ -200,6 +200,11 @@ STORAGE_ROOT = ROOT_DIR.path("storage_root")
 if env.str("ASKANNA_STORAGE_ROOT", None):
     STORAGE_ROOT = environ.Path(env.str("ASKANNA_STORAGE_ROOT"))
 
+# tmp root is meant for tmp storage for all workers
+
+HOST_TMP_ROOT = str(STORAGE_ROOT("tmp"))
+
+TMP_ROOT = str(STORAGE_ROOT("tmp"))
 ARTIFACTS_ROOT = str(STORAGE_ROOT("artifacts"))
 PACKAGES_ROOT = str(STORAGE_ROOT("packages"))
 UPLOAD_ROOT = str(STORAGE_ROOT("upload"))
@@ -207,8 +212,11 @@ BLOB_ROOT = str(STORAGE_ROOT("blob"))
 PROJECTS_ROOT = str(STORAGE_ROOT("projects"))
 PAYLOADS_ROOT = str(STORAGE_ROOT.path("projects").path("payloads"))
 
+if env.str("ASKANNA_HOST_TMP_ROOT", None):
+    HOST_TMP_ROOT = env.str("ASKANNA_HOST_TMP_ROOT")
+
 # Create the folders if not exists
-for folder in [ARTIFACTS_ROOT, PACKAGES_ROOT, UPLOAD_ROOT, BLOB_ROOT, PROJECTS_ROOT, PAYLOADS_ROOT]:
+for folder in [ARTIFACTS_ROOT, PACKAGES_ROOT, UPLOAD_ROOT, BLOB_ROOT, PROJECTS_ROOT, PAYLOADS_ROOT, TMP_ROOT]:
     if not os.path.isdir(folder):
         os.makedirs(folder, exist_ok=True)
 
@@ -366,3 +374,7 @@ REST_FRAMEWORK = {
 # allow 250M to be used in request.body
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024*1024*250
 
+
+# AskAnna Docker settings
+ASKANNA_DOCKER_USER = env.str("ASKANNA_DOCKER_USER", os.getenv('ASKANNA_DOCKER_USER'))
+ASKANNA_DOCKER_PASS = env.str("ASKANNA_DOCKER_PASS", os.getenv('ASKANNA_DOCKER_PASS'))

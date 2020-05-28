@@ -50,7 +50,7 @@ if settings.DEBUG:
             kwargs={"exception": Exception("Page not Found")},
         ),
         path("500/", default_views.server_error),
-    ]
+    ] + static('/files/', document_root=str(settings.ROOT_DIR("storage_root")))
     if "debug_toolbar" in settings.INSTALLED_APPS:
         import debug_toolbar
 

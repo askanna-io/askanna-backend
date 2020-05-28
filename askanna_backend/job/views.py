@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import StreamingHttpResponse, HttpResponse
+from django.template.loader import render_to_string
 from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
@@ -20,6 +21,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
+from core.utils import get_config
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact, ChunkedArtifactPart
 from job.serializers import (
@@ -32,6 +34,7 @@ from job.serializers import (
     JobPayloadSerializer,
 )
 from job.signals import artifact_upload_finish
+from package.models import Package
 
 
 class StartJobView(viewsets.GenericViewSet):
@@ -116,7 +119,7 @@ class StartJobView(viewsets.GenericViewSet):
             f.write(json_string)
 
         # create new Jobrun
-        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl)
+        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl, owner=request.user)
 
         # return the JobRun id
         return Response(
@@ -226,6 +229,57 @@ class JobRunView(viewsets.ModelViewSet):
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
 
+    @action(detail=True, methods=["get"], name="JobRun Manifest")
+    def manifest(self, request, short_uuid, **kwargs):
+        # FIXME: only the jobrun.owner should be able to see this
+        instance = self.get_object()
+        jr = instance
+
+        # What is the jobdef specified?
+        jd = jr.jobdef
+        pr = jd.project
+
+        # FIXME: when versioning is in, point to version in JobRun
+        package = Package.objects.filter(project=pr).order_by("-created").first()
+
+        # compose the path to the package in the project
+        # This points to the blob location where the package is
+        package_path = os.path.join(settings.BLOB_ROOT, str(package.uuid))
+
+
+        # read config from askanna.yml
+        config_file_path = os.path.join(package_path, "askanna.yml")
+        if not os.path.exists(config_file_path):
+            print("askanna.yml not found")
+            return HttpResponse("")
+
+        askanna_config = get_config(config_file_path)
+        # see whether we are on the right job
+        yaml_config = askanna_config.get(jd.name)
+        if not yaml_config:
+            print(f"{jd.name} is not specified in this askanna.yml, cannot start job")
+            return HttpResponse("")
+
+        job_commands = yaml_config.get("job")
+        function_command = yaml_config.get("function")
+
+        # we don't allow both function and job commands to be set
+        if job_commands and function_command:
+            print("cannot define both job and function")
+            return HttpResponse("")
+
+        commands = []
+        for command in job_commands:
+            print_command = command.replace('"', '"')
+            command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
+            commands.append({"command": command, "print_command": print_command})
+
+        entrypoint_string = render_to_string(
+            "entrypoint.sh", {"commands": commands, "pr": pr}
+        )
+
+        return HttpResponse(entrypoint_string)
+
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
@@ -298,13 +352,22 @@ class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin,
     queryset = JobArtifact.objects.all()
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
+
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = artifact_upload_finish
     upload_finished_message = "artifact upload finished"
 
 
+    def store_as_filename(self, resumable_filename: str, obj) -> str:
+        return obj.filename
+
+    def get_upload_target_location(self, request, obj, **kwargs) -> str:
+        return os.path.join(self.upload_target_location, obj.storage_location)
+
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        pass
+        update_fields=['size']
+        instance_obj.size = resume_obj.size
+        instance_obj.save(update_fields=update_fields)
 
     # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):
@@ -354,7 +417,6 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
         data.update(**{
             'artifact': self.kwargs.get('parent_lookup_artifact__uuid')
         })
-        print(data)
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)

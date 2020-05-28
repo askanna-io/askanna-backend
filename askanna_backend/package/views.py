@@ -14,7 +14,7 @@ from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
-# from package.listeners import *
+from package.listeners import *
 from package.models import Package, ChunkedPackagePart
 from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail
 from package.signals import package_upload_finish
@@ -36,9 +36,10 @@ class PackageViewSet(BaseUploadFinishMixin, mixins.CreateModelMixin,
     upload_finished_message = "package upload finished"
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields=['created_by', 'storage_location']
+        update_fields=['created_by', 'storage_location', 'size']
         instance_obj.storage_location = resume_obj.filename
         instance_obj.created_by = request.user
+        instance_obj.size = resume_obj.size
         instance_obj.save(update_fields=update_fields)
 
 class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
@@ -72,7 +73,8 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
 
         return Response({
             "action": "redirect",
-            "target": "https://{FQDN}/files/packages/{LOCATION}".format(
+            "target": "{scheme}://{FQDN}/files/packages/{LOCATION}".format(
+                scheme=request.scheme,
                 FQDN=settings.ASKANNA_CDN_FQDN,
                 LOCATION=package.storage_location
             )

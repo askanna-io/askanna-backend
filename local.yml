@@ -16,6 +16,7 @@ services:
       # - rabbitmq_stats
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
@@ -23,6 +24,7 @@ services:
       - "8005:8000"
     command: /start
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       VIRTUAL_HOST: api.askanna.localhost
       VIRTUAL_PORT: 5000
 
@@ -86,6 +88,7 @@ services:
     ports: []
     command: /start-celeryworker
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       NOTSET: 1
 
   celerybeat:
@@ -98,6 +101,7 @@ services:
     ports: []
     command: /start-celerybeat
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       NOTSET: 1
 
   flower:
@@ -107,6 +111,7 @@ services:
       - "5556:5555"
     command: /start-flower
     environment:
+      DJANGO_READ_DOT_ENV_FILE: 'True'
       NOTSET: 1
 
 volumes:
