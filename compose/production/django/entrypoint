@@ -54,11 +54,8 @@ if [ -S ${DOCKER_SOCKET} ]; then
     addgroup django ${FILE_GNAME}
 fi
 
-echo "$0 is "
-echo $0
-echo "$@ is"
-echo $@
-
+echo "\$0 is '$0'"
+echo "\$@ is '$@'"
 
 # Execute the rest of the script with user django
-su -c "$0" -s /bin/sh django -- "$@"
+su -s /bin/sh django -c "$@"
