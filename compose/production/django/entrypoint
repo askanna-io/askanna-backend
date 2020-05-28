@@ -36,4 +36,23 @@ until postgres_ready; do
 done
 >&2 echo 'PostgreSQL is available'
 
-exec "$@"
+
+# From: https://vitorbaptista.com/how-to-access-hosts-docker-socket-without-root
+# Based on https://github.com/jenkinsci/docker/issues/196#issuecomment-179486312
+# Altered to add django user to the group from /var/run/docker.sock
+# Getting the groupname with stat -c "%G" /var/run/docker.sock
+# Then add this group to the django user
+
+DOCKER_SOCKET=/var/run/docker.sock
+DOCKER_GROUP=docker
+REGULAR_USER=django
+
+if [ -S ${DOCKER_SOCKET} ]; then
+    FILE_GID=$(stat -c '%g' ${DOCKER_SOCKET})
+    FILE_GNAME=$(stat -c '%G' ${DOCKER_SOCKET})
+    addgroup django ${FILE_GNAME}
+fi
+
+
+# Execute the rest of the script with user django
+su -c "$0" -s /bin/bash django -- "$@"
