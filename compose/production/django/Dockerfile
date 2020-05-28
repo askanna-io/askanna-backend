@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir -r /requirements/production.txt \
 
 RUN chown -R django /app
 
-USER django
+# USER django
 
 EXPOSE 5000
 
