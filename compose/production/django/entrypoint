@@ -55,4 +55,4 @@ fi
 
 
 # Execute the rest of the script with user django
-su -c "$0" -s /bin/bash django -- "$@"
+su -c "$0" -s /bin/sh django -- "$@"
