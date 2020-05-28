@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 
-from job.models import (
-    JobArtifact,
-    JobDef,
-    JobPayload,
-    JobRun,
-    JobOutput,
-)
+from job.models import JobArtifact, JobDef, JobPayload, JobRun, JobOutput, JobVariable
 
 
 @admin.register(JobDef)
@@ -68,3 +62,23 @@ class JobOutputAdmin(admin.ModelAdmin):
     date_hierarchy = "created"
     list_filter = ("created", "exit_code")
     search_fields = ["uuid", "short_uuid", "owner"]
+
+
+@admin.register(JobVariable)
+class JobVariableAdmin(admin.ModelAdmin):
+    list_display = [
+        "uuid",
+        "short_uuid",
+        "name",
+        "project",
+        "created",
+    ]
+    list_display_links = (
+        "name",
+        "uuid",
+        "short_uuid",
+    )
+
+    date_hierarchy = "created"
+    list_filter = ("created",)
+    search_fields = ["uuid", "short_uuid", "name"]
