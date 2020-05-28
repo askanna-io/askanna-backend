@@ -24,6 +24,7 @@ from job.models import (
     JobRun,
     JobPayload,
     JobOutput,
+    JobVariable
 )
 from package.models import Package
 
@@ -90,6 +91,12 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # FIXME: when versioning is in, point to version in JobRun
     package = Package.objects.filter(project=pr).order_by("-created").first()
 
+    # Get variables for this project / run
+    _project_variables = JobVariable.objects.filter(project=pr)
+    project_variables = {}
+    for pv in _project_variables:
+        project_variables[pv.name] = pv.value
+
     # configure hostname for this project docker container
     hostname = pr.short_uuid
 
@@ -140,6 +147,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # set environment variables
     env_variables = {"SECRET": 1}
     env_variables.update(**runner_variables)
+    env_variables.update(**project_variables)
 
     jr.status = "IN_PROGRESS"
     jr.save(update_fields=["status"])

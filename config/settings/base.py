@@ -89,6 +89,7 @@ THIRD_PARTY_APPS = [
     "django_celery_beat",
     "django_celery_results",
     "drf_yasg",
+    "encrypted_model_fields",
 ]
 
 LOCAL_APPS = [
@@ -378,3 +379,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 1024*1024*250
 # AskAnna Docker settings
 ASKANNA_DOCKER_USER = env.str("ASKANNA_DOCKER_USER", os.getenv('ASKANNA_DOCKER_USER'))
 ASKANNA_DOCKER_PASS = env.str("ASKANNA_DOCKER_PASS", os.getenv('ASKANNA_DOCKER_PASS'))
+
+# Encrypted field settings
+FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")

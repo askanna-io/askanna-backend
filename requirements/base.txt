@@ -37,3 +37,8 @@ django-extensions==2.2.5  # https://github.com/django-extensions/django-extensio
 
 # docker 
 docker==4.1.0
+
+# django encryption fields
+django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted-model-fields
+
+
