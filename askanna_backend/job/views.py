@@ -118,8 +118,17 @@ class StartJobView(viewsets.GenericViewSet):
         with open(os.path.join(*store_path, "payload.json"), "w") as f:
             f.write(json_string)
 
+        # FIXME: Determine wheter we need the latest or pinned package
+        # Fetch the latest package found in the jobdef.project
+        package = Package.objects.filter(project=jobdef.project).order_by("-created").first()
+
         # create new Jobrun
-        jobrun = JobRun.objects.create(jobdef=jobdef, payload=job_pl, owner=request.user)
+        jobrun = JobRun.objects.create(
+            jobdef=jobdef, 
+            payload=job_pl, 
+            package=package,
+            owner=request.user
+        )
 
         # return the JobRun id
         return Response(
@@ -240,7 +249,7 @@ class JobRunView(viewsets.ModelViewSet):
         pr = jd.project
 
         # FIXME: when versioning is in, point to version in JobRun
-        package = Package.objects.filter(project=pr).order_by("-created").first()
+        package = jr.package
 
         # compose the path to the package in the project
         # This points to the blob location where the package is

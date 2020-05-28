@@ -22,6 +22,7 @@ class JobRun(BaseModel):
 
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, null=True)
+    package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
 
     # Clarification, jobid holds the job-id of Celery
     # Status is also the status from the Celery run
