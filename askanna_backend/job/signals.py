@@ -43,8 +43,7 @@ def start_jobrun(self, jobrun_uuid):
     jd = jr.jobdef
     pl = jr.payload
 
-    # FIXME: when versioning is in, point to version in JobRun
-    package = Package.objects.filter(project=jd.project).last()
+    package = jr.package
 
     # compose the path to the package in the project
     # This points to the blob location where the package is
@@ -89,7 +88,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     op = jr.output
 
     # FIXME: when versioning is in, point to version in JobRun
-    package = Package.objects.filter(project=pr).order_by("-created").first()
+    package = jr.package
 
     # Get variables for this project / run
     _project_variables = JobVariable.objects.filter(project=pr)
