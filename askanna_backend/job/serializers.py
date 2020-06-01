@@ -63,11 +63,11 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_runner(self, instance):
         # FIXME: replace with actual values
         return {
-            "name": "Python 3.8",
+            "name": "Python 3.7",
             "uuid": "1234-5678-9012-3456",
-            "cpu_time": 140.568,
-            "cpu_cores": 2,
-            "memory_mib": 568,
+            "cpu_time": (instance.modified - instance.created).seconds,
+            "cpu_cores": 1,
+            "memory_mib": 70,
             "job_status": 0,
         }
 
