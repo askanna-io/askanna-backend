@@ -55,6 +55,7 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
                             viewsets.ReadOnlyModelViewSet):
 
     queryset = Package.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [IsAuthenticated]
 
