@@ -85,12 +85,11 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_package(self, instance):
         # FIXME: replace with actual data after models refactor
-        # package = instance.package
-        package = instance.jobdef.project.packages.last()
+        package = instance.package
         if package:
             return {
                 "name": package.filename,
-                "uuid": package.uuid,
+                "uuid": package.short_uuid,
             }
         return {
             "name": "latest",
