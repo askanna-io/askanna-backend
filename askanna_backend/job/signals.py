@@ -173,7 +173,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     op.save()
 
     jr.status = "COMPLETED"
-    jr.save(update_fields=["status"])
+    jr.save()
 
 # @receiver(post_save, sender=JobDef)
 # def create_job_payload_for_new_jobdef_signal(sender, instance, created, **kwargs):  # noqa
