@@ -11,15 +11,6 @@ from job.models.const import JOB_STATUS
 
 
 class JobRun(BaseModel):
-    """
-    FIXME:
-        - I don't think we need JobRun to have an active relationship to the
-          jobpayload. It can be a reference to it. If we need to retrieve
-          the payload, we can do so, via the uuid.
-        - JobRun should have a 1:1 relationship, since there doesn't seem to
-          be any reason where we should have a JobRun withouth a JobOutput.
-    """
-
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)

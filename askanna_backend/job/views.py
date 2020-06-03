@@ -23,7 +23,16 @@ from resumable.files import ResumableFile
 from core.mixins import HybridUUIDMixin
 from core.utils import get_config
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
-from job.models import JobDef, Job, get_job_pk, JobPayload, get_job, JobRun, JobArtifact, ChunkedArtifactPart
+from job.models import (
+    JobDef,
+    Job,
+    get_job_pk,
+    JobPayload,
+    get_job,
+    JobRun,
+    JobArtifact,
+    ChunkedArtifactPart,
+)
 from job.serializers import (
     ChunkedArtifactPartSerializer,
     JobArtifactSerializer,
@@ -102,16 +111,10 @@ class StartJobView(viewsets.GenericViewSet):
             pass
 
         job_pl = JobPayload.objects.create(
-            jobdef=jobdef, 
-            size=size,
-            lines=lines,
-            owner=request.user
+            jobdef=jobdef, size=size, lines=lines, owner=request.user
         )
 
-        store_path = [
-            settings.PAYLOADS_ROOT,
-            job_pl.storage_location
-        ]
+        store_path = [settings.PAYLOADS_ROOT, job_pl.storage_location]
 
         # store incoming data as payload (in file format)
         os.makedirs(os.path.join(*store_path), exist_ok=True)
@@ -120,14 +123,13 @@ class StartJobView(viewsets.GenericViewSet):
 
         # FIXME: Determine wheter we need the latest or pinned package
         # Fetch the latest package found in the jobdef.project
-        package = Package.objects.filter(project=jobdef.project).order_by("-created").first()
+        package = (
+            Package.objects.filter(project=jobdef.project).order_by("-created").first()
+        )
 
         # create new Jobrun
         jobrun = JobRun.objects.create(
-            jobdef=jobdef, 
-            payload=job_pl, 
-            package=package,
-            owner=request.user
+            jobdef=jobdef, payload=job_pl, package=package, owner=request.user
         )
 
         # return the JobRun id
@@ -139,11 +141,83 @@ class StartJobView(viewsets.GenericViewSet):
                 "created": jobrun.created,
                 "updated": jobrun.modified,
                 "next_url": "https://{}/v1/status/{}".format(
-                    request.META['HTTP_HOST'],
-                    jobrun.short_uuid
+                    request.META["HTTP_HOST"], jobrun.short_uuid
                 ),
             }
         )
+
+
+class JobResultView(viewsets.GenericViewSet):
+    queryset = JobRun.objects.all()
+    lookup_field = "short_uuid"
+    serializer_class = JobRunSerializer
+    permission_classes = [IsAuthenticated]
+
+    # def get_queryset(self):
+    #     query_val = self.kwargs.get("uuid", None)
+    #     if query_val:
+    #         print(query_val)
+    #         return super().get_queryset()
+    #     short_uuid = self.kwargs.get('short_uuid', None)
+    #     print(short_uuid)
+    #     return super().get_queryset().filter(short_uuid=short_uuid)
+
+    def get_object(self):
+        # TODO: move this to a mixin
+        queryset = self.filter_queryset(self.get_queryset())
+        filter_kwargs = {}
+        query_val = self.kwargs.get("uuid", None)
+        if query_val:
+            filter_kwargs = {"uuid": query_val}
+        else:
+            filter_kwargs = {"short_uuid": self.kwargs.get("short_uuid")}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        return obj
+
+    def get_result(self, request, short_uuid, **kwargs):
+        jobrun = self.get_object()
+        # FIXME: resturn return_payload
+        print(jobrun.output.return_payload)
+        return Response({})
+
+    def get_status(self, request, short_uuid, **kwargs):
+        jobrun = self.get_object()
+        next_url = "https://{}/v1/status/{}".format(
+            request.META["HTTP_HOST"],
+            jobrun.short_uuid
+            )
+        finished_next_url = "https://{}/v1/result/{}".format(
+            request.META["HTTP_HOST"],
+            jobrun.short_uuid
+            )            
+        base_status = {
+            "message_type": "status",
+            "jobrun_uuid": jobrun.short_uuid,
+            "created": jobrun.created,
+            "updated": jobrun.modified,
+            "next_url": next_url
+        }
+
+        # translate the jobrun.status (celery) to our status
+        status_trans = {
+            'SUBMITTED': 'queued',
+            'PENDING': 'queued',
+            'PAUSED': 'paused',
+            'IN_PROGRESS': 'running',
+            'FAILED': 'failed',
+            'SUCCESS': 'finished',
+            'COMPLETED': 'finished',
+        }
+
+        job_status = status_trans.get(jobrun.status, 'unknown')
+        base_status['status'] = job_status
+
+        if job_status == 'finished':
+            base_status['next_url'] = finished_next_url
+            base_status['finished'] = base_status['updated']
+
+
+        return Response(base_status)
 
 
 class JobActionView(viewsets.ModelViewSet):
@@ -170,8 +244,7 @@ class JobActionView(viewsets.ModelViewSet):
                 "created": jobrun.created,
                 "updated": jobrun.modified,
                 "next_url": "https://{}/v1/status/{}".format(
-                    request.META['HTTP_HOST'],
-                    jobrun.short_uuid
+                    request.META["HTTP_HOST"], jobrun.short_uuid
                 ),
             }
         )
@@ -255,7 +328,6 @@ class JobRunView(viewsets.ModelViewSet):
         # This points to the blob location where the package is
         package_path = os.path.join(settings.BLOB_ROOT, str(package.uuid))
 
-
         # read config from askanna.yml
         config_file_path = os.path.join(package_path, "askanna.yml")
         if not os.path.exists(config_file_path):
@@ -289,6 +361,7 @@ class JobRunView(viewsets.ModelViewSet):
 
         return HttpResponse(entrypoint_string)
 
+
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
@@ -296,6 +369,7 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
     permission_classes = [IsAuthenticated]
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
+
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobPayload.objects.all()
@@ -310,10 +384,9 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
         if instance:
             return Response(instance.payload)
 
-        return Response({
-            "message_type": "error",
-            "message": "Payload was not found"
-        }, status=404)
+        return Response(
+            {"message_type": "error", "message": "Payload was not found"}, status=404
+        )
 
     @action(detail=True, methods=["get"], name="Get partial payload")
     def get_partial(self, request, *args, **kwargs):
@@ -323,14 +396,14 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
         offset: defaults to 0
         limit: defaults to 500
         """
-        offset = request.query_params.get('offset', 0)
-        limit = request.query_params.get('limit', 500)
+        offset = request.query_params.get("offset", 0)
+        limit = request.query_params.get("limit", 500)
 
         instance = self.get_object()
 
         json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
         lines = json_obj[offset:limit]
-        return HttpResponse("\n".join(lines), content_type='application/json')
+        return HttpResponse("\n".join(lines), content_type="application/json")
 
 
 class ProjectJobViewSet(
@@ -350,14 +423,19 @@ class ProjectJobViewSet(
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
 
-class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin, 
-                        mixins.CreateModelMixin,
-                        mixins.ListModelMixin,
-                        mixins.RetrieveModelMixin,
-                        viewsets.GenericViewSet):
+
+class JobArtifactView(
+    BaseUploadFinishMixin,
+    NestedViewSetMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     """
     List all artifacts and allow to finish upload action
     """
+
     queryset = JobArtifact.objects.all()
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
@@ -366,7 +444,6 @@ class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin,
     upload_finished_signal = artifact_upload_finish
     upload_finished_message = "artifact upload finished"
 
-
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return obj.filename
 
@@ -374,24 +451,27 @@ class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin,
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields=['size']
+        update_fields = ["size"]
         instance_obj.size = resume_obj.size
         instance_obj.save(update_fields=update_fields)
 
     # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):
-        jobrun = JobRun.objects.get(short_uuid=self.kwargs.get('parent_lookup_jobrun__short_uuid'))
+        jobrun = JobRun.objects.get(
+            short_uuid=self.kwargs.get("parent_lookup_jobrun__short_uuid")
+        )
         data = request.data.copy()
-        data.update(**{
-            'jobrun': str(jobrun.pk),
-        })
+        data.update(
+            **{"jobrun": str(jobrun.pk),}
+        )
 
         serializer = JobArtifactSerializerForInsert(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the artifact and send binary
@@ -400,35 +480,36 @@ class JobArtifactView(BaseUploadFinishMixin, NestedViewSetMixin,
 
         try:
             response = StreamingHttpResponse(instance.read, content_type="")
-            response['Content-Disposition'] = "attachment; filename=artifact.zip"
-            response['Content-Length'] = instance.size
+            response["Content-Disposition"] = "attachment; filename=artifact.zip"
+            response["Content-Length"] = instance.size
         except Exception as e:
             pass
         else:
             return response
 
-        return Response({
-            "message_type": "error",
-            "message": "Artifact was not found"
-        }, status=404)
+        return Response(
+            {"message_type": "error", "message": "Artifact was not found"}, status=404
+        )
 
 
 class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
     """
     Allow chunked uploading of artifacts
     """
+
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedArtifactPartSerializer
 
     # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        data.update(**{
-            'artifact': self.kwargs.get('parent_lookup_artifact__uuid')
-        })
+        data.update(**{"artifact": self.kwargs.get("parent_lookup_artifact__uuid")})
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
