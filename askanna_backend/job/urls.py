@@ -5,6 +5,7 @@ from job.views import (
     JobActionView,
     StartJobView,
     ProjectJobViewSet,
+    JobResultView,
     JobRunView,
     JobJobRunView,
     JobArtifactView,
@@ -65,4 +66,16 @@ urlpatterns = [
         kwargs={"uuid": None},
     ),
     path(r"v1/run/<uuid:uuid>", StartJobView.as_view({"post": "do_ingest"}),),
+
+    path(
+        r"v1/result/<shortuuid:short_uuid>",
+        JobResultView.as_view({"get": "get_result"}),
+        kwargs={"uuid": None},
+    ),
+
+    path(
+        r"v1/status/<shortuuid:short_uuid>",
+        JobResultView.as_view({"get": "get_status"}),
+        kwargs={"uuid": None},
+    ),
 ]
