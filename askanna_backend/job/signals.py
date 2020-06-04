@@ -140,6 +140,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "PROJECT_SHORT_UUID": str(pr.short_uuid),
         "PACKAGE_UUID": str(package.uuid),
         "PAYLOAD_UUID": str(pl.uuid),
+        "RESULT_UUID": str(op.uuid),
         "PAYLOAD_PATH": "/input/payload.json",
     }
 

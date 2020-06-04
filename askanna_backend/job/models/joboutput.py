@@ -56,12 +56,26 @@ class JobOutput(SlimBaseModel):
         store_path = [settings.ARTIFACTS_ROOT, self.storage_location, self.filename]
 
         try:
-          with open(os.path.join(*store_path), "rb") as f:
-              return f.read()
+            with open(os.path.join(*store_path), "rb") as f:
+                return f.read()
         except:
-          return b""
+            return b""
 
     class Meta:
         ordering = ["-created"]
         verbose_name = "Job Output"
         verbose_name_plural = "Job Outputs"
+
+
+class ChunkedJobOutputPart(SlimBaseModel):
+    filename = models.CharField(max_length=500)
+    size = models.IntegerField(help_text="Size of this resultchunk")
+    file_no = models.IntegerField()
+    is_last = models.BooleanField(default=False)
+
+    joboutput = models.ForeignKey(
+        "job.JobOutput", on_delete=models.SET_NULL, blank=True, null=True
+    )
+
+    class Meta:
+        ordering = ["-created"]

@@ -10,7 +10,9 @@ from job.views import (
     JobJobRunView,
     JobArtifactView,
     JobPayloadView,
+    JobResultView,
     ChunkedArtifactViewSet,
+    ChunkedJobOutputViewSet,
 )
 from project.urls import project_route, router as prouter
 from utils.urls import router
@@ -55,6 +57,20 @@ artifact_route.register(
     ChunkedArtifactViewSet,
     basename="artifact-artifactchunk",
     parents_query_lookups=["artifact__jobrun__short_uuid", "artifact__uuid"],
+)
+
+jobresult_route = jobrun_route.register(
+    r"result",
+    JobResultView,
+    basename="jobrun-result",
+    parents_query_lookups=["jobrun__short_uuid"],
+)
+
+jobresult_route.register(
+    r"resultchunk",
+    ChunkedJobOutputViewSet,
+    basename="result-resultchunk",
+    parents_query_lookups=["joboutput__jobrun__short_uuid", "joboutput__uuid"],
 )
 
 urlpatterns = [

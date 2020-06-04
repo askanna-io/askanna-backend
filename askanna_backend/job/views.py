@@ -147,11 +147,19 @@ class StartJobView(viewsets.GenericViewSet):
         )
 
 
-class JobResultView(viewsets.GenericViewSet):
+class JobResultView(
+    BaseUploadFinishMixin,
+    NestedViewSetMixin,
+    viewsets.GenericViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsAuthenticated]
+
+    upload_target_location = settings.ARTIFACTS_ROOT
+    upload_finished_signal = None
+    upload_finished_message = "Job result uploaded"
+
 
     # def get_queryset(self):
     #     query_val = self.kwargs.get("uuid", None)
@@ -511,3 +519,24 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
+
+class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
+    """
+    Allow chunked uploading of artifacts
+    """
+
+    queryset = ChunkedArtifactPart.objects.all()
+    serializer_class = ChunkedArtifactPartSerializer
+
+    # overwrite create row, we need to add the jobrun
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data.update(**{"artifact": self.kwargs.get("parent_lookup_artifact__uuid")})
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
