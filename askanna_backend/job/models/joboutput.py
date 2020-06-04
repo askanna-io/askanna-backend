@@ -58,7 +58,8 @@ class JobOutput(SlimBaseModel):
         try:
           with open(os.path.join(*store_path), "rb") as f:
               return f.read()
-        except:
+        except Exception as e:
+          # FIXME: log this error
           return b""
 
     class Meta:

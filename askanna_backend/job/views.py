@@ -176,7 +176,7 @@ class JobResultView(viewsets.GenericViewSet):
 
     def get_result(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
-        return StreamingHttpResponse(jobrun.output.read, content_type="")
+        return HttpResponse(jobrun.output.read, content_type="")
 
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
