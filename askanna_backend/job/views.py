@@ -176,9 +176,7 @@ class JobResultView(viewsets.GenericViewSet):
 
     def get_result(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
-        # FIXME: resturn return_payload
-        print(jobrun.output.return_payload)
-        return Response({})
+        return Response(jobrun.output.read)
 
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
