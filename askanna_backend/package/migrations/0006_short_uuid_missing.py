@@ -12,10 +12,11 @@ from askanna_backend.core.utils import GoogleTokenGenerator, bx_decode
 def forwards_func(apps, schema_editor):
     Package = apps.get_model("package", "Package")
 
-    for package in Package.objects.filter(short_uuid__isnull=True):
+    for package in Package.objects.filter(short_uuid=''):
         google_token = GoogleTokenGenerator()
         package.short_uuid = google_token.create_token(key="", uuid=package.uuid)
-        package.save(update_fields=["short_uuid"])
+        print(package.short_uuid, package.uuid)
+        package.save()
 
 
 def reverse_func(apps, schema_editor):
