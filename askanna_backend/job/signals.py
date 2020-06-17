@@ -134,17 +134,19 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "AA_TOKEN": jr_token,
         "AA_REMOTE": aa_remote,
         "JOBRUN_UUID": str(jr.uuid),
-        "JOBRUN_SHORT_UUID": jr.short_uuid,
+        "JOBRUN_SUUID": jr.short_uuid,
         "JOBRUN_JOBNAME": jd.name,
         "PROJECT_UUID": str(pr.uuid),
-        "PROJECT_SHORT_UUID": str(pr.short_uuid),
+        "PROJECT_SUUID": str(pr.short_uuid),
         "PACKAGE_UUID": str(package.uuid),
+        "PACKAGE_SUUID": str(package.short_uuid),
         "PAYLOAD_UUID": str(pl.uuid),
+        "PAYLOAD_SUUID": str(pl.short_uuid),
         "PAYLOAD_PATH": "/input/payload.json",
     }
 
     # set environment variables
-    env_variables = {"SECRET": 1}
+    env_variables = {}
     env_variables.update(**runner_variables)
     env_variables.update(**project_variables)
 
