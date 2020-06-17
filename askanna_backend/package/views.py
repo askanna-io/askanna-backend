@@ -48,7 +48,6 @@ class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
     Allow chunked uploading of packages
     """
     queryset = ChunkedPackagePart.objects.all()
-    lookup_field = "short_uuid"
     serializer_class = ChunkedPackagePartSerializer
     permission_classes = [IsAuthenticated]
 
