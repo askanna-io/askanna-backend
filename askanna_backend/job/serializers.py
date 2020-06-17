@@ -4,29 +4,33 @@ from job.models import JobDef, JobRun, JobPayload, JobArtifact, ChunkedArtifactP
 
 
 class JobSerializer(serializers.ModelSerializer):
-    project = serializers.SerializerMethodField('get_project')
+    project = serializers.SerializerMethodField("get_project")
 
     def get_project(self, instance):
         return str(instance.project.uuid)
+
     class Meta:
         model = JobDef
         fields = "__all__"
 
+
 class StartJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobDef
-        fields = '__all__'
+        fields = "__all__"
+
 
 class JobPayloadSerializer(serializers.ModelSerializer):
 
-    project = serializers.SerializerMethodField('get_project')
+    project = serializers.SerializerMethodField("get_project")
 
     def get_project(self, instance):
         return str(instance.jobdef.uuid)
 
     class Meta:
         model = JobPayload
-        fields = '__all__'
+        fields = "__all__"
+
 
 class JobRunSerializer(serializers.ModelSerializer):
     package = serializers.SerializerMethodField("get_package")
@@ -53,7 +57,8 @@ class JobRunSerializer(serializers.ModelSerializer):
         jobdef = instance.jobdef
         return {
             "name": jobdef.name,
-            "uuid": jobdef.short_uuid,
+            "uuid": jobdef.uuid,
+            "short_uuid": jobdef.short_uuid,
         }
 
     def get_jobid(self, instance):
@@ -64,7 +69,8 @@ class JobRunSerializer(serializers.ModelSerializer):
         # FIXME: replace with actual values
         return {
             "name": "Python 3.7",
-            "uuid": "1234-5678-9012-3456",
+            "uuid": "",
+            "short_uuid": "1234-5678-9012-3456",
             "cpu_time": (instance.modified - instance.created).seconds,
             "cpu_cores": 1,
             "memory_mib": 70,
@@ -80,7 +86,8 @@ class JobRunSerializer(serializers.ModelSerializer):
         # stick version to the package version
         return {
             "name": "latest",
-            "uuid": "2222-3333-2222-2222",
+            "uuid": "",
+            "short_uuid": "2222-3333-2222-2222",
         }
 
     def get_package(self, instance):
@@ -89,59 +96,62 @@ class JobRunSerializer(serializers.ModelSerializer):
         if package:
             return {
                 "name": package.filename,
-                "uuid": package.short_uuid,
+                "uuid": package.uuid,
+                "short_uuid": package.short_uuid,
             }
-        return {
-            "name": "latest",
-            "uuid": None
-        }
+        return {"name": "latest", "uuid": None, "short_uuid": None}
 
     def get_project(self, instance):
         project = instance.jobdef.project
         return {
             "name": project.name,
-            "uuid": project.short_uuid,
+            "uuid": project.uuid,
+            "short_uuid": project.short_uuid,
         }
 
     def get_user(self, instance):
         if instance.owner:
             return {
                 "name": instance.owner.username,
-                "uuid": instance.owner.short_uuid,
+                "uuid": instance.owner.uuid,
+                "short_uuid": instance.owner.short_uuid,
             }
         return {
             "name": None,
             "uuid": None,
+            "short_uuid": None,
         }
+
     class Meta:
         model = JobRun
         fields = "__all__"
 
 
-
-
 class JobArtifactSerializer(serializers.ModelSerializer):
 
-    project = serializers.SerializerMethodField('get_project')
+    project = serializers.SerializerMethodField("get_project")
     # jobrun = serializers.SerializerMethodField('get_jobrun')
 
     def get_project(self, instance):
         project = instance.jobrun.jobdef.project
         return {
             "name": project.name,
-            "uuid": project.short_uuid,
+            "uuid": project.uuid,
+            "short_uuid": project.short_uuid,
         }
 
     def get_jobrun(self, instance):
         jobrun = instance.jobrun
         return {
             "name": jobrun.name,
-            "uuid": jobrun.short_uuid,
+            "uuid": jobrun.uuid,
+            "short_uuid": jobrun.short_uuid,
         }
 
     class Meta:
         model = JobArtifact
         fields = "__all__"
+
 
 class JobArtifactSerializerForInsert(serializers.ModelSerializer):
     class Meta:
@@ -177,16 +187,18 @@ class JobRunTestSerializer(serializers.BaseSerializer):
           number of JobRuns for a particular JobDef. It can be a large
           number, so it's better if we paginate this.
     """
+
     def to_representation(self, instance):
         jobpayload = instance.payload
         return {
-            'uuid': instance.uuid,
-            'payload': str(jobpayload),
-            'status': instance.status,
-            'runtime': instance.runtime,
-            'memory': instance.memory,
-            'return_payload': instance.output.return_payload,
-            'stdout': instance.output.stdout,
-            'created': instance.created,
-            'finished': instance.output.created
+            "uuid": instance.uuid,
+            "payload": str(jobpayload),
+            "status": instance.status,
+            "runtime": instance.runtime,
+            "memory": instance.memory,
+            "return_payload": instance.output.return_payload,
+            "stdout": instance.output.stdout,
+            "created": instance.created,
+            "finished": instance.output.created,
         }
+

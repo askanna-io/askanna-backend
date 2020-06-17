@@ -371,6 +371,7 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobPayload.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobPayloadSerializer
     permission_classes = [IsAuthenticated]
 
@@ -435,6 +436,7 @@ class JobArtifactView(
     """
 
     queryset = JobArtifact.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
 
@@ -496,6 +498,7 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
     """
 
     queryset = ChunkedArtifactPart.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = ChunkedArtifactPartSerializer
 
     # overwrite create row, we need to add the jobrun
