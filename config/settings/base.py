@@ -382,3 +382,6 @@ ASKANNA_DOCKER_PASS = env.str("ASKANNA_DOCKER_PASS", os.getenv('ASKANNA_DOCKER_P
 
 # Encrypted field settings
 FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")
+
+# Setting for deletion of Docker containers after a run
+DOCKER_AUTO_REMOVE_CONTAINER = env.bool("DOCKER_AUTO_REMOVE_CONTAINER", default=False)

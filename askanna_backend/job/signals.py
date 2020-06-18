@@ -161,7 +161,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         stdout=True,
         stderr=True,
         detach=True,
-        auto_remove=True,
+        auto_remove=settings.DOCKER_AUTO_REMOVE_CONTAINER,
         # remove=True,  # remove container after run
     )
 
