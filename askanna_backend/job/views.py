@@ -363,7 +363,8 @@ class JobRunView(viewsets.ModelViewSet):
             command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
 
             # also substitute variables we get from the PAYLOAD
-            command = string_expand_variables(command)
+            _command = string_expand_variables([command])
+            command = _command[0]
             commands.append({"command": command, "print_command": print_command})
 
         entrypoint_string = render_to_string(
