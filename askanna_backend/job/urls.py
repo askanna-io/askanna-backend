@@ -78,4 +78,10 @@ urlpatterns = [
         JobResultView.as_view({"get": "get_status"}),
         kwargs={"uuid": None},
     ),
+
+    path(
+        r"v1/artifact/<shortuuid:short_uuid>",
+        JobArtifactView.as_view({"get": "retrieve"}),
+        kwargs={},
+    ),
 ]
