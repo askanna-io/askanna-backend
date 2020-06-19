@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import uuid
 
 from django.conf import settings
@@ -301,6 +302,15 @@ class JobActionView(viewsets.ModelViewSet):
         return Response({"status": job.status()})
 
 
+def string_expand_variables(strings: list, prefix: str="PLV_") -> list:
+    var_matcher = re.compile(r"\{\{(?P<MYVAR>[\w\-]+)\}\}")
+    for idx, line in enumerate(strings):
+        matches = var_matcher.findall(line)
+        for m in matches:
+            line = line.replace("{{"+m+"}}", "${"+prefix+m.strip()+"}")
+        strings[idx] = line
+    return strings
+
 class JobRunView(viewsets.ModelViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
@@ -351,6 +361,9 @@ class JobRunView(viewsets.ModelViewSet):
         for command in job_commands:
             print_command = command.replace('"', '"')
             command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
+
+            # also substitute variables we get from the PAYLOAD
+            command = string_expand_variables(command)
             commands.append({"command": command, "print_command": print_command})
 
         entrypoint_string = render_to_string(

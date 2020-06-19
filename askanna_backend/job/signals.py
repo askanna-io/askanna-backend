@@ -145,8 +145,15 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "PAYLOAD_PATH": "/input/payload.json",
     }
 
+    payload_variables = {}
+    if type(pl.payload) == type({}):
+        # we have a valid dict from the payload
+        for k,v in pl.payload.items():
+            payload_variables[ "PLV_"+k ] = json.dumps(v)
+
     # set environment variables
     env_variables = {}
+    env_variables.update(**payload_variables)
     env_variables.update(**runner_variables)
     env_variables.update(**project_variables)
 
