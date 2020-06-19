@@ -493,7 +493,7 @@ class JobArtifactView(
         instance = self.get_object()
 
         try:
-            response = StreamingHttpResponse(instance.read, content_type="")
+            response = StreamingHttpResponse(instance.read, content_type="application/zip")
             response["Content-Disposition"] = "attachment; filename=artifact.zip"
             response["Content-Length"] = instance.size
         except Exception as e:
