@@ -303,11 +303,11 @@ class JobActionView(viewsets.ModelViewSet):
 
 
 def string_expand_variables(strings: list, prefix: str="PLV_") -> list:
-    var_matcher = re.compile(r"\{\{(?P<MYVAR>[\w\-]+)\}\}")
+    var_matcher = re.compile(r"\{\{ (?P<MYVAR>[\w\-]+) \}\}")
     for idx, line in enumerate(strings):
         matches = var_matcher.findall(line)
         for m in matches:
-            line = line.replace("{{"+m+"}}", "${"+prefix+m.strip()+"}")
+            line = line.replace("{{ "+m+" }}", "${"+prefix+m.strip()+"}")
         strings[idx] = line
     return strings
 
