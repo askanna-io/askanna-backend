@@ -24,6 +24,8 @@ echo "Saving results as artifact"
 # forcefull going back into code directory
 cd /code
 
+askanna upload-result
+
 askanna artifact
 
 echo "Job succeeded"
