@@ -5,7 +5,7 @@ import uuid
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import StreamingHttpResponse, HttpResponse
+from django.http import StreamingHttpResponse, HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from drf_yasg import openapi
 
@@ -182,39 +182,36 @@ class JobResultView(viewsets.GenericViewSet):
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
         next_url = "https://{}/v1/status/{}".format(
-            request.META["HTTP_HOST"],
-            jobrun.short_uuid
-            )
+            request.META["HTTP_HOST"], jobrun.short_uuid
+        )
         finished_next_url = "https://{}/v1/result/{}".format(
-            request.META["HTTP_HOST"],
-            jobrun.short_uuid
-            )            
+            request.META["HTTP_HOST"], jobrun.short_uuid
+        )
         base_status = {
             "message_type": "status",
             "jobrun_uuid": jobrun.short_uuid,
             "created": jobrun.created,
             "updated": jobrun.modified,
-            "next_url": next_url
+            "next_url": next_url,
         }
 
         # translate the jobrun.status (celery) to our status
         status_trans = {
-            'SUBMITTED': 'queued',
-            'PENDING': 'queued',
-            'PAUSED': 'paused',
-            'IN_PROGRESS': 'running',
-            'FAILED': 'failed',
-            'SUCCESS': 'finished',
-            'COMPLETED': 'finished',
+            "SUBMITTED": "queued",
+            "PENDING": "queued",
+            "PAUSED": "paused",
+            "IN_PROGRESS": "running",
+            "FAILED": "failed",
+            "SUCCESS": "finished",
+            "COMPLETED": "finished",
         }
 
-        job_status = status_trans.get(jobrun.status, 'unknown')
-        base_status['status'] = job_status
+        job_status = status_trans.get(jobrun.status, "unknown")
+        base_status["status"] = job_status
 
-        if job_status == 'finished':
-            base_status['next_url'] = finished_next_url
-            base_status['finished'] = base_status['updated']
-
+        if job_status == "finished":
+            base_status["next_url"] = finished_next_url
+            base_status["finished"] = base_status["updated"]
 
         return Response(base_status)
 
@@ -302,14 +299,15 @@ class JobActionView(viewsets.ModelViewSet):
         return Response({"status": job.status()})
 
 
-def string_expand_variables(strings: list, prefix: str="PLV_") -> list:
+def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
     var_matcher = re.compile(r"\{\{ (?P<MYVAR>[\w\-]+) \}\}")
     for idx, line in enumerate(strings):
         matches = var_matcher.findall(line)
         for m in matches:
-            line = line.replace("{{ "+m+" }}", "${"+prefix+m.strip()+"}")
+            line = line.replace("{{ " + m + " }}", "${" + prefix + m.strip() + "}")
         strings[idx] = line
     return strings
+
 
 class JobRunView(viewsets.ModelViewSet):
     queryset = JobRun.objects.all()
@@ -493,13 +491,26 @@ class JobArtifactView(
         instance = self.get_object()
 
         try:
-            response = StreamingHttpResponse(instance.read, content_type="application/zip")
-            response["Content-Disposition"] = "attachment; filename=artifact.zip"
-            response["Content-Length"] = instance.size
+            location = os.path.join(instance.storage_location, instance.filename)
+            response = HttpResponseRedirect(
+                "{scheme}://{ASKANNA_CDN_FQDN}/files/{LOCATION}".format(
+                    scheme=request.scheme,
+                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION=location,
+                )
+            )
+            return response
         except Exception as e:
             pass
-        else:
-            return response
+
+        # try:
+        #     response = StreamingHttpResponse(instance.read, content_type="application/zip")
+        #     response["Content-Disposition"] = "attachment; filename=artifact.zip"
+        #     response["Content-Length"] = instance.size
+        # except Exception as e:
+        #     pass
+        # else:
+        #     return response
 
         return Response(
             {"message_type": "error", "message": "Artifact was not found"}, status=404
