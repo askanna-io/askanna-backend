@@ -150,7 +150,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     if type(pl.payload) == type({}):
         # we have a valid dict from the payload
         for k,v in pl.payload.items():
-            payload_variables[ "PLV_"+k ] = json.dumps(v)
+            payload_variables[ "PLV_"+k ] = json.dumps(v)[:10000] # limit to 10.000 chars
 
     # set environment variables
     env_variables = {}
