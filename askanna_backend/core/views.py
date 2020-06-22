@@ -85,6 +85,7 @@ class BaseUploadFinishMixin:
 
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
+        print(self.kwargs)
         obj = self.get_object()
 
         storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)

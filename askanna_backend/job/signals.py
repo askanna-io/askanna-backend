@@ -19,6 +19,7 @@ from core.utils import get_config
 import django.dispatch
 
 artifact_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
+result_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
 
 from job.models import (
     JobDef,
@@ -144,6 +145,8 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "PAYLOAD_UUID": str(pl.uuid),
         "PAYLOAD_SUUID": str(pl.short_uuid),
         "PAYLOAD_PATH": "/input/payload.json",
+        "RESULT_UUID": str(op.uuid),
+        "RESULT_SUUID": str(op.short_uuid),
     }
 
     payload_variables = {}
