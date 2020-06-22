@@ -19,6 +19,7 @@ from core.utils import get_config
 import django.dispatch
 
 artifact_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
+result_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
 
 from job.models import (
     JobDef,

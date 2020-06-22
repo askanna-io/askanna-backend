@@ -2,6 +2,7 @@ import json
 import os
 import re
 import uuid
+import pprint
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
@@ -33,6 +34,8 @@ from job.models import (
     JobRun,
     JobArtifact,
     ChunkedArtifactPart,
+    ChunkedJobOutputPart,
+    JobOutput,
 )
 from job.serializers import (
     ChunkedArtifactPartSerializer,
@@ -42,8 +45,10 @@ from job.serializers import (
     StartJobSerializer,
     JobRunSerializer,
     JobPayloadSerializer,
+    ChunkedJobOutputPartSerializer,
+    JobOutputSerializer,
 )
-from job.signals import artifact_upload_finish
+from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
 
 
@@ -148,19 +153,11 @@ class StartJobView(viewsets.GenericViewSet):
         )
 
 
-class JobResultView(
-    BaseUploadFinishMixin,
-    NestedViewSetMixin,
-    viewsets.GenericViewSet):
+class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsAuthenticated]
-
-    upload_target_location = settings.ARTIFACTS_ROOT
-    upload_finished_signal = None
-    upload_finished_message = "Job result uploaded"
-
 
     # def get_queryset(self):
     #     query_val = self.kwargs.get("uuid", None)
@@ -501,7 +498,7 @@ class JobArtifactView(
         try:
             location = os.path.join(instance.storage_location, instance.filename)
             response = HttpResponseRedirect(
-                "{scheme}://{ASKANNA_CDN_FQDN}/files/{LOCATION}".format(
+                "{scheme}://{ASKANNA_CDN_FQDN}/files/artifacts/{LOCATION}".format(
                     scheme=request.scheme,
                     ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
                     LOCATION=location,
@@ -535,26 +532,47 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
     permission_classes = [IsAuthenticated]
 
 
+class JobResultOutputView(
+    BaseUploadFinishMixin, NestedViewSetMixin, viewsets.GenericViewSet,
+):
+    queryset = JobOutput.objects.all()
+    lookup_field = "short_uuid"
+    serializer_class = JobOutputSerializer
+    permission_classes = [IsAuthenticated]
+
+    upload_target_location = settings.ARTIFACTS_ROOT
+    upload_finished_signal = result_upload_finish
+    upload_finished_message = "Job result uploaded"
+
+    def store_as_filename(self, resumable_filename: str, obj) -> str:
+        return "result_{}.output".format(obj.uuid.hex)
+
+    def get_upload_target_location(self, request, obj, **kwargs) -> str:
+        return os.path.join(self.upload_target_location, obj.storage_location)
+
+    # def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+    #     update_fields = ["size"]
+    #     instance_obj.size = resume_obj.size
+    #     instance_obj.save(update_fields=update_fields)
+
+
 class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
     """
     Allow chunked uploading of jobresult
     """
 
-    queryset = ChunkedArtifactPart.objects.all()
-    serializer_class = ChunkedArtifactPartSerializer
+    queryset = ChunkedJobOutputPart.objects.all()
+    serializer_class = ChunkedJobOutputPartSerializer
     permission_classes = [IsAuthenticated]
 
-    # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):
-        jobrun = JobRun.objects.get(
-            short_uuid=self.kwargs.get("parent_lookup_jobrun__short_uuid")
+        joboutput = JobOutput.objects.get(
+            short_uuid=self.kwargs.get("parent_lookup_joboutput__short_uuid")
         )
         data = request.data.copy()
-        data.update(
-            **{"jobrun": str(jobrun.pk),}
-        )
+        data.update(**{"joboutput": str(joboutput.pk)})
 
-        serializer = ChunkedArtifactPartSerializer(data=data)
+        serializer = ChunkedJobOutputPartSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

@@ -1,6 +1,20 @@
 from rest_framework import serializers
 
-from job.models import JobDef, JobRun, JobPayload, JobArtifact, ChunkedArtifactPart
+from job.models import (
+    JobDef,
+    JobRun,
+    JobPayload,
+    JobArtifact,
+    ChunkedArtifactPart,
+    ChunkedJobOutputPart,
+    JobOutput,
+)
+
+
+class JobOutputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobOutput
+        fields = "__all__"
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -162,6 +176,12 @@ class JobArtifactSerializerForInsert(serializers.ModelSerializer):
 class ChunkedArtifactPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChunkedArtifactPart
+        fields = "__all__"
+
+
+class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChunkedJobOutputPart
         fields = "__all__"
 
 
