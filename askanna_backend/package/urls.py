@@ -14,7 +14,7 @@ package_router = router.register(r"package", PackageViewSet)
 
 project_route.register(r"packages", ProjectPackageViewSet, "project-package", parents_query_lookups=["project__short_uuid"])
 
-package_router.register(r"packagechunk", ChunkedPackagePartViewSet, "package-packagechunk", parents_query_lookups=["package__uuid"])
+package_router.register(r"packagechunk", ChunkedPackagePartViewSet, "package-packagechunk", parents_query_lookups=["package__short_uuid"])
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),

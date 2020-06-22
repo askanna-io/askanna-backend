@@ -56,7 +56,7 @@ artifact_route.register(
     r"artifactchunk",
     ChunkedArtifactViewSet,
     basename="artifact-artifactchunk",
-    parents_query_lookups=["artifact__jobrun__short_uuid", "artifact__uuid"],
+    parents_query_lookups=["artifact__jobrun__short_uuid", "artifact__short_uuid"],
 )
 
 jobresult_route = jobrun_route.register(
@@ -93,5 +93,11 @@ urlpatterns = [
         r"v1/status/<shortuuid:short_uuid>",
         JobResultView.as_view({"get": "get_status"}),
         kwargs={"uuid": None},
+    ),
+
+    path(
+        r"v1/artifact/<shortuuid:short_uuid>",
+        JobArtifactView.as_view({"get": "retrieve"}),
+        kwargs={},
     ),
 ]

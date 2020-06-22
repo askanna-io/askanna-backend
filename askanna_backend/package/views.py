@@ -28,6 +28,7 @@ class PackageViewSet(BaseUploadFinishMixin, mixins.CreateModelMixin,
     List all packages and allow to finish upload action
     """
     queryset = Package.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [IsAuthenticated]
 
@@ -55,6 +56,7 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
                             viewsets.ReadOnlyModelViewSet):
 
     queryset = Package.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [IsAuthenticated]
 

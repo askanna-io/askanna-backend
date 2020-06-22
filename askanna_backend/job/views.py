@@ -1,10 +1,11 @@
 import json
 import os
+import re
 import uuid
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import StreamingHttpResponse, HttpResponse
+from django.http import StreamingHttpResponse, HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from drf_yasg import openapi
 
@@ -184,44 +185,41 @@ class JobResultView(
 
     def get_result(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
-        return Response(jobrun.output.read)
+        return HttpResponse(jobrun.output.read, content_type="")
 
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
         next_url = "https://{}/v1/status/{}".format(
-            request.META["HTTP_HOST"],
-            jobrun.short_uuid
-            )
+            request.META["HTTP_HOST"], jobrun.short_uuid
+        )
         finished_next_url = "https://{}/v1/result/{}".format(
-            request.META["HTTP_HOST"],
-            jobrun.short_uuid
-            )            
+            request.META["HTTP_HOST"], jobrun.short_uuid
+        )
         base_status = {
             "message_type": "status",
             "jobrun_uuid": jobrun.short_uuid,
             "created": jobrun.created,
             "updated": jobrun.modified,
-            "next_url": next_url
+            "next_url": next_url,
         }
 
         # translate the jobrun.status (celery) to our status
         status_trans = {
-            'SUBMITTED': 'queued',
-            'PENDING': 'queued',
-            'PAUSED': 'paused',
-            'IN_PROGRESS': 'running',
-            'FAILED': 'failed',
-            'SUCCESS': 'finished',
-            'COMPLETED': 'finished',
+            "SUBMITTED": "queued",
+            "PENDING": "queued",
+            "PAUSED": "paused",
+            "IN_PROGRESS": "running",
+            "FAILED": "failed",
+            "SUCCESS": "finished",
+            "COMPLETED": "finished",
         }
 
-        job_status = status_trans.get(jobrun.status, 'unknown')
-        base_status['status'] = job_status
+        job_status = status_trans.get(jobrun.status, "unknown")
+        base_status["status"] = job_status
 
-        if job_status == 'finished':
-            base_status['next_url'] = finished_next_url
-            base_status['finished'] = base_status['updated']
-
+        if job_status == "finished":
+            base_status["next_url"] = finished_next_url
+            base_status["finished"] = base_status["updated"]
 
         return Response(base_status)
 
@@ -309,6 +307,16 @@ class JobActionView(viewsets.ModelViewSet):
         return Response({"status": job.status()})
 
 
+def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
+    var_matcher = re.compile(r"\{\{ (?P<MYVAR>[\w\-]+) \}\}")
+    for idx, line in enumerate(strings):
+        matches = var_matcher.findall(line)
+        for m in matches:
+            line = line.replace("{{ " + m + " }}", "${" + prefix + m.strip() + "}")
+        strings[idx] = line
+    return strings
+
+
 class JobRunView(viewsets.ModelViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
@@ -359,6 +367,10 @@ class JobRunView(viewsets.ModelViewSet):
         for command in job_commands:
             print_command = command.replace('"', '"')
             command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
+
+            # also substitute variables we get from the PAYLOAD
+            _command = string_expand_variables([command])
+            command = _command[0]
             commands.append({"command": command, "print_command": print_command})
 
         entrypoint_string = render_to_string(
@@ -379,6 +391,7 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobPayload.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobPayloadSerializer
     permission_classes = [IsAuthenticated]
 
@@ -443,6 +456,7 @@ class JobArtifactView(
     """
 
     queryset = JobArtifact.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = JobArtifactSerializer
     permission_classes = [IsAuthenticated]
 
@@ -485,13 +499,26 @@ class JobArtifactView(
         instance = self.get_object()
 
         try:
-            response = StreamingHttpResponse(instance.read, content_type="")
-            response["Content-Disposition"] = "attachment; filename=artifact.zip"
-            response["Content-Length"] = instance.size
+            location = os.path.join(instance.storage_location, instance.filename)
+            response = HttpResponseRedirect(
+                "{scheme}://{ASKANNA_CDN_FQDN}/files/{LOCATION}".format(
+                    scheme=request.scheme,
+                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION=location,
+                )
+            )
+            return response
         except Exception as e:
             pass
-        else:
-            return response
+
+        # try:
+        #     response = StreamingHttpResponse(instance.read, content_type="application/zip")
+        #     response["Content-Disposition"] = "attachment; filename=artifact.zip"
+        #     response["Content-Length"] = instance.size
+        # except Exception as e:
+        #     pass
+        # else:
+        #     return response
 
         return Response(
             {"message_type": "error", "message": "Artifact was not found"}, status=404
@@ -505,35 +532,29 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
 
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedArtifactPartSerializer
-
-    # overwrite create row, we need to add the jobrun
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        data.update(**{"artifact": self.kwargs.get("parent_lookup_artifact__uuid")})
-
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+    permission_classes = [IsAuthenticated]
 
 
 class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
     """
-    Allow chunked uploading of artifacts
+    Allow chunked uploading of jobresult
     """
 
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedArtifactPartSerializer
+    permission_classes = [IsAuthenticated]
 
     # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):
+        jobrun = JobRun.objects.get(
+            short_uuid=self.kwargs.get("parent_lookup_jobrun__short_uuid")
+        )
         data = request.data.copy()
-        data.update(**{"artifact": self.kwargs.get("parent_lookup_artifact__uuid")})
+        data.update(
+            **{"jobrun": str(jobrun.pk),}
+        )
 
-        serializer = self.get_serializer(data=data)
+        serializer = ChunkedArtifactPartSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

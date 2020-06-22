@@ -1,4 +1,5 @@
 import docker
+import json
 import os
 import sys
 import stat
@@ -134,18 +135,28 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "AA_TOKEN": jr_token,
         "AA_REMOTE": aa_remote,
         "JOBRUN_UUID": str(jr.uuid),
-        "JOBRUN_SHORT_UUID": jr.short_uuid,
+        "JOBRUN_SUUID": jr.short_uuid,
         "JOBRUN_JOBNAME": jd.name,
         "PROJECT_UUID": str(pr.uuid),
-        "PROJECT_SHORT_UUID": str(pr.short_uuid),
+        "PROJECT_SUUID": str(pr.short_uuid),
         "PACKAGE_UUID": str(package.uuid),
+        "PACKAGE_SUUID": str(package.short_uuid),
         "PAYLOAD_UUID": str(pl.uuid),
-        "RESULT_UUID": str(op.uuid),
+        "PAYLOAD_SUUID": str(pl.short_uuid),
         "PAYLOAD_PATH": "/input/payload.json",
+        "RESULT_UUID": str(op.uuid),
+        "RESULT_SUUID": str(op.short_uuid),
     }
 
+    payload_variables = {}
+    if type(pl.payload) == type({}):
+        # we have a valid dict from the payload
+        for k,v in pl.payload.items():
+            payload_variables[ "PLV_"+k ] = json.dumps(v)[:10000] # limit to 10.000 chars
+
     # set environment variables
-    env_variables = {"SECRET": 1}
+    env_variables = {}
+    env_variables.update(**payload_variables)
     env_variables.update(**runner_variables)
     env_variables.update(**project_variables)
 
@@ -160,7 +171,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         stdout=True,
         stderr=True,
         detach=True,
-        auto_remove=True,
+        auto_remove=settings.DOCKER_AUTO_REMOVE_CONTAINER,
         # remove=True,  # remove container after run
     )
 
