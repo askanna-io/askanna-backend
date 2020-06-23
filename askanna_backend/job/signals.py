@@ -152,14 +152,20 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     payload_variables = {}
     if type(pl.payload) == type({}):
         # we have a valid dict from the payload
-        for k,v in pl.payload.items():
-            payload_variables[ "PLV_"+k ] = json.dumps(v)[:10000] # limit to 10.000 chars
+        for k, v in pl.payload.items():
+            if isinstance(v, (list, dict)):
+                payload_variables[ "PLV_"+k ] = json.dumps(v)[:10000] # limit to 10.000 chars
+            elif isinstance(v, (str)):
+                payload_variables[ "PLV_"+k ] = v[:10000] # limit to 10.000 chars
+            else:
+                # we have a bool or number
+                payload_variables[ "PLV_"+k ] = v
 
     # set environment variables
     env_variables = {}
+    env_variables.update(**project_variables)
     env_variables.update(**payload_variables)
     env_variables.update(**runner_variables)
-    env_variables.update(**project_variables)
 
     jr.status = "IN_PROGRESS"
     jr.save(update_fields=["status"])
