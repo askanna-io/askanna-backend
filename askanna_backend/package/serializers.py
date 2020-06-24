@@ -14,7 +14,7 @@ class PackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Package
         # fields = "__all__"
-        exclude = ['storage_location']
+        exclude = ["storage_location"]
 
 
 class ChunkedPackagePartSerializer(serializers.ModelSerializer):
@@ -38,9 +38,8 @@ class PackageSerializerDetail(serializers.ModelSerializer):
             Please note the /files/blob/ prefix
         """
         return "https://{FQDN}/files/blob/{LOCATION}".format(
-                FQDN=settings.ASKANNA_CDN_FQDN,
-                LOCATION=instance.uuid
-            )
+            FQDN=settings.ASKANNA_CDN_FQDN, LOCATION=instance.uuid
+        )
 
     def get_files_for_package(self, instance):
         """
@@ -78,6 +77,11 @@ class PackageSerializerDetail(serializers.ModelSerializer):
         for d in directories:
             path_elements = d.split("/")
             parent = "/".join(path_elements[: len(path_elements) - 1])
+
+            # skip adding the root dir (case parent=None)
+            if not parent:
+                continue
+
             dirlist.append(
                 {
                     "path": d,
