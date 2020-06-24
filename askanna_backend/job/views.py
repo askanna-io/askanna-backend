@@ -44,6 +44,7 @@ from job.serializers import (
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
+    JobRunDetailSerializer,
     JobPayloadSerializer,
     ChunkedJobOutputPartSerializer,
     JobOutputSerializer,
@@ -384,6 +385,15 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
     permission_classes = [IsAuthenticated]
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
+
+    # overwrite the default view and serializer for detail page
+    # we want to use an other serializer for this.
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer_kwargs = {}
+        serializer_kwargs['context'] = self.get_serializer_context()
+        serializer = JobRunDetailSerializer(instance, **serializer_kwargs)
+        return Response(serializer.data)
 
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):

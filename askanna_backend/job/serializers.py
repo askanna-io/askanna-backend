@@ -65,7 +65,8 @@ class JobRunSerializer(serializers.ModelSerializer):
         return payload.data
 
     def get_stdout(self, instance):
-        return instance.output.stdout
+        # for list operations return an empty stdout
+        return []
 
     def get_jobdef(self, instance):
         jobdef = instance.jobdef
@@ -139,6 +140,12 @@ class JobRunSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobRun
         fields = "__all__"
+
+
+class JobRunDetailSerializer(JobRunSerializer):
+
+    def get_stdout(self, instance):
+        return instance.output.stdout
 
 
 class JobArtifactSerializer(serializers.ModelSerializer):
