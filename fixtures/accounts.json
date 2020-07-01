@@ -58,5 +58,15 @@
             "verified": true,
             "primary": true
         }
+    },
+    {
+        "model": "account.emailaddress",
+        "pk": 7,
+        "fields": {
+            "user": 7,
+            "email": "caya@askanna.io",
+            "verified": true,
+            "primary": true
+        }
     }
 ]
