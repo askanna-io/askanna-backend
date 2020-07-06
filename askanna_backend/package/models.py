@@ -12,6 +12,8 @@ class Package(SlimBaseModel):
     # Storage location can also e a bucket location
     # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
     storage_location = models.CharField(max_length=1000)
+    
+    message = models.CharField(max_length=500, null=True, blank=True, default='')
     project = models.ForeignKey(
         "project.Project",
         on_delete=models.SET_DEFAULT,
