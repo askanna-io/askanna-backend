@@ -91,6 +91,12 @@ urlpatterns = [
     ),
 
     path(
+        r"v1/log/<shortuuid:short_uuid>",
+        JobRunView.as_view({"get": "log"}),
+        kwargs={},
+    ),
+
+    path(
         r"v1/status/<shortuuid:short_uuid>",
         JobResultView.as_view({"get": "get_status"}),
         kwargs={"uuid": None},
