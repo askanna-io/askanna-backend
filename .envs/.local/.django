@@ -24,3 +24,5 @@ DATABASE_URL=postgresql://anna:pass@postgres/askanna_backend
 
 # ASKANNA_DOCKER_USER=robot
 # ASKANNA_DOCKER_PASS=robotpass
+
+DJANGO_DEBUG=0
