@@ -10,6 +10,12 @@ from zipfile import ZipFile
 from package.models import Package, ChunkedPackagePart
 
 
+class PackageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Package
+        # fields = "__all__"
+        exclude = ["storage_location"]
+
 class PackageSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField("get_created_by")
 

@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from rest_framework import status
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from resumable.files import ResumableFile
@@ -16,7 +17,7 @@ from core.mixins import HybridUUIDMixin
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from package.listeners import *
 from package.models import Package, ChunkedPackagePart
-from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail
+from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail, PackageCreateSerializer
 from package.signals import package_upload_finish
 
 
@@ -35,6 +36,16 @@ class PackageViewSet(BaseUploadFinishMixin, mixins.CreateModelMixin,
     upload_target_location = settings.PACKAGES_ROOT
     upload_finished_signal = package_upload_finish
     upload_finished_message = "package upload finished"
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a model instance. Overwrite for create /POST
+        """
+        serializer = PackageCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         update_fields=['created_by', 'storage_location', 'size']
