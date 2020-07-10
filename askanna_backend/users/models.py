@@ -16,6 +16,8 @@ class User(SlimBaseForAuthModel, AbstractUser):
     def get_absolute_url(self):
         return reverse("users:detail", kwargs={"username": self.username})
 
+    def get_name(self):
+        return self.name or self.get_full_name()
 
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"

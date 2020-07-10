@@ -11,6 +11,33 @@ from package.models import Package, ChunkedPackagePart
 
 
 class PackageSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField("get_created_by")
+
+    def get_created_by(self, instance):
+        user = instance.created_by
+        if user:
+            return {
+                "name": user.get_name(),
+                "uuid": str(user.uuid),
+                "short_uuid": str(user.short_uuid),
+            }
+
+        return {
+            "name": "",
+            "uuid": "",
+            "short_uuid": "",
+        }
+
+    project = serializers.SerializerMethodField("get_project")
+
+    def get_project(self, instance):
+        project = instance.project
+        return {
+            "name": project.name,
+            "uuid": str(project.uuid),
+            "short_uuid": str(project.short_uuid),
+        }
+
     class Meta:
         model = Package
         # fields = "__all__"
