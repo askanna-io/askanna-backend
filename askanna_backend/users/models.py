@@ -17,7 +17,7 @@ class User(SlimBaseForAuthModel, AbstractUser):
         return reverse("users:detail", kwargs={"username": self.username})
 
     def get_name(self):
-        return self.name or self.get_full_name()
+        return self.name or self.get_full_name() or self.username or self.short_uuid
 
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
