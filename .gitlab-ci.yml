@@ -27,6 +27,8 @@ test:
       alias: redis
   image: ${DOCKER_REPO}/base:master
   stage: test
+  tags:
+    - kubernetes
   before_script:
     - pip install -U pip
     - pip install -r requirements/local.txt
@@ -37,7 +39,7 @@ test:
   image: docker:git
   stage: build_master
   tags:
-    - normal
+    - docker
   variables:
     DOCKER_TLS_CERTDIR: ""
   services:
@@ -65,7 +67,7 @@ build_production:
   image: docker:git
   stage: build
   tags:
-    - normal
+    - docker
   variables:
     DOCKER_TLS_CERTDIR: ""
   services:
@@ -86,7 +88,7 @@ stop_review:
   when: manual
   allow_failure: true
   tags:
-    - normal
+    - kubernetes
   script:
     - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
   except:
@@ -98,7 +100,7 @@ stop_review:
   image: curlimages/curl
   stage: deploy
   tags:
-    - normal
+    - kubernetes
   script:
     - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
 
