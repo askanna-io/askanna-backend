@@ -4,15 +4,24 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-
 python manage.py migrate
-python manage.py loaddata fixtures/users.json
-python manage.py loaddata fixtures/accounts.json
-python manage.py loaddata fixtures/workspace.json
-python manage.py loaddata fixtures/projects.json
-python manage.py loaddata fixtures/jobdef.json
-python manage.py loaddata fixtures/jobpayload.json
 
-python manage.py install_fixture
+if [[ "${DJANGO_DEBUG}" == "1" ]]; then
+    echo "***************************************************"
+    echo "Working on develop environment, installing fixtures"
+    echo "***************************************************"
+    python manage.py loaddata fixtures/users.json
+    python manage.py loaddata fixtures/accounts.json
+    python manage.py loaddata fixtures/workspace.json
+    python manage.py loaddata fixtures/projects.json
+    python manage.py loaddata fixtures/jobdef.json
+    python manage.py loaddata fixtures/jobpayload.json
+
+    python manage.py install_fixture
+else
+    echo "**********************************************************"
+    echo "Working on production environment, not installing fixtures"
+    echo "**********************************************************"
+fi
 
 python manage.py runserver_plus 0.0.0.0:8000
