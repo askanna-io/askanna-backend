@@ -21,13 +21,17 @@ from package.serializers import PackageSerializer, ChunkedPackagePartSerializer,
 from package.signals import package_upload_finish
 
 
-class PackageViewSet(BaseUploadFinishMixin, mixins.CreateModelMixin,
-                        mixins.ListModelMixin,
-                        mixins.RetrieveModelMixin,
-                        viewsets.GenericViewSet):
+class PackageViewSet(
+    BaseUploadFinishMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     """
     List all packages and allow to finish upload action
     """
+
     queryset = Package.objects.all()
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
@@ -48,23 +52,26 @@ class PackageViewSet(BaseUploadFinishMixin, mixins.CreateModelMixin,
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields=['created_by', 'storage_location', 'size']
+        update_fields = ["created_by", "storage_location", "size"]
         instance_obj.storage_location = resume_obj.filename
         instance_obj.created_by = request.user
         instance_obj.size = resume_obj.size
         instance_obj.save(update_fields=update_fields)
 
+
 class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
     """
     Allow chunked uploading of packages
     """
+
     queryset = ChunkedPackagePart.objects.all()
     serializer_class = ChunkedPackagePartSerializer
     permission_classes = [IsAuthenticated]
 
 
-class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin, 
-                            viewsets.ReadOnlyModelViewSet):
+class ProjectPackageViewSet(
+    HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
+):
 
     queryset = Package.objects.all()
     lookup_field = "short_uuid"
@@ -76,7 +83,7 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer_kwargs = {}
-        serializer_kwargs['context'] = self.get_serializer_context()
+        serializer_kwargs["context"] = self.get_serializer_context()
         serializer = PackageSerializerDetail(instance, **serializer_kwargs)
         return Response(serializer.data)
 
@@ -84,11 +91,13 @@ class ProjectPackageViewSet(HybridUUIDMixin, NestedViewSetMixin,
     def download(self, request, **kwargs):
         package = self.get_object()
 
-        return Response({
-            "action": "redirect",
-            "target": "{scheme}://{FQDN}/files/packages/{LOCATION}".format(
-                scheme=request.scheme,
-                FQDN=settings.ASKANNA_CDN_FQDN,
-                LOCATION=package.storage_location
-            )
-        })
+        return Response(
+            {
+                "action": "redirect",
+                "target": "{scheme}://{FQDN}/files/packages/{LOCATION}".format(
+                    scheme=request.scheme,
+                    FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION=package.storage_location,
+                ),
+            }
+        )
