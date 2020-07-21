@@ -16,6 +16,7 @@ class PackageCreateSerializer(serializers.ModelSerializer):
         # fields = "__all__"
         exclude = ["storage_location"]
 
+
 class PackageSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField("get_created_by")
 
@@ -104,16 +105,15 @@ class PackageSerializerDetail(serializers.ModelSerializer):
                 filelist.append(r)
 
         # also get all directories
-        directories = list(set(map(lambda x: x["parent"], filelist)))
+        # we remove the root entry "/"
+        directories = sorted(
+            list(set(map(lambda x: x["parent"], filelist)) - set(["/"]))
+        )
 
         dirlist = []
         for d in directories:
             path_elements = d.split("/")
             parent = "/".join(path_elements[: len(path_elements) - 1])
-
-            # skip adding the root dir (case parent=None)
-            if not parent:
-                continue
 
             dirlist.append(
                 {
