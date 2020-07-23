@@ -29,20 +29,20 @@ environment variables in all cases.
 Install and running via docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Using docker to run locally requires the least effort and when development for 
+Using docker to run locally requires the least effort and when development for
 the askanna-backend is not your primary goal, we advise you to do this setup.
 
-First make sure you have docker installed on your system: 
+First make sure you have docker installed on your system:
 
-Consult this guide to install Docker-CE on your Ubuntu sytem: 
+Consult this guide to install Docker-CE on your Ubuntu sytem:
 https://docs.docker.com/install/linux/docker-ce/ubuntu/ .
 
-Additionally we have a setup which uses docker-compose to launch the whole 
+Additionally we have a setup which uses docker-compose to launch the whole
 stack of docker images. This requires `docker-compose` to be installed.
-Please follow the guide on https://docs.docker.com/compose/install/ to install 
+Please follow the guide on https://docs.docker.com/compose/install/ to install
 this on your system.
 
-We have setup most of the required variables in the code repository for running 
+We have setup most of the required variables in the code repository for running
 locally. The next thing is to launch it:
 
 ::
@@ -53,9 +53,8 @@ You can then access askanna_backend via http://localhost:8005/
 
 Running additional commands on docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When running in a docker-compose setup, one cannot directly excecute commands on 
-the containers. E.g. you want to know whether the django service has all the migrations 
+When running in a docker-compose setup, one cannot directly excecute commands on
+the containers. E.g. you want to know whether the django service has all the migrations
 applied. In a regular dev setup one would issue the following command:
 
 
@@ -69,6 +68,23 @@ With docker-compose, one should apply the following command:
 ::
 
   $ docker-compose run django python manage.py showmigrations
+
+::
+
+When you have made changes to the model, one should apply the following command:
+
+::
+
+  $ docker exec -it askanna-backend_django_1 /bin/sh
+  $ python manage.py makemigrations
+
+Then, to apply the change your data you need to run the following command:
+
+::
+
+  $ python manage.py migrate
+
+::
 
 
 Basic Commands
