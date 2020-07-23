@@ -122,7 +122,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_user(self, instance):
         if instance.owner:
             return {
-                "name": instance.owner.username,
+                "name": instance.owner.get_name(),
                 "uuid": instance.owner.uuid,
                 "short_uuid": instance.owner.short_uuid,
             }
