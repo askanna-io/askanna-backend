@@ -36,6 +36,7 @@ from job.models import (
     ChunkedArtifactPart,
     ChunkedJobOutputPart,
     JobOutput,
+    JobVariable,
 )
 from job.serializers import (
     ChunkedArtifactPartSerializer,
@@ -47,10 +48,11 @@ from job.serializers import (
     JobPayloadSerializer,
     ChunkedJobOutputPartSerializer,
     JobOutputSerializer,
+    JobVariableSerializer, JobVariableUpdateSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
-
+from users.models import Membership, MSP_WORKSPACE
 
 class StartJobView(viewsets.GenericViewSet):
     queryset = JobDef.objects.all()
@@ -584,3 +586,39 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+
+class JobVariableView(NestedViewSetMixin,
+    # mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+    ):
+    queryset = JobVariable.objects.all()
+    lookup_field = "short_uuid"
+    serializer_class = JobVariableSerializer
+    permission_classes = [IsAuthenticated]    
+
+
+    def get_serializer_class(self):
+        """
+        Return different serializer class for update
+
+        """
+        if self.request.method.upper() in ["PUT", "PATCH"]:
+            return JobVariableUpdateSerializer
+        return self.serializer_class
+
+    def get_queryset(self):
+        """
+        Return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return self.queryset.filter(project__workspace__in=member_of_workspaces)
+ 
