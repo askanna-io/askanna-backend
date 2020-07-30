@@ -446,6 +446,49 @@ class ProjectJobViewSet(
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
 
+class JobArtifactShortcutView(
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,):
+    """
+    Retrieve a specific artifact to be exposed over `/v1/artifact/{{ run_suuid }}`
+    We allow the `run_suuid` to be given as short urls are for convenience to get
+    something for a specific `run_suuid`. 
+
+    In case there is no artifact, we will return a http_status=404 (default via drf)
+
+    In case we have 1 artifact, we return the binary of this artifact
+    In case we find 1+ artifact, we return the first created artifact (sorted by date)
+    """
+
+    queryset = JobRun.objects.all()
+    lookup_field = "short_uuid"
+    # The serializer class is dummy here as this is not used
+    serializer_class = JobArtifactSerializer
+    permission_classes = [IsAuthenticated]
+
+    # overwrite the default view and serializer for detail page
+    # We will retrieve the artifact and send binary
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        artifact = instance.artifact.all().first()
+
+        try:
+            location = os.path.join(artifact.storage_location, artifact.filename)
+            response = HttpResponseRedirect(
+                "{scheme}://{ASKANNA_CDN_FQDN}/files/artifacts/{LOCATION}".format(
+                    scheme=request.scheme,
+                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION=location,
+                )
+            )
+            return response
+        except Exception as e:
+            print(e)
+
+        return Response(
+            {"message_type": "error", "message": "Artifact was not found"}, status=404
+        )
+
 
 class JobArtifactView(
     BaseUploadFinishMixin,
@@ -514,15 +557,6 @@ class JobArtifactView(
             return response
         except Exception as e:
             pass
-
-        # try:
-        #     response = StreamingHttpResponse(instance.read, content_type="application/zip")
-        #     response["Content-Disposition"] = "attachment; filename=artifact.zip"
-        #     response["Content-Length"] = instance.size
-        # except Exception as e:
-        #     pass
-        # else:
-        #     return response
 
         return Response(
             {"message_type": "error", "message": "Artifact was not found"}, status=404
