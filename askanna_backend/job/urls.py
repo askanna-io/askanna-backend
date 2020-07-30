@@ -9,6 +9,7 @@ from job.views import (
     JobRunView,
     JobJobRunView,
     JobArtifactView,
+    JobArtifactShortcutView,
     JobPayloadView,
     JobResultView,
     ChunkedArtifactViewSet,
@@ -104,7 +105,7 @@ urlpatterns = [
 
     path(
         r"v1/artifact/<shortuuid:short_uuid>",
-        JobArtifactView.as_view({"get": "retrieve"}),
+        JobArtifactShortcutView.as_view({"get": "retrieve"}),
         kwargs={},
     ),
 ]
