@@ -26,6 +26,6 @@ cd /code
 
 askanna upload-result
 
-askanna artifact
+askanna artifact add
 
 echo "Job succeeded"
