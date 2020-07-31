@@ -20,4 +20,15 @@ class UserAdmin(auth_admin.UserAdmin):
     list_display = ["username", "name", "uuid", "short_uuid", "is_superuser"]
     search_fields = ["name", "uuid", "short_uuid"]
 
-admin.site.register(Membership)
+
+@admin.register(Membership)
+class MembershipAdmin(admin.ModelAdmin):
+    list_display = [
+        "uuid",
+        "user",
+        "object_uuid",
+    ]
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid"]
