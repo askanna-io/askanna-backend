@@ -137,7 +137,11 @@ class StartJobView(viewsets.GenericViewSet):
 
         # create new Jobrun
         jobrun = JobRun.objects.create(
-            jobdef=jobdef, payload=job_pl, package=package, owner=request.user
+            status="PENDING",
+            jobdef=jobdef, 
+            payload=job_pl, 
+            package=package, 
+            owner=request.user
         )
 
         # return the JobRun id
