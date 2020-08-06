@@ -6,7 +6,12 @@ import pprint
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import StreamingHttpResponse, HttpResponse, HttpResponseRedirect
+from django.http import (
+    StreamingHttpResponse,
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.template.loader import render_to_string
 from drf_yasg import openapi
 
@@ -398,6 +403,8 @@ class JobRunView(viewsets.ModelViewSet):
 
         response_json = stdout
         if limit_or_offset:
+            offset = int(offset)
+            limit = int(limit)
             response_json = {"count": count, "results": stdout[offset : offset + limit]}
 
             scheme = request.scheme
@@ -467,9 +474,16 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
         instance = self.get_object()
 
-        json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
-        lines = json_obj[offset:limit]
-        return HttpResponse("\n".join(lines), content_type="application/json")
+        limit_or_offset = request.query_params.get("limit") or request.query_params.get(
+            "offset"
+        )
+        if limit_or_offset:
+            offset = int(offset)
+            limit = int(limit)
+            json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
+            lines = json_obj[offset:limit]
+            return HttpResponse("\n".join(lines), content_type="application/json")
+        return JsonResponse(instance.payload)
 
 
 class ProjectJobViewSet(
