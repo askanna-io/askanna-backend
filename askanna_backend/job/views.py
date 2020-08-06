@@ -48,11 +48,13 @@ from job.serializers import (
     JobPayloadSerializer,
     ChunkedJobOutputPartSerializer,
     JobOutputSerializer,
-    JobVariableSerializer, JobVariableUpdateSerializer,
+    JobVariableSerializer,
+    JobVariableUpdateSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
 from users.models import Membership, MSP_WORKSPACE
+
 
 class StartJobView(viewsets.GenericViewSet):
     queryset = JobDef.objects.all()
@@ -138,10 +140,10 @@ class StartJobView(viewsets.GenericViewSet):
         # create new Jobrun
         jobrun = JobRun.objects.create(
             status="PENDING",
-            jobdef=jobdef, 
-            payload=job_pl, 
-            package=package, 
-            owner=request.user
+            jobdef=jobdef,
+            payload=job_pl,
+            package=package,
+            owner=request.user,
         )
 
         # return the JobRun id
@@ -385,7 +387,44 @@ class JobRunView(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], name="JobRun Log")
     def log(self, request, short_uuid, **kwargs):
         instance = self.get_object()
-        return Response(instance.output.stdout)
+        stdout = instance.output.stdout
+        limit = request.query_params.get("limit", 100)
+        offset = request.query_params.get("offset", 0)
+
+        limit_or_offset = request.query_params.get("limit") or request.query_params.get(
+            "offset"
+        )
+        count = len(stdout)
+
+        response_json = stdout
+        if limit_or_offset:
+            response_json = {"count": count, "results": stdout[offset : offset + limit]}
+
+            scheme = request.scheme
+            path = request.path
+            host = request.META["HTTP_HOST"]
+            if offset + limit < count:
+                response_json[
+                    "next"
+                ] = "{scheme}://{host}{path}?limit={limit}&offset={offset}".format(
+                    scheme=scheme,
+                    limit=limit,
+                    offset=offset + limit,
+                    host=host,
+                    path=path,
+                )
+            if offset - limit > -1:
+                response_json[
+                    "previous"
+                ] = "{scheme}://{host}{path}?limit={limit}&offset={offset}".format(
+                    scheme=scheme,
+                    limit=limit,
+                    offset=offset - limit,
+                    host=host,
+                    path=path,
+                )
+
+        return Response(response_json)
 
 
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -450,9 +489,10 @@ class ProjectJobViewSet(
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
 
+
 class JobArtifactShortcutView(
-    mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,):
+    mixins.RetrieveModelMixin, viewsets.GenericViewSet,
+):
     """
     Retrieve a specific artifact to be exposed over `/v1/artifact/{{ run_suuid }}`
     We allow the `run_suuid` to be given as short urls are for convenience to get
@@ -626,18 +666,18 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
         )
 
 
-class JobVariableView(NestedViewSetMixin,
+class JobVariableView(
+    NestedViewSetMixin,
     # mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.UpdateModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
-    ):
+):
     queryset = JobVariable.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobVariableSerializer
-    permission_classes = [IsAuthenticated]    
-
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         """
@@ -659,4 +699,4 @@ class JobVariableView(NestedViewSetMixin,
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
         return self.queryset.filter(project__workspace__in=member_of_workspaces)
- 
+
