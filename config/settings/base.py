@@ -101,6 +101,7 @@ LOCAL_APPS = [
     "dummyload",
     "core",
     "project",
+    "project_template",
     "package",
     "job",
     # "flow",
