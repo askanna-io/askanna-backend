@@ -55,7 +55,12 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     config = load(askanna_yml, Loader=Loader)
 
     # Within AskAnna, we have several variables reserved
-    reserved_keys = ("push-target",)
+    reserved_keys = (
+        "cluster",
+        "environment",
+        "push-target",
+        "variables",
+    )
     project = obj.project
 
     jobs = list(set(config.keys()) - set(reserved_keys))
