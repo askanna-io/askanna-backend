@@ -6,9 +6,36 @@ from workspace.models import Workspace
 
 
 class ProjectSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField("get_created_by")
+    workspace = serializers.SerializerMethodField("get_workspace")
+
+    def get_workspace(self, instance):
+        return {
+            "uuid": instance.workspace.uuid,
+            "short_uuid": instance.workspace.short_uuid,
+            "name": instance.workspace.uuid,
+        }
+
+    def get_created_by(self, instance):
+        if instance.created_by is not None:
+            return {
+                "uuid": instance.created_by.uuid,
+                "short_uuid": instance.created_by.short_uuid,
+                "name": instance.created_by.get_name(),
+            }
+        return {
+            "uuid": None,
+            "short_uuid": None,
+            "name": None,
+        }
+
     class Meta:
         model = Project
-        fields = "__all__"
+        exclude = [
+            "deleted",
+            "activate_date",
+            "deactivate_date",
+        ]
 
 
 class ProjectUpdateSerializer(serializers.ModelSerializer):
@@ -31,9 +58,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         fields = ["name", "workspace"]
 
     def create(self, validated_data):
-        validated_data.update(
-            **{"title": "not set"}  #  FIXME: need to remove title field
-        )
+        validated_data.update(**{"created_by": self.context["request"].user})
         return super().create(validated_data)
 
     def validate_workspace(self, value):
@@ -92,6 +117,11 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
                 "uuid": instance.workspace.uuid,
                 "short_uuid": instance.workspace.short_uuid,
                 "name": instance.workspace.uuid,
+            },
+            "created_by": {
+                "uuid": instance.created_by.uuid,
+                "short_uuid": instance.created_by.short_uuid,
+                "name": instance.created_by.get_name(),
             },
             "status": 1,
             "created": instance.created,

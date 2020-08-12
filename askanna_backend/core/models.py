@@ -70,3 +70,16 @@ class BaseModel(TitleDescriptionModel, SlimBaseModel):
 class ActivatedModel(ActivatorModel, BaseModel):
     class Meta:
         abstract = True
+
+
+class AuthorModel(models.Model):
+    """
+        Adding created_by to the model to register who created this instance
+    """
+
+    created_by = models.ForeignKey(
+        "users.User", on_delete=models.SET_NULL, blank=True, null=True
+    )
+
+    class Meta:
+        abstract = True
