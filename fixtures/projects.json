@@ -5,7 +5,6 @@
         "fields": {
             "created": "2020-03-31T05:36:17.341Z",
             "modified": "2020-03-31T05:36:17.341Z",
-            "title": "AskAnna base",
             "description": "",
             "status": 1,
             "activate_date": "2020-03-31T05:36:17.327Z",
@@ -22,7 +21,6 @@
         "fields": {
             "created": "2020-03-11T15:27:19.536Z",
             "modified": "2020-03-31T05:34:37.307Z",
-            "title": "AskAnna HQ",
             "description": "",
             "status": 1,
             "activate_date": "2020-03-31T05:34:33Z",
@@ -39,7 +37,6 @@
         "fields": {
             "created": "2020-03-31T05:35:22.747Z",
             "modified": "2020-03-31T05:38:50.578Z",
-            "title": "AskAnna sandbox",
             "description": "safely play around in the sandbox",
             "status": 1,
             "activate_date": "2020-03-31T05:35:22Z",
