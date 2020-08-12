@@ -11,3 +11,7 @@ class Project(ActivatedModel):
 
     def __str__(self):
         return " - ".join([self.name, str(self.uuid)])
+
+    class Meta:
+        ordering = ["name"]
+
