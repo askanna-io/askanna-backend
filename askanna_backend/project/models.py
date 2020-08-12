@@ -1,9 +1,9 @@
 from django.db import models
 
-from core.models import ActivatorModel, SlimBaseModel, DescriptionModel
+from core.models import ActivatorModel, SlimBaseModel, DescriptionModel, AuthorModel
 
 
-class Project(ActivatorModel, DescriptionModel, SlimBaseModel):
+class Project(AuthorModel, ActivatorModel, DescriptionModel, SlimBaseModel):
     name = models.CharField(max_length=255)
     workspace = models.ForeignKey(
         "workspace.Workspace", on_delete=models.SET_NULL, blank=True, null=True
