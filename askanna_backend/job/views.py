@@ -399,7 +399,9 @@ class JobRunView(viewsets.ModelViewSet):
         limit_or_offset = request.query_params.get("limit") or request.query_params.get(
             "offset"
         )
-        count = len(stdout)
+        count = 0
+        if stdout:
+            count = len(stdout)
 
         response_json = stdout
         if limit_or_offset:
