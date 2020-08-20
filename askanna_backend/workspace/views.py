@@ -9,7 +9,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from resumable.files import ResumableFile
@@ -58,6 +58,9 @@ class MembershipView(
     queryset = Membership.objects.all()
     serializer_class = MembershipSerializer
     lookup_field = 'short_uuid'
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ['user__name']
+    ordering_fields = ['user__name']
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
