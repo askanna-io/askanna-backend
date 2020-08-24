@@ -34,7 +34,7 @@ then
   exit $last_status
 
 else
-  # when everything was was fine, let's add an empty row in the result
+  # when everything was fine, let's add an empty row in the result
   echo ""
 fi
 
