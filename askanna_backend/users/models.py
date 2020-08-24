@@ -3,14 +3,16 @@ from django.db.models import CharField
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-
 from core.models import BaseModel, SlimBaseModel, SlimBaseForAuthModel
+
+# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_rest_permission.settings')
 
 
 class User(SlimBaseForAuthModel, AbstractUser):
 
     # First Name and Last Name do not cover name patterns
     # around the globe.
+
     name = CharField(_("Name of User"), blank=True, max_length=255)
 
     def get_absolute_url(self):
@@ -19,10 +21,13 @@ class User(SlimBaseForAuthModel, AbstractUser):
     def get_name(self):
         return self.name or self.get_full_name() or self.username or self.short_uuid
 
+
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
-
 MEMBERSHIPS = ((MSP_PROJECT, "Project"), (MSP_WORKSPACE, "Workspace"))
+WS_ADMIN = "WA"
+WS_MEMBER = "WM"
+MEMBERSHIP_ROLES = ((WS_ADMIN, 'Admin'), (WS_MEMBER, 'Member'))
 
 
 class Membership(SlimBaseModel):
@@ -37,6 +42,7 @@ class Membership(SlimBaseModel):
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
+    role = models.CharField(max_length=2, choices=MEMBERSHIP_ROLES)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
