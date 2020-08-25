@@ -31,10 +31,6 @@ class IsAdminUser(permissions.BasePermission):
 class IsMemberOrAdminUser(permissions.BasePermission):
     required_roles = ['admin', 'member']
 
-    def has_permission(self, request, view):
-        has_group_permission = _has_group_permission(request.user, self.required_roles)
-        return request.user and has_group_permission
-
     def has_object_permission(self, request, view, obj):
         has_group_permission = _has_group_permission(request.user, self.required_roles)
         return request.user and has_group_permission

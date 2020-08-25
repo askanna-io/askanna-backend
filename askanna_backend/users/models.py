@@ -4,8 +4,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from core.models import BaseModel, SlimBaseModel, SlimBaseForAuthModel
-
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_rest_permission.settings')
+import json
 
 
 class User(SlimBaseForAuthModel, AbstractUser):
@@ -39,7 +38,7 @@ class Membership(SlimBaseModel):
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
-    role = models.ForeignKey(Group, on_delete=models.CASCADE, default='2')
+    role = models.ForeignKey(Group, on_delete=models.CASCADE, default='1')
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
@@ -51,4 +50,10 @@ class Membership(SlimBaseModel):
         indexes = [models.Index(fields=["user", "object_uuid"])]
         ordering = ["-created"]
         unique_together = [["user", "object_uuid"]]
+
+    def get_role(self):
+        role = self.role
+        role = str(role)
+        return role
+
 
