@@ -26,7 +26,6 @@ class MembershipAdmin(admin.ModelAdmin):
     list_display = [
         "uuid",
         "user",
-        "role",
         "object_uuid",
     ]
 
