@@ -41,7 +41,7 @@ class Membership(SlimBaseModel):
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
-    role = models.CharField(max_length=2, default="WM", choices=ROLES)
+    role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
@@ -53,10 +53,5 @@ class Membership(SlimBaseModel):
         indexes = [models.Index(fields=["user", "object_uuid"])]
         ordering = ["-created"]
         unique_together = [["user", "object_uuid"]]
-
-    def get_role(self):
-        role = self.role
-        role = str(role)
-        return role
 
 
