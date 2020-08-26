@@ -61,7 +61,7 @@ class MembershipView(
     filter_backends = (filters.OrderingFilter,)
     ordering = ['user__name']
     ordering_fields = ['user__name']
-    permission_classes = [IsMemberOrAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
@@ -71,3 +71,6 @@ class MembershipView(
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
 
+    # def get_serializer_class(self):
+    #     if self.request.method.upper() in ['POST']:
+    #         return MembershipCreateSerializer

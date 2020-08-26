@@ -24,6 +24,9 @@ class User(SlimBaseForAuthModel, AbstractUser):
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
 MEMBERSHIPS = ((MSP_PROJECT, "Project"), (MSP_WORKSPACE, "Workspace"))
+WS_MEMBER = "WM"
+WS_ADMIN = "WA"
+ROLES = ((WS_MEMBER, "Member"), (WS_ADMIN, "Admin"))
 
 
 class Membership(SlimBaseModel):
@@ -38,7 +41,7 @@ class Membership(SlimBaseModel):
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
-    role = models.ForeignKey(Group, on_delete=models.CASCADE, default='1')
+    role = models.CharField(max_length=2, default="WM", choices=ROLES)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
