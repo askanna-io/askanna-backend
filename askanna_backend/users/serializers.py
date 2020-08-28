@@ -7,10 +7,12 @@ class MembershipSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField("get_role")
 
     def get_role(self, obj):
-        return obj.get_role_display()
+        if obj.role == "1":
+            return "Member"
+        else:
+            return obj.get_role_display()
 
     def get_user(self, instance):
-        membership_role = instance.get_role_display()
         user = instance.user
         return {
             "uuid": user.uuid,
@@ -27,6 +29,9 @@ class MembershipSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         request = self.context["request"]
+        role = self.fields['role']
+        role_value = role.to_representation(
+            role.get_attribute(instance))
         url = "{scheme}://{host}/workspace/{short_uuid}/people".format(
             scheme=request.scheme,
             host=request.get_host().replace("-api", "").replace("api", ""),
@@ -36,7 +41,7 @@ class MembershipSerializer(serializers.ModelSerializer):
             "uuid": instance.uuid,
             "short_uuid": instance.short_uuid,
             "name": instance.user.get_name(),
-            "role": instance.get_role_display(),
+            "role": role_value,
             "created": instance.created,
             "last_active": "",
         }

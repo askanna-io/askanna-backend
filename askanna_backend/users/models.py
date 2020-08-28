@@ -53,5 +53,3 @@ class Membership(SlimBaseModel):
         indexes = [models.Index(fields=["user", "object_uuid"])]
         ordering = ["-created"]
         unique_together = [["user", "object_uuid"]]
-
-
