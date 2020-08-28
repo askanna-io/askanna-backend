@@ -48,14 +48,11 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class UpdateUserRoleSerializer(serializers.ModelSerializer):
-    role = serializers.SerializerMethodField("get_role")
+#     role = serializers.SerializerMethodField("get_role")
 
     class Meta:
         model = Membership
         fields = ["role"]
-
-    def get_role(self, obj):
-        return obj.get_role_display()
 
     def update(self, instance, validated_data):
         instance.role = validated_data.get("role", instance.role)
@@ -64,19 +61,22 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 
     def validated_role(self, role):
         """
-        Validation of a given new value for value
+        Validation of a given new value for role
         """
         return role
 
+#     def get_role(self, obj):
+#         return obj.get_role_display()
+
     def to_representation(self, instance):
-        role = self.fields['role']
-        role_value = role.to_representation(
-            role.get_attribute(instance))
+#         role = self.fields['role']
+#         role_value = role.to_representation(
+#             role.get_attribute(instance))
         return {
             'uuid': instance.uuid,
             'short_uuid': instance.short_uuid,
             "name": instance.user.get_name(),
-            "role": role_value,
+            "role": instance.role,
             "created": instance.created,
             "last_active": "",
             "message": "Successfully changed the role",
