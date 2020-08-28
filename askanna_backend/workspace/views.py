@@ -4,7 +4,7 @@ from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import Membership
-from users.serializers import MembershipSerializer
+from users.serializers import MembershipSerializer, UpdateUserRoleSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -71,6 +71,8 @@ class MembershipView(
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
 
-    # def get_serializer_class(self):
+    def get_serializer_class(self):
+        if self.request.method.upper() in ['PUT', 'PATCH']:
+            return UpdateUserRoleSerializer
     #     if self.request.method.upper() in ['POST']:
     #         return MembershipCreateSerializer
