@@ -4,14 +4,18 @@ from users.models import Membership
 
 class MembershipSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField("get_user")
+    role = serializers.SerializerMethodField("get_role")
+
+    def get_role(self, obj):
+        return obj.get_role_display()
 
     def get_user(self, instance):
+        membership_role = instance.get_role_display()
         user = instance.user
         return {
             "uuid": user.uuid,
             "short_uuid": user.short_uuid,
             "name": user.get_name(),
-            "role": user.role,
             "created": user.created,
             "last_active": "",
 
@@ -19,7 +23,7 @@ class MembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Membership
-        fields = ['user']
+        fields = ['user', 'role']
 
     def to_representation(self, instance):
         request = self.context["request"]
@@ -32,7 +36,7 @@ class MembershipSerializer(serializers.ModelSerializer):
             "uuid": instance.uuid,
             "short_uuid": instance.short_uuid,
             "name": instance.user.get_name(),
-            "role": instance.role,
+            "role": instance.get_role_display(),
             "created": instance.created,
             "last_active": "",
         }
