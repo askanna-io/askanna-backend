@@ -77,6 +77,7 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
     # "django.contrib.humanize", # Handy template tags
     "django.contrib.admin",
+    "django_filters",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",
@@ -375,7 +376,8 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer'
     ],
     'DEFAULT_FILTER_BACKENDS': [
-       'rest_framework.filters.OrderingFilter'
+       'rest_framework.filters.OrderingFilter',
+       'django_filters.rest_framework.DjangoFilterBackend'
     ],
 }
 

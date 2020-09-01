@@ -11,14 +11,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
 from resumable.files import ResumableFile
-
+from django_filters.rest_framework import DjangoFilterBackend
 from core.mixins import HybridUUIDMixin
 from users.models import Membership, MSP_WORKSPACE
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
-
+import django_filters
 from rest_framework.schemas.openapi import AutoSchema
 
 
@@ -47,6 +46,14 @@ class WorkspaceViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.filter(pk__in=member_of_workspaces)
 
 
+class RoleFilterSet(django_filters.FilterSet):
+    role = django_filters.CharFilter(field_name='role')
+
+    class Meta:
+        model = Membership
+        fields = ['role']
+
+
 class MembershipView(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
@@ -58,9 +65,10 @@ class MembershipView(
     queryset = Membership.objects.all()
     serializer_class = MembershipSerializer
     lookup_field = 'short_uuid'
-    filter_backends = (filters.OrderingFilter,)
+    filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
     ordering = ['user__name']
     ordering_fields = ['user__name']
+    filterset_class = RoleFilterSet
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
@@ -69,4 +77,6 @@ class MembershipView(
         short_uuid = val
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
+
+
 

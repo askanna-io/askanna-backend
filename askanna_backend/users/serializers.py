@@ -4,6 +4,7 @@ from users.models import Membership
 
 class MembershipSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField("get_user")
+    role = serializers.SerializerMethodField("get_role")
 
     def get_user(self, instance):
         user = instance.user
@@ -16,13 +17,21 @@ class MembershipSerializer(serializers.ModelSerializer):
             "last_active": "",
 
         }
+    def get_role(self, obj):
+        if obj.role == "1":
+            return "Member"
+        else:
+            return obj.get_role_display()
 
     class Meta:
         model = Membership
-        fields = ['user']
+        fields = ['user', 'role']
 
     def to_representation(self, instance):
         request = self.context["request"]
+        role = self.fields['role']
+        role_value = role.to_representation(
+            role.get_attribute(instance))
         url = "{scheme}://{host}/workspace/{short_uuid}/people".format(
             scheme=request.scheme,
             host=request.get_host().replace("-api", "").replace("api", ""),
@@ -32,8 +41,9 @@ class MembershipSerializer(serializers.ModelSerializer):
             "uuid": instance.uuid,
             "short_uuid": instance.short_uuid,
             "name": instance.user.get_name(),
-            "role": "member",
+            "role": role_value,
             "created": instance.created,
             "last_active": "",
-        }
+   }
+
 

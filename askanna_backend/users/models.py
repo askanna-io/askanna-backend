@@ -19,10 +19,15 @@ class User(SlimBaseForAuthModel, AbstractUser):
     def get_name(self):
         return self.name or self.get_full_name() or self.username or self.short_uuid
 
+
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
 
 MEMBERSHIPS = ((MSP_PROJECT, "Project"), (MSP_WORKSPACE, "Workspace"))
+
+WS_MEMBER = "WM"
+WS_ADMIN = "WA"
+ROLES = ((WS_MEMBER, "Member"), (WS_ADMIN, "Admin"))
 
 
 class Membership(SlimBaseModel):
@@ -37,6 +42,7 @@ class Membership(SlimBaseModel):
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
+    role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
