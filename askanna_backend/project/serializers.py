@@ -55,7 +55,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["name", "workspace"]
+        fields = ["name", "workspace", "description"]
 
     def create(self, validated_data):
         validated_data.update(**{"created_by": self.context["request"].user})
