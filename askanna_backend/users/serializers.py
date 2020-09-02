@@ -48,7 +48,7 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class UpdateUserRoleSerializer(serializers.ModelSerializer):
-#     role = serializers.SerializerMethodField("get_role")
+    role = serializers.SerializerMethodField("get_role")
 
     class Meta:
         model = Membership
@@ -65,18 +65,23 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         """
         return role
 
-#     def get_role(self, obj):
-#         return obj.get_role_display()
+    def get_role(self, obj):
+        if obj.role == "WA":
+            return "Admin"
+        if obj.role == "WM":
+            return "Member"
+        else:
+            return obj.role
 
     def to_representation(self, instance):
-#         role = self.fields['role']
-#         role_value = role.to_representation(
-#             role.get_attribute(instance))
+        role = self.fields['role']
+        role_value = role.to_representation(
+            role.get_attribute(instance))
         return {
             'uuid': instance.uuid,
             'short_uuid': instance.short_uuid,
             "name": instance.user.get_name(),
-            "role": instance.role,
+            "role": role_value,
             "created": instance.created,
             "last_active": "",
             "message": "Successfully changed the role",
