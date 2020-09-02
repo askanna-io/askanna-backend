@@ -74,5 +74,7 @@ class MembershipView(
     def get_serializer_class(self):
         if self.request.method.upper() in ['PUT', 'PATCH']:
             return UpdateUserRoleSerializer
+        if self.request.method.upper() in ['GET']:
+            return MembershipSerializer
     #     if self.request.method.upper() in ['POST']:
     #         return MembershipCreateSerializer
