@@ -34,5 +34,6 @@ bumpversion~=0.5.3  # https://github.com/peritus/bumpversion
 argh
 watchdog
 
+django-cors-headers
 tox
 pytest-bdd
