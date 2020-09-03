@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from package.models import Package
 from project.models import Project
 from users.models import Membership, MSP_WORKSPACE
 from workspace.models import Workspace
@@ -8,6 +9,7 @@ from workspace.models import Workspace
 class ProjectSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField("get_created_by")
     workspace = serializers.SerializerMethodField("get_workspace")
+    package = serializers.SerializerMethodField("get_package")
 
     def get_workspace(self, instance):
         return {
@@ -22,6 +24,24 @@ class ProjectSerializer(serializers.ModelSerializer):
                 "uuid": instance.created_by.uuid,
                 "short_uuid": instance.created_by.short_uuid,
                 "name": instance.created_by.get_name(),
+            }
+        return {
+            "uuid": None,
+            "short_uuid": None,
+            "name": None,
+        }
+
+    def get_package(self, instance):
+        """
+        Get references to the last pushed package for this project
+        """
+        package = instance.packages.order_by("-created").first()
+
+        if package:
+            return {
+                "uuid": package.uuid,
+                "short_uuid": package.short_uuid,
+                "name": package.uuid,
             }
         return {
             "uuid": None,
