@@ -67,7 +67,7 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 
     def get_role(self, obj):
         if obj.role == "WA":
-            return "Admin"
+            return "admin"
         if obj.role == "WM":
             return "Member"
         else:
