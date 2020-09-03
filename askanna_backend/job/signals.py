@@ -189,6 +189,16 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         logline[-1] = logline[-1].rstrip()
         print(logline)
         op.stdout.append(logline)
+
+
+        if logline[-1].startswith("AskAnna exit_code="):
+            # we handle this and set the jr.status = "FAILED"
+            op.exit_code = int(logline[-1].replace("AskAnna exit_code=", ""))
+            op.save()
+            jr.status = "FAILED"
+            jr.save()
+            return
+
     op.save()
 
     jr.status = "COMPLETED"

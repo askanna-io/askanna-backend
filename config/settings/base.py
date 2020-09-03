@@ -79,6 +79,7 @@ DJANGO_APPS = [
     "django.contrib.admin",
     "django_filters",
 ]
+
 THIRD_PARTY_APPS = [
     "crispy_forms",
     "allauth",
@@ -92,7 +93,6 @@ THIRD_PARTY_APPS = [
     "drf_yasg",
     "encrypted_model_fields",
 ]
-
 LOCAL_APPS = [
     "users",
     # Your stuff: custom apps go here
@@ -108,7 +108,6 @@ LOCAL_APPS = [
     # "flow",
     "workspace",
 ]
-
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

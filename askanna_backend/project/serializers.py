@@ -55,7 +55,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["name", "workspace"]
+        fields = ["name", "workspace", "description"]
 
     def create(self, validated_data):
         validated_data.update(**{"created_by": self.context["request"].user})
@@ -66,7 +66,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         Validation of a given workspace short_uuid
 
         Steps needed:
-        - check in database for exisiting workspace with short_uuid
+        - check in database for existing workspace with short_uuid
         - check whether the user is a member of this workspace
         - return the workspace.uuid instead of short_uuid in `value`
 
