@@ -44,7 +44,7 @@ class JobDef(BaseModel):
     )  # FIXME: add rationale and default value
 
     environment = models.CharField(
-        max_length=20, choices=ENV_CHOICES, default="python3.5"
+        max_length=20, choices=ENV_CHOICES, default="python3.7"
     )
 
     # FIXME: Should env_variables be in the JobDef, or JobPayload?

@@ -10,7 +10,41 @@ from zipfile import ZipFile
 from package.models import Package, ChunkedPackagePart
 
 
+class PackageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Package
+        # fields = "__all__"
+        exclude = ["storage_location"]
+
+
 class PackageSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField("get_created_by")
+
+    def get_created_by(self, instance):
+        user = instance.created_by
+        if user:
+            return {
+                "name": user.get_name(),
+                "uuid": str(user.uuid),
+                "short_uuid": str(user.short_uuid),
+            }
+
+        return {
+            "name": "",
+            "uuid": "",
+            "short_uuid": "",
+        }
+
+    project = serializers.SerializerMethodField("get_project")
+
+    def get_project(self, instance):
+        project = instance.project
+        return {
+            "name": project.name,
+            "uuid": str(project.uuid),
+            "short_uuid": str(project.short_uuid),
+        }
+
     class Meta:
         model = Package
         # fields = "__all__"
@@ -71,16 +105,15 @@ class PackageSerializerDetail(serializers.ModelSerializer):
                 filelist.append(r)
 
         # also get all directories
-        directories = list(set(map(lambda x: x["parent"], filelist)))
+        # we remove the root entry "/"
+        directories = sorted(
+            list(set(map(lambda x: x["parent"], filelist)) - set(["/"]))
+        )
 
         dirlist = []
         for d in directories:
             path_elements = d.split("/")
             parent = "/".join(path_elements[: len(path_elements) - 1])
-
-            # skip adding the root dir (case parent=None)
-            if not parent:
-                continue
 
             dirlist.append(
                 {

@@ -6,7 +6,12 @@ import pprint
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import StreamingHttpResponse, HttpResponse, HttpResponseRedirect
+from django.http import (
+    StreamingHttpResponse,
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.template.loader import render_to_string
 from drf_yasg import openapi
 
@@ -36,6 +41,7 @@ from job.models import (
     ChunkedArtifactPart,
     ChunkedJobOutputPart,
     JobOutput,
+    JobVariable,
 )
 from job.serializers import (
     ChunkedArtifactPartSerializer,
@@ -44,13 +50,15 @@ from job.serializers import (
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
-    JobRunDetailSerializer,
     JobPayloadSerializer,
     ChunkedJobOutputPartSerializer,
     JobOutputSerializer,
+    JobVariableSerializer,
+    JobVariableUpdateSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
+from users.models import Membership, MSP_WORKSPACE
 
 
 class StartJobView(viewsets.GenericViewSet):
@@ -136,7 +144,11 @@ class StartJobView(viewsets.GenericViewSet):
 
         # create new Jobrun
         jobrun = JobRun.objects.create(
-            jobdef=jobdef, payload=job_pl, package=package, owner=request.user
+            status="PENDING",
+            jobdef=jobdef,
+            payload=job_pl,
+            package=package,
+            owner=request.user,
         )
 
         # return the JobRun id
@@ -377,6 +389,52 @@ class JobRunView(viewsets.ModelViewSet):
 
         return HttpResponse(entrypoint_string)
 
+    @action(detail=True, methods=["get"], name="JobRun Log")
+    def log(self, request, short_uuid, **kwargs):
+        instance = self.get_object()
+        stdout = instance.output.stdout
+        limit = request.query_params.get("limit", 100)
+        offset = request.query_params.get("offset", 0)
+
+        limit_or_offset = request.query_params.get("limit") or request.query_params.get(
+            "offset"
+        )
+        count = 0
+        if stdout:
+            count = len(stdout)
+
+        response_json = stdout
+        if limit_or_offset:
+            offset = int(offset)
+            limit = int(limit)
+            response_json = {"count": count, "results": stdout[offset : offset + limit]}
+
+            scheme = request.scheme
+            path = request.path
+            host = request.META["HTTP_HOST"]
+            if offset + limit < count:
+                response_json[
+                    "next"
+                ] = "{scheme}://{host}{path}?limit={limit}&offset={offset}".format(
+                    scheme=scheme,
+                    limit=limit,
+                    offset=offset + limit,
+                    host=host,
+                    path=path,
+                )
+            if offset - limit > -1:
+                response_json[
+                    "previous"
+                ] = "{scheme}://{host}{path}?limit={limit}&offset={offset}".format(
+                    scheme=scheme,
+                    limit=limit,
+                    offset=offset - limit,
+                    host=host,
+                    path=path,
+                )
+
+        return Response(response_json)
+
 
 class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
@@ -385,15 +443,6 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
     permission_classes = [IsAuthenticated]
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
-
-    # overwrite the default view and serializer for detail page
-    # we want to use an other serializer for this.
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer_kwargs = {}
-        serializer_kwargs['context'] = self.get_serializer_context()
-        serializer = JobRunDetailSerializer(instance, **serializer_kwargs)
-        return Response(serializer.data)
 
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -427,9 +476,16 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
         instance = self.get_object()
 
-        json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
-        lines = json_obj[offset:limit]
-        return HttpResponse("\n".join(lines), content_type="application/json")
+        limit_or_offset = request.query_params.get("limit") or request.query_params.get(
+            "offset"
+        )
+        if limit_or_offset:
+            offset = int(offset)
+            limit = int(limit)
+            json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
+            lines = json_obj[offset:limit]
+            return HttpResponse("\n".join(lines), content_type="application/json")
+        return JsonResponse(instance.payload)
 
 
 class ProjectJobViewSet(
@@ -448,6 +504,50 @@ class ProjectJobViewSet(
         serializer_kwargs["context"] = self.get_serializer_context()
         serializer = JobSerializer(instance, **serializer_kwargs)
         return Response(serializer.data)
+
+
+class JobArtifactShortcutView(
+    mixins.RetrieveModelMixin, viewsets.GenericViewSet,
+):
+    """
+    Retrieve a specific artifact to be exposed over `/v1/artifact/{{ run_suuid }}`
+    We allow the `run_suuid` to be given as short urls are for convenience to get
+    something for a specific `run_suuid`. 
+
+    In case there is no artifact, we will return a http_status=404 (default via drf)
+
+    In case we have 1 artifact, we return the binary of this artifact
+    In case we find 1+ artifact, we return the first created artifact (sorted by date)
+    """
+
+    queryset = JobRun.objects.all()
+    lookup_field = "short_uuid"
+    # The serializer class is dummy here as this is not used
+    serializer_class = JobArtifactSerializer
+    permission_classes = [IsAuthenticated]
+
+    # overwrite the default view and serializer for detail page
+    # We will retrieve the artifact and send binary
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        artifact = instance.artifact.all().first()
+
+        try:
+            location = os.path.join(artifact.storage_location, artifact.filename)
+            response = HttpResponseRedirect(
+                "{scheme}://{ASKANNA_CDN_FQDN}/files/artifacts/{LOCATION}".format(
+                    scheme=request.scheme,
+                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION=location,
+                )
+            )
+            return response
+        except Exception as e:
+            print(e)
+
+        return Response(
+            {"message_type": "error", "message": "Artifact was not found"}, status=404
+        )
 
 
 class JobArtifactView(
@@ -518,15 +618,6 @@ class JobArtifactView(
         except Exception as e:
             pass
 
-        # try:
-        #     response = StreamingHttpResponse(instance.read, content_type="application/zip")
-        #     response["Content-Disposition"] = "attachment; filename=artifact.zip"
-        #     response["Content-Length"] = instance.size
-        # except Exception as e:
-        #     pass
-        # else:
-        #     return response
-
         return Response(
             {"message_type": "error", "message": "Artifact was not found"}, status=404
         )
@@ -589,3 +680,39 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+
+class JobVariableView(
+    NestedViewSetMixin,
+    # mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = JobVariable.objects.all()
+    lookup_field = "short_uuid"
+    serializer_class = JobVariableSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        """
+        Return different serializer class for update
+
+        """
+        if self.request.method.upper() in ["PUT", "PATCH"]:
+            return JobVariableUpdateSerializer
+        return self.serializer_class
+
+    def get_queryset(self):
+        """
+        Return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return self.queryset.filter(project__workspace__in=member_of_workspaces)
+

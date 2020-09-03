@@ -10,7 +10,7 @@ askanna package-download > /dev/null
 # first navigate to the folder where user code is located
 cd /code
 
-echo 'AskAnna is running for project "{{pr.title}}" and running on "{{pr.short_uuid}}"'
+echo 'AskAnna is running for project "{{pr.name}}" and running on "{{pr.short_uuid}}"'
 
 last_status=0
 
@@ -48,6 +48,6 @@ cd /code
 
 askanna upload-result
 
-askanna artifact
+askanna artifact add
 
 echo "Job succeeded"

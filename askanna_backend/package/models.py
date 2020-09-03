@@ -1,17 +1,16 @@
 from django.db import models
-from users.models import User
 import uuid
 
-from core.models import SlimBaseModel
+from core.models import BaseModel, SlimBaseModel, AuthorModel
 
-# Create your models here.
 
-class Package(SlimBaseModel):
+class Package(AuthorModel, BaseModel):
     filename = models.CharField(max_length=500)
    
     # Storage location can also e a bucket location
     # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
     storage_location = models.CharField(max_length=1000)
+
     project = models.ForeignKey(
         "project.Project",
         on_delete=models.SET_DEFAULT,
@@ -22,8 +21,6 @@ class Package(SlimBaseModel):
         default=None
         )
     size = models.IntegerField(help_text="Size of this package in bytes")
-
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
 
     def unpack(self):
         """

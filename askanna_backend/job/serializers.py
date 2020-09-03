@@ -1,3 +1,4 @@
+import base64
 from rest_framework import serializers
 
 from job.models import (
@@ -8,6 +9,7 @@ from job.models import (
     ChunkedArtifactPart,
     ChunkedJobOutputPart,
     JobOutput,
+    JobVariable,
 )
 
 
@@ -57,16 +59,11 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     payload = serializers.SerializerMethodField("get_payload")
 
-    stdout = serializers.SerializerMethodField("get_stdout")
     jobdef = serializers.SerializerMethodField("get_jobdef")
 
     def get_payload(self, instance):
         payload = JobPayloadSerializer(instance.payload, many=False)
         return payload.data
-
-    def get_stdout(self, instance):
-        # for list operations return an empty stdout
-        return []
 
     def get_jobdef(self, instance):
         jobdef = instance.jobdef
@@ -127,7 +124,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_user(self, instance):
         if instance.owner:
             return {
-                "name": instance.owner.username,
+                "name": instance.owner.get_name(),
                 "uuid": instance.owner.uuid,
                 "short_uuid": instance.owner.short_uuid,
             }
@@ -140,12 +137,6 @@ class JobRunSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobRun
         fields = "__all__"
-
-
-class JobRunDetailSerializer(JobRunSerializer):
-
-    def get_stdout(self, instance):
-        return instance.output.stdout
 
 
 class JobArtifactSerializer(serializers.ModelSerializer):
@@ -192,40 +183,51 @@ class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class JobRunTestSerializer(serializers.BaseSerializer):
-    """
-    Possible serialization implementation for the JobRun objects associated
-    with a specified JobDef.
+class JobVariableSerializer(serializers.ModelSerializer):
 
-    In our Job concept, there is always an associated JobDef. When we make
-    use of the Job.runs() method (notice the plural), we want to return
-    all the jobrun objects associated with the specified JobDef.
+    value = serializers.SerializerMethodField("get_value")
 
-    We can use the DRF serializers to achieve this result.
+    def get_value(self, instance):
+        # if 'Authorization' in self.context['request'].headers.keys():
+        #     # extract the token
+        #     raw_token = self.context['request'].headers.get('Authorization')
+        #     token = raw_token.split(' ')[1]
+        #     return base64.b64encode('{}{}'.format(token, instance.value).encode('utf-8'))
+        return instance.value
 
-    Currently in use in the job.view_actions:JobActionView.runs() method
-    implementation.
+    class Meta:
+        model = JobVariable
+        # fields = "__all__"
+        exclude = [
+            "deleted",
+            "project",
+        ]
 
-    See example in: https://www.django-rest-framework.org/api-guide/serializers/#baseserializer
-    on how to use.
 
-    FIXME:
-        - currently we are not checking pagination and take into account the
-          number of JobRuns for a particular JobDef. It can be a large
-          number, so it's better if we paginate this.
-    """
+class JobVariableUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobVariable
+        fields = ["value"]
+
+    def update(self, instance, validated_data):
+        instance.value = validated_data.get("value", instance.value)
+        instance.save()
+        return instance
+
+    def validate_value(self, value):
+        """
+        Validation of a given new value for value
+        """
+        return value
 
     def to_representation(self, instance):
-        jobpayload = instance.payload
         return {
-            "uuid": instance.uuid,
-            "payload": str(jobpayload),
-            "status": instance.status,
-            "runtime": instance.runtime,
-            "memory": instance.memory,
-            "return_payload": instance.output.return_payload,
-            "stdout": instance.output.stdout,
-            "created": instance.created,
-            "finished": instance.output.created,
+            'uuid': instance.uuid,
+            'short_uuid': instance.short_uuid,
+            'name': instance.name,
+            'value': instance.value,
+            'created': instance.created,
+            'modified': instance.modified,
+            'status': 1,
+            "message": "Successfully changed the variable",
         }
-

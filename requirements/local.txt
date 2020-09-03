@@ -35,3 +35,5 @@ argh
 watchdog
 
 django-cors-headers
+tox
+pytest-bdd

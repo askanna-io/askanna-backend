@@ -9,11 +9,13 @@ from job.views import (
     JobRunView,
     JobJobRunView,
     JobArtifactView,
+    JobArtifactShortcutView,
     JobPayloadView,
     JobResultView,
     ChunkedArtifactViewSet,
     ChunkedJobOutputViewSet,
     JobResultOutputView,
+    JobVariableView,
 )
 from project.urls import project_route, router as prouter
 from utils.urls import router
@@ -25,6 +27,7 @@ project_route.register(
     parents_query_lookups=["project__short_uuid"],
 )
 
+job_variable = router.register(r"variable", JobVariableView, basename="variable")
 job_route = router.register(r"job", JobActionView, basename="job")
 job_route.register(
     r"runs",
@@ -74,31 +77,60 @@ jobresult_route.register(
     parents_query_lookups=["joboutput__jobrun__short_uuid", "joboutput__short_uuid"],
 )
 
+
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
     re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
+    path(
+        r"v1/run/<shortuuid:short_uuid>/",
+        StartJobView.as_view({"post": "do_ingest_short"}),
+        kwargs={"uuid": None},
+    ),
     path(
         r"v1/run/<shortuuid:short_uuid>",
         StartJobView.as_view({"post": "do_ingest_short"}),
         kwargs={"uuid": None},
     ),
+    path(r"v1/run/<uuid:uuid>/", StartJobView.as_view({"post": "do_ingest"}),),
     path(r"v1/run/<uuid:uuid>", StartJobView.as_view({"post": "do_ingest"}),),
-
+    path(
+        r"v1/result/<shortuuid:short_uuid>/",
+        JobResultView.as_view({"get": "get_result"}),
+        kwargs={"uuid": None},
+    ),
     path(
         r"v1/result/<shortuuid:short_uuid>",
         JobResultView.as_view({"get": "get_result"}),
         kwargs={"uuid": None},
     ),
-
+    path(
+        r"v1/log/<shortuuid:short_uuid>/",
+        JobRunView.as_view({"get": "log"}),
+        kwargs={},
+    ),
+    path(
+        r"v1/log/<shortuuid:short_uuid>",
+        JobRunView.as_view({"get": "log"}), 
+        kwargs={},
+    ),
+    path(
+        r"v1/status/<shortuuid:short_uuid>/",
+        JobResultView.as_view({"get": "get_status"}),
+        kwargs={"uuid": None},
+    ),
     path(
         r"v1/status/<shortuuid:short_uuid>",
         JobResultView.as_view({"get": "get_status"}),
         kwargs={"uuid": None},
     ),
-
+    path(
+        r"v1/artifact/<shortuuid:short_uuid>/",
+        JobArtifactView.as_view({"get": "retrieve"}),
+        kwargs={},
+    ),
     path(
         r"v1/artifact/<shortuuid:short_uuid>",
-        JobArtifactView.as_view({"get": "retrieve"}),
+        JobArtifactShortcutView.as_view({"get": "retrieve"}),
         kwargs={},
     ),
 ]

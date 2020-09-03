@@ -9,8 +9,7 @@ variables:
   POSTGRES_USER: anna
   POSTGRES_PASSWORD: pass
 
-  DOCKER_REPO: ${CI_REGISTRY}/askanna/askanna-backend
-
+  DOCKER_REPO: $CI_REGISTRY_IMAGE
 
 stages:
   - build_master
@@ -27,6 +26,8 @@ test:
       alias: redis
   image: ${DOCKER_REPO}/base:master
   stage: test
+  tags:
+    - kubernetes
   before_script:
     - pip install -U pip
     - pip install -r requirements/local.txt
@@ -34,18 +35,15 @@ test:
     - pytest
 
 .build_baseimage: &build_baseimage
-  image: docker:git
   stage: build_master
   tags:
-    - normal
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-  services:
-    - docker:dind
+    - kubernetes
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t ${DOCKER_REPO}/base:$CI_COMMIT_REF_NAME -f compose/Dockerfile-base .
-    - docker push ${DOCKER_REPO}/base:$CI_COMMIT_REF_NAME
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/Dockerfile-base --destination ${DOCKER_REPO}/base:$CI_COMMIT_REF_NAME
 
 build_master_base:
   <<: *build_baseimage
@@ -62,18 +60,15 @@ build_branches_base:
   when: manual
 
 build_production:
-  image: docker:git
   stage: build
   tags:
-    - normal
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-  services:
-    - docker:19.03.5-dind
+    - kubernetes
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t ${DOCKER_REPO}:$CI_COMMIT_REF_SLUG -f compose/production/django/Dockerfile .
-    - docker push ${DOCKER_REPO}:$CI_COMMIT_REF_SLUG
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/production/django/Dockerfile --destination ${DOCKER_REPO}:$CI_COMMIT_REF_SLUG
 
 stop_review:
   variables:
@@ -86,7 +81,7 @@ stop_review:
   when: manual
   allow_failure: true
   tags:
-    - normal
+    - kubernetes
   script:
     - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
   except:
@@ -98,7 +93,7 @@ stop_review:
   image: curlimages/curl
   stage: deploy
   tags:
-    - normal
+    - kubernetes
   script:
     - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
 
