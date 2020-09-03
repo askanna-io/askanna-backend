@@ -4,14 +4,14 @@ from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import Membership
-from users.serializers import MembershipSerializer
+from users.serializers import MembershipSerializer, UpdateUserRoleSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
+from users.permissions import IsMemberOrAdminUser
 from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
@@ -61,6 +61,7 @@ class MembershipView(
     filter_backends = (filters.OrderingFilter,)
     ordering = ['user__name']
     ordering_fields = ['user__name']
+    permission_classes = [IsMemberOrAdminUser]
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
@@ -70,3 +71,10 @@ class MembershipView(
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
 
+    def get_serializer_class(self):
+        if self.request.method.upper() in ['PUT', 'PATCH']:
+            return UpdateUserRoleSerializer
+        if self.request.method.upper() in ['GET']:
+            return MembershipSerializer
+    #     if self.request.method.upper() in ['POST']:
+    #         return MembershipCreateSerializer
