@@ -61,7 +61,7 @@ class MembershipView(
     filter_backends = (filters.OrderingFilter,)
     ordering = ['user__name']
     ordering_fields = ['user__name']
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOrAdminUser]
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()

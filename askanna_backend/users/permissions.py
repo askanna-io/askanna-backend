@@ -1,37 +1,57 @@
 from rest_framework import permissions
-from users.models import Membership
-
-
-def _is_in_group(user, role):
-    """
-    Takes a user and a role name, and returns `True` if the user is in that group.
-    """
-    try:
-        return Membership.objects.get(role=role).user_set.filter(user=user.user).exists()
-    except Membership.DoesNotExist:
-        return None
-
-
-def _has_group_permission(user, required_roles):
-    return any([_is_in_group(user, role) for role in required_roles])
+from users.models import Membership, WS_ADMIN, WS_MEMBER
 
 
 class IsAdminUser(permissions.BasePermission):
-    required_roles = ["WS_ADMIN"]
+    """
+    In this permission check we assume that the instance model contains
+    the fields:
+
+    - role
+    - user
+
+    """
+
+    required_roles = [WS_ADMIN]
 
     def has_permission(self, request, view):
-        has_group_permission = _has_group_permission(request.user, self.required_roles)
-        return request.user and has_group_permission
+        # is this user part of the queryset in the view?
+        # in other words, is this user part of the Model
+        members = view.get_queryset()
+        return (
+            members.filter(user=request.user, role__in=self.required_roles).count() > 0
+        )
 
     def has_object_permission(self, request, view, obj):
-        has_group_permission = _has_group_permission(request.user, self.required_roles)
-        return request.user and has_group_permission
+
+        # can the user modify the object (row based access)
+        # is the user an admin
+        # specific rules to modify specific fields can be defined later in serializer
+        # this permission only checks access
+        members = view.get_queryset()
+        is_admin = members.filter(user=request.user, role=WS_ADMIN).count() > 0
+
+        return obj.user == request.user or is_admin
 
 
 class IsMemberOrAdminUser(permissions.BasePermission):
-    required_roles = ["WS_ADMIN", "WS_MEMBER"]
+    required_roles = [WS_ADMIN, WS_MEMBER]
+
+    def has_permission(self, request, view):
+        # is this user part of the queryset in the view?
+        # in other words, is this user part of the Model
+        members = view.get_queryset()
+        return (
+            members.filter(user=request.user, role__in=self.required_roles).count() > 0
+        )
 
     def has_object_permission(self, request, view, obj):
-        has_group_permission = _has_group_permission(request.user, self.required_roles)
-        return request.user and has_group_permission
 
+        # can the user modify the object (row based access)
+        # is owner or is admin
+        # specific rules to modify specific fields can be defined later in serializer
+        # this permission only checks access
+        members = view.get_queryset()
+        is_admin = members.filter(user=request.user, role=WS_ADMIN).count() > 0
+
+        return obj.user == request.user or is_admin
