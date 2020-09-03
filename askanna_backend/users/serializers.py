@@ -69,7 +69,7 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         if obj.role == "WA":
             return "admin"
         if obj.role == "WM":
-            return "Member"
+            return "member"
         else:
             return obj.role
 
