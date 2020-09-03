@@ -6,8 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from project.models import Project
-from project.serializers import ProjectSerializer, ProjectCreateSerializer, ProjectUpdateSerializer
-from users.permissions import IsMemberOrAdminUser
+from project.serializers import (
+    ProjectSerializer,
+    ProjectCreateSerializer,
+    ProjectUpdateSerializer,
+)
 
 
 class ProjectView(
@@ -21,7 +24,7 @@ class ProjectView(
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
     lookup_field = "short_uuid"
-    permission_classes = [IsMemberOrAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         """
