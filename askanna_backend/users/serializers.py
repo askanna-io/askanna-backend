@@ -18,7 +18,7 @@ class MembershipSerializer(serializers.ModelSerializer):
         }
     def get_role(self, obj):
         if obj.role == "1":
-            return "Member"
+            return "member"
         else:
             return obj.get_role_display()
 

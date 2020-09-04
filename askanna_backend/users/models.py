@@ -26,7 +26,7 @@ MSP_WORKSPACE = "WS"
 MEMBERSHIPS = ((MSP_PROJECT, "Project"), (MSP_WORKSPACE, "Workspace"))
 WS_MEMBER = "WM"
 WS_ADMIN = "WA"
-ROLES = ((WS_MEMBER, "Member"), (WS_ADMIN, "Admin"))
+ROLES = ((WS_MEMBER, "member"), (WS_ADMIN, "admin"))
 
 
 class Membership(SlimBaseModel):
