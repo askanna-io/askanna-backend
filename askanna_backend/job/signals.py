@@ -174,7 +174,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         runner_image,
         runner_command,
         environment=env_variables,
-        name="run_{jobrun_suuid}".format(jobrun_uuid=jr.short_uuid),
+        name="run_{jobrun_suuid}".format(jobrun_suuid=jr.short_uuid),
         labels={
             "jobrun": jr.short_uuid,
             "project": pr.short_uuid,
