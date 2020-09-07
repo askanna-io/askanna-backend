@@ -6,14 +6,6 @@ class MembershipSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField("get_user")
     role = serializers.SerializerMethodField("get_role")
 
-    def get_role(self, obj):
-        if obj.role == "WA":
-            return "admin"
-        if obj.role == "WM":
-            return "member"
-        else:
-            return obj.role
-
     def get_user(self, instance):
         user = instance.user
         return {
@@ -22,21 +14,20 @@ class MembershipSerializer(serializers.ModelSerializer):
             "name": user.get_name(),
             "created": user.created,
             "last_active": "",
+
         }
+    def get_role(self, obj):
+        return obj.get_role_display()
 
     class Meta:
         model = Membership
-        fields = ["user", "role"]
+        fields = ['user', 'role']
 
     def to_representation(self, instance):
         request = self.context["request"]
-        role = self.fields["role"]
-        role_value = role.to_representation(role.get_attribute(instance))
-        url = "{scheme}://{host}/workspace/{short_uuid}/people".format(
-            scheme=request.scheme,
-            host=request.get_host().replace("-api", "").replace("api", ""),
-            short_uuid=instance.short_uuid,
-        )
+        role = self.fields['role']
+        role_value = role.to_representation(
+            role.get_attribute(instance))
         return {
             "uuid": instance.uuid,
             "short_uuid": instance.short_uuid,
@@ -44,11 +35,11 @@ class MembershipSerializer(serializers.ModelSerializer):
             "role": role_value,
             "created": instance.created,
             "last_active": "",
-        }
+   }
 
 
 class UpdateUserRoleSerializer(serializers.ModelSerializer):
-    role = serializers.SerializerMethodField("get_role")
+#     role = serializers.SerializerMethodField("get_role")
 
     class Meta:
         model = Membership
@@ -65,26 +56,25 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         """
         return role
 
-    def get_role(self, obj):
-        if obj.role == "WA":
-            return "admin"
-        if obj.role == "WM":
-            return "member"
-        else:
-            return obj.role
+#     def get_role(self, obj):
+#         if obj.role == "WA":
+#             return "Admin"
+#         elif obj.role == "WM":
+#             return "Member"
 
-    def to_representation(self, instance):
-        role = self.fields["role"]
-        role_value = role.to_representation(role.get_attribute(instance))
-        return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
-            "name": instance.user.get_name(),
-            "role": role_value,
-            "created": instance.created,
-            "last_active": "",
-            "message": "Successfully changed the role",
-        }
+
+#     def to_representation(self, instance):
+#         role = self.fields["role"]
+#         role_value = role.to_representation(role.get_attribute(instance))
+#         return {
+#             "uuid": instance.uuid,
+#             "short_uuid": instance.short_uuid,
+#             "name": instance.user.get_name(),
+#             "role": role_value,
+#             "created": instance.created,
+#             "last_active": "",
+#             "message": "Successfully changed the role",
+#         }
 
 
 # class MembershipCreateSerializer(serializers.ModelSerializer):
@@ -115,3 +105,6 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 #             "last_active": "",
 #             "message": "Successfully added new member",
 #         }
+
+
+

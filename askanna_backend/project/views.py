@@ -6,11 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from project.models import Project
-from project.serializers import (
-    ProjectSerializer,
-    ProjectCreateSerializer,
-    ProjectUpdateSerializer,
-)
+from project.serializers import ProjectSerializer, ProjectCreateSerializer, ProjectUpdateSerializer
 
 
 class ProjectView(

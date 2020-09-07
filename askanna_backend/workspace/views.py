@@ -13,7 +13,8 @@ from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.permissions import IsMemberOrAdminUser
 from resumable.files import ResumableFile
-
+import django_filters
+from django_filters.rest_framework import DjangoFilterBackend
 from core.mixins import HybridUUIDMixin
 from users.models import Membership, MSP_WORKSPACE
 from workspace.models import Workspace
@@ -47,6 +48,14 @@ class WorkspaceViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.filter(pk__in=member_of_workspaces)
 
 
+class RoleFilterSet(django_filters.FilterSet):
+    role = django_filters.CharFilter(field_name='role')
+
+    class Meta:
+        model = Membership
+        fields = ['role']
+
+
 class MembershipView(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
@@ -58,9 +67,10 @@ class MembershipView(
     queryset = Membership.objects.all()
     serializer_class = MembershipSerializer
     lookup_field = 'short_uuid'
-    filter_backends = (filters.OrderingFilter,)
+    filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
     ordering = ['user__name']
     ordering_fields = ['user__name']
+    filterset_class = RoleFilterSet
     permission_classes = [IsMemberOrAdminUser]
 
     def get_parents_query_dict(self):
