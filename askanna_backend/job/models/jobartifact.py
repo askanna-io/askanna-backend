@@ -13,6 +13,7 @@ class JobArtifact(SlimBaseModel):
     """
     Output of a JobRun stored into an archive
     """
+
     jobrun = models.ForeignKey(
         "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="artifact"
     )
@@ -24,11 +25,17 @@ class JobArtifact(SlimBaseModel):
         return os.path.join(
             self.jobrun.jobdef.project.uuid.hex,
             self.jobrun.jobdef.uuid.hex,
-            self.jobrun.uuid.hex
+            self.jobrun.uuid.hex,
         )
 
     def __str__(self):
         return str(self.uuid)
+
+    @property
+    def stored_path(self):
+        return os.path.join(
+            settings.ARTIFACTS_ROOT, self.storage_location, self.filename
+        )
 
     @property
     def filename(self):
@@ -40,13 +47,7 @@ class JobArtifact(SlimBaseModel):
             Read the artifact from filesystem and return as Zip
         """
 
-        store_path = [
-            settings.ARTIFACTS_ROOT, 
-            self.storage_location, 
-            self.filename
-        ]
-
-        with open(os.path.join(*store_path), "rb") as f:
+        with open(self.stored_path, "rb") as f:
             return f.read()
 
     class Meta:

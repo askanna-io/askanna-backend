@@ -1,6 +1,9 @@
 import base64
+
+from django.conf import settings
 from rest_framework import serializers
 
+from core.serializers import BaseArchiveDetailSerializer
 from job.models import (
     JobDef,
     JobRun,
@@ -166,6 +169,12 @@ class JobArtifactSerializer(serializers.ModelSerializer):
 
 
 class JobArtifactSerializerForInsert(serializers.ModelSerializer):
+    class Meta:
+        model = JobArtifact
+        fields = "__all__"
+
+
+class JobArtifactSerializerDetail(BaseArchiveDetailSerializer):
     class Meta:
         model = JobArtifact
         fields = "__all__"
