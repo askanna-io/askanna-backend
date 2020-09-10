@@ -86,5 +86,5 @@ class MembershipView(
             return UpdateUserRoleSerializer
         if self.request.method.upper() in ['GET']:
             return MembershipSerializer
-    #     if self.request.method.upper() in ['POST']:
-    #         return MembershipCreateSerializer
+        # if self.request.method.upper() in ['POST']:
+        #     return MembershipCreateSerializer

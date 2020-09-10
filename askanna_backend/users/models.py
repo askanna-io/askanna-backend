@@ -42,6 +42,7 @@ class Membership(SlimBaseModel):
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
     role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
+    job_title = models.CharField(_("Job title"), blank=True, max_length=255)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,

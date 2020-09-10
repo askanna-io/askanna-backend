@@ -82,12 +82,14 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 #
 #     class Meta:
 #         model = Membership
-#         fields = ["user", "object_type", "object_uuid"]
+#         fields = ["user","role", "object_type", "object_uuid"]
 #
 #     def create_user(self, validated_data):
+#         user = Membership.objects.create(validated_data)
+#         return user
 #         validated_data.update(**{"user": self.context["request"].user})
 #         return super().create(validated_data)
-#
+
 #     #TODO: validation of existing user
 #     def to_representation(self, instance):
 #         request = self.context["request"]
