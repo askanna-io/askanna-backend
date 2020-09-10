@@ -12,6 +12,7 @@ class MembershipSerializer(serializers.ModelSerializer):
             "uuid": user.uuid,
             "short_uuid": user.short_uuid,
             "name": user.get_name(),
+            "job_title": user.job_title,
             "created": user.created,
             "last_active": "",
 
@@ -32,6 +33,7 @@ class MembershipSerializer(serializers.ModelSerializer):
             "uuid": instance.uuid,
             "short_uuid": instance.short_uuid,
             "name": instance.user.get_name(),
+            "job_title": instance.job_title,
             "role": role_value,
             "created": instance.created,
             "last_active": "",
