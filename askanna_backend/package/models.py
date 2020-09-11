@@ -48,6 +48,11 @@ class Package(AuthorModel, BaseModel):
         # do something to determine full size, here also no full unpack needed, we need to read the metadata of the zip archive
         return 0
 
+    @property
+    def stored_path(self):
+        return os.path.join(
+            settings.PACKAGES_ROOT, self.storage_location
+        )
     class Meta:
         ordering = ['-created']
 

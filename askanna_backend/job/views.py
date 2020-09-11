@@ -44,6 +44,7 @@ from job.serializers import (
     ChunkedArtifactPartSerializer,
     JobArtifactSerializer,
     JobArtifactSerializerForInsert,
+    JobArtifactSerializerDetail,
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
@@ -524,6 +525,14 @@ class JobArtifactView(
     # overwrite the default view and serializer for detail page
     # We will retrieve the artifact and send binary
     def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer_kwargs = {}
+        serializer_kwargs["context"] = self.get_serializer_context()
+        serializer = JobArtifactSerializerDetail(instance, **serializer_kwargs)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def download(self, request, *args, **kwargs):
         instance = self.get_object()
 
         try:
