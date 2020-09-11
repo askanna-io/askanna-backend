@@ -7,4 +7,3 @@ from .joboutput import JobOutput, ChunkedJobOutputPart
 from .jobrun import JobRun
 from .jobvariable import JobVariable
 from .models import JobInterface, Job
-from .utils import get_job, get_job_pk
