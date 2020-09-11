@@ -98,8 +98,6 @@ LOCAL_APPS = [
     # Your stuff: custom apps go here
     "utils",
 
-    "uploadfile",
-    "dummyload",
     "core",
     "project",
     "project_template",
