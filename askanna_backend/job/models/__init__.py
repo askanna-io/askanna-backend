@@ -6,4 +6,3 @@ from .jobpayload import JobPayload
 from .joboutput import JobOutput, ChunkedJobOutputPart
 from .jobrun import JobRun
 from .jobvariable import JobVariable
-from .models import JobInterface, Job

@@ -32,7 +32,6 @@ from core.utils import get_config
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from job.models import (
     JobDef,
-    Job,
     JobPayload,
     JobRun,
     JobArtifact,
