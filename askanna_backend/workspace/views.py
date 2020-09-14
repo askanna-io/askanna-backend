@@ -3,8 +3,8 @@ from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.models import Membership
-from users.serializers import MembershipSerializer, UpdateUserRoleSerializer
+from users.models import Membership, UserProfile
+from users.serializers import MembershipSerializer, UpdateUserRoleSerializer, UserProfileSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -21,7 +21,7 @@ from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
 
 from rest_framework.schemas.openapi import AutoSchema
-
+from rest_framework import status
 
 class MySchema(AutoSchema):
     def get_tags(self, path, method):
@@ -64,8 +64,7 @@ class MembershipView(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Membership.objects.all()
-    serializer_class = MembershipSerializer
+    # queryset = Membership.objects.all()
     lookup_field = 'short_uuid'
     filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
     ordering = ['user__name']
@@ -81,10 +80,21 @@ class MembershipView(
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
 
+    def get_queryset(self):
+        if self.action == 'list':
+            queryset = Membership.objects.all()
+            return queryset
+        if self.action == 'retrieve':
+            queryset = UserProfile.objects.all()
+            return queryset
+
     def get_serializer_class(self):
-        if self.request.method.upper() in ['PUT', 'PATCH']:
-            return UpdateUserRoleSerializer
-        if self.request.method.upper() in ['GET']:
+        if self.action == 'list':
             return MembershipSerializer
+        if self.action == 'retrieve':
+            return UserProfileSerializer
+        if self.action == 'update':
+            return UpdateUserRoleSerializer
         # if self.request.method.upper() in ['POST']:
         #     return MembershipCreateSerializer
+
