@@ -1,12 +1,13 @@
-from django.db import models
+import os
 import uuid
 
-from core.models import BaseModel, SlimBaseModel, AuthorModel
+from core.models import AuthorModel, BaseModel, SlimBaseModel
+from django.db import models
 
 
 class Package(AuthorModel, BaseModel):
     filename = models.CharField(max_length=500)
-   
+
     # Storage location can also e a bucket location
     # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
     storage_location = models.CharField(max_length=1000)
