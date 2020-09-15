@@ -58,13 +58,11 @@ class RoleFilterSet(django_filters.FilterSet):
 
 class MembershipView(
     NestedViewSetMixin,
-    mixins.CreateModelMixin,
     mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
-    # queryset = Membership.objects.all()
+    queryset = Membership.objects.all()
+    serializer_class = MembershipSerializer()
     lookup_field = 'short_uuid'
     filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
     ordering = ['user__name']
@@ -80,21 +78,28 @@ class MembershipView(
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
 
-    def get_queryset(self):
-        if self.action == 'list':
-            queryset = Membership.objects.all()
-            return queryset
-        if self.action == 'retrieve':
-            queryset = UserProfile.objects.all()
-            return queryset
 
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return MembershipSerializer
-        if self.action == 'retrieve':
-            return UserProfileSerializer
-        if self.action == 'update':
-            return UpdateUserRoleSerializer
-        # if self.request.method.upper() in ['POST']:
-        #     return MembershipCreateSerializer
+class UserProfileView(
+    NestedViewSetMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DeleteMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer()
+    lookup_field = 'short_uuid'
+    filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
+    ordering = ['user__name']
+    ordering_fields = ['user__name']
+    filterset_class = RoleFilterSet
+    permission_classes = [IsMemberOrAdminUser]
 
+    def get_parents_query_dict(self):
+        query_dict = super().get_parents_query_dict()
+        key = 'workspace__short_uuid'
+        val = query_dict.get(key)
+        short_uuid = val
+        workspace = Workspace.objects.get(short_uuid=short_uuid)
+        return {'object_uuid': workspace.uuid}
