@@ -7,10 +7,7 @@ from workspace.views import WorkspaceViewSet
 from rest_framework.routers import Route, SimpleRouter
 
 
-class CustomReadOnlyRouter(SimpleRouter):
-    """
-    A router for read-only APIs, which doesn't use trailing slashes.
-    """
+class CustomRouter(SimpleRouter):
     routes = [
         Route(
             url=r'workspace/{parent_lookup_workspace__short_uuid}',
@@ -32,7 +29,7 @@ class CustomReadOnlyRouter(SimpleRouter):
 
 workspace_route = router.register(r"workspace", WorkspaceViewSet)
 
-routerr = CustomReadOnlyRouter()
+routerr = CustomRouter()
 routerr.register(
     r"people",
     MembershipView,
@@ -41,4 +38,5 @@ routerr.register(
 )
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
+    re_path(r"^(?P<version>(v1|v2))/", include(routerr.urls)),
 ]
