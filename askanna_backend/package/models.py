@@ -1,8 +1,10 @@
 import os
 import uuid
 
-from core.models import AuthorModel, BaseModel, SlimBaseModel
+from django.conf import settings
 from django.db import models
+
+from core.models import AuthorModel, BaseModel
 
 
 class Package(AuthorModel, BaseModel):
