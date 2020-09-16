@@ -34,7 +34,7 @@ class MembershipAdmin(admin.ModelAdmin):
     search_fields = ["uuid"]
 
     def has_add_permission(self, request, obj=None):
-        ''' want to force users always to create memberships with user profile'''
+        """ want to force users always to create memberships with user profile"""
         return False
 
 

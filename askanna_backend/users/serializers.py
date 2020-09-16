@@ -41,11 +41,10 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    profile = MembershipSerializer(read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['profile']
+        fields = '__all__'
 
 class UpdateUserRoleSerializer(serializers.ModelSerializer):
 
