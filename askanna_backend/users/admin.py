@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 from askanna_backend.users.forms import UserChangeForm, UserCreationForm
 
-from users.models import Membership
+from users.models import Membership, UserProfile
 
 User = get_user_model()
 
@@ -23,6 +23,19 @@ class UserAdmin(auth_admin.UserAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
+    list_display = [
+        "uuid",
+        "user",
+        "object_uuid",
+    ]
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid"]
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
     list_display = [
         "uuid",
         "user",

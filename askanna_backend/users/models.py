@@ -54,3 +54,8 @@ class Membership(SlimBaseModel):
         indexes = [models.Index(fields=["user", "object_uuid"])]
         ordering = ["-created"]
         unique_together = [["user", "object_uuid"]]
+
+
+class UserProfile(Membership):
+    pass
+    # profile = models.OneToOneField(Membership, on_delete=models.SET_NULL, null=True)
