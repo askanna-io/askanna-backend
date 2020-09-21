@@ -58,10 +58,7 @@ class RoleFilterSet(django_filters.FilterSet):
 
 class MembershipView(
     NestedViewSetMixin,
-    mixins.CreateModelMixin,
     mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = Membership.objects.all()
@@ -74,19 +71,9 @@ class MembershipView(
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
-        key = 'workspace__short_uuid'
-        val = query_dict.get(key)
-        short_uuid = val
+        short_uuid = query_dict.get('workspace__short_uuid')
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
-
-    def get_serializer_class(self):
-        # if self.request.method.upper() in ["PATCH"]:
-        if self.action in ['partial_update', 'update']:
-            return UpdateUserRoleSerializer
-        return MembershipSerializer
-        # if self.request.method.upper() in ['POST']:
-        #     return MembershipCreateSerializer
 
 
 class UserProfileView(
@@ -108,8 +95,7 @@ class UserProfileView(
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
-        key = 'workspace__short_uuid'
-        val = query_dict.get(key)
-        short_uuid = val
+        short_uuid = query_dict.get('workspace__short_uuid')
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
+

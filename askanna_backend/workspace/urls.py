@@ -12,12 +12,13 @@ workspace_route.register(
     basename="workspace-people",
     parents_query_lookups=["workspace__short_uuid"],
 )
-workspace_route.register(
-    r"people",
-    UserProfileView,
-    basename="workspace-people",
-    parents_query_lookups=["workspace__short_uuid"],
-)
+# the userprofile is not created directly but after an invitation is accepted
+# workspace_route.register(
+#     r"people",
+#     UserProfileView,
+#     basename="workspace-people",
+#     parents_query_lookups=["workspace__short_uuid"],
+# )
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),

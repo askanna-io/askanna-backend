@@ -44,7 +44,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = '__all__'
+        fields = "__all__"
+
 
 class UpdateUserRoleSerializer(serializers.ModelSerializer):
 

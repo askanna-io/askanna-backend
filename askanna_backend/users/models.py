@@ -48,6 +48,13 @@ class Membership(SlimBaseModel):
         on_delete=models.CASCADE,
         related_name="memberships",
         related_query_name="membership",
+        blank=True,
+    )
+    invitation = models.ForeignKey(
+        "users.Invitation",
+        on_delete=models.CASCADE,
+        related_name="invitation",
+        blank=True,
     )
 
     class Meta:
@@ -57,5 +64,11 @@ class Membership(SlimBaseModel):
 
 
 class UserProfile(Membership):
+    """For now, the userprofile contains the same information as the Membership.
+        This UserProfile model extends the Membership model"""
     pass
-    # profile = models.OneToOneField(Membership, on_delete=models.SET_NULL, null=True)
+
+
+class Invitation(SlimBaseModel):
+    email = models.EmailField(blank=False)
+    expiry_date = models.DateTimeField()
