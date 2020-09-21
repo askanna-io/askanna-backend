@@ -19,7 +19,7 @@ class IsAdminUser(permissions.BasePermission):
         # in other words, is this user part of the Model
         members = view.get_queryset()
         return (
-            members.filter(user=request.user, role__in=self.required_roles).count() > 0
+            members.filter(user=request.user, role__in=self.required_roles).exists()
         )
 
     def has_object_permission(self, request, view, obj):
@@ -29,7 +29,7 @@ class IsAdminUser(permissions.BasePermission):
         # specific rules to modify specific fields can be defined later in serializer
         # this permission only checks access
         members = view.get_queryset()
-        is_admin = members.filter(user=request.user, role=WS_ADMIN).count() > 0
+        is_admin = members.filter(user=request.user, role=WS_ADMIN).exists()
 
         return obj.user == request.user or is_admin
 
@@ -42,7 +42,7 @@ class IsMemberOrAdminUser(permissions.BasePermission):
         # in other words, is this user part of the Model
         members = view.get_queryset()
         return (
-            members.filter(user=request.user, role__in=self.required_roles).count() > 0
+            members.filter(user=request.user, role__in=self.required_roles).exists()
         )
 
     def has_object_permission(self, request, view, obj):
@@ -52,6 +52,6 @@ class IsMemberOrAdminUser(permissions.BasePermission):
         # specific rules to modify specific fields can be defined later in serializer
         # this permission only checks access
         members = view.get_queryset()
-        is_admin = members.filter(user=request.user, role=WS_ADMIN).count() > 0
+        is_admin = members.filter(user=request.user, role=WS_ADMIN).exists()
 
         return obj.user == request.user or is_admin
