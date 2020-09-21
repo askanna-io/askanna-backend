@@ -1,6 +1,6 @@
 from django.conf.urls import url, include, re_path
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
-from workspace.views import MembershipView, UserProfileView, InviteUserView
+from workspace.views import MembershipView, UserProfileView, PersonViewSet
 from utils.urls import router
 from workspace.views import WorkspaceViewSet
 
@@ -21,7 +21,7 @@ workspace_route.register(
 # )
 workspace_route.register(
     r"invite",
-    InviteUserView,
+    PersonViewSet,
     basename="workspace-invite",
     parents_query_lookups=["workspace__short_uuid"]
 )

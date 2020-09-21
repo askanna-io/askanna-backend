@@ -4,7 +4,7 @@ from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import Membership, UserProfile
-from users.serializers import MembershipSerializer, UpdateUserRoleSerializer, UserProfileSerializer, InviteUserSerializer
+from users.serializers import MembershipSerializer, UpdateUserRoleSerializer, UserProfileSerializer, PersonSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -100,7 +100,7 @@ class UserProfileView(
         return {'object_uuid': workspace.uuid}
 
 
-class InviteUserView(
+class PersonViewSet(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.DestroyModelMixin,
@@ -108,7 +108,7 @@ class InviteUserView(
     viewsets.GenericViewSet,
 ):
     queryset = Membership.objects.all()
-    serializer_class = InviteUserSerializer
+    serializer_class = PersonSerializer
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
