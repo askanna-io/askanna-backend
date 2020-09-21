@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import Membership, UserProfile
+from users.models import Membership, UserProfile, Invitation
 
 
 class MembershipSerializer(serializers.ModelSerializer):
@@ -64,37 +64,7 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         """
         return role
 
-
-# class MembershipCreateSerializer(serializers.ModelSerializer):
-#     user = serializers.SerializerMethodField("create_user")
-#
-#     class Meta:
-#         model = Membership
-#         fields = ["user","role", "object_type", "object_uuid"]
-#
-#     def create_user(self, validated_data):
-#         user = Membership.objects.create(validated_data)
-#         return user
-#         validated_data.update(**{"user": self.context["request"].user})
-#         return super().create(validated_data)
-
-#     #TODO: validation of existing user
-#     def to_representation(self, instance):
-#         request = self.context["request"]
-#         url = "{scheme}://{host}/workspace/{short_uuid}/people".format(
-#             scheme=request.scheme,
-#             host=request.get_host().replace("-api", "").replace("api", ""),
-#             short_uuid= instance.short_uuid,
-#         )
-#         return {
-#             "uuid": instance.uuid,
-#             "short_uuid": instance.short_uuid,
-#             "name": instance.user.get_name(),
-#             "role": instance.get_role(),
-#             "created": instance.created,
-#             "last_active": "",
-#             "message": "Successfully added new member",
-#         }
-
-
-
+class InviteUserSerializer():
+    class Meta:
+        model = Invitation
+        fields = "__all__"

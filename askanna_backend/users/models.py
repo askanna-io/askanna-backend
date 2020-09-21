@@ -4,8 +4,6 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from core.models import BaseModel, SlimBaseModel, SlimBaseForAuthModel
-import json
-
 
 class User(SlimBaseForAuthModel, AbstractUser):
 
@@ -49,12 +47,14 @@ class Membership(SlimBaseModel):
         related_name="memberships",
         related_query_name="membership",
         blank=True,
+        null=True,
     )
     invitation = models.ForeignKey(
         "users.Invitation",
         on_delete=models.CASCADE,
         related_name="invitation",
         blank=True,
+        null=True,
     )
 
     class Meta:
