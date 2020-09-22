@@ -64,8 +64,12 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         """
         return role
 
+STATUS = (
+    (1, "invited"),
+    (2, "accepted"),
+)
 class PersonSerializer(serializers.ModelSerializer):
-    status = serializers.ChoiceField(choices)
+    status = serializers.ChoiceField(choices=STATUS)
     class Meta:
         model = Invitation
         fields = "__all__"
