@@ -49,13 +49,6 @@ class Membership(SlimBaseModel):
         blank=True,
         null=True,
     )
-    invitation = models.ForeignKey(
-        "users.Invitation",
-        on_delete=models.CASCADE,
-        related_name="invitation",
-        blank=True,
-        null=True,
-    )
 
     class Meta:
         indexes = [models.Index(fields=["user", "object_uuid"])]
