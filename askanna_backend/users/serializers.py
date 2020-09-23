@@ -94,7 +94,6 @@ class PersonSerializer(serializers.Serializer):
         return Invitation.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        instance.status = validated_data.get('status', instance.status)
         instance.email = validated_data.get('email', instance.email)
         instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
         instance.object_uuid = validated_data.get('object_uuid', instance.object_uuid)
