@@ -64,32 +64,37 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         """
         return role
 
-STATUS = (
-    (1, "invited"),
-    (2, "accepted"),
-)
+# STATUS = (
+#     (1, "invited"),
+#     (2, "accepted"),
+# )
 class PersonSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=STATUS)
+#     status = serializers.ChoiceField(choices=STATUS, default=1)
+    email = serializers.EmailField(max_length=None, allow_blank=False)
+    expiry_date = serializers.DateTimeField()
     #define fields that get serialized
     object_uuid = serializers.UUIDField()
-    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default='workspace')
-    role = serializers.ChoiceField(choices=ROLES, default='member')
+    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default='WS')
+    role = serializers.ChoiceField(choices=ROLES, default='WM')
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
-#     user =
-#     invitation =
+    user = serializers.CharField(required=False, allow_blank=True, max_length=255)
 
     class Meta:
         fields = "__all__"
 
-    def create(self, validated_data):
-        return Membership.objects.create(**validated_data)
 
+    def create(self, validated_data):
+        return Invitation.objects.create(**validated_data)
+#
     def update(self, instance, validated_data):
-        instance.status = validated_data.get('status', instance.status)
+#         instance.status = validated_data.get('status', instance.status)
+        instance.email = validated_data.get('email', instance.email)
+        instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
         instance.object_uuid = validated_data.get('object_uuid', instance.object_uuid)
         instance.object_type = validated_data.get('object_type', instance.object_type)
         instance.role = validated_data.get('role', instance.role)
         instance.job_title = validated_data.get('job_title', instance.job_title)
+        instance.user = validated_data.get('user', instance.user)
         instance.save()
         return instance
 

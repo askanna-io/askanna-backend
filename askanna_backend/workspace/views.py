@@ -3,7 +3,7 @@ from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.models import Membership, UserProfile
+from users.models import Membership, UserProfile, Invitation
 from users.serializers import MembershipSerializer, UpdateUserRoleSerializer, UserProfileSerializer, PersonSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -103,11 +103,12 @@ class UserProfileView(
 class PersonViewSet(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Membership.objects.all()
+    queryset = Invitation.objects.all()
     serializer_class = PersonSerializer
 
     def get_parents_query_dict(self):
