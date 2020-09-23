@@ -69,6 +69,6 @@ class UserProfile(Membership):
     pass
 
 
-class Invitation(SlimBaseModel):
+class Invitation(Membership):
     email = models.EmailField(blank=False)
     expiry_date = models.DateTimeField()
