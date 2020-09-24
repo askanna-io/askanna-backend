@@ -108,7 +108,7 @@ class PersonViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Invitation.objects.all()
+    queryset = Membership.objects.all()
     serializer_class = PersonSerializer
 
     def get_parents_query_dict(self):

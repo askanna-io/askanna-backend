@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from users.models import Membership, UserProfile, Invitation, ROLES, MEMBERSHIPS
-
+from django.utils import timezone
+from datetime import timedelta
 
 class MembershipSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField("get_user")
@@ -68,40 +69,84 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 #     ("invited", "invited"),
 #     ("accepted", "accepted"),
 # )
-class PersonSerializer(serializers.Serializer):
-    status = serializers.SerializerMethodField("get_status")
+class ReadWriteSerializerMethodField(serializers.Field):
+   def __init__(self, method_name=None, **kwargs):
+        self.method_name = method_name
+        kwargs['source']= '*'
+        kwargs['read_only'] = False
+        super().__init__(**kwargs)
 
-    email = serializers.EmailField(max_length=None, allow_blank=False)
-    expiry_date = serializers.DateTimeField()
+   def bind(self, field_name, parent):
+        # The method name defaults to `get_{field_name}`.
+        if self.method_name is None:
+            self.method_name = 'get_{field_name}'.format(field_name=field_name)
+
+        super().bind(field_name, parent)
+
+   def to_representation(self, value):
+        method = getattr(self.parent, self.method_name)
+        return method(value)
+
+   def to_internal_value(self, data):
+        return {self.field_name: data}
+
+class PersonSerializer(serializers.Serializer):
+    status = ReadWriteSerializerMethodField("get_status", required=False)
+    email = ReadWriteSerializerMethodField('get_email')
+    expiry_date = serializers.DateTimeField(source='invitation.expiry_date', read_only=True)
     object_uuid = serializers.UUIDField()
-    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default='WS')
+    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default= 'WS')
     role = serializers.ChoiceField(choices=ROLES, default='WM')
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    user = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    user = serializers.CharField(read_only=True)
 
     class Meta:
         fields = "__all__"
+
+    def get_email(self, instance):
+        try:
+            instance.invitation
+        except Invitation.DoesNotExist:
+            return instance.user.email
+        else:
+            return instance.invitation.email
 
     def get_status(self, instance):
         try:
             instance.invitation
         except Invitation.DoesNotExist:
-            pass
+            return "accepted"
         else:
             return "invited"
 
+    def change_membership_to_accepted(self, instance):
+        instance.invitation.delete(keep_parents=True)
+        userprofile = UserProfile()
+        userprofile.membership_ptr = instance
+        userprofile.save_base(raw=True)
+        instance.user = self._context['request'].user
+
     def create(self, validated_data):
-        return Invitation.objects.create(**validated_data)
+        expiry_date = timezone.now() + timedelta(days=7)
+        return Invitation.objects.create(expiry_date=expiry_date, **validated_data)
 
     def update(self, instance, validated_data):
-        instance.email = validated_data.get('email', instance.email)
-        instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
+        print(validated_data)
+        status = validated_data.get('status', None)
+        if status == 'accepted'and self.get_status(instance) == 'invited':
+            self.change_membership_to_accepted(instance)
+
+
         instance.object_uuid = validated_data.get('object_uuid', instance.object_uuid)
         instance.object_type = validated_data.get('object_type', instance.object_type)
         instance.role = validated_data.get('role', instance.role)
         instance.job_title = validated_data.get('job_title', instance.job_title)
-        instance.user = validated_data.get('user', instance.user)
         instance.save()
+        instance.refresh_from_db()
         return instance
 
-
+    def get_fields(self):
+        fields = super().get_fields()
+        if self.instance and self.get_status(self.instance) == 'accepted':
+            del fields['expiry_date']
+        return fields
