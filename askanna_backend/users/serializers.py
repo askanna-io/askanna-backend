@@ -65,10 +65,7 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         """
         return role
 
-# STATUS = (
-#     ("invited", "invited"),
-#     ("accepted", "accepted"),
-# )
+
 class ReadWriteSerializerMethodField(serializers.Field):
    def __init__(self, method_name=None, **kwargs):
         self.method_name = method_name
