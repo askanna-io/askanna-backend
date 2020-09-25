@@ -59,10 +59,12 @@ class RoleFilterSet(django_filters.FilterSet):
 class MembershipView(
     NestedViewSetMixin,
     mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = Membership.objects.all()
     lookup_field = 'short_uuid'
+    serializer_class = MembershipSerializer
     filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
     ordering = ['user__name']
     ordering_fields = ['user__name']
@@ -74,6 +76,11 @@ class MembershipView(
         short_uuid = query_dict.get('workspace__short_uuid')
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
+
+    def get_serializer_class(self):
+        if self.request.method.upper() in ['PATCH']:
+            return UpdateUserRoleSerializer
+        return MembershipSerializer
 
 
 class UserProfileView(

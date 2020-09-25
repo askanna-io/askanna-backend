@@ -57,6 +57,7 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.role = validated_data.get("role", instance.role)
         instance.save()
+        instance.refresh_from_db()
         return instance
 
     def validated_role(self, role):
@@ -64,6 +65,19 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
         Validation of a given new value for role
         """
         return role
+
+    def to_representation(self, instance):
+        request = self.context["request"]
+        return {
+            "uuid": instance.uuid,
+            "short_uuid": instance.short_uuid,
+            "name": instance.user.get_name(),
+            "job_title": instance.job_title,
+            "role": instance.role,
+            "created": instance.created,
+            "last_active": "",
+            "message": "Successfully changed the role"
+   }
 
 
 class ReadWriteSerializerMethodField(serializers.Field):
