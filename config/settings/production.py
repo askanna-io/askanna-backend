@@ -164,8 +164,7 @@ sentry_sdk.init(
         sentry_logging,
         DjangoIntegration(),
         CeleryIntegration(),
-        RedisIntegration(),
-        TornadoIntegration()
+        RedisIntegration()
     ],
 )
 
