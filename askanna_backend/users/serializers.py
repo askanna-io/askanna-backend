@@ -2,6 +2,8 @@ from rest_framework import serializers
 from users.models import Membership, UserProfile, Invitation, ROLES, MEMBERSHIPS
 from django.utils import timezone
 from datetime import timedelta
+from django.core.signing import TimestampSigner
+
 
 class MembershipSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField("get_user")
@@ -110,9 +112,15 @@ class PersonSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=ROLES, default='WM')
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.CharField(read_only=True)
+    token = serializers.SerializerMethodField('generate_token', read_only=True)
 
     class Meta:
         fields = "__all__"
+
+    def generate_token(self, instance):
+        token = TimestampSigner()
+        instance.token = token.sign('invitation token')
+        return instance.token
 
     def get_email(self, instance):
         try:
@@ -130,6 +138,13 @@ class PersonSerializer(serializers.Serializer):
         else:
             return "invited"
 
+    def validate_token(self, instance):
+        if instance.invitation and instance.invitation.token.unsign(token, max_age=expiry_date):
+            return True
+        else:
+            raise serializers.ValidationError("Invitation is not valid")
+            return False
+
     def change_membership_to_accepted(self, instance):
         instance.invitation.delete(keep_parents=True)
         userprofile = UserProfile()
@@ -144,7 +159,7 @@ class PersonSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         print(validated_data)
         status = validated_data.get('status', None)
-        if status == 'accepted'and self.get_status(instance) == 'invited':
+        if status == 'accepted'and self.get_status(instance) == 'invited' and self.generate_token(instance):
             self.change_membership_to_accepted(instance)
 
 
