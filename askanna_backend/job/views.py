@@ -541,7 +541,7 @@ class JobArtifactView(
                 "target": "{scheme}://{FQDN}/files/artifacts/{LOCATION}".format(
                     scheme=request.scheme,
                     FQDN=settings.ASKANNA_CDN_FQDN,
-                    LOCATION=os.path.join(instance.storage_location, instance.filename),
+                    LOCATION="/".join([instance.storage_location, instance.filename]),
                 ),
             }
         )
