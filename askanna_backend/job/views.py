@@ -535,21 +535,15 @@ class JobArtifactView(
     def download(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        try:
-            location = os.path.join(instance.storage_location, instance.filename)
-            response = HttpResponseRedirect(
-                "{scheme}://{ASKANNA_CDN_FQDN}/files/artifacts/{LOCATION}".format(
-                    scheme=request.scheme,
-                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
-                    LOCATION=location,
-                )
-            )
-            return response
-        except Exception as e:
-            pass
-
         return Response(
-            {"message_type": "error", "message": "Artifact was not found"}, status=404
+            {
+                "action": "redirect",
+                "target": "{scheme}://{FQDN}/files/artifacts/{LOCATION}".format(
+                    scheme=request.scheme,
+                    FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION="/".join([instance.storage_location, instance.filename]),
+                ),
+            }
         )
 
 
