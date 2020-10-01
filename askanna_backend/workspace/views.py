@@ -19,6 +19,7 @@ from core.mixins import HybridUUIDMixin
 from users.models import Membership, MSP_WORKSPACE
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
+from django.core.mail import send_mail
 
 from rest_framework.schemas.openapi import AutoSchema
 from rest_framework import status
@@ -125,7 +126,16 @@ class PersonViewSet(
         return {'object_uuid': workspace.uuid}
 
     def send_invite(self, serializer):
-        print(serializer.generate_token())
+        token = serializer.generate_token()
+        email = serializer.data['email']
+        message = f"Here is your token: {token}"
+        send_mail(
+            subject='Invitation Workspace',
+            message=message,
+            from_email=None,
+            recipient_list=[email],
+            fail_silently=False,
+        )
 
     def perform_create(self, serializer):
         instance = super().perform_create(serializer)

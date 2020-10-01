@@ -3,8 +3,7 @@ from users.models import Membership, UserProfile, Invitation, ROLES, MEMBERSHIPS
 from django.utils import timezone
 from datetime import timedelta
 from django.core import signing
-from rest_framework.validators import UniqueTogetherValidator
-
+from django.db.models import Q
 
 class MembershipSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField("get_user")
@@ -119,12 +118,6 @@ class PersonSerializer(serializers.Serializer):
 
     class Meta:
         fields = "__all__"
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Invitation.objects.all(),
-                fields=['email', 'object_uuid']
-            )
-        ]
 
     def generate_token(self):
         """
@@ -134,6 +127,10 @@ class PersonSerializer(serializers.Serializer):
         return self.token_signer.sign(self.instance.uuid)
 
     def get_email(self, instance):
+        """
+        This function checks if there already exist an invitation.
+        If it does then it uses the email from the invitation, otherwise it uses the email of the user.
+        """
         try:
             instance.invitation
         except Invitation.DoesNotExist:
@@ -194,6 +191,7 @@ class PersonSerializer(serializers.Serializer):
         userprofile.save_base(raw=True)
         instance.user = self._context['request'].user
 
+
     def create(self, validated_data):
         """
         This function creates the Invitation
@@ -207,12 +205,43 @@ class PersonSerializer(serializers.Serializer):
         """
         data = super().validate(data)
 
-        if "status" in data:
+        self.validate_token_for_workspace(data)
+        self.validate_email_is_unique(data)
+        self.validate_user_in_membership(data)
+
+        return data
+
+    def validate_token_for_workspace(self, data):
+
+         if "status" in data:
             if data['status']=='accepted' and self.get_status(self.instance) == 'invited':
                 if "token" not in data:
                     raise serializers.ValidationError("Token is required when accepting invitation")
 
-        return data
+    def validate_email_is_unique(self, data):
+        """
+        This function validates whether the email is unique for the membership.
+        If the email already exist it raises a ValidationError.
+        """
+        if 'email' in data:
+            email = data['email']
+            membership = data['object_uuid']
+
+            if Membership.objects.filter(Q(invitation__email=email) | Q(user__email=email)).filter(object_uuid=membership).exists():
+                raise serializers.ValidationError("This email already belongs to this membership")
+
+
+    def validate_user_in_membership(self, data):
+        """
+        This function validates whether the user is unique for the membership.
+        If the user is already part of the membership it raises an ValidationError.
+        """
+        if "status" in data:
+            if data['status']=='accepted' and self.get_status(self.instance) == 'invited':
+                user = self._context['request'].user
+                if Membership.objects.filter(Q(user=user)).exists():
+                    raise serializers.ValidationError("User is already part of this membership")
+
 
     def update(self, instance, validated_data):
         """
@@ -240,5 +269,10 @@ class PersonSerializer(serializers.Serializer):
         fields = super().get_fields()
         if not self.instance or self.get_status(self.instance) == 'accepted':
             del fields['token']
+
+        if self.instance:
+            fields['email'].read_only = True
+            fields['object_uuid'].read_only = True
+            fields['object_type'].read_only = True
 
         return fields
