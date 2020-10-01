@@ -64,4 +64,3 @@ class UserProfile(Membership):
 
 class Invitation(Membership):
     email = models.EmailField(blank=False)
-    expiry_date = models.DateTimeField()

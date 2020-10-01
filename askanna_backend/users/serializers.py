@@ -2,7 +2,8 @@ from rest_framework import serializers
 from users.models import Membership, UserProfile, Invitation, ROLES, MEMBERSHIPS
 from django.utils import timezone
 from datetime import timedelta
-from django.core.signing import TimestampSigner
+from django.core import signing
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class MembershipSerializer(serializers.ModelSerializer):
@@ -106,21 +107,31 @@ class ReadWriteSerializerMethodField(serializers.Field):
 class PersonSerializer(serializers.Serializer):
     status = ReadWriteSerializerMethodField("get_status", required=False)
     email = ReadWriteSerializerMethodField('get_email')
-    expiry_date = serializers.DateTimeField(source='invitation.expiry_date', read_only=True)
+    uuid = serializers.UUIDField(read_only=True)
     object_uuid = serializers.UUIDField()
     object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default= 'WS')
     role = serializers.ChoiceField(choices=ROLES, default='WM')
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.CharField(read_only=True)
-    token = serializers.SerializerMethodField('generate_token', read_only=True)
+    token = serializers.CharField(write_only=True)
+
+    token_signer = signing.TimestampSigner()
 
     class Meta:
         fields = "__all__"
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Invitation.objects.all(),
+                fields=['email', 'object_uuid']
+            )
+        ]
 
-    def generate_token(self, instance):
-        token = TimestampSigner()
-        instance.token = token.sign('invitation token')
-        return instance.token
+    def generate_token(self):
+        """
+        This function returns the token with as value the uuid of the instance
+        """
+
+        return self.token_signer.sign(self.instance.uuid)
 
     def get_email(self, instance):
         try:
@@ -131,6 +142,11 @@ class PersonSerializer(serializers.Serializer):
             return instance.invitation.email
 
     def get_status(self, instance):
+        """
+        This function returns the status 'accepted' if the invitation doesn't exist.
+            Since the invitation has be removed if it is accepted
+        """
+
         try:
             instance.invitation
         except Invitation.DoesNotExist:
@@ -138,14 +154,40 @@ class PersonSerializer(serializers.Serializer):
         else:
             return "invited"
 
-    def validate_token(self, instance):
-        if instance.invitation and instance.invitation.token.unsign(token, max_age=expiry_date):
-            return True
-        else:
-            raise serializers.ValidationError("Invitation is not valid")
-            return False
+    def validate_status(self, value):
+        """
+        The function validates the status value. It only accepts the value: accepted
+        """
+
+        if value != {'status': 'accepted'}:
+            raise serializers.ValidationError("Status is not accepted")
+
+        return value
+
+    def validate_token(self, value):
+        """
+        This function validates the token and raises a validation error in the following cases:
+            1. If the max_age of the token passed
+            2. If the token passed doesn't match the actual token
+        """
+        try:
+            unsigned_value = self.token_signer.unsign(value, max_age=timedelta(days=7))
+        except signing.SignatureExpired:
+            raise serializers.ValidationError("Token expired")
+        except signing.BadSignature:
+            raise serializers.ValidationError("Token is not valid")
+
+        if str(self.instance.uuid) != unsigned_value:
+            raise serializers.ValidationError("Token does not match for this workspace")
+
+        return unsigned_value
 
     def change_membership_to_accepted(self, instance):
+        """
+        The function deletes the invitation, but keeps the membership that is connected to this.
+                It creates a userprofile for the membership
+                    This can only be done by authenticated users
+        """
         instance.invitation.delete(keep_parents=True)
         userprofile = UserProfile()
         userprofile.membership_ptr = instance
@@ -153,26 +195,50 @@ class PersonSerializer(serializers.Serializer):
         instance.user = self._context['request'].user
 
     def create(self, validated_data):
-        expiry_date = timezone.now() + timedelta(days=7)
-        return Invitation.objects.create(expiry_date=expiry_date, **validated_data)
+        """
+        This function creates the Invitation
+        """
+        return Invitation.objects.create(**validated_data)
+
+    def validate(self, data):
+        """
+        The token is needed to be able to accept the invitation.
+        This function validates the data by checking if there exists a token and the status is accepted.
+        """
+        data = super().validate(data)
+
+        if "status" in data:
+            if data['status']=='accepted' and self.get_status(self.instance) == 'invited':
+                if "token" not in data:
+                    raise serializers.ValidationError("Token is required when accepting invitation")
+
+        return data
 
     def update(self, instance, validated_data):
-        print(validated_data)
+        """
+        This function does the following:
+            1. if the request changes the status to accepted when the initial status is invited and there exists a token,
+                the change_membership_to_accepted function is called
+            2. It updates the fields that are given in the validated_data and reloads model values from the database
+        """
         status = validated_data.get('status', None)
-        if status == 'accepted'and self.get_status(instance) == 'invited' and self.generate_token(instance):
+        if status == 'accepted'and self.get_status(instance) == 'invited' and self.generate_token():
             self.change_membership_to_accepted(instance)
 
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
 
-        instance.object_uuid = validated_data.get('object_uuid', instance.object_uuid)
-        instance.object_type = validated_data.get('object_type', instance.object_type)
-        instance.role = validated_data.get('role', instance.role)
-        instance.job_title = validated_data.get('job_title', instance.job_title)
         instance.save()
         instance.refresh_from_db()
+
         return instance
 
     def get_fields(self):
+        """
+        This function should delete the token if the status is accepted or if the invitation doesn't exist anymore
+        """
         fields = super().get_fields()
-        if self.instance and self.get_status(self.instance) == 'accepted':
-            del fields['expiry_date']
+        if not self.instance or self.get_status(self.instance) == 'accepted':
+            del fields['token']
+
         return fields

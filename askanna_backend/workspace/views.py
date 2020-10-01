@@ -123,3 +123,12 @@ class PersonViewSet(
         short_uuid = query_dict.get('workspace__short_uuid')
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
+
+    def send_invite(self, serializer):
+        print(serializer.generate_token())
+
+    def perform_create(self, serializer):
+        instance = super().perform_create(serializer)
+        self.send_invite(serializer)
+        return instance
+
