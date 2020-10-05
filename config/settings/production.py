@@ -167,6 +167,7 @@ sentry_sdk.init(
         CeleryIntegration(),
         RedisIntegration()
     ],
+    send_default_pii=True # Associate users to errors
 )
 
 # Your stuff...
