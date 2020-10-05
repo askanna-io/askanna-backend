@@ -4,7 +4,7 @@ from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import Membership, UserProfile, Invitation
-from users.serializers import MembershipSerializer, UpdateUserRoleSerializer, UserProfileSerializer, PersonSerializer
+from users.serializers import UserProfileSerializer, PersonSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -57,32 +57,6 @@ class RoleFilterSet(django_filters.FilterSet):
         fields = ['role']
 
 
-class MembershipView(
-    NestedViewSetMixin,
-    mixins.ListModelMixin,
-    mixins.UpdateModelMixin,
-    viewsets.GenericViewSet,
-):
-    queryset = Membership.objects.all()
-    lookup_field = 'short_uuid'
-    serializer_class = MembershipSerializer
-    filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
-    ordering = ['user__name']
-    ordering_fields = ['user__name']
-    filterset_class = RoleFilterSet
-    permission_classes = [IsMemberOrAdminUser]
-
-    def get_parents_query_dict(self):
-        query_dict = super().get_parents_query_dict()
-        short_uuid = query_dict.get('workspace__short_uuid')
-        workspace = Workspace.objects.get(short_uuid=short_uuid)
-        return {'object_uuid': workspace.uuid}
-
-    def get_serializer_class(self):
-        if self.request.method.upper() in ['PATCH']:
-            return UpdateUserRoleSerializer
-        return MembershipSerializer
-
 
 class UserProfileView(
     NestedViewSetMixin,
@@ -112,6 +86,7 @@ class PersonViewSet(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
     mixins.DestroyModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,

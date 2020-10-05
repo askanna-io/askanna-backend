@@ -4,82 +4,13 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core import signing
 from django.db.models import Q
-
-class MembershipSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField("get_user")
-    role = serializers.SerializerMethodField("get_role")
-
-    def get_user(self, instance):
-        user = instance.user
-        return {
-            "uuid": user.uuid,
-            "short_uuid": user.short_uuid,
-            "name": user.get_name(),
-            "job_title": user.job_title,
-            "created": user.created,
-            "last_active": "",
-
-        }
-    def get_role(self, obj):
-        return obj.get_role_display()
-
-    class Meta:
-        model = Membership
-        fields = ['user', 'role']
-
-    def to_representation(self, instance):
-        request = self.context["request"]
-        role = self.fields['role']
-        role_value = role.to_representation(
-            role.get_attribute(instance))
-        return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
-            "name": instance.user.get_name(),
-            "job_title": instance.job_title,
-            "role": role_value,
-            "created": instance.created,
-            "last_active": "",
-   }
-
+from django.db.models import Model
 
 class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
         fields = "__all__"
-
-
-class UpdateUserRoleSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Membership
-        fields = ["role"]
-
-    def update(self, instance, validated_data):
-        instance.role = validated_data.get("role", instance.role)
-        instance.save()
-        instance.refresh_from_db()
-        return instance
-
-    def validated_role(self, role):
-        """
-        Validation of a given new value for role
-        """
-        return role
-
-    def to_representation(self, instance):
-        request = self.context["request"]
-        return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
-            "name": instance.user.get_name(),
-            "job_title": instance.job_title,
-            "role": instance.role,
-            "created": instance.created,
-            "last_active": "",
-            "message": "Successfully changed the role"
-   }
 
 
 class ReadWriteSerializerMethodField(serializers.Field):
@@ -104,9 +35,11 @@ class ReadWriteSerializerMethodField(serializers.Field):
         return {self.field_name: data}
 
 class PersonSerializer(serializers.Serializer):
+    name = ReadWriteSerializerMethodField("get_name")
     status = ReadWriteSerializerMethodField("get_status", required=False)
     email = ReadWriteSerializerMethodField('get_email')
     uuid = serializers.UUIDField(read_only=True)
+    short_uuid = serializers.CharField(read_only=True)
     object_uuid = serializers.UUIDField()
     object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default= 'WS')
     role = serializers.ChoiceField(choices=ROLES, default='WM')
@@ -126,6 +59,17 @@ class PersonSerializer(serializers.Serializer):
 
         return self.token_signer.sign(self.instance.uuid)
 
+    def get_name(self, instance):
+        """
+        This function gets the name from the user.
+        Either from the invitation or from the already accepted memberships.
+        """
+        try:
+            instance.invitation.name
+        except Invitation.DoesNotExist:
+            return instance.user.get_name()
+        return instance.invitation.name
+
     def get_email(self, instance):
         """
         This function checks if there already exist an invitation.
@@ -143,7 +87,8 @@ class PersonSerializer(serializers.Serializer):
         This function returns the status 'accepted' if the invitation doesn't exist.
             Since the invitation has be removed if it is accepted
         """
-
+        if not isinstance(instance, Model):
+            return None
         try:
             instance.invitation
         except Invitation.DoesNotExist:

@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from core.models import BaseModel, SlimBaseModel, SlimBaseForAuthModel
 
+
 class User(SlimBaseForAuthModel, AbstractUser):
 
     # First Name and Last Name do not cover name patterns
@@ -63,4 +64,5 @@ class UserProfile(Membership):
 
 
 class Invitation(Membership):
+    name = models.CharField(_("Name of User"), blank=False, max_length=255)
     email = models.EmailField(blank=False)
