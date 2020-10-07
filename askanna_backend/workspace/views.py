@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.permissions import IsMemberOrAdminUser
+from users.permissions import IsMemberOrAdminUser, IsAdminUser, RoleUpdateByAdminOnlyPermission, UserIsMemberOfWorkspacePermission
 from resumable.files import ResumableFile
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -57,7 +57,6 @@ class RoleFilterSet(django_filters.FilterSet):
         fields = ['role']
 
 
-
 class UserProfileView(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
@@ -93,14 +92,18 @@ class PersonViewSet(
 ):
     queryset = Membership.objects.all()
     serializer_class = PersonSerializer
+    permission_classes = [RoleUpdateByAdminOnlyPermission, UserIsMemberOfWorkspacePermission]
 
     def get_parents_query_dict(self):
+        """This function retrieves the workspace uuid from the workspace short_uuid"""
         query_dict = super().get_parents_query_dict()
         short_uuid = query_dict.get('workspace__short_uuid')
         workspace = Workspace.objects.get(short_uuid=short_uuid)
         return {'object_uuid': workspace.uuid}
 
     def send_invite(self, serializer):
+        """ This function generates the token when the invitation is send.
+        A mail is sent to the email that is given as input when creating the invitation"""
         token = serializer.generate_token()
         email = serializer.data['email']
         message = f"Here is your token: {token}"
@@ -112,8 +115,25 @@ class PersonViewSet(
             fail_silently=False,
         )
 
+    def initial(self, request, *args, **kwargs):
+        """This function sets the uuid from the query_dict and object_type as "WS" by default. """
+        super().initial(request, *args, **kwargs)
+        parents = self.get_parents_query_dict()
+        request.data.update(parents)
+        request.data["object_type"] = "WS"
+
     def perform_create(self, serializer):
+        """This function calls the send invite on the serializer and returns the instance"""
         instance = super().perform_create(serializer)
         self.send_invite(serializer)
         return instance
+
+
+
+
+
+
+
+
+
 

@@ -150,20 +150,11 @@ class PersonSerializer(serializers.Serializer):
         """
         data = super().validate(data)
 
-        self.validate_inviter_in_workspace(data)
         self.validate_token_for_workspace(data)
         self.validate_email_is_unique(data)
         self.validate_user_in_membership(data)
 
         return data
-
-    def validate_inviter_in_workspace(self, data):
-        """This function validates if the person sending the invitation is part of the workspace.
-            If this is not the case, a ValidationError is raised.
-        """
-        if "status" not in data:
-            if not Membership.objects.filter(Q(user__uuid=self._context['request'].user.uuid)).exists():
-                raise serializers.ValidationError("You are not authorized to send invitations for this workspace ")
 
     def validate_token_for_workspace(self, data):
 
