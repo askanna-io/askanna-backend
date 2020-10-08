@@ -182,10 +182,10 @@ class PersonSerializer(serializers.Serializer):
         If the user is already part of the membership it raises an ValidationError.
         """
         if "status" in data:
-            if data['status']=='accepted' and self.get_status(self.instance) == 'invited':
+            if data['status'] == 'accepted' and self.get_status(self.instance) == 'invited':
                 user = self._context['request'].user
                 if Membership.objects.filter(Q(user=user)).exists():
-                    raise serializers.ValidationError("User is already part of this membership")
+                    raise serializers.ValidationError("User is already part of this workspace")
 
 
     def update(self, instance, validated_data):
@@ -212,7 +212,7 @@ class PersonSerializer(serializers.Serializer):
         This function should delete the token if the status is accepted or if the invitation doesn't exist anymore
         """
         fields = super().get_fields()
-        if not self.instance or self.get_status(self.instance) == 'accepted':
+        if not self.instance or self.get_status(self.instance) == "accepted":
             del fields['token']
 
         if self.instance:
