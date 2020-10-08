@@ -182,7 +182,7 @@ class PersonSerializer(serializers.Serializer):
         If the user is already part of the membership it raises an ValidationError.
         """
         if "status" in data:
-            if data['status']=='accepted' and self.get_status(self.instance) == 'invited':
+            if data['status'] == 'accepted' and self.get_status(self.instance) == 'invited':
                 user = self._context['request'].user
                 if Membership.objects.filter(Q(user=user)).exists():
                     raise serializers.ValidationError("User is already part of this membership")
