@@ -196,7 +196,7 @@ class PersonSerializer(serializers.Serializer):
             2. It updates the fields that are given in the validated_data and reloads model values from the database
         """
         status = validated_data.get('status', None)
-        if status == 'accepted'and self.get_status(instance) == 'invited' and self.generate_token():
+        if status == "accepted" and self.get_status(instance) == "invited" and self.generate_token():
             self.change_membership_to_accepted(instance)
 
         for field, value in validated_data.items():
