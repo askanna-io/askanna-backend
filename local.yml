@@ -23,6 +23,8 @@ services:
     ports:
       - "8005:8000"
     command: /start
+    stdin_open: true
+    tty: true
     environment:
       DJANGO_READ_DOT_ENV_FILE: 'True'
       VIRTUAL_HOST: api.askanna.localhost
