@@ -61,6 +61,7 @@ class IsMemberOrAdminUser(permissions.BasePermission):
 class RoleUpdateByAdminOnlyPermission(permissions.BasePermission):
     """
     This permission class is to make sure that the role can only be changed by admin users of the workspace
+    Admin users can only upgrade member users, downgrade admin users is not possible.
     """
     def has_permission(self, request, view):
         if "role" in request.data:
@@ -68,6 +69,8 @@ class RoleUpdateByAdminOnlyPermission(permissions.BasePermission):
                 parents = view.get_parents_query_dict()
                 user = request.user
                 return user.memberships.filter(**parents, role=WS_ADMIN).exists()
+            elif request.data["role"] == "WM":
+                return False
 
         return True
 
