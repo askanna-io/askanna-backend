@@ -212,7 +212,7 @@ class PersonSerializer(serializers.Serializer):
         This function should delete the token if the status is accepted or if the invitation doesn't exist anymore
         """
         fields = super().get_fields()
-        if not self.instance or self.get_status(self.instance) == 'accepted':
+        if not self.instance or self.get_status(self.instance) == "accepted":
             del fields['token']
 
         if self.instance:
