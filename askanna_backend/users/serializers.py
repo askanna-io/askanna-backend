@@ -185,7 +185,7 @@ class PersonSerializer(serializers.Serializer):
             if data['status'] == 'accepted' and self.get_status(self.instance) == 'invited':
                 user = self._context['request'].user
                 if Membership.objects.filter(Q(user=user)).exists():
-                    raise serializers.ValidationError("User is already part of this membership")
+                    raise serializers.ValidationError("User is already part of this workspace")
 
 
     def update(self, instance, validated_data):
