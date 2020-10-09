@@ -4,7 +4,6 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from core.models import BaseModel, SlimBaseModel, SlimBaseForAuthModel
-import json
 
 
 class User(SlimBaseForAuthModel, AbstractUser):
@@ -42,14 +41,28 @@ class Membership(SlimBaseModel):
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
     role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
+    job_title = models.CharField(_("Job title"), blank=True, max_length=255)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
         related_name="memberships",
         related_query_name="membership",
+        blank=True,
+        null=True,
     )
 
     class Meta:
         indexes = [models.Index(fields=["user", "object_uuid"])]
         ordering = ["-created"]
         unique_together = [["user", "object_uuid"]]
+
+
+class UserProfile(Membership):
+    """For now, the userprofile contains the same information as the Membership.
+        This UserProfile model extends the Membership model"""
+    pass
+
+
+class Invitation(Membership):
+    name = models.CharField(_("Name of User"), blank=False, max_length=255)
+    email = models.EmailField(blank=False)
