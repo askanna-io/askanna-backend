@@ -157,8 +157,8 @@ class StartJobView(viewsets.GenericViewSet):
                 "run_uuid": jobrun.short_uuid,
                 "created": jobrun.created,
                 "updated": jobrun.modified,
-                "next_url": "https://{}/v1/status/{}".format(
-                    request.META["HTTP_HOST"], jobrun.short_uuid
+                "next_url": "{}://{}/v1/status/{}".format(
+                    request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
                 ),
             }
         )
@@ -197,11 +197,11 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
 
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
-        next_url = "https://{}/v1/status/{}".format(
-            request.META["HTTP_HOST"], jobrun.short_uuid
+        next_url = "{}://{}/v1/status/{}".format(
+            request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
         )
-        finished_next_url = "https://{}/v1/result/{}".format(
-            request.META["HTTP_HOST"], jobrun.short_uuid
+        finished_next_url = "{}://{}/v1/result/{}".format(
+            request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
         )
         base_status = {
             "message_type": "status",
@@ -434,7 +434,7 @@ class JobArtifactShortcutView(
     """
     Retrieve a specific artifact to be exposed over `/v1/artifact/{{ run_suuid }}`
     We allow the `run_suuid` to be given as short urls are for convenience to get
-    something for a specific `run_suuid`. 
+    something for a specific `run_suuid`.
 
     In case there is no artifact, we will return a http_status=404 (default via drf)
 
@@ -457,9 +457,8 @@ class JobArtifactShortcutView(
         try:
             location = os.path.join(artifact.storage_location, artifact.filename)
             response = HttpResponseRedirect(
-                "{scheme}://{ASKANNA_CDN_FQDN}/files/artifacts/{LOCATION}".format(
-                    scheme=request.scheme,
-                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
+                "{BASE_URL}/files/artifacts/{LOCATION}".format(
+                    BASE_URL=settings.ASKANNA_CDN_URL,
                     LOCATION=location,
                 )
             )
@@ -538,9 +537,8 @@ class JobArtifactView(
         return Response(
             {
                 "action": "redirect",
-                "target": "{scheme}://{FQDN}/files/artifacts/{LOCATION}".format(
-                    scheme=request.scheme,
-                    FQDN=settings.ASKANNA_CDN_FQDN,
+                "target": "{BASE_URL}/files/artifacts/{LOCATION}".format(
+                    BASE_URL=settings.ASKANNA_CDN_URL,
                     LOCATION="/".join([instance.storage_location, instance.filename]),
                 ),
             }

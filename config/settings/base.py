@@ -62,8 +62,8 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
 
-ASKANNA_API_FQDN = env.str("ASKANNA_API_FQDN", "api.askanna.io")
-ASKANNA_CDN_FQDN = env.str("ASKANNA_CDN_FQDN", "cdn-api.askanna.io")
+ASKANNA_API_URL = env.str("ASKANNA_API_URL", "https://api.askanna.io")
+ASKANNA_CDN_URL = env.str("ASKANNA_CDN_URL", "https://cdn-api.askanna.io")
 
 
 # APPS

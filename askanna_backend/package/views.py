@@ -94,9 +94,8 @@ class ProjectPackageViewSet(
         return Response(
             {
                 "action": "redirect",
-                "target": "{scheme}://{FQDN}/files/packages/{LOCATION}".format(
-                    scheme=request.scheme,
-                    FQDN=settings.ASKANNA_CDN_FQDN,
+                "target": "{BASE_URL}/files/packages/{LOCATION}".format(
+                    BASE_URL=settings.ASKANNA_CDN_URL,
                     LOCATION=package.storage_location,
                 ),
             }
