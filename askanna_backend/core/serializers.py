@@ -18,8 +18,8 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
             This url points to the extracted version of the archive hosted at the CDN server.
             Please note the /files/blob/ prefix
         """
-        return "https://{FQDN}/files/blob/{LOCATION}".format(
-            FQDN=settings.ASKANNA_CDN_FQDN, LOCATION=instance.uuid
+        return "{BASE_URL}/files/blob/{LOCATION}".format(
+            BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=instance.uuid
         )
 
     def get_files_for_archive(self, instance):
