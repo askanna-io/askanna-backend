@@ -174,6 +174,12 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         runner_image,
         runner_command,
         environment=env_variables,
+        name="run_{jobrun_suuid}".format(jobrun_suuid=jr.short_uuid),
+        labels={
+            "jobrun": jr.short_uuid,
+            "project": pr.short_uuid,
+            "jobdef": jd.short_uuid,
+        },
         hostname=hostname,
         stdout=True,
         stderr=True,
@@ -203,24 +209,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
     jr.status = "COMPLETED"
     jr.save()
-
-# @receiver(post_save, sender=JobDef)
-# def create_job_payload_for_new_jobdef_signal(sender, instance, created, **kwargs):  # noqa
-#     """
-#     Create initial JobPayload when we create a JobDef and set it to active.
-
-#     FIXME:
-#         - check with the owner approach, if the property name or field changes
-#           in relation to the permission system approach, we will have to
-#           adjust accordingly.
-#     """
-#     if created:
-#         try:
-#             JobPayload.objects.create(jobdef=instance,
-#                                       owner=instance.owner)
-#         except Exception as exc:
-#             # FIXME: need custom exception for more context
-#             raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
 
 
 @receiver(post_save, sender=JobRun)

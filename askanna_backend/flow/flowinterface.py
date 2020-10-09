@@ -265,7 +265,7 @@ class CeleryFlow(BaseFlow):
     def _temp_order(self):
         order = []
 
-        if self.flowdef.nodes.count() > 0:  # noqa
+        if self.flowdef.nodes.exists():  # noqa
             for node in self.flowdef.nodes.order_by('name'):  # noqa
                 order.append(node.name)
 

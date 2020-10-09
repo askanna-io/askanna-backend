@@ -19,3 +19,7 @@ JOB_STATUS = (
     ("SUCCESS", "SUCCESS"),
 )
 
+
+JOB_BACKENDS = (
+    ('job.celerybackend.CeleryJob', 'Celery'),
+)

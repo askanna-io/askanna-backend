@@ -1,12 +1,15 @@
-from django.db import models
+import os
 import uuid
 
-from core.models import BaseModel, SlimBaseModel, AuthorModel
+from django.conf import settings
+from django.db import models
+
+from core.models import AuthorModel, BaseModel
 
 
 class Package(AuthorModel, BaseModel):
     filename = models.CharField(max_length=500)
-   
+
     # Storage location can also e a bucket location
     # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
     storage_location = models.CharField(max_length=1000)
@@ -48,6 +51,11 @@ class Package(AuthorModel, BaseModel):
         # do something to determine full size, here also no full unpack needed, we need to read the metadata of the zip archive
         return 0
 
+    @property
+    def stored_path(self):
+        return os.path.join(
+            settings.PACKAGES_ROOT, self.storage_location
+        )
     class Meta:
         ordering = ['-created']
 

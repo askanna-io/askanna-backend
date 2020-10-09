@@ -32,10 +32,7 @@ from core.utils import get_config
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from job.models import (
     JobDef,
-    Job,
-    get_job_pk,
     JobPayload,
-    get_job,
     JobRun,
     JobArtifact,
     ChunkedArtifactPart,
@@ -47,6 +44,7 @@ from job.serializers import (
     ChunkedArtifactPartSerializer,
     JobArtifactSerializer,
     JobArtifactSerializerForInsert,
+    JobArtifactSerializerDetail,
     JobSerializer,
     StartJobSerializer,
     JobRunSerializer,
@@ -239,82 +237,6 @@ class JobActionView(viewsets.ModelViewSet):
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
-
-    @action(detail=True, methods=["post"], name="Start job")
-    def start(self, request, short_uuid, pk=None, **kwargs):
-        """
-        Based on the incoming short_uuid, we retrieve the JobDef
-        Then we start and retrieve the JobRun for it.
-        """
-        job = get_job(short_uuid)
-        jobrun = job.start()
-
-        # return the JobRun id
-        return Response(
-            {
-                "message_type": "status",
-                "status": "queued",
-                "run_uuid": jobrun.short_uuid,
-                "created": jobrun.created,
-                "updated": jobrun.modified,
-                "next_url": "https://{}/v1/status/{}".format(
-                    request.META["HTTP_HOST"], jobrun.short_uuid
-                ),
-            }
-        )
-
-    @action(detail=True, methods=["post"], name="Stop job")
-    def stop(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
-        job = get_job(short_uuid)
-        job.stop()
-        return Response({"status": "stopped"})
-
-    @action(detail=True, methods=["post"], name="Pause job")
-    def pause(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
-        job = get_job(short_uuid)
-        job.pause()
-        return Response({"status": "paused"})
-
-    @action(detail=True, methods=["post"], name="Reset job")
-    def reset(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
-        job = get_job(short_uuid)
-        job.stop()
-        return Response({"status": "reset"})
-
-    @action(detail=True, methods=["post"], name="Job info")
-    def info(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
-        job = get_job(short_uuid)
-        # return Response({'status': 'info'})
-        return Response({"status": job.info()})
-
-    @action(detail=True, methods=["post"], name="Kill job")
-    def kill(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
-        job = get_job(short_uuid)
-        job.kill()
-        return Response({"status": "killed"})
-
-    @action(detail=True, methods=["post"], name="Result job")
-    def result(self, request, short_uuid, pk=None, **kwargs):
-        # job = Job(pk=pk)
-        # job = get_job(uuid)
-        job = get_job(short_uuid)
-        # job.result()
-        return Response({"result": job.result()})
-
-    @action(detail=True, methods=["post"], name="Job Status")
-    def status(self, request, short_uuid, pk=None, **kwargs):
-        job = get_job(short_uuid)
-        return Response({"status": job.status()})
 
 
 def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
@@ -604,22 +526,24 @@ class JobArtifactView(
     # We will retrieve the artifact and send binary
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        serializer_kwargs = {}
+        serializer_kwargs["context"] = self.get_serializer_context()
+        serializer = JobArtifactSerializerDetail(instance, **serializer_kwargs)
+        return Response(serializer.data)
 
-        try:
-            location = os.path.join(instance.storage_location, instance.filename)
-            response = HttpResponseRedirect(
-                "{scheme}://{ASKANNA_CDN_FQDN}/files/artifacts/{LOCATION}".format(
-                    scheme=request.scheme,
-                    ASKANNA_CDN_FQDN=settings.ASKANNA_CDN_FQDN,
-                    LOCATION=location,
-                )
-            )
-            return response
-        except Exception as e:
-            pass
+    @action(detail=True, methods=["get"])
+    def download(self, request, *args, **kwargs):
+        instance = self.get_object()
 
         return Response(
-            {"message_type": "error", "message": "Artifact was not found"}, status=404
+            {
+                "action": "redirect",
+                "target": "{scheme}://{FQDN}/files/artifacts/{LOCATION}".format(
+                    scheme=request.scheme,
+                    FQDN=settings.ASKANNA_CDN_FQDN,
+                    LOCATION="/".join([instance.storage_location, instance.filename]),
+                ),
+            }
         )
 
 

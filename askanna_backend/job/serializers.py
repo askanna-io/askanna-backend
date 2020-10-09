@@ -1,6 +1,9 @@
 import base64
+
+from django.conf import settings
 from rest_framework import serializers
 
+from core.serializers import BaseArchiveDetailSerializer
 from job.models import (
     JobDef,
     JobRun,
@@ -49,6 +52,7 @@ class JobPayloadSerializer(serializers.ModelSerializer):
 
 
 class JobRunSerializer(serializers.ModelSerializer):
+    artifact = serializers.SerializerMethodField("get_artifact")
     package = serializers.SerializerMethodField("get_package")
     version = serializers.SerializerMethodField("get_version")
     project = serializers.SerializerMethodField("get_project")
@@ -102,8 +106,18 @@ class JobRunSerializer(serializers.ModelSerializer):
             "short_uuid": "2222-3333-2222-2222",
         }
 
+    def get_artifact(self, instance):
+        has_artifact = instance.artifact.exists()
+        if has_artifact:
+            artifact = instance.artifact.first()
+            return {
+                "name": artifact.filename,
+                "uuid": artifact.uuid,
+                "short_uuid": artifact.short_uuid,
+            }
+        return {"name": None, "uuid": None, "short_uuid": None}
+
     def get_package(self, instance):
-        # FIXME: replace with actual data after models refactor
         package = instance.package
         if package:
             return {
@@ -166,6 +180,12 @@ class JobArtifactSerializer(serializers.ModelSerializer):
 
 
 class JobArtifactSerializerForInsert(serializers.ModelSerializer):
+    class Meta:
+        model = JobArtifact
+        fields = "__all__"
+
+
+class JobArtifactSerializerDetail(BaseArchiveDetailSerializer):
     class Meta:
         model = JobArtifact
         fields = "__all__"

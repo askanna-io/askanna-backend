@@ -21,7 +21,7 @@ echo '$ {{ command.print_command|safe }}'
 
 last_status=$?
 
-if [ $last_status -neq 0 ]
+if [ "$last_status" -ne "0" ]
 then
   # AskAnna runner detected a non-zero exitcode and proceed with finishing uploading artificacts right now
   # we don't store the result, as this job will not have any valid results because of the crash we just detected

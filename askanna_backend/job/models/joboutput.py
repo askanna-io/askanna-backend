@@ -11,7 +11,6 @@ from django.utils.module_loading import import_string
 from core.fields import JSONField  # noqa
 from core.models import BaseModel, SlimBaseModel
 
-from job.settings import JOB_BACKENDS  # noqa
 from job.models.const import JOB_STATUS
 
 
