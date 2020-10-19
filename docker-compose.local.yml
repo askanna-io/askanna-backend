@@ -4,11 +4,10 @@
 # https://docs.docker.com/compose/extends/
 #   $ ln -s docker-compose.local.yml docker-compose.override.yml
 
-version: '3'
+version: "3"
 
 x-services:
-  base-django:
-    &base-django
+  base-django: &base-django
     volumes:
       - .:/app
 
@@ -20,6 +19,12 @@ services:
     <<: *base-django
     ports:
       - "8000:8000"
+
+  celeryworker:
+    <<: *base-django
+
+  celerybeat:
+    <<: *base-django
 
   flower:
     <<: *base-django
