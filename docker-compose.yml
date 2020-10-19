@@ -1,0 +1,76 @@
+version: '3'
+
+x-services:
+  base-build:
+    &base-build
+    context: .
+    dockerfile: ./compose/local/django/Dockerfile
+
+  base-django:
+    &base-django
+    build:
+      <<: *base-build
+    restart: on-failure
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env.django
+      - .env.postgres
+
+services:
+  #                       #
+  # Third party images    #
+  #                       #
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data
+      - local_postgres_data_backups:/backups
+    env_file:
+      - .env.postgres
+
+  redis:
+    image: redis:5.0
+
+  #                       #
+  # Custom images         #
+  #                       #
+  django:
+    <<: *base-django
+    build:
+      <<: *base-build
+      target: django
+    depends_on:
+      - postgres
+    command: /start
+    stdin_open: true
+    tty: true
+
+  celeryworker:
+    <<: *base-django
+    depends_on:
+      - redis
+      - postgres
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *base-django
+    depends_on:
+      - redis
+      - postgres
+    command: /start-celerybeat
+
+  flower:
+    <<: *base-django
+    build:
+      <<: *base-build
+      target: flower
+    depends_on:
+      - postgres
+    command: /start-flower
+
+volumes:
+  local_postgres_data:
+  local_postgres_data_backups:
