@@ -42,7 +42,7 @@ locally. The next thing is to launch it:
 ::
 
   # On first run only, to uses locally exposed ports and mounted volumes.
-  $ ln -s docker-compose.mutagen.yml docker-compose.override.yml
+  $ ln -s docker-compose.local.yml docker-compose.override.yml
 
   # Now launch the containers.
   $ docker-compose up
