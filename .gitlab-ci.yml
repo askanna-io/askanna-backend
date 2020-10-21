@@ -1,5 +1,4 @@
 variables:
-  SENTRY_DSN: https://sentry.askanna.eu/askanna/askanna_backend
   DATABASE_URL: postgresql://anna:pass@postgres/askanna_backend
   REDIS_URL: redis://redis:6379/0
   CELERY_BROKER_URL: redis://redis:6379/0
@@ -28,6 +27,11 @@ test:
   stage: test
   tags:
     - kubernetes
+  variables:
+    DJANGO_SECRET_KEY: $CI_COMMIT_SHA
+    DJANGO_ALLOWED_HOSTS: "*"
+    DJANGO_EMAIL_BACKEND: "django.core.mail.backends.locmem.EmailBackend"
+    DJANGO_SECURE_SSL_REDIRECT: "False"
   before_script:
     - pip install -U pip
     - pip install -r requirements/local.txt
