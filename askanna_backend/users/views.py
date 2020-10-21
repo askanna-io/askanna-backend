@@ -4,8 +4,22 @@ from django.urls import reverse
 from django.views.generic import DetailView, RedirectView, UpdateView
 from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
-
+from rest_framework import mixins, viewsets
+from rest_framework_extensions.mixins import NestedViewSetMixin
+from users.serializers import UserSerializer
 User = get_user_model()
+
+
+class UserView(
+        NestedViewSetMixin,
+        mixins.CreateModelMixin,
+        mixins.ListModelMixin,
+        mixins.RetrieveModelMixin,
+        mixins.UpdateModelMixin,
+        viewsets.GenericViewSet,
+        ):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 
 class UserDetailView(LoginRequiredMixin, DetailView):

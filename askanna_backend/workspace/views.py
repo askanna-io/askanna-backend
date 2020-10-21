@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.permissions import IsMemberOrAdminUser, IsAdminUser, RoleUpdateByAdminOnlyPermission, UserIsMemberOfWorkspacePermission
+from users.permissions import IsMemberOrAdminUser, IsAdminUser, RoleUpdateByAdminOnlyPermission, RequestHasAccessToWorkspacePermission
 from resumable.files import ResumableFile
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -19,7 +19,8 @@ from core.mixins import HybridUUIDMixin
 from users.models import Membership, MSP_WORKSPACE
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
-from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
 
 from rest_framework.schemas.openapi import AutoSchema
 from rest_framework import status
@@ -86,13 +87,13 @@ class PersonViewSet(
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
     mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = Membership.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = PersonSerializer
-    permission_classes = [RoleUpdateByAdminOnlyPermission, UserIsMemberOfWorkspacePermission]
+    permission_classes = [RoleUpdateByAdminOnlyPermission, RequestHasAccessToWorkspacePermission]
 
     def get_parents_query_dict(self):
         """This function retrieves the workspace uuid from the workspace short_uuid"""
@@ -104,16 +105,29 @@ class PersonViewSet(
     def send_invite(self, serializer):
         """ This function generates the token when the invitation is send.
         A mail is sent to the email that is given as input when creating the invitation"""
-        token = serializer.generate_token()
         email = serializer.data['email']
-        message = f"Here is your token: {token}"
-        send_mail(
-            subject='Invitation Workspace',
-            message=message,
-            from_email=None,
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        token = serializer.generate_token()
+        query_dict = super().get_parents_query_dict()
+        short_uuid = query_dict.get('workspace__short_uuid')
+        workspace = Workspace.objects.get(short_uuid=short_uuid)
+
+        data = {
+            'token': token,
+            'workspace_name': workspace,
+            'workspace_short_uuid': short_uuid,
+            'web_ui_url': "https://askanna.eu",
+            'people_short_uuid': serializer.data['short_uuid'],
+        }
+
+        subject = f'You’re invited to join {workspace} on AskAnna'
+        from_email =  settings.DEFAULT_FROM_EMAIL
+
+        text_version = render_to_string('emails/invitation_email.txt', data)
+        html_version = render_to_string('emails/invitation_email.html', data)
+
+        msg = EmailMultiAlternatives(subject, text_version, from_email, [email])
+        msg.attach_alternative(html_version, "text/html")
+        msg.send()
 
     def initial(self, request, *args, **kwargs):
         """This function sets the uuid from the query_dict and object_type as "WS" by default. """
@@ -127,13 +141,3 @@ class PersonViewSet(
         instance = super().perform_create(serializer)
         self.send_invite(serializer)
         return instance
-
-
-
-
-
-
-
-
-
-
