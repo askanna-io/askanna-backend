@@ -64,5 +64,5 @@ class UserProfile(Membership):
 
 
 class Invitation(Membership):
-    name = models.CharField(_("Name of User"), blank=False, max_length=255)
+    name = models.CharField(_("Name of User"), blank=True, max_length=255)
     email = models.EmailField(blank=False)

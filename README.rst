@@ -3,28 +3,21 @@ AskAnna Backend
 
 AskAnna Backend Project
 
-Settings
---------
-
-Moved to settings_.
-
-.. _settings: http://cookiecutter-django.readthedocs.io/en/latest/settings.html
-
 Local Dev
 ---------
 
-For local development, we have two options. One is using Docker and the
-configuration based on the `local.yml` file, and another one is by feeding our
-own environment variables.
+The required environment variables to run the project are loaded from `.env` files
+located in the root directory.
+You can manually create a copy of each of the `.env*.example` files or you can run
+the following command which will create them for you:
 
-The latter can happen in many different ways, and currently we list two:
+::
 
-- Switching variables via `PyCharm` configurations
-- Passing envs via a local .env file and switching on the related variable
-  `DJANGO_READ_DOT_ENV_FILE` in the base settings.
+  $ docker run -ti --rm -v "${PWD}:/var/lib/dotenver/" jmfederico/dotenver:version-1.2.0 dotenver -r --pattern "**/.env*.example"
 
-We provide a `.env.example` that can be used to set all the required
-environment variables in all cases.
+You can run this command whenever there are changes to the example config files.
+It will never override your custom variables.
+
 
 Install and running via docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,14 +35,34 @@ stack of docker images. This requires `docker-compose` to be installed.
 Please follow the guide on https://docs.docker.com/compose/install/ to install
 this on your system.
 
+
 We have setup most of the required variables in the code repository for running
 locally. The next thing is to launch it:
 
 ::
 
-  $ docker-compose -f local.yml up
+  # On first run only, to uses locally exposed ports and mounted volumes.
+  $ ln -s docker-compose.local.yml docker-compose.override.yml
 
-You can then access askanna_backend via http://localhost:8005/
+  # Now launch the containers.
+  $ docker-compose up
+
+You can then access askanna_backend via http://localhost:8000/
+
+Remote development
+^^^^^^^^^^^^^^^^^^
+
+It is possible to run the project on a remote Docker instance, while developing
+locally. Mutagen_ is `integrated with docker-compose`_ to allow you to use external
+hardware that can be in your network or in the cloud. File changes are propagated
+immediately. This method also improves performance when running Docker in macOS.
+
+Read more on the `docker-compose.mutagen.yml`_ file.
+
+.. _docker-compose.mutagen.yml: ./docker-compose.mutagen.yml
+.. _Mutagen: https://mutagen.io
+.. _`integrated with docker-compose`: https://mutagen.io/documentation/orchestration/compose
+
 
 Running additional commands on docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,7 +82,6 @@ With docker-compose, one should apply the following command:
 
   $ docker-compose run django python manage.py showmigrations
 
-::
 
 When you have made changes to the model, one should apply the following command:
 
@@ -84,14 +96,12 @@ Then, to apply the change your data you need to run the following command:
 
   $ python manage.py migrate
 
-::
-
 
 Basic Commands
 --------------
 
 Setting Up Your Users
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 * To create a **normal user account**, just go to Sign Up and fill out the
   form. Once you submit it, you'll see a "Verify Your E-mail Address" page. Go
@@ -107,7 +117,7 @@ superuser logged in on Firefox (or similar), so that you can see how the site
 behaves for both kinds of users.
 
 Type checks
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 Running type checks with mypy:
 
@@ -132,7 +142,7 @@ Running tests with py.test
   $ pytest
 
 Live reloading and Sass CSS compilation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Moved to `Live reloading and SASS compilation`_.
 
@@ -141,7 +151,7 @@ Moved to `Live reloading and SASS compilation`_.
 
 
 Celery
-^^^^^^
+~~~~~~
 
 This app comes with Celery.
 
@@ -158,10 +168,8 @@ should be right.
 
 
 
-
-
 Sentry
-^^^^^^
+~~~~~~
 
 Sentry is an error logging aggregator service. You can sign up for a free
 account at  https://sentry.io/signup/?code=cookiecutter  or download and host
@@ -170,21 +178,3 @@ The system is setup with reasonable defaults, including 404 logging and
 integration with the WSGI application.
 
 You must set the DSN url in production.
-
-
-Deployment
-----------
-
-The following details how to deploy this application.
-
-
-
-Docker
-^^^^^^
-
-See detailed `cookiecutter-django Docker documentation`_.
-
-.. _`cookiecutter-django Docker documentation`: http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html
-
-
-

@@ -1,3 +1,4 @@
+storage_root
 .*
 !.coveragerc
 !.env

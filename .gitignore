@@ -328,9 +328,8 @@ askanna_backend/media/
 
 
 .ipython/
-.env
-.envs/*
-!.envs/.local/
+.env*
+!.env*.example
 
 # sqlite3
 *.sqlite3
@@ -343,3 +342,6 @@ askanna_backend/media/
 
 # Exclude storage folder
 storage_root/
+
+# Allow custom local overrides.
+docker-compose.override.yml

@@ -1,0 +1,16 @@
+** JOIN THE WORKSPACE {{WORKSPACE_NAME}} ON ASKANNA 
+------------------------------------------------------------
+
+You are invited to join the workspace {{ workspace_name }} on Askanna. You can accept the invitation via the join button below. 
+
+JOIN {{ workspace_name }}  ** What's AskAnna?------------------------------------------------------------ AskAnna is the platform where you can easily collaborate on data science and machine learning projects. You can kickstart your next project using templates, version control, and MLOps automation tools. Also, we will make it easy for you to integrate with other tools. You can run everything in AskAnna using our APIs. This means that out of the box, you can productize your data solution, without the support of additional DevOps. ({{web_ui_url}}/join/{{token}}/workspace/{{workspace_short_uuid}}/people/{{people_short_uuid}}) Read more about AskAnna on our website (https://askanna.io) 
+
+============================================================
+
+ ** [LinkedIn] (https://www.linkedin.com/company/askanna-io/)
+
+ ** [Website] (https://askanna.io)
+
+ ** [Email] (mailto:hello@askanna.io)
+
+ 
