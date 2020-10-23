@@ -17,7 +17,12 @@ from core.mixins import HybridUUIDMixin
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
 from package.listeners import *
 from package.models import Package, ChunkedPackagePart
-from package.serializers import PackageSerializer, ChunkedPackagePartSerializer, PackageSerializerDetail, PackageCreateSerializer
+from package.serializers import (
+    PackageSerializer,
+    ChunkedPackagePartSerializer,
+    PackageSerializerDetail,
+    PackageCreateSerializer,
+)
 from package.signals import package_upload_finish
 
 
@@ -41,15 +46,10 @@ class PackageViewSet(
     upload_finished_signal = package_upload_finish
     upload_finished_message = "package upload finished"
 
-    def create(self, request, *args, **kwargs):
-        """
-        Create a model instance. Overwrite for create /POST
-        """
-        serializer = PackageCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def get_serializer_class(self):
+        if self.request.method.upper() in ["POST"]:
+            return PackageCreateSerializer
+        return self.serializer_class
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         update_fields = ["created_by", "storage_location", "size"]
@@ -78,17 +78,16 @@ class ProjectPackageViewSet(
     serializer_class = PackageSerializer
     permission_classes = [IsAuthenticated]
 
-    # overwrite the default view and serializer for detail page
-    # we want to use an other serializer for this.
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer_kwargs = {}
-        serializer_kwargs["context"] = self.get_serializer_context()
-        serializer = PackageSerializerDetail(instance, **serializer_kwargs)
-        return Response(serializer.data)
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return PackageSerializerDetail
+        return self.serializer_class
 
     @action(detail=True, methods=["get"])
     def download(self, request, **kwargs):
+        """
+        Return a response with the URI on the CDN where to find the full package.
+        """
         package = self.get_object()
 
         return Response(
