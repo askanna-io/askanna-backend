@@ -8,7 +8,7 @@ def settings(config, env):
     """Configure askanna related settings."""
     config.ASKANNA_API_URL = env.str("ASKANNA_API_URL", "https://api.askanna.io")
     config.ASKANNA_CDN_URL = env.str("ASKANNA_CDN_URL", "https://cdn-api.askanna.io")
-
+    config.ASKANNA_UI_URL = env.str("ASKANNA_UI_URL", "https://askanna.eu")
     # AskAnna Docker settings
     config.ASKANNA_DOCKER_USER = env.str("ASKANNA_DOCKER_USER", default=None)
     config.ASKANNA_DOCKER_PASS = env.str("ASKANNA_DOCKER_PASS", default=None)

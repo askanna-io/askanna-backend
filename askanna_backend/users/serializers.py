@@ -117,11 +117,16 @@ class PersonSerializer(serializers.Serializer):
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.CharField(read_only=True)
     token = serializers.CharField(write_only=True)
+    front_end_url = ReadWriteSerializerMethodField("get_front_end_url", required=False)
 
     token_signer = signing.TimestampSigner()
 
     class Meta:
         fields = "__all__"
+
+    def get_front_end_url(self):
+        if front_end_url == None:
+            front_end_url = config.ASKANNA_UI_URL
 
     def generate_token(self):
         """
