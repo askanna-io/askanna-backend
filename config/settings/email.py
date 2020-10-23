@@ -20,6 +20,7 @@ def settings(config, env):
     config.SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=config.DEFAULT_FROM_EMAIL)
     # https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
     config.EMAIL_SUBJECT_PREFIX = env("DJANGO_EMAIL_SUBJECT_PREFIX", default="[AskAnna Backend]")
+    config.EMAIL_INVITATION_FROM_EMAIL = env("EMAIL_INVITATION_FROM_EMAIL", default="AskAnna <support@askanna.io>")
 
     # sendgrid
     # ------------------------------------------------------------------------------

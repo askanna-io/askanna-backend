@@ -120,7 +120,7 @@ class PersonViewSet(
         }
 
         subject = f'You’re invited to join {workspace} on AskAnna'
-        from_email =  settings.DEFAULT_FROM_EMAIL
+        from_email =  settings.EMAIL_INVITATION_FROM_EMAIL
 
         text_version = render_to_string('emails/invitation_email.txt', data)
         html_version = render_to_string('emails/invitation_email.html', data)
