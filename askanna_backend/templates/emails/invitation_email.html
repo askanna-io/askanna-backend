@@ -446,6 +446,32 @@
           line-height: 150% !important;
         }
       }
+
+      btn:not(.v-btn--outlined).error,
+      .v-btn:not(.v-btn--outlined).info,
+      .v-btn:not(.v-btn--outlined).primary,
+      .v-btn:not(.v-btn--outlined).secondary,
+      .v-btn:not(.v-btn--outlined).success,
+      .v-btn:not(.v-btn--outlined).warning {
+        color: #fff;
+      }
+      .primary {
+        background-color: #5d3eb2 !important;
+        border-color: #5d3eb2 !important;
+      }
+      .v-btn {
+        border-radius: 4px;
+        text-decoration: none !important;
+        text-transform: uppercase;
+
+        white-space: nowrap;
+        height: 36px;
+        min-width: 64px;
+        padding: 10px 16px;
+      }
+      .v-btn__content {
+        color: white;
+      }
     </style>
   </head>
   <body
@@ -747,16 +773,20 @@
                                   <br />
                                   <br />
                                   <a
+                                    style="text-decoration: none"
                                     target="_blank"
+                                    clicktracking="off"
                                     href="{{web_ui_url}}/join/{{token}}/workspace/{{workspace_short_uuid}}/people/{{people_short_uuid}}"
-                                    >JOIN {{ workspace_name }}</a
-                                  ><br />
+                                    class="v-btn v-btn--contained theme--light v-size--default primary"
+                                    ><span class="v-btn__content"
+                                      >JOIN {{ workspace_name }}</span
+                                    ></a
+                                  >
+                                  <br />
                                   <br />
                                   <br />
                                   <h2>What's AskAnna?</h2>
                                   <br />
-                                  <br />
-
                                   AskAnna is the platform where you can easily
                                   collaborate on data science and machine
                                   learning projects. You can kickstart your next
