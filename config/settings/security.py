@@ -3,6 +3,34 @@
 from .settings_decorator import configclass
 
 
+import ipaddress
+import logging
+
+
+class IpNetworks():
+    """
+    A Class that contains a list of IPvXNetwork objects.
+
+    Credits to https://djangosnippets.org/snippets/1862/
+    """
+
+    networks = []
+
+    def __init__(self, addresses):
+        """Create a new IpNetwork object for each address provided."""
+        for address in addresses:
+            self.networks.append(ipaddress.ip_network(address))
+
+    def __contains__(self, address):
+        """Check if the given address is contained in any of our Networks."""
+        logger = logging.getLogger(__name__)
+        logger.debug('Checking address: "%s".', address)
+        for network in self.networks:
+            if ipaddress.ip_address(address) in network:
+                return True
+        return False
+
+
 @configclass
 def settings(config, env):
     """Configure security related settings."""
@@ -18,9 +46,9 @@ def settings(config, env):
     # https://docs.djangoproject.com/en/dev/ref/settings/#secure-ssl-redirect
     config.SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
     # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
-    config.SESSION_COOKIE_SECURE = True
+    config.SESSION_COOKIE_SECURE = config.SECURE_SSL_REDIRECT
     # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-secure
-    config.CSRF_COOKIE_SECURE = True
+    config.CSRF_COOKIE_SECURE = config.SECURE_SSL_REDIRECT
     # https://docs.djangoproject.com/en/dev/topics/security/#ssl-https
     # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-seconds
     config.SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=60)
@@ -41,9 +69,11 @@ def settings(config, env):
 
     if config.DEBUG:
         # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
-        config.INTERNAL_IPS = env.list("DJANGO_INTERNAL_IPS", default=["127.0.0.1"])
+        internal_ips = env.list("DJANGO_INTERNAL_IPS", default=["127.0.0.1"])
         if env("USE_DOCKER") == "yes":
             import socket
 
             hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
-            config.INTERNAL_IPS += [ip[:-1] + "1" for ip in ips]
+            internal_ips += [ip[:-1] + "1" for ip in ips]
+
+        config.INTERNAL_IPS = IpNetworks(internal_ips)
