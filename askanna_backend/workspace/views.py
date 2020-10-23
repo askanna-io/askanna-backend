@@ -115,7 +115,7 @@ class PersonViewSet(
             'token': token,
             'workspace_name': workspace,
             'workspace_short_uuid': short_uuid,
-            'web_ui_url': "https://askanna.eu",
+            'web_ui_url': serializer.data['front_end_url'],
             'people_short_uuid': serializer.data['short_uuid'],
         }
 

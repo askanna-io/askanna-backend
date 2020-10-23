@@ -5,6 +5,8 @@ from datetime import timedelta
 from django.core import signing
 from django.db.models import Q
 from django.db.models import Model
+# from config.settings.askanna import settings
+from django.conf import settings
 
 class ReadWriteSerializerMethodField(serializers.Field):
    def __init__(self, method_name=None, **kwargs):
@@ -117,16 +119,13 @@ class PersonSerializer(serializers.Serializer):
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.CharField(read_only=True)
     token = serializers.CharField(write_only=True)
-    front_end_url = ReadWriteSerializerMethodField("get_front_end_url", required=False)
+    front_end_url = serializers.CharField(required=False, default=settings.ASKANNA_UI_URL)
 
     token_signer = signing.TimestampSigner()
 
     class Meta:
         fields = "__all__"
 
-    def get_front_end_url(self):
-        if front_end_url == None:
-            front_end_url = config.ASKANNA_UI_URL
 
     def generate_token(self):
         """
@@ -143,9 +142,11 @@ class PersonSerializer(serializers.Serializer):
         try:
             instance.invitation.name
         except Invitation.DoesNotExist:
-            return instance.user.get_name()
-        else:
+            if instance.user:
+                return instance.user.get_name()
             return None
+        else:
+            return instance.invitation.name
 
     def get_email(self, instance):
         """
@@ -155,7 +156,9 @@ class PersonSerializer(serializers.Serializer):
         try:
             instance.invitation
         except Invitation.DoesNotExist:
-            return instance.user.email
+            if instance.user:
+                return instance.user.email
+            return None
         else:
             return instance.invitation.email
 
