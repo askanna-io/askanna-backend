@@ -66,3 +66,4 @@ class UserProfile(Membership):
 class Invitation(Membership):
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
     email = models.EmailField(blank=False)
+    front_end_url = models.CharField(blank=True, max_length=255)
