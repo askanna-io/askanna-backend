@@ -20,10 +20,9 @@ from package.signals import package_upload_finish
 def handle_upload(sender, signal, postheaders, obj, **kwargs):
     # extract from package_root to blob_root under the package uuid
     # this is for the fileview
-    source_location = settings.PACKAGES_ROOT
     target_location = settings.BLOB_ROOT
 
-    source_path = os.path.join(source_location, obj.storage_location)
+    source_path = obj.stored_path
     target_path = os.path.join(target_location, str(obj.uuid))
 
     with ZipFile(source_path) as zippackage:
@@ -34,9 +33,10 @@ def handle_upload(sender, signal, postheaders, obj, **kwargs):
 def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     """
     Extract jobs defined in the askanna.yml (if set)
+
+    The `askanna.yml` file should be located in the root level of the archive
     """
-    source_location = settings.PACKAGES_ROOT
-    source_path = os.path.join(source_location, obj.storage_location)
+    source_path = obj.stored_path
 
     # Read the zipfile and find askanna.yml
     askanna_yml = ""
@@ -45,7 +45,7 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
 
         askanna_ymlfiles = set(["askanna.yml", "askanna.yaml"])
         found_askanna_yml = askanna_ymlfiles - (askanna_ymlfiles - set(listOfFileNames))
-        yml_found_in_set = len(found_askanna_yml) < len(askanna_ymlfiles)
+        yml_found_in_set = len(found_askanna_yml) > 0
 
         if not yml_found_in_set:
             return
