@@ -11,7 +11,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import filters
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.permissions import IsMemberOrAdminUser, IsAdminUser, RoleUpdateByAdminOnlyPermission, RequestHasAccessToWorkspacePermission
+from users.permissions import (
+    IsMemberOrAdminUser,
+    IsAdminUser,
+    RoleUpdateByAdminOnlyPermission,
+    RequestHasAccessToWorkspacePermission,
+    RequestIsValidInvite,
+)
 from resumable.files import ResumableFile
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -24,6 +30,7 @@ from django.core.mail import EmailMultiAlternatives
 
 from rest_framework.schemas.openapi import AutoSchema
 from rest_framework import status
+
 
 class MySchema(AutoSchema):
     def get_tags(self, path, method):
@@ -51,11 +58,11 @@ class WorkspaceViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RoleFilterSet(django_filters.FilterSet):
-    role = django_filters.CharFilter(field_name='role')
+    role = django_filters.CharFilter(field_name="role")
 
     class Meta:
         model = Membership
-        fields = ['role']
+        fields = ["role"]
 
 
 class UserProfileView(
@@ -68,18 +75,18 @@ class UserProfileView(
 ):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
-    lookup_field = 'short_uuid'
+    lookup_field = "short_uuid"
     filter_backends = (filters.OrderingFilter, DjangoFilterBackend)
-    ordering = ['user__name']
-    ordering_fields = ['user__name']
+    ordering = ["user__name"]
+    ordering_fields = ["user__name"]
     filterset_class = RoleFilterSet
     permission_classes = [IsMemberOrAdminUser]
 
     def get_parents_query_dict(self):
         query_dict = super().get_parents_query_dict()
-        short_uuid = query_dict.get('workspace__short_uuid')
+        short_uuid = query_dict.get("workspace__short_uuid")
         workspace = Workspace.objects.get(short_uuid=short_uuid)
-        return {'object_uuid': workspace.uuid}
+        return {"object_uuid": workspace.uuid}
 
 
 class PersonViewSet(
@@ -93,37 +100,58 @@ class PersonViewSet(
     queryset = Membership.objects.all()
     lookup_field = "short_uuid"
     serializer_class = PersonSerializer
-    permission_classes = [RoleUpdateByAdminOnlyPermission, RequestHasAccessToWorkspacePermission]
+    permission_classes = [
+        RequestHasAccessToWorkspacePermission | RoleUpdateByAdminOnlyPermission,
+    ]
+
+    permission_classes_by_action = {
+        "retrieve": [
+            RequestIsValidInvite
+            | IsMemberOrAdminUser
+            | RequestHasAccessToWorkspacePermission
+        ],
+    }
+
+    def get_permissions(self):
+        try:
+            # return permission_classes depending on `action`
+            return [
+                permission()
+                for permission in self.permission_classes_by_action[self.action]
+            ]
+        except KeyError:
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes]
 
     def get_parents_query_dict(self):
         """This function retrieves the workspace uuid from the workspace short_uuid"""
         query_dict = super().get_parents_query_dict()
-        short_uuid = query_dict.get('workspace__short_uuid')
+        short_uuid = query_dict.get("workspace__short_uuid")
         workspace = Workspace.objects.get(short_uuid=short_uuid)
-        return {'object_uuid': workspace.uuid}
+        return {"object_uuid": workspace.uuid}
 
     def send_invite(self, serializer):
         """ This function generates the token when the invitation is send.
         A mail is sent to the email that is given as input when creating the invitation"""
-        email = serializer.data['email']
+        email = serializer.data["email"]
         token = serializer.generate_token()
         query_dict = super().get_parents_query_dict()
-        short_uuid = query_dict.get('workspace__short_uuid')
+        short_uuid = query_dict.get("workspace__short_uuid")
         workspace = Workspace.objects.get(short_uuid=short_uuid)
 
         data = {
-            'token': token,
-            'workspace_name': workspace,
-            'workspace_short_uuid': short_uuid,
-            'web_ui_url': serializer.data['front_end_url'],
-            'people_short_uuid': serializer.data['short_uuid'],
+            "token": token,
+            "workspace_name": workspace,
+            "workspace_short_uuid": short_uuid,
+            "web_ui_url": serializer.data["front_end_url"],
+            "people_short_uuid": serializer.data["short_uuid"],
         }
 
-        subject = f'You’re invited to join {workspace} on AskAnna'
-        from_email =  settings.EMAIL_INVITATION_FROM_EMAIL
+        subject = f"You’re invited to join {workspace} on AskAnna"
+        from_email = settings.EMAIL_INVITATION_FROM_EMAIL
 
-        text_version = render_to_string('emails/invitation_email.txt', data)
-        html_version = render_to_string('emails/invitation_email.html', data)
+        text_version = render_to_string("emails/invitation_email.txt", data)
+        html_version = render_to_string("emails/invitation_email.html", data)
 
         msg = EmailMultiAlternatives(subject, text_version, from_email, [email])
         msg.attach_alternative(html_version, "text/html")
