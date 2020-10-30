@@ -54,11 +54,13 @@ x-mutagen:
       mode: "two-way-resolved"
       ignore:
         vcs: true
-      permissions:
-        defaultOwner: "id:100"
-        defaultGroup: "id:101"
-        defaultFileMode: "0644"
-        defaultDirectoryMode: "0755"
+      configurationBeta:
+        # https://stackoverflow.com/questions/62783888/mutagen-io-does-not-sync-beta-alpha-on-osx
+        permissions:
+          defaultOwner: "id:100"
+          defaultGroup: "id:101"
+          defaultFileMode: "0644"
+          defaultDirectoryMode: "0755"
     app:
       alpha: "."
       beta: "volume://app"

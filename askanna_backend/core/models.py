@@ -37,7 +37,7 @@ class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
     uuid = models.UUIDField(
         primary_key=True, db_index=True, editable=False, default=uuid.uuid4
     )
-    short_uuid = models.CharField(max_length=32, blank=True)
+    short_uuid = models.CharField(max_length=32, blank=True, unique=True)
 
     def save(self, *args, **kwargs):
         # Manually set the uuid and short_uuid
