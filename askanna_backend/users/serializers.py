@@ -238,9 +238,15 @@ class PersonSerializer(serializers.Serializer):
         except signing.BadSignature:
             raise serializers.ValidationError("Token is not valid")
         if str(self.instance.uuid) != unsigned_value:
-            raise serializers.ValidationError("Token does not match for this workspace")
+            raise serializers.ValidationError("Token does not match for this invite")
 
         return unsigned_value
+
+    def invalidate_invite(self, instance):
+        """
+        Invalidate the invite by deleting it
+        """
+        instance.invitation.delete(keep_parents=True)
 
     def change_membership_to_accepted(self, instance):
         """
@@ -248,7 +254,7 @@ class PersonSerializer(serializers.Serializer):
                 It creates a userprofile for the membership
                     This can only be done by authenticated users
         """
-        instance.invitation.delete(keep_parents=True)
+        self.invalidate_invite(instance)
         userprofile = UserProfile()
         userprofile.membership_ptr = instance
         instance.object_type = "WS"
@@ -268,13 +274,13 @@ class PersonSerializer(serializers.Serializer):
         """
         data = super().validate(data)
 
-        self.validate_token_for_workspace(data)
+        self.validate_token_set(data)
         self.validate_email_is_unique(data)
         self.validate_user_in_membership(data)
 
         return data
 
-    def validate_token_for_workspace(self, data):
+    def validate_token_set(self, data):
         """
         Happens in PATCH action
         When the `status` field is set, make sure we validate the following:
@@ -317,13 +323,14 @@ class PersonSerializer(serializers.Serializer):
                 .exists()
             ):
                 raise serializers.ValidationError(
-                    {"email": ["This email already belongs to this membership"]}
+                    {"email": ["This email already belongs to this workspace"]}
                 )
 
     def validate_user_in_membership(self, data):
         """
         This function validates whether the user is unique for the membership.
         If the user is already part of the membership it raises an ValidationError.
+        Also invalidate the invite immediately
         """
         if "status" in data:
             if (
@@ -331,9 +338,15 @@ class PersonSerializer(serializers.Serializer):
                 and self.get_status(self.instance) == "invited"
             ):
                 user = self._context["request"].user
-                if Membership.objects.filter(Q(user=user)).exists():
+                workspace = self.instance
+                if (
+                    Membership.objects.filter(Q(user=user))
+                    .filter(object_uuid=workspace.uuid)
+                    .exists()
+                ):
+                    self.invalidate_invite(self.instance)
                     raise serializers.ValidationError(
-                        {"user": ["User is already part of this membership"]}
+                        {"user": ["User is already part of this workspace"]}
                     )
 
     def update(self, instance, validated_data):
