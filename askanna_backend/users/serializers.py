@@ -76,7 +76,7 @@ class UserSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {
                         "username": [
-                            "This email is already used. You can join the workspace by signing in with an existing account as well."
+                            "This email is already used. You can join the workspace by signing in with an existing account."
                         ]
                     }
                 )
