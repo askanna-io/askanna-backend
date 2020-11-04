@@ -8,12 +8,12 @@ from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.serializers import UserSerializer
+from users.permissions import IsOwnerOfUser
 
 User = get_user_model()
 
 
 class UserView(
-    NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -26,6 +26,8 @@ class UserView(
 
     permission_classes_by_action = {
         "create": [],  # Intentionaly left blank as create user will not have any auth set
+        "update": [IsOwnerOfUser],
+        "partial_update": [IsOwnerOfUser],
     }
 
     def get_permissions(self):

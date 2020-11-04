@@ -136,3 +136,8 @@ class RequestIsValidInvite(permissions.BasePermission):
         # by default return a False to ensure no access is granted
         # to be handled by any possible chained permission check
         return False
+
+
+class IsOwnerOfUser(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return obj.uuid == request.user.uuid or request.user.is_superuser
