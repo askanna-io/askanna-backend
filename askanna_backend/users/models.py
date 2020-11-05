@@ -28,6 +28,34 @@ WS_ADMIN = "WA"
 ROLES = ((WS_MEMBER, "member"), (WS_ADMIN, "admin"))
 
 
+class MemberQuerySet(models.QuerySet):
+    def active_members(self):
+        return self.filter(deleted__isnull=True)
+
+    def admins(self):
+        return self.active_members().filter(role=WS_ADMIN)
+
+    def members(self):
+        return self.active_members().filter(role=WS_MEMBER)
+
+    def all_admins(self):
+        return self.filter(role=WS_ADMIN)
+
+    def all_members(self):
+        return self.filter(role=WS_MEMBER)
+
+
+class ActiveMemberManager(models.Manager):
+    def get_queryset(self):
+        return MemberQuerySet(self.model, using=self._db)
+
+    def admins(self):
+        return self.get_queryset().admins()
+
+    def members(self):
+        return self.get_queryset().members()
+
+
 class Membership(SlimBaseModel):
     """
     Membership holds the relation between
@@ -37,6 +65,9 @@ class Membership(SlimBaseModel):
     README: We don't choose to work with Django generic relations for now
 
     """
+
+    objects = models.Manager()
+    members = ActiveMemberManager()
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
@@ -60,6 +91,7 @@ class Membership(SlimBaseModel):
 class UserProfile(Membership):
     """For now, the userprofile contains the same information as the Membership.
         This UserProfile model extends the Membership model"""
+
     pass
 
 

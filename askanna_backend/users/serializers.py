@@ -74,7 +74,11 @@ class UserSerializer(serializers.Serializer):
 
             if User.objects.filter(Q(username=username)).exists():
                 raise serializers.ValidationError(
-                    {"username": ["This username already exists"]}
+                    {
+                        "username": [
+                            "This email is already used. You can join the workspace by signing in with an existing account."
+                        ]
+                    }
                 )
 
         return data
@@ -125,7 +129,7 @@ class PersonSerializer(serializers.Serializer):
     uuid = serializers.UUIDField(read_only=True)
     short_uuid = serializers.CharField(read_only=True)
     object_uuid = serializers.UUIDField()
-    # object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default="WS")
+    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default="WS")
     workspace = serializers.SerializerMethodField("get_workspace")
     role = serializers.ChoiceField(choices=ROLES, default="WM")
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
@@ -136,10 +140,6 @@ class PersonSerializer(serializers.Serializer):
     )
 
     token_signer = signing.TimestampSigner()
-
-    class Meta:
-        # fields = "__all__"
-        exclude = ["object_uuid", "object_type"]
 
     def generate_token(self):
         """
@@ -383,6 +383,6 @@ class PersonSerializer(serializers.Serializer):
         if self.instance:
             fields["email"].read_only = True
             fields["object_uuid"].read_only = True
-            # fields["object_type"].read_only = True
+            fields["object_type"].read_only = True
 
         return fields
