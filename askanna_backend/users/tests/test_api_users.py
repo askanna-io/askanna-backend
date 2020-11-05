@@ -62,7 +62,7 @@ class TestUserListAPI(BaseUsers, APITestCase):
 
     def test_list_users_a_anonymous(self):
         """
-        We can list users as a normal user
+        We cannot list users as anonymous user
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
