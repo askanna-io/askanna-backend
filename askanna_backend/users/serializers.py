@@ -90,7 +90,7 @@ class UserSerializer(serializers.Serializer):
 
             if User.objects.filter(Q(email=email)).exists():
                 raise serializers.ValidationError(
-                    {"email": ["This e-mail address already exists"]}
+                    {"email": ["This email already exists"]}
                 )
 
     def validate_password_length(self, data):
