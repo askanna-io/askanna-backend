@@ -100,7 +100,7 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
 
     def test_create_user_as_normaluser(self):
         """
-        We can create an user as normal user
+        We should not be able to create an user as normal user
         """
         # FIXME: should check the business rule for this particular test
         token = self.users["userB"].auth_token
@@ -115,14 +115,11 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # cleanup via internal functions
-        User.objects.get(short_uuid=response.data["short_uuid"]).delete()
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_user_as_anonymous(self):
         """
-        We can create an user as anonymous
+        We can create an user as anonymous (new member signup)
         """
         response = self.client.post(
             self.url,

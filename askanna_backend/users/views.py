@@ -8,7 +8,7 @@ from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.serializers import UserSerializer
-from users.permissions import IsOwnerOfUser
+from users.permissions import IsOwnerOfUser, IsNotAlreadyMember
 
 User = get_user_model()
 
@@ -25,7 +25,7 @@ class UserView(
     serializer_class = UserSerializer
 
     permission_classes_by_action = {
-        "create": [],  # Intentionaly left blank as create user will not have any auth set
+        "create": [IsNotAlreadyMember],
         "update": [IsOwnerOfUser],
         "partial_update": [IsOwnerOfUser],
     }
