@@ -136,3 +136,19 @@ class RequestIsValidInvite(permissions.BasePermission):
         # by default return a False to ensure no access is granted
         # to be handled by any possible chained permission check
         return False
+
+
+class IsOwnerOfUser(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return obj.uuid == request.user.uuid or request.user.is_superuser
+
+
+class IsNotAlreadyMember(permissions.BasePermission):
+    def has_permission(self, request, view):
+        """
+        Exclude existing members from this particular view/action
+        Only superuser can access still
+        """
+        is_member = request.user.is_anonymous is not True
+        is_admin = request.user.is_superuser
+        return not is_member or is_admin

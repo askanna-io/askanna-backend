@@ -58,7 +58,6 @@ class UserSerializer(serializers.Serializer):
         This function validates the data
         """
         data = super().validate(data)
-
         self.validate_username(data)
         self.validate_email_is_unique(data)
         self.validate_password_length(data)
