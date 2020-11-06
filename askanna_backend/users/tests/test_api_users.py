@@ -52,13 +52,13 @@ class TestUserListAPI(BaseUsers, APITestCase):
 
     def test_list_users_as_normaluser(self):
         """
-        We can list users as a normal user
+        We should not be able to list users as a normal user
         """
         token = self.users["userB"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_list_users_anonymous(self):
         """
