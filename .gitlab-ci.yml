@@ -11,20 +11,20 @@ variables:
   DOCKER_REPO: $CI_REGISTRY_IMAGE
 
 stages:
-  - build_master
-  - build
+  - build_baseimage
   - test
+  - build
   - deploy
   - cleanup
 
 test:
+  stage: test
+  image: ${DOCKER_REPO}/base:master
   services:
     - name: postgres:12
       alias: postgres
     - name: redis:5
       alias: redis
-  image: ${DOCKER_REPO}/base:master
-  stage: test
   tags:
     - kubernetes
   variables:
@@ -39,7 +39,7 @@ test:
     - pytest
 
 .build_baseimage: &build_baseimage
-  stage: build_master
+  stage: build_baseimage
   tags:
     - kubernetes
   image:
