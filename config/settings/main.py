@@ -3,7 +3,17 @@ import sys
 
 import environ
 
-from . import askanna, auth, celery, email, files, i18n_i10n, rest_framework, security, sentry
+from . import (
+    askanna,
+    auth,
+    celery,
+    email,
+    files,
+    i18n_i10n,
+    rest_framework,
+    security,
+    sentry,
+)
 
 ROOT_DIR = (
     environ.Path(__file__) - 3
@@ -35,13 +45,13 @@ try:
     DATABASES = {"default": env.db("DATABASE_URL")}
 except environ.ImproperlyConfigured:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env.str("POSTGRES_DB"),
-            'USER': env.str("POSTGRES_USER"),
-            'PASSWORD': env.str("POSTGRES_PASSWORD"),
-            'HOST': env.str("POSTGRES_HOST"),
-            'PORT': env.str("POSTGRES_PORT"),
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env.str("POSTGRES_DB"),
+            "USER": env.str("POSTGRES_USER"),
+            "PASSWORD": env.str("POSTGRES_PASSWORD"),
+            "HOST": env.str("POSTGRES_HOST"),
+            "PORT": env.str("POSTGRES_PORT"),
         }
     }
 
@@ -199,7 +209,7 @@ celery.settings(locals(), env)
 # more details on how to customize your logging configuration.
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
             "format": "%(levelname)s %(asctime)s %(module)s "

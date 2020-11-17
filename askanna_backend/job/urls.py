@@ -27,6 +27,13 @@ project_route.register(
     parents_query_lookups=["project__short_uuid"],
 )
 
+project_route.register(
+    r"variables",
+    JobVariableView,
+    basename="project-variable",
+    parents_query_lookups=["project__short_uuid"],
+)
+
 job_variable = router.register(r"variable", JobVariableView, basename="variable")
 job_route = router.register(r"job", JobActionView, basename="job")
 job_route.register(
@@ -109,9 +116,7 @@ urlpatterns = [
         kwargs={},
     ),
     path(
-        r"v1/log/<shortuuid:short_uuid>",
-        JobRunView.as_view({"get": "log"}), 
-        kwargs={},
+        r"v1/log/<shortuuid:short_uuid>", JobRunView.as_view({"get": "log"}), kwargs={},
     ),
     path(
         r"v1/status/<shortuuid:short_uuid>/",

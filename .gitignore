@@ -345,3 +345,8 @@ storage_root/
 
 # Allow custom local overrides.
 docker-compose.override.yml
+
+# pytest coverage reports
+.coverage
+cov.xml
+cov.html/

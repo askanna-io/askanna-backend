@@ -36,7 +36,10 @@ test:
     - pip install -U pip
     - pip install -r requirements/local.txt
   script:
-    - pytest
+    - pytest --cov=askanna_backend --cov-report=xml
+  artifacts:
+    reports:
+      cobertura: coverage.xml
 
 .build_baseimage: &build_baseimage
   stage: build_baseimage

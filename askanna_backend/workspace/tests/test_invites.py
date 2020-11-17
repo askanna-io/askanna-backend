@@ -54,7 +54,9 @@ class TestInviteSystem(APITestCase):
             url, {"email": "anna_test@askanna.dev"}, format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertDictContainsSubset({"email": "anna_test@askanna.dev"}, response.data)
+        self.assertTrue(
+            {"email": "anna_test@askanna.dev"}.items() <= dict(response.data).items()
+        )
 
     def test_create_double_invite_not_possible(self):
         url = reverse(
@@ -72,7 +74,9 @@ class TestInviteSystem(APITestCase):
             url, {"email": "anna_test@askanna.dev"}, format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertDictContainsSubset({"email": "anna_test@askanna.dev"}, response.data)
+        self.assertTrue(
+            {"email": "anna_test@askanna.dev"}.items() <= dict(response.data).items()
+        )
 
         response = self.client.post(
             url, {"email": "anna_test@askanna.dev"}, format="json",

@@ -14,6 +14,7 @@ from job.models import (
     JobOutput,
     JobVariable,
 )
+from project.models import Project
 
 
 class JobOutputSerializer(serializers.ModelSerializer):
@@ -203,34 +204,87 @@ class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class JobVariableSerializer(serializers.ModelSerializer):
+class JobVariableCreateSerializer(serializers.ModelSerializer):
+    project = serializers.CharField(max_length=19)
 
-    value = serializers.SerializerMethodField("get_value")
+    def validate_project(self, value):
+        project = value
+        # is it a short_uuid?
+        # or is it a uuid?
+        try:
+            dbproject = Project.objects.get(short_uuid=project)
+        except:
+            dbproject = Project.objects.get(uuid=project)
 
-    def get_value(self, instance):
-        # if 'Authorization' in self.context['request'].headers.keys():
-        #     # extract the token
-        #     raw_token = self.context['request'].headers.get('Authorization')
-        #     token = raw_token.split(' ')[1]
-        #     return base64.b64encode('{}{}'.format(token, instance.value).encode('utf-8'))
-        return instance.value
+        # return uuid for this project
+        return dbproject
+
+    def create(self, validated_data):
+        instance = JobVariable.objects.create(**validated_data)
+        return instance
+
+    def to_representation(self, instance):
+        return {
+            "uuid": instance.uuid,
+            "short_uuid": instance.short_uuid,
+            "name": instance.name,
+            "value": instance.value,
+            "is_masked": instance.is_masked,
+            "project": {
+                "name": instance.project.name,
+                "uuid": instance.project.uuid,
+                "short_uuid": instance.project.short_uuid,
+            },
+            "created": instance.created,
+            "modified": instance.modified,
+        }
 
     class Meta:
         model = JobVariable
-        # fields = "__all__"
         exclude = [
             "deleted",
-            "project",
+        ]
+
+
+class JobVariableSerializer(serializers.ModelSerializer):
+    project = serializers.SerializerMethodField("get_project")
+    value = serializers.SerializerMethodField("get_value")
+
+    def get_value(self, instance):
+        """
+            return masked value by default
+        """
+        show_masked = self.context["request"].query_params.get("show_masked")
+        if instance.is_masked and not show_masked:
+            return "*****************"
+        return instance.value
+
+    def get_project(self, instance):
+        """
+            return
+        """
+        return {
+            "name": instance.project.name,
+            "uuid": instance.project.uuid,
+            "short_uuid": instance.project.short_uuid,
+        }
+
+    class Meta:
+        model = JobVariable
+        exclude = [
+            "deleted",
         ]
 
 
 class JobVariableUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobVariable
-        fields = ["value"]
+        fields = ["name", "value", "is_masked"]
 
     def update(self, instance, validated_data):
+        instance.name = validated_data.get("name", instance.name)
         instance.value = validated_data.get("value", instance.value)
+        instance.is_masked = validated_data.get("is_masked", instance.is_masked)
         instance.save()
         return instance
 
@@ -242,12 +296,16 @@ class JobVariableUpdateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return {
-            'uuid': instance.uuid,
-            'short_uuid': instance.short_uuid,
-            'name': instance.name,
-            'value': instance.value,
-            'created': instance.created,
-            'modified': instance.modified,
-            'status': 1,
-            "message": "Successfully changed the variable",
+            "uuid": instance.uuid,
+            "short_uuid": instance.short_uuid,
+            "name": instance.name,
+            "value": instance.value,
+            "is_masked": instance.is_masked,
+            "project": {
+                "name": instance.project.name,
+                "uuid": instance.project.uuid,
+                "short_uuid": instance.project.short_uuid,
+            },
+            "created": instance.created,
+            "modified": instance.modified,
         }
