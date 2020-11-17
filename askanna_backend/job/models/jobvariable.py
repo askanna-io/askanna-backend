@@ -25,6 +25,7 @@ class JobVariable(SlimBaseModel):
 
     name = models.CharField(max_length=128)
     value = EncryptedTextField(max_length=4096)
+    is_masked = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.uuid)

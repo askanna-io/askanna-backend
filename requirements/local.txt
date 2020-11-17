@@ -37,3 +37,5 @@ watchdog
 django-cors-headers
 tox
 pytest-bdd
+pytest-cov
+

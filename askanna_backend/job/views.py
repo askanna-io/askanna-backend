@@ -13,16 +13,18 @@ from django.http import (
     JsonResponse,
 )
 from django.template.loader import render_to_string
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 
 from rest_framework import mixins, viewsets
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, ParseError
+from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FileUploadParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from resumable.files import ResumableFile
@@ -40,6 +42,7 @@ from job.models import (
     JobOutput,
     JobVariable,
 )
+from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.serializers import (
     ChunkedArtifactPartSerializer,
     JobArtifactSerializer,
@@ -52,6 +55,7 @@ from job.serializers import (
     ChunkedJobOutputPartSerializer,
     JobOutputSerializer,
     JobVariableSerializer,
+    JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
@@ -458,8 +462,7 @@ class JobArtifactShortcutView(
             location = os.path.join(artifact.storage_location, artifact.filename)
             response = HttpResponseRedirect(
                 "{BASE_URL}/files/artifacts/{LOCATION}".format(
-                    BASE_URL=settings.ASKANNA_CDN_URL,
-                    LOCATION=location,
+                    BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=location,
                 )
             )
             return response
@@ -606,16 +609,65 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
 
 class JobVariableView(
     NestedViewSetMixin,
-    # mixins.CreateModelMixin,
+    mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.UpdateModelMixin,
     mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = JobVariable.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobVariableSerializer
-    permission_classes = [IsAuthenticated]
+
+    filter_backends = (OrderingFilter, DjangoFilterBackend)
+    ordering = ["project__name", "name"]
+    ordering_fields = ["name", "project__name"]
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    permission_classes_by_action = {
+        "list": [IsAuthenticated | IsAdminUser],
+        "create": [IsAuthenticated, IsMemberOfProjectBasedOnPayload | IsAdminUser],
+        "update": [IsAuthenticated, IsMemberOfProjectBasedOnPayload | IsAdminUser],
+        "partial_update": [
+            IsAuthenticated,
+            IsMemberOfProjectBasedOnPayload | IsAdminUser,
+        ],
+    }
+
+    def initial(self, request, *args, **kwargs):
+        """
+        Set default request.data in case we need this
+        """
+        project_suuid = None
+        super().initial(request, *args, **kwargs)
+        parents = self.get_parents_query_dict()
+        request.data.update(parents)
+        if parents.get("project__short_uuid"):
+            project_suuid = parents.get("project__short_uuid")
+            request.data.update({"project": project_suuid})
+
+        if self.request.method.upper() in ["PUT", "PATCH"] and not project_suuid:
+            """
+            Determine the project id by getting it from the object requested
+            """
+            variable = self.get_object()
+            project_suuid = variable.project.short_uuid
+            request.data.update({"project": project_suuid})
+
+    def get_permissions(self):
+        try:
+            # return permission_classes depending on `action`
+            return [
+                permission()
+                for permission in self.permission_classes_by_action[self.action]
+            ]
+        except KeyError:
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes]
 
     def get_serializer_class(self):
         """
@@ -624,6 +676,8 @@ class JobVariableView(
         """
         if self.request.method.upper() in ["PUT", "PATCH"]:
             return JobVariableUpdateSerializer
+        if self.request.method.upper() in ["POST"]:
+            return JobVariableCreateSerializer
         return self.serializer_class
 
     def get_queryset(self):
@@ -632,9 +686,10 @@ class JobVariableView(
         where the current user had access to
         meaning also beeing part of a certain workspace
         """
+        queryset = super().get_queryset()
         user = self.request.user
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return self.queryset.filter(project__workspace__in=member_of_workspaces)
+        return queryset.filter(project__workspace__in=member_of_workspaces)
 

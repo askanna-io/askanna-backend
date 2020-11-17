@@ -36,7 +36,10 @@ class MemberQuerySet(models.QuerySet):
         return self.active_members().filter(role=WS_ADMIN)
 
     def members(self):
-        return self.active_members().filter(role=WS_MEMBER)
+        """
+        Members include admins
+        """
+        return self.active_members()
 
     def all_admins(self):
         return self.filter(role=WS_ADMIN)
