@@ -256,7 +256,7 @@ class JobVariableSerializer(serializers.ModelSerializer):
         """
         show_masked = self.context["request"].query_params.get("show_masked")
         if instance.is_masked and not show_masked:
-            return "*****************"
+            return "***masked***"
         return instance.value
 
     def get_project(self, instance):
