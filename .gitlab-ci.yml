@@ -36,10 +36,19 @@ test:
     - pip install -U pip
     - pip install -r requirements/local.txt
   script:
-    - pytest --cov=askanna_backend --cov-report=xml
+    - pytest --cov=askanna_backend --cov-report=xml --junitxml=report.junit.xml
+    - cat coverage.xml | sed -e "s.filename=\".filename=\"askanna_backend/.g" > report.coverage.xml
+    - coverage html
+    - coverage report
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)\%/'
   artifacts:
+    expire_in: 2 weeks
+    name: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - htmlcov/
     reports:
-      cobertura: coverage.xml
+      cobertura: report.coverage.xml
+      junit: report.junit.xml
 
 .build_baseimage: &build_baseimage
   stage: build_baseimage
