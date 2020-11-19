@@ -224,6 +224,11 @@ class JobVariableCreateSerializer(serializers.ModelSerializer):
         instance = JobVariable.objects.create(**validated_data)
         return instance
 
+    def validate_value(self, value):
+        if len(value) == 0:
+            raise serializers.ValidationError("A value cannot be empty.")
+        return value
+
     def to_representation(self, instance):
         return {
             "uuid": instance.uuid,
@@ -262,7 +267,7 @@ class JobVariableSerializer(serializers.ModelSerializer):
 
     def get_project(self, instance):
         """
-            return
+            return short project relation info
         """
         return {
             "name": instance.project.name,
@@ -283,6 +288,11 @@ class JobVariableUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobVariable
         fields = ["name", "value", "is_masked"]
+
+    def validate_value(self, value):
+        if len(value) == 0:
+            raise serializers.ValidationError("A value cannot be empty.")
+        return value
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)

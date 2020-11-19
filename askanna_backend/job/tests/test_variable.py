@@ -41,6 +41,15 @@ class BaseVariables:
             }
         )
 
+        cls.variable_masked = JobVariable.objects.create(
+            **{
+                "name": "TestVariableMasked",
+                "value": "TestValue",
+                "is_masked": True,
+                "project": cls.project,
+            }
+        )
+
         # make the admin user member of the workspace
         admin_member = Membership.objects.create(
             object_type="WS",
@@ -64,6 +73,7 @@ class BaseVariables:
         for _, user in cls.users.items():
             user.delete()
         cls.variable.delete()
+        cls.variable_masked.delete()
 
 
 class TestVariableCreateAPI(BaseVariables, APITestCase):
@@ -122,6 +132,29 @@ class TestVariableCreateAPI(BaseVariables, APITestCase):
     def test_create_as_member_empty_value(self):
         """
         A normal user can create variable where he/she has access to as member
+        Testcase: empty value
+        Expecting to raise a Validation error
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_token = {
+            "name": "TestVariable",
+            "value": "",
+            "is_masked": False,
+            "project": self.project.short_uuid,
+        }
+
+        response = self.client.post(self.url, new_token, format="json",)
+        self.tmp_variable = response.data.get("short_uuid")
+        self.assertIn(b"cannot be empty", response.content)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_as_member_blank_value(self):
+        """
+        A normal user can create variable where he/she has access to as member
+        Testcase: blank value
+        Expecting to pass
         """
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -188,6 +221,7 @@ class TestVariableListAPI(BaseVariables, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
+        self.assertTrue(len(response.data) == 2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_as_member(self):
@@ -198,7 +232,7 @@ class TestVariableListAPI(BaseVariables, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        self.assertTrue(len(response.data) == 1)
+        self.assertTrue(len(response.data) == 2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_as_nonmember(self):
@@ -227,6 +261,10 @@ class TestVariableDetailAPI(BaseVariables, APITestCase):
     """
 
     def setUp(self):
+        self.urlformaskedvar = reverse(
+            "variable-detail",
+            kwargs={"version": "v1", "short_uuid": self.variable_masked.short_uuid},
+        )
         self.url = reverse(
             "variable-detail",
             kwargs={"version": "v1", "short_uuid": self.variable.short_uuid},
@@ -245,6 +283,19 @@ class TestVariableDetailAPI(BaseVariables, APITestCase):
         self.assertTrue(response.data.get("value") == "TestValue")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_detail_as_admin_maskedvariable(self):
+        """
+        A normal user can list variables where he/she has access to as member
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.urlformaskedvar, format="json",)
+        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue(response.data.get("name") == "TestVariableMasked")
+        self.assertTrue(response.data.get("value") == "***masked***")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_detail_as_member(self):
         """
         A normal user can list variables where he/she has access to as member
@@ -256,6 +307,19 @@ class TestVariableDetailAPI(BaseVariables, APITestCase):
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_detail_as_member_maskedvariable(self):
+        """
+        A normal user can list variables where he/she has access to as member
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.urlformaskedvar, format="json",)
+        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue(response.data.get("name") == "TestVariableMasked")
+        self.assertTrue(response.data.get("value") == "***masked***")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_detail_as_nonmember(self):
@@ -348,6 +412,27 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
         self.assertTrue(response.data.get("value") == " ")
         self.assertTrue(response.data.get("created") != response.data.get("modified"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_change_as_member_blank_value(self):
+        """
+        A normal user can change variables where he/she has access to as member
+        Also the value can be "blank", meaning, contain space only (non visible chars)
+        Testcase: blank values cannot be empty
+        Expecting to fail validation
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        change_var_payload = {
+            "name": "newname",
+            "value": "",
+            "is_masked": False,
+        }
+
+        response = self.client.patch(self.url, change_var_payload, format="json",)
+        self.tmp_variable = response.data.get("short_uuid")
+        self.assertIn(b"cannot be empty", response.content)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_change_as_nonmember(self):
         """
@@ -491,6 +576,14 @@ class TestProjectVariableDetailAPI(TestVariableDetailAPI):
             kwargs={
                 "version": "v1",
                 "short_uuid": self.variable.short_uuid,
+                "parent_lookup_project__short_uuid": self.project.short_uuid,
+            },
+        )
+        self.urlformaskedvar = reverse(
+            "project-variable-detail",
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.variable_masked.short_uuid,
                 "parent_lookup_project__short_uuid": self.project.short_uuid,
             },
         )
