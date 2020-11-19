@@ -118,6 +118,28 @@ class TestVariableCreateAPI(BaseVariables, APITestCase):
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_as_member_empty_value(self):
+        """
+        A normal user can create variable where he/she has access to as member
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_token = {
+            "name": "TestVariable",
+            "value": " ",
+            "is_masked": False,
+            "project": self.project.short_uuid,
+        }
+
+        response = self.client.post(self.url, new_token, format="json",)
+        self.tmp_variable = response.data.get("short_uuid")
+        self.assertTrue(response.data.get("name") == "TestVariable")
+        self.assertTrue(response.data.get("value") == " ")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_as_nonmember(self):
         """
         A normal user can not create variable as a nonmember of a workspace
         We expect a 404 (not found)
@@ -303,6 +325,27 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == "newvalue")
+        self.assertTrue(response.data.get("created") != response.data.get("modified"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_change_as_member_empty_value(self):
+        """
+        A normal user can change variables where he/she has access to as member
+        Also the value can be "blank", meaning, contain space only (non visible chars)
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        change_var_payload = {
+            "name": "newname",
+            "value": " ",
+            "is_masked": False,
+        }
+
+        response = self.client.patch(self.url, change_var_payload, format="json",)
+        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue(response.data.get("name") == "newname")
+        self.assertTrue(response.data.get("value") == " ")
         self.assertTrue(response.data.get("created") != response.data.get("modified"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

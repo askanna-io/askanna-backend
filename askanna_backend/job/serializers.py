@@ -206,6 +206,7 @@ class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
 
 class JobVariableCreateSerializer(serializers.ModelSerializer):
     project = serializers.CharField(max_length=19)
+    value = serializers.CharField(trim_whitespace=False, allow_blank=True)
 
     def validate_project(self, value):
         project = value
@@ -277,6 +278,8 @@ class JobVariableSerializer(serializers.ModelSerializer):
 
 
 class JobVariableUpdateSerializer(serializers.ModelSerializer):
+    value = serializers.CharField(trim_whitespace=False, allow_blank=True)
+
     class Meta:
         model = JobVariable
         fields = ["name", "value", "is_masked"]
@@ -287,12 +290,6 @@ class JobVariableUpdateSerializer(serializers.ModelSerializer):
         instance.is_masked = validated_data.get("is_masked", instance.is_masked)
         instance.save()
         return instance
-
-    def validate_value(self, value):
-        """
-        Validation of a given new value for value
-        """
-        return value
 
     def to_representation(self, instance):
         return {
