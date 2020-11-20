@@ -206,6 +206,7 @@ class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
 
 class JobVariableCreateSerializer(serializers.ModelSerializer):
     project = serializers.CharField(max_length=19)
+    value = serializers.CharField(trim_whitespace=False, allow_blank=True)
 
     def validate_project(self, value):
         project = value
@@ -222,6 +223,11 @@ class JobVariableCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         instance = JobVariable.objects.create(**validated_data)
         return instance
+
+    def validate_value(self, value):
+        if len(value) == 0:
+            raise serializers.ValidationError("A value cannot be empty.")
+        return value
 
     def to_representation(self, instance):
         return {
@@ -261,7 +267,7 @@ class JobVariableSerializer(serializers.ModelSerializer):
 
     def get_project(self, instance):
         """
-            return
+            return short project relation info
         """
         return {
             "name": instance.project.name,
@@ -277,9 +283,16 @@ class JobVariableSerializer(serializers.ModelSerializer):
 
 
 class JobVariableUpdateSerializer(serializers.ModelSerializer):
+    value = serializers.CharField(trim_whitespace=False, allow_blank=True)
+
     class Meta:
         model = JobVariable
         fields = ["name", "value", "is_masked"]
+
+    def validate_value(self, value):
+        if len(value) == 0:
+            raise serializers.ValidationError("A value cannot be empty.")
+        return value
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)
@@ -287,12 +300,6 @@ class JobVariableUpdateSerializer(serializers.ModelSerializer):
         instance.is_masked = validated_data.get("is_masked", instance.is_masked)
         instance.save()
         return instance
-
-    def validate_value(self, value):
-        """
-        Validation of a given new value for value
-        """
-        return value
 
     def to_representation(self, instance):
         return {
