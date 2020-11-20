@@ -645,18 +645,23 @@ class JobVariableView(
         project_suuid = None
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
-        request.data.update(parents)
-        if parents.get("project__short_uuid"):
-            project_suuid = parents.get("project__short_uuid")
-            request.data.update({"project": project_suuid})
+        if self.request.method.upper() in ["PUT", "PATCH"]:
+            if hasattr(request.data, "_mutable"):
+                setattr(request.data, "_mutable", True)
+            if parents.get("project__short_uuid"):
+                project_suuid = parents.get("project__short_uuid")
+                request.data.update({"project": project_suuid})
 
-        if self.request.method.upper() in ["PUT", "PATCH"] and not project_suuid:
-            """
-            Determine the project id by getting it from the object requested
-            """
-            variable = self.get_object()
-            project_suuid = variable.project.short_uuid
-            request.data.update({"project": project_suuid})
+            if not project_suuid:
+                """
+                Determine the project id by getting it from the object requested
+                """
+                variable = self.get_object()
+                project_suuid = variable.project.short_uuid
+                request.data.update({"project": project_suuid})
+
+            if hasattr(request.data, "_mutable"):
+                setattr(request.data, "_mutable", False)
 
     def get_permissions(self):
         try:
