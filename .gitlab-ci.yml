@@ -10,6 +10,9 @@ variables:
 
   DOCKER_REPO: $CI_REGISTRY_IMAGE
 
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
 stages:
   - build_baseimage
   - test
@@ -49,6 +52,11 @@ test:
     reports:
       cobertura: report.coverage.xml
       junit: report.junit.xml
+
+code_quality:
+  stage: test
+  tags:
+    - docker
 
 .build_baseimage: &build_baseimage
   stage: build_baseimage
