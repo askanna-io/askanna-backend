@@ -86,14 +86,13 @@ class Membership(SlimBaseModel):
     )
 
     class Meta:
-        indexes = [models.Index(fields=["user", "object_uuid"])]
         ordering = ["-created"]
-        unique_together = [["user", "object_uuid"]]
+        unique_together = [["user", "object_uuid", "object_type", "deleted"]]
 
 
 class UserProfile(Membership):
     """For now, the userprofile contains the same information as the Membership.
-        This UserProfile model extends the Membership model"""
+    This UserProfile model extends the Membership model"""
 
     pass
 
@@ -101,4 +100,4 @@ class UserProfile(Membership):
 class Invitation(Membership):
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
     email = models.EmailField(blank=False)
-    front_end_url = models.CharField(blank=True, max_length=255)
+    front_end_url = models.URLField()
