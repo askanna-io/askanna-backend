@@ -9,7 +9,7 @@ workspace_route = router.register(r"workspace", WorkspaceViewSet)
 workspace_route.register(
     r"people",
     PersonViewSet,
-    basename="workspace-invite",
+    basename="workspace-people",
     parents_query_lookups=["workspace__short_uuid"]
 )
 

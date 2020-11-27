@@ -2,13 +2,12 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core import signing
-from django.db.models import Q
-from django.db.models import Model
-from django.utils import timezone
-
+from django.core.mail import EmailMultiAlternatives
+from django.db.models import Model, Q
+from django.template.loader import render_to_string
 from rest_framework import serializers
 
-from users.models import Membership, User, UserProfile, Invitation, ROLES, MEMBERSHIPS
+from users.models import MEMBERSHIPS, MSP_WORKSPACE, ROLES, WS_MEMBER, Invitation, Membership, User, UserProfile
 from workspace.models import Workspace
 
 
@@ -67,7 +66,7 @@ class UserSerializer(serializers.Serializer):
 
     def validate_username(self, data):
         """This function validates if the username is unique.
-            If not, a ValidationError is raised"""
+        If not, a ValidationError is raised"""
         if "username" in data:
             username = data["username"]
 
@@ -88,31 +87,25 @@ class UserSerializer(serializers.Serializer):
             email = data["email"]
 
             if User.objects.filter(Q(email=email)).exists():
-                raise serializers.ValidationError(
-                    {"email": ["This email already exists"]}
-                )
+                raise serializers.ValidationError({"email": ["This email already exists"]})
 
     def validate_password_length(self, data):
         """This function validates if the password is longer than 10 characters.
-            If not, a ValidationError is raised"""
+        If not, a ValidationError is raised"""
 
         if "password" in data:
             password = data["password"]
 
             if len(password) < 10:
-                raise serializers.ValidationError(
-                    {"password": ["The password should be longer than 10 characters"]}
-                )
+                raise serializers.ValidationError({"password": ["The password should be longer than 10 characters"]})
 
     def validate_password_not_similar_username(self, data):
         """This function validates if the password is not similar to the username.
-            If this is the case, a ValidationError is raised """
+        If this is the case, a ValidationError is raised"""
 
         if "username" and "password" in data:
             if data["username"] in data["password"]:
-                raise serializers.ValidationError(
-                    {"password": ["The password should not be similar to the username"]}
-                )
+                raise serializers.ValidationError({"password": ["The password should not be similar to the username"]})
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -128,15 +121,13 @@ class PersonSerializer(serializers.Serializer):
     uuid = serializers.UUIDField(read_only=True)
     short_uuid = serializers.CharField(read_only=True)
     object_uuid = serializers.UUIDField()
-    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default="WS")
+    object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default=MSP_WORKSPACE)
     workspace = serializers.SerializerMethodField("get_workspace")
-    role = serializers.ChoiceField(choices=ROLES, default="WM")
+    role = serializers.ChoiceField(choices=ROLES, default=WS_MEMBER)
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.SerializerMethodField("get_user")
     token = serializers.CharField(write_only=True)
-    front_end_url = serializers.CharField(
-        required=False, default=settings.ASKANNA_UI_URL
-    )
+    front_end_url = serializers.URLField(required=False, default=settings.ASKANNA_UI_URL)
 
     token_signer = signing.TimestampSigner()
 
@@ -200,7 +191,8 @@ class PersonSerializer(serializers.Serializer):
         else:
             return instance.invitation.email
 
-    def get_status(self, instance):
+    @staticmethod
+    def get_status(instance):
         """
         This function returns the status 'accepted' if the invitation doesn't exist.
             Since the invitation has be removed if it is accepted
@@ -219,8 +211,8 @@ class PersonSerializer(serializers.Serializer):
         The function validates the status value. It only accepts the value: accepted
         """
 
-        if value != {"status": "accepted"}:
-            raise serializers.ValidationError("Status is not accepted")
+        if value not in [{"status": "accepted"}, {"status": "invited"}]:
+            raise serializers.ValidationError("Invalid status")
 
         return value
 
@@ -231,7 +223,9 @@ class PersonSerializer(serializers.Serializer):
             2. If the token passed doesn't match the actual token
         """
         try:
-            unsigned_value = self.token_signer.unsign(value, max_age=timedelta(days=7))
+            unsigned_value = self.token_signer.unsign(
+                value, max_age=timedelta(hours=settings.ASKANNA_INVITATION_VALID_HOURS)
+            )
         except signing.SignatureExpired:
             raise serializers.ValidationError("Token expired")
         except signing.BadSignature:
@@ -256,7 +250,7 @@ class PersonSerializer(serializers.Serializer):
         self.invalidate_invite(instance)
         userprofile = UserProfile()
         userprofile.membership_ptr = instance
-        instance.object_type = "WS"
+        instance.object_type = MSP_WORKSPACE
         userprofile.save_base(raw=True)
         instance.user = self._context["request"].user
 
@@ -273,13 +267,13 @@ class PersonSerializer(serializers.Serializer):
         """
         data = super().validate(data)
 
-        self.validate_token_set(data)
+        self.validate_token_usage(data)
         self.validate_email_is_unique(data)
         self.validate_user_in_membership(data)
 
         return data
 
-    def validate_token_set(self, data):
+    def validate_token_usage(self, data):
         """
         Happens in PATCH action
         When the `status` field is set, make sure we validate the following:
@@ -288,19 +282,11 @@ class PersonSerializer(serializers.Serializer):
         - No token is given
         - Invite is already expired as in used already
         """
-        if "status" in data:
-            if (
-                data["status"] == "accepted"
-                and self.get_status(self.instance) == "invited"
-            ):
-                if "token" not in data:
-                    raise serializers.ValidationError(
-                        {"token": ["Token is required when accepting invitation"]}
-                    )
-            elif (
-                data["status"] == "accepted"
-                and self.get_status(self.instance) == "accepted"
-            ):
+        if "status" in data and data["status"] == "accepted":
+            if self.get_status(self.instance) == "invited" and "token" not in data:
+                raise serializers.ValidationError({"token": ["Token is required when accepting invitation"]})
+
+            elif self.get_status(self.instance) == "accepted":
                 raise serializers.ValidationError({"token": ["Token is already used"]})
 
     def validate_email_is_unique(self, data):
@@ -315,15 +301,11 @@ class PersonSerializer(serializers.Serializer):
             membership = data["object_uuid"]
 
             if (
-                Membership.objects.filter(
-                    Q(invitation__email=email) | Q(user__email=email)
-                )
+                Membership.objects.filter(Q(invitation__email=email) | (Q(user__email=email, deleted__isnull=True)))
                 .filter(object_uuid=membership)
                 .exists()
             ):
-                raise serializers.ValidationError(
-                    {"email": ["This email already belongs to this workspace"]}
-                )
+                raise serializers.ValidationError({"email": ["This email already belongs to this workspace"]})
 
     def validate_user_in_membership(self, data):
         """
@@ -332,21 +314,16 @@ class PersonSerializer(serializers.Serializer):
         Also invalidate the invite immediately
         """
         if "status" in data:
-            if (
-                data["status"] == "accepted"
-                and self.get_status(self.instance) == "invited"
-            ):
+            if data["status"] == "accepted" and self.get_status(self.instance) == "invited":
                 user = self._context["request"].user
-                workspace = self.instance
                 if (
-                    Membership.objects.filter(Q(user=user))
-                    .filter(object_uuid=workspace.uuid)
+                    Membership.members.members()
+                    .filter(Q(user=user))
+                    .filter(object_uuid=self.instance.object_uuid)
                     .exists()
                 ):
                     self.invalidate_invite(self.instance)
-                    raise serializers.ValidationError(
-                        {"user": ["User is already part of this workspace"]}
-                    )
+                    raise serializers.ValidationError({"user": ["User is already part of this workspace"]})
 
     def update(self, instance, validated_data):
         """
@@ -356,11 +333,7 @@ class PersonSerializer(serializers.Serializer):
             2. It updates the fields that are given in the validated_data and reloads model values from the database
         """
         status = validated_data.get("status", None)
-        if (
-            status == "accepted"
-            and self.get_status(instance) == "invited"
-            and self.generate_token()
-        ):
+        if status == "accepted" and self.get_status(instance) == "invited":
             self.change_membership_to_accepted(instance)
 
         for field, value in validated_data.items():
@@ -385,3 +358,28 @@ class PersonSerializer(serializers.Serializer):
             fields["object_type"].read_only = True
 
         return fields
+
+    def send_invite(self):
+        """This function generates the token when the invitation is send.
+        A mail is sent to the email that is given as input when creating the invitation"""
+        token = self.generate_token()
+        workspace_uuid = self.instance.object_uuid
+        workspace = Workspace.objects.get(uuid=workspace_uuid)
+
+        data = {
+            "token": token,
+            "workspace_name": workspace,
+            "workspace_short_uuid": workspace.short_uuid,
+            "web_ui_url": self.instance.invitation.front_end_url.rstrip("/"),
+            "people_short_uuid": self.instance.short_uuid,
+        }
+
+        subject = f"You’re invited to join {workspace} on AskAnna"
+        from_email = settings.EMAIL_INVITATION_FROM_EMAIL
+
+        text_version = render_to_string("emails/invitation_email.txt", data)
+        html_version = render_to_string("emails/invitation_email.html", data)
+
+        msg = EmailMultiAlternatives(subject, text_version, from_email, [self.instance.invitation.email])
+        msg.attach_alternative(html_version, "text/html")
+        msg.send()

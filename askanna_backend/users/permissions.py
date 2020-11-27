@@ -1,74 +1,38 @@
-from rest_framework import permissions
-from users.models import Membership, WS_ADMIN, WS_MEMBER
-from django.db.models import Q
 import rest_framework
+from rest_framework import permissions
 
-
-class IsAdminUser(permissions.BasePermission):
-    """
-    In this permission check we assume that the instance model contains
-    the fields:
-
-    - role
-    - user
-
-    """
-
-    required_roles = [WS_ADMIN]
-
-    def has_permission(self, request, view):
-        # is this user part of the queryset in the view?
-        # in other words, is this user part of the Model
-        members = view.get_queryset()
-        return members.filter(user=request.user, role__in=self.required_roles).exists()
-
-    def has_object_permission(self, request, view, obj):
-
-        # can the user modify the object (row based access)
-        # is the user an admin
-        # specific rules to modify specific fields can be defined later in serializer
-        # this permission only checks access
-        members = view.get_queryset()
-        is_admin = members.filter(user=request.user, role=WS_ADMIN).exists()
-
-        return obj.user == request.user or is_admin
-
-
-class IsMemberOrAdminUser(permissions.BasePermission):
-    required_roles = [WS_ADMIN, WS_MEMBER]
-
-    def has_permission(self, request, view):
-        # is this user part of the queryset in the view?
-        # in other words, is this user part of the Model
-        members = view.get_queryset()
-        return members.filter(user=request.user, role__in=self.required_roles).exists()
-
-    def has_object_permission(self, request, view, obj):
-
-        # can the user modify the object (row based access)
-        # is owner or is admin
-        # specific rules to modify specific fields can be defined later in serializer
-        # this permission only checks access
-        members = view.get_queryset()
-        is_admin = members.filter(user=request.user, role=WS_ADMIN).exists()
-        return obj.user == request.user or is_admin
+from users.models import WS_ADMIN, Invitation
 
 
 class RoleUpdateByAdminOnlyPermission(permissions.BasePermission):
     """
     This permission class is to make sure that the role can only be changed by admin users of the workspace
-    Admin users can only upgrade member users, downgrade admin users is not possible.
+    An admin can change anyones role except its own role.
+
+    It is important to use it IN ADDITION to RequestHasAccessToWorkspacePermission:
+    Example:
+    ```
+    RequestHasAccessToWorkspacePermission & RoleUpdateByAdminOnlyPermission
+    ```
     """
 
-    def has_permission(self, request, view):
+    def has_object_permission(self, request, view, obj):
+        """
+        Validate access when role is part of the payload.
+
+        Otherwise allow as we have no business in the request.
+        """
         if "role" in request.data:
-            if request.data["role"] == "WA":
-                parents = view.get_parents_query_dict()
-                user = request.user
-                return user.memberships.filter(**parents, role=WS_ADMIN).exists()
-            elif request.data["role"] == "WM":
-                return False
-        return False
+
+            parents = view.get_parents_query_dict()
+            user = request.user
+            return (
+                user.is_authenticated
+                and user != obj.user
+                and user.memberships.filter(**parents, role=WS_ADMIN).exists()
+            )
+
+        return True
 
 
 class RequestHasAccessToWorkspacePermission(permissions.BasePermission):
@@ -80,32 +44,57 @@ class RequestHasAccessToWorkspacePermission(permissions.BasePermission):
         """
         If the action is to create, retrieve, list an invitation or memberships the user has to be part of the workspace
         When an invitation is accepted, the user cannot be part of a workspace
-        The job title can only be changed by admin user of the workspace
         """
         user = request.user
+
+        if view.action in ["partial_update", "destroy"]:
+            # Let has_object_permission deal with this request.
+            return user.is_authenticated
+
         if view.action in ["create", "retrieve", "list"]:
             parents = view.get_parents_query_dict()
-            return user.memberships.filter(**parents).exists()
-
-        if view.action == "partial_update":
-            if "status" in request.data:
-                if request.data["status"] == "accepted":
-                    return True
-            elif "job_title" in request.data:
-                parents = view.get_parents_query_dict()
-                return user.memberships.filter(**parents, role=WS_ADMIN).exists()
+            is_member = user.is_authenticated and user.memberships.filter(deleted__isnull=True, **parents).exists()
+            return is_member
 
         return False
 
     def has_object_permission(self, request, view, obj):
-        members = view.get_queryset()
-        is_member = members.filter(user=request.user).exists()
+        """
+        The job title can only be changed by admin user of the workspace.
+        Otherwise access is granted to members.
+        """
+        user = request.user
+        parents = view.get_parents_query_dict()
+        # member_role is a tuple with the role.
+        member_role = user.memberships.filter(deleted__isnull=True, **parents).values_list("role").first()
+        is_member = bool(member_role)
+        is_admin = is_member and WS_ADMIN in member_role
+
+        if view.action == "destroy":
+            try:
+                return obj.invitation and is_member
+            except Invitation.DoesNotExist:
+                return is_admin and obj.user != user
+
+        if view.action == "partial_update":
+            if request.data.get("status") == "accepted":
+                # Let the serializer validate if a user can accept an invitation.
+                return user.is_authenticated
+
+            if request.data.get("status") == "invited":
+                return is_member
+
+            if "job_title" in request.data:
+                return is_admin
+
+            return (not obj.deleted and obj.user == request.user) or is_admin
+
         return is_member
 
 
 class RequestIsValidInvite(permissions.BasePermission):
     """
-    This permission is set in place to allow anonymous User to request the
+    This permission is set in place to allow anonymous and non-members to request the
     workspace/people endpoint to get details on the invite.
 
     Requires one to pass the `token` in the query_parameters set in a GET request
@@ -115,27 +104,33 @@ class RequestIsValidInvite(permissions.BasePermission):
     - Specific check on whether the `token` matches the invite on a `retrieve` action
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
         """
-        On instance level, check whether the token is set and whether
-        this is a valid matching token to the invite object
+        Grant access to non member that supply a token  even if invalid.
         """
         user = request.user
-        token_set = request.query_params.get("token") is not None
-        if not token_set and user.is_anonymous:
+        parents = view.get_parents_query_dict()
+        not_member = user.is_anonymous or not user.memberships.filter(**parents).exists()
+        return not_member and view.action == "retrieve" and "token" in request.query_params
+
+    def has_object_permission(self, request, view, obj):
+        """
+        On instance level, check that the token is valid.
+        """
+        # Since this permission is used alongside other permission classes
+        # with an OR operator, we recheck that this one granted access
+        # to the view. If not granted by this class, reject the request
+        # and let other chained permission classes handle it.
+        if not self.has_permission(request, view):
             return False
 
         token = request.query_params.get("token")
-        if view.action == "retrieve" and token:
-            try:
-                view.get_serializer(instance=obj).validate_token(token)
-            except rest_framework.exceptions.ValidationError:
-                return False
-            else:
-                return True
-        # by default return a False to ensure no access is granted
-        # to be handled by any possible chained permission check
-        return False
+        try:
+            view.get_serializer(instance=obj).validate_token(token)
+        except rest_framework.exceptions.ValidationError:
+            return False
+        else:
+            return True
 
 
 class IsOwnerOfUser(permissions.BasePermission):

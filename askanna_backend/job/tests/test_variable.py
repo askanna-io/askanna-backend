@@ -1,12 +1,12 @@
-from django.urls import reverse
 import pytest
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from job.models import JobVariable
 from project.models import Project
+from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
-from users.models import User, Membership, WS_MEMBER, WS_ADMIN
 
 pytestmark = pytest.mark.django_db
 
@@ -52,14 +52,14 @@ class BaseVariables:
 
         # make the admin user member of the workspace
         admin_member = Membership.objects.create(
-            object_type="WS",
+            object_type=MSP_WORKSPACE,
             object_uuid=cls.workspace.uuid,
             user=cls.users["admin"],
             role=WS_ADMIN,
         )
         # make the memberA user member of the workspace
         memberA_member = Membership.objects.create(
-            object_type="WS",
+            object_type=MSP_WORKSPACE,
             object_uuid=cls.workspace.uuid,
             user=cls.users["user"],
             role=WS_MEMBER,
