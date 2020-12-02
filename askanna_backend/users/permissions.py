@@ -9,10 +9,10 @@ class RoleUpdateByAdminOnlyPermission(permissions.BasePermission):
     This permission class is to make sure that the role can only be changed by admin users of the workspace
     An admin can change anyones role except its own role.
 
-    It is important to use it IN ADDITION to RequestHasAccessToWorkspacePermission:
+    It is important to use it IN ADDITION to RequestHasAccessToMembershipPermission:
     Example:
     ```
-    RequestHasAccessToWorkspacePermission & RoleUpdateByAdminOnlyPermission
+    RequestHasAccessToMembershipPermission & RoleUpdateByAdminOnlyPermission
     ```
     """
 
@@ -35,9 +35,9 @@ class RoleUpdateByAdminOnlyPermission(permissions.BasePermission):
         return True
 
 
-class RequestHasAccessToWorkspacePermission(permissions.BasePermission):
+class RequestHasAccessToMembershipPermission(permissions.BasePermission):
     """
-    This permission class is to make sure that the user is a member of the workspace
+    This permission class is to make sure that the user can create, access, modify or delete a membership.
     """
 
     def has_permission(self, request, view):

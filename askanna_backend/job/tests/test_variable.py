@@ -175,7 +175,7 @@ class TestVariableCreateAPI(BaseVariables, APITestCase):
     def test_create_as_nonmember(self):
         """
         A normal user can not create variable as a nonmember of a workspace
-        We expect a 404 (not found)
+        We expect a 403
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -325,13 +325,13 @@ class TestVariableDetailAPI(BaseVariables, APITestCase):
     def test_detail_as_nonmember(self):
         """
         A normal user can not list variables as a nonmember doesn't own
-        We expect a 404 (not found)
+        We expect a 403
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_detail_as_anonymous(self):
         """
@@ -437,7 +437,7 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
     def test_change_as_nonmember(self):
         """
         A normal user can not change variables as a nonmember doesn't own
-        We expect a 404 (not found)
+        We expect a 403
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -449,7 +449,7 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
         }
 
         response = self.client.patch(self.url, change_var_payload, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_change_as_anonymous(self):
         """
@@ -499,13 +499,13 @@ class TestVariableDeleteAPI(BaseVariables, APITestCase):
     def test_delete_as_nonmember(self):
         """
         A normal user can not list variables as a nonmember doesn't own
-        We expect a 404 (not found)
+        We expect a 403
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_as_anonymous(self):
         """
@@ -547,6 +547,17 @@ class TestProjectVariableListAPI(TestVariableListAPI):
                 "parent_lookup_project__short_uuid": self.project.short_uuid,
             },
         )
+
+    def test_list_as_nonmember(self):
+        """
+        A non member should not have access to the workspace and thus variables
+        So a 403 should be returned because we know the workspace
+        """
+        token = self.users["user_nonmember"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class TestProjectVariableChangeAPI(TestVariableChangeAPI):

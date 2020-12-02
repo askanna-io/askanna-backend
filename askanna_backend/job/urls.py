@@ -1,23 +1,23 @@
-from django.conf.urls import url, include, re_path
-from django.urls import path, re_path, register_converter
+from django.conf.urls import include, re_path
+from django.urls import path, re_path
 
 from job.views import (
-    JobActionView,
-    StartJobView,
-    ProjectJobViewSet,
-    JobResultView,
-    JobRunView,
-    JobJobRunView,
-    JobArtifactView,
-    JobArtifactShortcutView,
-    JobPayloadView,
-    JobResultView,
     ChunkedArtifactViewSet,
     ChunkedJobOutputViewSet,
+    JobActionView,
+    JobArtifactShortcutView,
+    JobArtifactView,
+    JobJobRunView,
+    JobPayloadView,
     JobResultOutputView,
+    JobResultView,
+    JobRunView,
     JobVariableView,
+    ProjectJobViewSet,
+    StartJobView,
 )
-from project.urls import project_route, router as prouter
+from project.urls import project_route
+from project.urls import router as prouter
 from utils.urls import router
 
 project_route.register(

@@ -7,7 +7,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from users.models import MSP_WORKSPACE, Membership, Invitation
 from users.permissions import (
-    RequestHasAccessToWorkspacePermission,
+    RequestHasAccessToMembershipPermission,
     RequestIsValidInvite,
     RoleUpdateByAdminOnlyPermission,
 )
@@ -62,11 +62,11 @@ class PersonViewSet(
     lookup_field = "short_uuid"
     serializer_class = PersonSerializer
     permission_classes = [
-        RequestHasAccessToWorkspacePermission & RoleUpdateByAdminOnlyPermission,
+        RequestHasAccessToMembershipPermission & RoleUpdateByAdminOnlyPermission,
     ]
 
     permission_classes_by_action = {
-        "retrieve": [RequestIsValidInvite | RequestHasAccessToWorkspacePermission],
+        "retrieve": [RequestIsValidInvite | RequestHasAccessToMembershipPermission],
     }
 
     def get_permissions(self):
