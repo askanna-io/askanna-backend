@@ -7,7 +7,16 @@ from django.db.models import Model, Q
 from django.template.loader import render_to_string
 from rest_framework import serializers
 
-from users.models import MEMBERSHIPS, MSP_WORKSPACE, ROLES, WS_MEMBER, Invitation, Membership, User, UserProfile
+from users.models import (
+    MEMBERSHIPS,
+    MSP_WORKSPACE,
+    ROLES,
+    WS_MEMBER,
+    Invitation,
+    Membership,
+    User,
+    UserProfile,
+)
 from workspace.models import Workspace
 
 
@@ -37,6 +46,7 @@ class UserSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, required=True)
     short_uuid = serializers.CharField(read_only=True)
+    created = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
@@ -87,7 +97,9 @@ class UserSerializer(serializers.Serializer):
             email = data["email"]
 
             if User.objects.filter(Q(email=email)).exists():
-                raise serializers.ValidationError({"email": ["This email already exists"]})
+                raise serializers.ValidationError(
+                    {"email": ["This email already exists"]}
+                )
 
     def validate_password_length(self, data):
         """This function validates if the password is longer than 10 characters.
@@ -97,7 +109,9 @@ class UserSerializer(serializers.Serializer):
             password = data["password"]
 
             if len(password) < 10:
-                raise serializers.ValidationError({"password": ["The password should be longer than 10 characters"]})
+                raise serializers.ValidationError(
+                    {"password": ["The password should be longer than 10 characters"]}
+                )
 
     def validate_password_not_similar_username(self, data):
         """This function validates if the password is not similar to the username.
@@ -105,7 +119,9 @@ class UserSerializer(serializers.Serializer):
 
         if "username" and "password" in data:
             if data["username"] in data["password"]:
-                raise serializers.ValidationError({"password": ["The password should not be similar to the username"]})
+                raise serializers.ValidationError(
+                    {"password": ["The password should not be similar to the username"]}
+                )
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -127,7 +143,9 @@ class PersonSerializer(serializers.Serializer):
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.SerializerMethodField("get_user")
     token = serializers.CharField(write_only=True)
-    front_end_url = serializers.URLField(required=False, default=settings.ASKANNA_UI_URL)
+    front_end_url = serializers.URLField(
+        required=False, default=settings.ASKANNA_UI_URL
+    )
 
     token_signer = signing.TimestampSigner()
 
@@ -284,7 +302,9 @@ class PersonSerializer(serializers.Serializer):
         """
         if "status" in data and data["status"] == "accepted":
             if self.get_status(self.instance) == "invited" and "token" not in data:
-                raise serializers.ValidationError({"token": ["Token is required when accepting invitation"]})
+                raise serializers.ValidationError(
+                    {"token": ["Token is required when accepting invitation"]}
+                )
 
             elif self.get_status(self.instance) == "accepted":
                 raise serializers.ValidationError({"token": ["Token is already used"]})
@@ -301,11 +321,16 @@ class PersonSerializer(serializers.Serializer):
             membership = data["object_uuid"]
 
             if (
-                Membership.objects.filter(Q(invitation__email=email) | (Q(user__email=email, deleted__isnull=True)))
+                Membership.objects.filter(
+                    Q(invitation__email=email)
+                    | (Q(user__email=email, deleted__isnull=True))
+                )
                 .filter(object_uuid=membership)
                 .exists()
             ):
-                raise serializers.ValidationError({"email": ["This email already belongs to this workspace"]})
+                raise serializers.ValidationError(
+                    {"email": ["This email already belongs to this workspace"]}
+                )
 
     def validate_user_in_membership(self, data):
         """
@@ -314,7 +339,10 @@ class PersonSerializer(serializers.Serializer):
         Also invalidate the invite immediately
         """
         if "status" in data:
-            if data["status"] == "accepted" and self.get_status(self.instance) == "invited":
+            if (
+                data["status"] == "accepted"
+                and self.get_status(self.instance) == "invited"
+            ):
                 user = self._context["request"].user
                 if (
                     Membership.members.members()
@@ -323,7 +351,9 @@ class PersonSerializer(serializers.Serializer):
                     .exists()
                 ):
                     self.invalidate_invite(self.instance)
-                    raise serializers.ValidationError({"user": ["User is already part of this workspace"]})
+                    raise serializers.ValidationError(
+                        {"user": ["User is already part of this workspace"]}
+                    )
 
     def update(self, instance, validated_data):
         """
@@ -380,6 +410,8 @@ class PersonSerializer(serializers.Serializer):
         text_version = render_to_string("emails/invitation_email.txt", data)
         html_version = render_to_string("emails/invitation_email.html", data)
 
-        msg = EmailMultiAlternatives(subject, text_version, from_email, [self.instance.invitation.email])
+        msg = EmailMultiAlternatives(
+            subject, text_version, from_email, [self.instance.invitation.email]
+        )
         msg.attach_alternative(html_version, "text/html")
         msg.send()
