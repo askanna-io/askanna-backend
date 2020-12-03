@@ -490,7 +490,7 @@ class JobArtifactView(
         )
         data = request.data.copy()
         data.update(
-            **{"jobrun": str(jobrun.pk),}
+            **{"jobrun": str(jobrun.pk), }
         )
 
         serializer = JobArtifactSerializerForInsert(data=data)
