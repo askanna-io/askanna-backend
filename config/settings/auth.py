@@ -55,3 +55,7 @@ def settings(config, env):
     config.ACCOUNT_ADAPTER = "askanna_backend.users.adapters.AccountAdapter"
     # https://django-allauth.readthedocs.io/en/latest/configuration.html
     config.SOCIALACCOUNT_ADAPTER = "askanna_backend.users.adapters.SocialAccountAdapter"
+
+    config.REST_AUTH_SERIALIZERS = {
+        "USER_DETAILS_SERIALIZER": "users.serializers.UserSerializer"
+    }
