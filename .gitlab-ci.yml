@@ -110,6 +110,7 @@ stop_review:
     - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
   except:
     - master
+    - beta
 
 .deploy: &deploy
   variables:
