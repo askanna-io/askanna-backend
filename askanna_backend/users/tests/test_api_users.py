@@ -6,30 +6,9 @@ from rest_framework.test import APITestCase
 from workspace.models import Workspace
 from workspace.views import PersonViewSet
 from users.models import User
+from .base_tests import BaseUsers
 
 pytestmark = pytest.mark.django_db
-
-
-class BaseUsers:
-    @classmethod
-    def setup_class(cls):
-        cls.users = {
-            "admin": User.objects.create(
-                username="admin2",
-                is_staff=True,
-                is_superuser=True,
-                email="admin2@askanna.dev",
-            ),
-            "userB": User.objects.create(username="userB", email="userB@askanna.dev"),
-        }
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove all the user instances we had setup for the test
-        """
-        for _, user in cls.users.items():
-            user.delete()
 
 
 class TestUserListAPI(BaseUsers, APITestCase):

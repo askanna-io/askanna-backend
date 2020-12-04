@@ -12,14 +12,12 @@ urlpatterns = [
     ),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
-
     # User management
     path("users/", include("users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
-
     # Authentication support over django drf
-    path("rest-auth/", include('rest_auth.urls')),
-
+    path("rest-auth/", include("users.rest_auth_urls")),
+    path("rest-auth/", include("rest_auth.urls")),
     # API Urls
     path("", include("utils.urls")),
     path("", include("project.urls")),
@@ -51,7 +49,7 @@ if settings.DEBUG:
             kwargs={"exception": Exception("Page not Found")},
         ),
         path("500/", default_views.server_error),
-    ] + static('/files/', document_root=str(settings.ROOT_DIR("storage_root")))
+    ] + static("/files/", document_root=str(settings.ROOT_DIR("storage_root")))
     if "debug_toolbar" in settings.INSTALLED_APPS:
         import debug_toolbar
 

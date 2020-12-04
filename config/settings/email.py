@@ -19,8 +19,12 @@ def settings(config, env):
     # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
     config.SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=config.DEFAULT_FROM_EMAIL)
     # https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
-    config.EMAIL_SUBJECT_PREFIX = env("DJANGO_EMAIL_SUBJECT_PREFIX", default="[AskAnna Backend]")
-    config.EMAIL_INVITATION_FROM_EMAIL = env("EMAIL_INVITATION_FROM_EMAIL", default="AskAnna <support@askanna.io>")
+    config.EMAIL_SUBJECT_PREFIX = env(
+        "DJANGO_EMAIL_SUBJECT_PREFIX", default="[AskAnna Backend]"
+    )
+    config.EMAIL_INVITATION_FROM_EMAIL = env(
+        "EMAIL_INVITATION_FROM_EMAIL", default="AskAnna <support@askanna.io>"
+    )
 
     # sendgrid
     # ------------------------------------------------------------------------------
@@ -30,8 +34,11 @@ def settings(config, env):
         config.EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
         config.SENDGRID_API_KEY = env("SENDGRID_API_KEY")
         config.SENDGRID_SANDBOX_MODE_IN_DEBUG = env.bool("SENDGRID_DEBUG", default=True)
+        config.SENDGRID_TRACK_EMAIL_OPENS = False
+        config.SENDGRID_TRACK_CLICKS_PLAIN = False
+        config.SENDGRID_TRACK_CLICKS_HTML = False
 
     # https://docs.djangoproject.com/en/dev/ref/settings/#admins
-    config.ADMINS = [("""Anna devops""", "devops@askanna.io")]
+    config.ADMINS = [("""AskAnna DevOps""", "devops@askanna.io")]
     # https://docs.djangoproject.com/en/dev/ref/settings/#managers
     config.MANAGERS = config.ADMINS
