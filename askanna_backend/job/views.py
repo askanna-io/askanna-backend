@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -27,6 +28,7 @@ from job.models import (
     JobRun,
     JobVariable,
 )
+from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.permissions import (
     IsMemberOfArtifactAttributePermission,
     IsMemberOfJobDefAttributePermission,
@@ -58,7 +60,8 @@ class StartJobView(viewsets.GenericViewSet):
     queryset = JobDef.objects.all()
     lookup_field = "uuid"
     serializer_class = StartJobSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
+    # FIXME: implement permission class that checks for access to this job in workspace>project.
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         # TODO: move this to a mixin
@@ -154,7 +157,8 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         # TODO: move this to a mixin
@@ -213,7 +217,8 @@ class JobActionView(viewsets.ModelViewSet):
     queryset = JobDef.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
+    # FIXME: implement permission class that checks for access to this job in workspace>project.
+    permission_classes = [IsAuthenticated]
 
 
 def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
@@ -230,7 +235,8 @@ class JobRunView(viewsets.ModelViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
 
@@ -343,7 +349,8 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     # FIXME: limit queryset to jobs the user can see, apply membership filter
 
@@ -352,7 +359,8 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobPayload.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobPayloadSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    # FIXME: implement permission class that checks for access to this jobpayload in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the original sent payload from the filesystem and serve as JSON
@@ -397,7 +405,8 @@ class ProjectJobViewSet(
     queryset = JobDef.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
+    # FIXME: implement permission class that checks for access to this job in workspace>project.
+    permission_classes = [IsAuthenticated]
 
     # overwrite the default view and serializer for detail page
     # we want to use an other serializer for this.
@@ -427,7 +436,8 @@ class JobArtifactShortcutView(
     lookup_field = "short_uuid"
     # The serializer class is dummy here as this is not used
     serializer_class = JobArtifactSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the artifact and send binary
@@ -466,7 +476,8 @@ class JobArtifactView(
     queryset = JobArtifact.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobArtifactSerializer
-    permission_classes = [IsMemberOfJobRunAttributePermission]
+    # FIXME: implement permission class that checks for access to this jobartifact in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = artifact_upload_finish
@@ -490,7 +501,7 @@ class JobArtifactView(
         )
         data = request.data.copy()
         data.update(
-            **{"jobrun": str(jobrun.pk), }
+            **{"jobrun": str(jobrun.pk),}
         )
 
         serializer = JobArtifactSerializerForInsert(data=data)
@@ -532,7 +543,8 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
 
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedArtifactPartSerializer
-    permission_classes = [IsMemberOfArtifactAttributePermission]
+    # FIXME: implement permission class that checks for access to this chunk in workspace>project->jobartifact.
+    permission_classes = [IsAuthenticated]
 
 
 class JobResultOutputView(
@@ -541,7 +553,8 @@ class JobResultOutputView(
     queryset = JobOutput.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobOutputSerializer
-    permission_classes = [IsMemberOfJobRunAttributePermission]
+    # FIXME: implement permission class that checks for access to this joboutput in workspace>project->job.
+    permission_classes = [IsAuthenticated]
 
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = result_upload_finish
@@ -566,7 +579,8 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
 
     queryset = ChunkedJobOutputPart.objects.all()
     serializer_class = ChunkedJobOutputPartSerializer
-    permission_classes = [IsMemberOfJobOutputAttributePermission]
+    # FIXME: implement permission class that checks for access to this chunk in workspace>project->job->joboutput.
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         joboutput = JobOutput.objects.get(
@@ -602,8 +616,18 @@ class JobVariableView(
     ordering_fields = ["name", "project__name"]
 
     permission_classes = [
-        IsMemberOfProjectAttributePermission,
+        IsAuthenticated,
     ]
+
+    permission_classes_by_action = {
+        "list": [IsAuthenticated | IsAdminUser],
+        "create": [IsAuthenticated, IsMemberOfProjectBasedOnPayload | IsAdminUser],
+        "update": [IsAuthenticated, IsMemberOfProjectBasedOnPayload | IsAdminUser],
+        "partial_update": [
+            IsAuthenticated,
+            IsMemberOfProjectBasedOnPayload | IsAdminUser,
+        ],
+    }
 
     def initial(self, request, *args, **kwargs):
         """
@@ -630,6 +654,17 @@ class JobVariableView(
             if hasattr(request.data, "_mutable"):
                 setattr(request.data, "_mutable", False)
 
+    def get_permissions(self):
+        try:
+            # return permission_classes depending on `action`
+            return [
+                permission()
+                for permission in self.permission_classes_by_action[self.action]
+            ]
+        except KeyError:
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes]
+
     def get_serializer_class(self):
         """
         Return different serializer class for update
@@ -648,10 +683,9 @@ class JobVariableView(
         meaning also beeing part of a certain workspace
         """
         queryset = super().get_queryset()
-        if self.action == "list":
-            user = self.request.user
-            member_of_workspaces = user.memberships.filter(
-                object_type=MSP_WORKSPACE
-            ).values_list("object_uuid", flat=True)
-            queryset = queryset.filter(project__workspace__in=member_of_workspaces)
-        return queryset
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(project__workspace__in=member_of_workspaces)
+

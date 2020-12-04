@@ -325,13 +325,13 @@ class TestVariableDetailAPI(BaseVariables, APITestCase):
     def test_detail_as_nonmember(self):
         """
         A normal user can not list variables as a nonmember doesn't own
-        We expect a 403
+        We expect a 404 as this variable cannot be found by a non-member
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_anonymous(self):
         """
@@ -437,7 +437,7 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
     def test_change_as_nonmember(self):
         """
         A normal user can not change variables as a nonmember doesn't own
-        We expect a 403
+        We expect a 404 as this variable cannot be found by a non-member
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -449,7 +449,7 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
         }
 
         response = self.client.patch(self.url, change_var_payload, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_change_as_anonymous(self):
         """
@@ -499,13 +499,13 @@ class TestVariableDeleteAPI(BaseVariables, APITestCase):
     def test_delete_as_nonmember(self):
         """
         A normal user can not list variables as a nonmember doesn't own
-        We expect a 403
+        We expect a 404 as this variable cannot be found by a non-member
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_as_anonymous(self):
         """
@@ -551,13 +551,13 @@ class TestProjectVariableListAPI(TestVariableListAPI):
     def test_list_as_nonmember(self):
         """
         A non member should not have access to the workspace and thus variables
-        So a 403 should be returned because we know the workspace
+        We expect a 404 as this variable cannot be found by a non-member
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class TestProjectVariableChangeAPI(TestVariableChangeAPI):
