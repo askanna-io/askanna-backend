@@ -1,4 +1,6 @@
 from django.contrib.auth.models import AbstractUser, Group
+from django.contrib.postgres.fields import JSONField
+
 from django.db.models import CharField
 from django.db import models
 from django.urls import reverse
@@ -101,3 +103,17 @@ class Invitation(Membership):
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
     email = models.EmailField(blank=False)
     front_end_url = models.URLField()
+
+
+class PasswordResetLog(SlimBaseModel):
+    email = models.EmailField()
+    user = models.ForeignKey(
+        "users.User", blank=True, null=True, default=None, on_delete=models.SET_NULL
+    )
+    remote_ip = models.GenericIPAddressField(_("Remote IP"), null=True)
+    remote_host = models.CharField(max_length=1024, null=True, default=None)
+    front_end_domain = models.CharField(max_length=1024, null=True, default=None)
+    meta = JSONField(null=True, default=None)
+
+    class Meta:
+        ordering = ["-created"]
