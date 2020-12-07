@@ -34,9 +34,9 @@ class WorkspaceViewSet(viewsets.ReadOnlyModelViewSet):
         FIXME: get rid of the query here, store in redis in future
         """
         user = self.request.user
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted__isnull=True).values_list(
-            "object_uuid"
-        )
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE, deleted__isnull=True
+        ).values_list("object_uuid")
 
         return self.queryset.filter(pk__in=member_of_workspaces)
 
@@ -58,7 +58,7 @@ class PersonViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Membership.objects.all()
+    queryset = Membership.members.members()
     lookup_field = "short_uuid"
     serializer_class = PersonSerializer
     permission_classes = [
@@ -72,7 +72,10 @@ class PersonViewSet(
     def get_permissions(self):
         try:
             # return permission_classes depending on `action`
-            return [permission() for permission in self.permission_classes_by_action[self.action]]
+            return [
+                permission()
+                for permission in self.permission_classes_by_action[self.action]
+            ]
         except KeyError:
             # action is not set return default permission_classes
             return [permission() for permission in self.permission_classes]
