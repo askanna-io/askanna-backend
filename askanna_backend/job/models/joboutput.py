@@ -21,15 +21,18 @@ class JobOutput(SlimBaseModel):
 
     jobdef = models.UUIDField(blank=True, null=True, editable=False)
     jobrun = models.OneToOneField(
-        "job.JobRun",
-        on_delete=models.DO_NOTHING,
-        to_field="uuid",
-        related_name="output",
+        "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="output",
     )
     exit_code = models.IntegerField(default=0)
     stdout = JSONField(blank=True, null=True)
 
     owner = models.CharField(max_length=100, blank=True, null=True)
+
+    @property
+    def stored_path(self):
+        return os.path.join(
+            settings.ARTIFACTS_ROOT, self.storage_location, self.filename
+        )
 
     @property
     def storage_location(self):
@@ -51,14 +54,16 @@ class JobOutput(SlimBaseModel):
         """
             Read the result from filesystem and return
         """
-
-        store_path = [settings.ARTIFACTS_ROOT, self.storage_location, self.filename]
-
         try:
-            with open(os.path.join(*store_path), "rb") as f:
+            with open(self.stored_path, "rb") as f:
                 return f.read()
         except:
             return b""
+
+    def prune(self):
+        pass
+        # not implemented as file yet, the result is stored in the `stdout` field
+        # os.remove(self.stored_path)
 
     class Meta:
         ordering = ["-created"]
@@ -73,7 +78,7 @@ class ChunkedJobOutputPart(SlimBaseModel):
     is_last = models.BooleanField(default=False)
 
     joboutput = models.ForeignKey(
-        "job.JobOutput", on_delete=models.SET_NULL, blank=True, null=True
+        "job.JobOutput", on_delete=models.CASCADE, blank=True, null=True
     )
 
     class Meta:

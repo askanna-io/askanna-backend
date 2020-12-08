@@ -3,6 +3,7 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import pre_delete, post_delete
 from django.dispatch import receiver
 
 from yaml import load, dump
@@ -12,6 +13,7 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+from job.models import JobArtifact, JobOutput, JobPayload
 from job.signals import artifact_upload_finish
 
 
@@ -30,3 +32,18 @@ def handle_upload(sender, signal, postheaders, obj, **kwargs):
 
     with ZipFile(source_path) as zippackage:
         zippackage.extractall(path=target_path)
+
+
+@receiver(pre_delete, sender=JobArtifact)
+def delete_artifact(sender, instance, **kwargs):
+    instance.prune()
+
+
+@receiver(pre_delete, sender=JobOutput)
+def delete_joboutput(sender, instance, **kwargs):
+    instance.prune()
+
+
+@receiver(pre_delete, sender=JobPayload)
+def delete_jobpayload(sender, instance, **kwargs):
+    instance.prune()

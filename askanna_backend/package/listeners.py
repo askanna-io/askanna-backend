@@ -3,6 +3,7 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import pre_delete, post_delete
 from django.dispatch import receiver
 
 from yaml import load, dump
@@ -13,6 +14,7 @@ except ImportError:
     from yaml import Loader, Dumper
 
 from job.models import JobDef
+from package.models import Package
 from package.signals import package_upload_finish
 
 
@@ -73,3 +75,7 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
         except ObjectDoesNotExist as e:
             jd = JobDef.objects.create(name=job, project=project, owner=obj.created_by)
 
+
+@receiver(pre_delete, sender=Package)
+def delete_package(sender, instance, **kwargs):
+    instance.prune()

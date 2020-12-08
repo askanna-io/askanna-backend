@@ -48,6 +48,7 @@ from job.serializers import (
     JobSerializer,
     JobVariableCreateSerializer,
     JobVariableSerializer,
+    JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
     StartJobSerializer,
 )
