@@ -6,6 +6,7 @@ whitenoise==4.1.4  # https://github.com/evansd/whitenoise
 redis~=3.4.0  # https://github.com/andymccurdy/redis-py
 celery==4.4.0  # pyup: < 5.0  # https://github.com/celery/celery
 django-celery-beat==2.1.0  # https://github.com/celery/django-celery-beat
+django-timezone-field==4.0.0 # for celery beat
 flower==0.9.3  # https://github.com/mher/flower
 sentry-sdk~=0.19.4  # https://github.com/getsentry/sentry-python
 
