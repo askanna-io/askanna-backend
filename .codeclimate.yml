@@ -13,6 +13,11 @@ plugins:
         - javascript
         - python
         - php
+  editorconfig:
+    enabled: true
+    channel: beta
+    config:
+      editorconfig: .editorconfig
   eslint:
     enabled: true
     channel: __ESLINT_CHANNEL__
