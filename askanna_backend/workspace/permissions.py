@@ -26,7 +26,9 @@ class IsWorkspaceMemberBasePermission(permissions.BasePermission):
         # If a workspace queryset was returned grant access based on its membership.
         if workspace_uuid_qs is not None:
             return self.membership_queryset.filter(
-                object_uuid=workspace_uuid_qs.values("uuid")[:1], object_type=MSP_WORKSPACE, user=user
+                object_uuid=workspace_uuid_qs.values("uuid")[:1],
+                object_type=MSP_WORKSPACE,
+                user=user,
             ).exists()
 
         # For listings when we do not know the workspace, then grant access and let the
@@ -36,7 +38,12 @@ class IsWorkspaceMemberBasePermission(permissions.BasePermission):
 
         # At this point there was not enough information to make a decission without an object.
         # Grant access and let the second pass with an object decide.
-        if not obj and view.action in ["retrieve", "update", "partial_update", "destroy"]:
+        if not obj and view.action in [
+            "retrieve",
+            "update",
+            "partial_update",
+            "destroy",
+        ]:
             return True
 
         # Deny at the end by default.

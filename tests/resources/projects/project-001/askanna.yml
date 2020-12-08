@@ -1,0 +1,4 @@
+---
+my-test-job:
+  job:
+    - python my_script.py

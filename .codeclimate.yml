@@ -40,3 +40,4 @@ exclude_patterns:
   - "**/*.min.css"
   - "**/__tests__/"
   - "**/__mocks__/"
+  - "**/migrations/"

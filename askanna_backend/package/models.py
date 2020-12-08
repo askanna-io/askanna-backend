@@ -15,7 +15,7 @@ class Package(AuthorModel, BaseModel):
 
     project = models.ForeignKey(
         "project.Project",
-        on_delete=models.SET_DEFAULT,
+        on_delete=models.CASCADE,
         related_name="packages",
         related_query_name="package",
         null=True,
@@ -36,6 +36,12 @@ class Package(AuthorModel, BaseModel):
         with open(self.stored_path, "rb") as f:
             return f.read()
 
+    def prune(self):
+        """
+        Delete the files and metadata linked to this instance
+        """
+        os.remove(self.stored_path)
+
     class Meta:
         ordering = ["-created"]
 
@@ -50,7 +56,7 @@ class ChunkedPackagePart(models.Model):
     is_last = models.BooleanField(default=False)
 
     package = models.ForeignKey(
-        Package, on_delete=models.SET_NULL, blank=True, null=True
+        Package, on_delete=models.CASCADE, blank=True, null=True
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

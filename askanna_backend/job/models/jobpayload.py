@@ -19,6 +19,16 @@ class JobPayload(SlimBaseModel):
     )
 
     @property
+    def stored_path(self):
+        return os.path.join(
+            settings.PAYLOADS_ROOT, self.storage_location, self.filename
+        )
+
+    @property
+    def filename(self):
+        return "payload.json"
+
+    @property
     def storage_location(self):
         return os.path.join(self.jobdef.project.uuid.hex, self.short_uuid)
 
@@ -36,11 +46,11 @@ class JobPayload(SlimBaseModel):
             # FIXME: in future be in-determined for which filetype
             # FIXME: refactor job system to provide filetype
         """
-
-        store_path = [settings.PAYLOADS_ROOT, self.storage_location, "payload.json"]
-
-        with open(os.path.join(*store_path), "r") as f:
+        with open(self.stored_path, "r") as f:
             return json.loads(f.read())
+
+    def prune(self):
+        os.remove(self.stored_path)
 
     class Meta:
         ordering = ["-created"]

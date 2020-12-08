@@ -10,7 +10,7 @@ class ChunkedArtifactPart(SlimBaseModel):
     file_no = models.IntegerField()
     is_last = models.BooleanField(default=False)
 
-    artifact = models.ForeignKey('job.JobArtifact', on_delete=models.SET_NULL, blank=True, null=True)
+    artifact = models.ForeignKey('job.JobArtifact', on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
         ordering = ["-created"]

@@ -92,11 +92,13 @@ urlpatterns = [
         r"v1/run/<shortuuid:short_uuid>/",
         StartJobView.as_view({"post": "do_ingest_short"}),
         kwargs={"uuid": None},
+        name="run-job",
     ),
     path(
         r"v1/run/<shortuuid:short_uuid>",
         StartJobView.as_view({"post": "do_ingest_short"}),
         kwargs={"uuid": None},
+        name="run-job-deprecated",
     ),
     path(r"v1/run/<uuid:uuid>/", StartJobView.as_view({"post": "do_ingest"}),),
     path(r"v1/run/<uuid:uuid>", StartJobView.as_view({"post": "do_ingest"}),),

@@ -50,6 +50,9 @@ class JobArtifact(SlimBaseModel):
         with open(self.stored_path, "rb") as f:
             return f.read()
 
+    def prune(self):
+        os.remove(self.stored_path)
+
     class Meta:
         ordering = ["-created"]
         verbose_name = "Job Artifact"
