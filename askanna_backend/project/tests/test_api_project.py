@@ -65,7 +65,7 @@ class TestProjectListAPI(BaseProjectTest):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(self.project.short_uuid in str(response.content))
         self.assertFalse(self.unused_project.short_uuid in str(response.content))
@@ -75,7 +75,7 @@ class TestProjectListAPI(BaseProjectTest):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(self.project.short_uuid in str(response.content))
         self.assertFalse(self.unused_project.short_uuid in str(response.content))
@@ -85,18 +85,18 @@ class TestProjectListAPI(BaseProjectTest):
         token = self.users["user_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         # The following is a bit counter intuitive, the non-member should still be able
         # to list other projects to which he/she has access to
         # in our testcase, the result is an empty list
-        self.assertEqual(response.data, [])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
         self.assertFalse(self.project.short_uuid in str(response.content))
         self.assertFalse(self.unused_project.short_uuid in str(response.content))
 
     def test_list_project_as_anonymous(self):
         """An anonymous user do not have access the workspace and thus cannot list projects of it."""
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -113,7 +113,7 @@ class TestProjectDetailAPI(BaseProjectTest):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             {"short_uuid": self.project.short_uuid}.items()
@@ -125,7 +125,7 @@ class TestProjectDetailAPI(BaseProjectTest):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             {"short_uuid": self.project.short_uuid}.items()
@@ -137,12 +137,12 @@ class TestProjectDetailAPI(BaseProjectTest):
         token = self.users["user_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_anonymous_user_cannot_get_project(self):
         """An anonymous user do not have access to the project."""
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -304,7 +304,9 @@ class TestProjectDeleteAPI(BaseProjectTest):
             "project-detail",
             kwargs={"version": "v1", "short_uuid": self.project.short_uuid,},
         )
+        self.setUpDelete()
 
+    def setUpDelete(self):
         self.original_urls = config.urls.urlpatterns
         config.urls.urlpatterns += [
             re_path(
@@ -414,3 +416,63 @@ class TestProjectDeleteAPI(BaseProjectTest):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         self.payload_exists()
+
+
+class TestWorkspaceProjectListAPI(TestProjectListAPI):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-project-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+            },
+        )
+
+    def test_list_project_as_nonmember(self):
+        """Non member do not have access to the workspace and thus cannot list projects of it.
+        In this case we already pre-select for which workspace by url"""
+        token = self.users["user_a"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class TestWorkspaceProjectCreateAPI(TestProjectCreateAPI):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-project-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+            },
+        )
+
+
+class TestWorkspaceProjectUpdateAPI(TestProjectUpdateAPI):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-project-detail",
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.project.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+            },
+        )
+
+
+class TestWorkspaceProjectDeleteAPI(TestProjectDeleteAPI):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-project-detail",
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.project.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+            },
+        )
+        self.setUpDelete()
