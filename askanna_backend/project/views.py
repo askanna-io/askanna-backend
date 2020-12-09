@@ -48,5 +48,5 @@ class ProjectView(
                 object_type=MSP_WORKSPACE
             ).values_list("object_uuid")
 
-            return self.queryset.filter(workspace__pk__in=member_of_workspaces)
-        return self.queryset
+            return super().get_queryset().filter(workspace__pk__in=member_of_workspaces)
+        return super().get_queryset()

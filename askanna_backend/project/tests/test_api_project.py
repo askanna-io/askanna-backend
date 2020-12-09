@@ -68,6 +68,7 @@ class TestProjectListAPI(BaseProjectTest):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(self.project.short_uuid in str(response.content))
+        self.assertFalse(self.unused_project.short_uuid in str(response.content))
 
     def test_list_project_as_member(self):
         """A member of the workspace can get list projects."""
@@ -77,6 +78,7 @@ class TestProjectListAPI(BaseProjectTest):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(self.project.short_uuid in str(response.content))
+        self.assertFalse(self.unused_project.short_uuid in str(response.content))
 
     def test_list_project_as_nonmember(self):
         """Non member do not have access to the workspace and thus cannot list projects of it."""
@@ -90,6 +92,7 @@ class TestProjectListAPI(BaseProjectTest):
         self.assertEqual(response.data, [])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(self.project.short_uuid in str(response.content))
+        self.assertFalse(self.unused_project.short_uuid in str(response.content))
 
     def test_list_project_as_anonymous(self):
         """An anonymous user do not have access the workspace and thus cannot list projects of it."""
