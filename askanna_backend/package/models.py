@@ -7,11 +7,7 @@ from django.db import models
 
 
 class Package(AuthorModel, BaseModel):
-    filename = models.CharField(max_length=500)
-
-    # Storage location can also be a bucket location
-    # In case of local storage, always relative to the PACKAGES_ROOT, never an abspath
-    storage_location = models.CharField(max_length=1000)
+    original_filename = models.CharField(max_length=1000, default="")
 
     project = models.ForeignKey(
         "project.Project",
@@ -25,8 +21,18 @@ class Package(AuthorModel, BaseModel):
     size = models.IntegerField(help_text="Size of this package in bytes")
 
     @property
+    def new_storage_location(self):
+        return os.path.join(self.project.uuid.hex, self.uuid.hex,)
+
+    @property
     def stored_path(self):
-        return os.path.join(settings.PACKAGES_ROOT, self.storage_location)
+        return os.path.join(
+            settings.PACKAGES_ROOT, self.new_storage_location, self._filename
+        )
+
+    @property
+    def _filename(self):
+        return "package_{}.zip".format(self.uuid.hex)
 
     @property
     def read(self):

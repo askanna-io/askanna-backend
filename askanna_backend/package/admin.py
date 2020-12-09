@@ -8,7 +8,13 @@ admin.site.register(ChunkedPackagePart)
 
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
-    list_display = ["filename", "uuid", "short_uuid", "project", "created", "storage_location"]
+    list_display = [
+        "original_filename",
+        "uuid",
+        "short_uuid",
+        "project",
+        "created",
+    ]
     list_display_links = (
         "uuid",
         "short_uuid",

@@ -13,8 +13,7 @@ from package.models import Package, ChunkedPackagePart
 class PackageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Package
-        # fields = "__all__"
-        exclude = ["storage_location"]
+        fields = "__all__"
 
 
 class PackageSerializer(serializers.ModelSerializer):
@@ -47,8 +46,7 @@ class PackageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Package
-        # fields = "__all__"
-        exclude = ["storage_location"]
+        fields = "__all__"
 
 
 class ChunkedPackagePartSerializer(serializers.ModelSerializer):
