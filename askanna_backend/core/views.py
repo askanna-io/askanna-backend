@@ -13,11 +13,15 @@ from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
 
-class BaseChunkedPartViewSet(HybridUUIDMixin, NestedViewSetMixin, 
-                        mixins.CreateModelMixin,
-                        mixins.ListModelMixin,
-                        mixins.RetrieveModelMixin,
-                        viewsets.GenericViewSet):
+
+class BaseChunkedPartViewSet(
+    HybridUUIDMixin,
+    NestedViewSetMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     """
 
     """
@@ -41,7 +45,7 @@ class BaseChunkedPartViewSet(HybridUUIDMixin, NestedViewSetMixin,
     @action(detail=True, methods=["post", "get"])
     def chunk(self, request, **kwargs):
         """
-        Receives one chunk in the POST request 
+        Receives one chunk in the POST request
 
         """
         chunkpart = self.get_object()
@@ -63,33 +67,33 @@ class BaseChunkedPartViewSet(HybridUUIDMixin, NestedViewSetMixin,
         )
         chunkpart.save()
 
-        return Response({
-            "uuid": str(chunkpart.uuid), 
-            "message": "chunk stored"
-            }, status=200)
+        return Response(
+            {"uuid": str(chunkpart.uuid), "message": "chunk stored"}, status=200
+        )
+
 
 class BaseUploadFinishMixin:
     upload_target_location = ""
     upload_finished_signal = None
     upload_finished_message = "upload completed"
 
-
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         pass
 
     def get_upload_target_location(self, request, obj, **kwargs):
         return self.upload_target_location
-    
+
     def store_as_filename(self, resumable_filename, obj):
         return resumable_filename
 
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
-        print(self.kwargs)
         obj = self.get_object()
 
         storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
-        target_location = FileSystemStorage(location=self.get_upload_target_location(request=request, obj=obj))
+        target_location = FileSystemStorage(
+            location=self.get_upload_target_location(request=request, obj=obj)
+        )
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
             target_location.save(self.store_as_filename(r.filename, obj), r)
@@ -98,9 +102,9 @@ class BaseUploadFinishMixin:
 
             if self.upload_finished_signal:
                 self.upload_finished_signal.send(
-                    sender=self.__class__, 
-                    postheaders=dict(request.POST.lists()), 
-                    obj=obj
+                    sender=self.__class__,
+                    postheaders=dict(request.POST.lists()),
+                    obj=obj,
                 )
 
         response = Response({"message": self.upload_finished_message}, status=200)

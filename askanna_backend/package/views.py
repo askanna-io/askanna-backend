@@ -51,9 +51,15 @@ class PackageViewSet(
             return PackageCreateSerializer
         return self.serializer_class
 
+    def store_as_filename(self, resumable_filename: str, obj) -> str:
+        return obj._filename
+
+    def get_upload_target_location(self, request, obj, **kwargs) -> str:
+        return os.path.join(self.upload_target_location, obj.new_storage_location)
+
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["created_by", "storage_location", "size"]
-        instance_obj.storage_location = resume_obj.filename
+        update_fields = ["created_by", "original_filename", "size"]
+        instance_obj.original_filename = resume_obj.filename
         instance_obj.created_by = request.user
         instance_obj.size = resume_obj.size
         instance_obj.save(update_fields=update_fields)
@@ -93,9 +99,10 @@ class ProjectPackageViewSet(
         return Response(
             {
                 "action": "redirect",
-                "target": "{BASE_URL}/files/packages/{LOCATION}".format(
+                "target": "{BASE_URL}/files/packages/{LOCATION}/{FILENAME}".format(
                     BASE_URL=settings.ASKANNA_CDN_URL,
-                    LOCATION=package.storage_location,
+                    LOCATION=package.new_storage_location,
+                    FILENAME=package._filename,
                 ),
             }
         )
