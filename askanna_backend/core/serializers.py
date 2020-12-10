@@ -69,7 +69,7 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
                     "is_dir": True,
                     "size": reduce(
                         lambda x, y: x + y["size"],
-                        filter(lambda x: x["parent"] == d, filelist),
+                        filter(lambda x: x["path"].startswith(d + "/"), filelist),
                         0,
                     ),
                     "last_modified": datetime.datetime.now(),
