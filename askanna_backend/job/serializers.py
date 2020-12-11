@@ -122,7 +122,7 @@ class JobRunSerializer(serializers.ModelSerializer):
         package = instance.package
         if package:
             return {
-                "name": package.filename,
+                "name": "",  # package filename is not used to share, only internal
                 "uuid": package.uuid,
                 "short_uuid": package.short_uuid,
             }
