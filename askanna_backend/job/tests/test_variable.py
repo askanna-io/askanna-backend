@@ -10,73 +10,10 @@ from workspace.models import Workspace
 
 pytestmark = pytest.mark.django_db
 
-
-class BaseVariables:
-    @classmethod
-    def setup_class(cls):
-        cls.users = {
-            "admin": User.objects.create(
-                username="admin",
-                is_staff=True,
-                is_superuser=True,
-                email="admin@askanna.dev",
-            ),
-            "user": User.objects.create(username="user", email="user@askanna.dev"),
-            "user_nonmember": User.objects.create(
-                username="user_nonmember", email="user_nonmember@askanna.dev"
-            ),
-        }
-
-        # setup variables
-        cls.workspace = Workspace.objects.create(**{"title": "WorkspaceX",})
-        cls.project = Project.objects.create(
-            **{"name": "TestProject", "workspace": cls.workspace}
-        )
-        cls.variable = JobVariable.objects.create(
-            **{
-                "name": "TestVariable",
-                "value": "TestValue",
-                "is_masked": False,
-                "project": cls.project,
-            }
-        )
-
-        cls.variable_masked = JobVariable.objects.create(
-            **{
-                "name": "TestVariableMasked",
-                "value": "TestValue",
-                "is_masked": True,
-                "project": cls.project,
-            }
-        )
-
-        # make the admin user member of the workspace
-        admin_member = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace.uuid,
-            user=cls.users["admin"],
-            role=WS_ADMIN,
-        )
-        # make the memberA user member of the workspace
-        memberA_member = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace.uuid,
-            user=cls.users["user"],
-            role=WS_MEMBER,
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove all the user instances we had setup for the test
-        """
-        for _, user in cls.users.items():
-            user.delete()
-        cls.variable.delete()
-        cls.variable_masked.delete()
+from .base import BaseJobTestDef
 
 
-class TestVariableCreateAPI(BaseVariables, APITestCase):
+class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
     """
     Testing the delete function for the /v1/variable/{{ short_uuid }}
     """
@@ -205,7 +142,7 @@ class TestVariableCreateAPI(BaseVariables, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class TestVariableListAPI(BaseVariables, APITestCase):
+class TestVariableListAPI(BaseJobTestDef, APITestCase):
     """
     Testing the list function for the /v1/variable/
     """
@@ -255,7 +192,7 @@ class TestVariableListAPI(BaseVariables, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class TestVariableDetailAPI(BaseVariables, APITestCase):
+class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
     """
     Testing the detail function for the /v1/variable/{{ short_uuid }}
     """
@@ -341,7 +278,7 @@ class TestVariableDetailAPI(BaseVariables, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class TestVariableChangeAPI(BaseVariables, APITestCase):
+class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
     """
     Testing the change (PUT/PATCH) function for the /v1/variable/{{ short_uuid }}
     """
@@ -465,7 +402,7 @@ class TestVariableChangeAPI(BaseVariables, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class TestVariableDeleteAPI(BaseVariables, APITestCase):
+class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
     """
     Testing the delete function for the /v1/variable/{{ short_uuid }}
     """

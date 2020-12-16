@@ -19,6 +19,8 @@ ROOT_DIR = (
     environ.Path(__file__) - 3
 )  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
 APPS_DIR = ROOT_DIR.path("askanna_backend")
+TESTS_DIR = ROOT_DIR.path("tests")
+TEST_RESOURCES_DIR = TESTS_DIR.path("resources")
 
 # Insert the APPS_DIR into PYTHON_PATH to allow easier import from our
 # apps housed in /app/askanna_backend
