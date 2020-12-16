@@ -3,6 +3,7 @@ import os
 import re
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template.loader import render_to_string
 from django_filters.rest_framework import DjangoFilterBackend
@@ -61,8 +62,20 @@ class StartJobView(viewsets.GenericViewSet):
     queryset = JobDef.objects.all()
     lookup_field = "uuid"
     serializer_class = StartJobSerializer
-    # FIXME: implement permission class that checks for access to this job in workspace>project.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfProjectAttributePermission]
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(project__workspace__in=member_of_workspaces)
 
     def get_object(self):
         # TODO: move this to a mixin
@@ -158,8 +171,20 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfJobDefAttributePermission]
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
 
     def get_object(self):
         # TODO: move this to a mixin
@@ -214,12 +239,29 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
         return Response(base_status)
 
 
-class JobActionView(viewsets.ModelViewSet):
+class JobActionView(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = JobDef.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
-    # FIXME: implement permission class that checks for access to this job in workspace>project.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfProjectAttributePermission]
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(project__workspace__in=member_of_workspaces)
 
 
 def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
@@ -232,18 +274,31 @@ def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
     return strings
 
 
-class JobRunView(viewsets.ModelViewSet):
+class JobRunView(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet,
+):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfJobDefAttributePermission]
 
-    # FIXME: limit queryset to jobs the user can see, apply membership filter
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
 
-    @action(detail=True, methods=["get"], name="JobRun Manifest")
+    @action(
+        detail=True, methods=["get"], name="JobRun Manifest",
+    )
     def manifest(self, request, short_uuid, **kwargs):
-        # FIXME: only the jobrun.owner should be able to see this
         instance = self.get_object()
         jr = instance
 
@@ -295,7 +350,9 @@ class JobRunView(viewsets.ModelViewSet):
 
         return HttpResponse(entrypoint_string)
 
-    @action(detail=True, methods=["get"], name="JobRun Log")
+    @action(
+        detail=True, methods=["get"], name="JobRun Log",
+    )
     def log(self, request, short_uuid, **kwargs):
         instance = self.get_object()
         stdout = instance.output.stdout
@@ -350,18 +407,40 @@ class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelV
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfJobDefAttributePermission]
 
-    # FIXME: limit queryset to jobs the user can see, apply membership filter
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
 
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobPayload.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobPayloadSerializer
-    # FIXME: implement permission class that checks for access to this jobpayload in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfJobDefAttributePermission]
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the original sent payload from the filesystem and serve as JSON
@@ -395,7 +474,7 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
             offset = int(offset)
             limit = int(limit)
             json_obj = json.dumps(instance.payload, indent=1).splitlines(keepends=False)
-            lines = json_obj[offset:limit]
+            lines = json_obj[offset : offset + limit]
             return HttpResponse("\n".join(lines), content_type="application/json")
         return JsonResponse(instance.payload)
 
@@ -403,20 +482,27 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 class ProjectJobViewSet(
     HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
 ):
+    """
+    This is a duplicated viewset like `JobActionView` but ReadOnly version
+    """
+
     queryset = JobDef.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
-    # FIXME: implement permission class that checks for access to this job in workspace>project.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfProjectAttributePermission]
 
-    # overwrite the default view and serializer for detail page
-    # we want to use an other serializer for this.
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer_kwargs = {}
-        serializer_kwargs["context"] = self.get_serializer_context()
-        serializer = JobSerializer(instance, **serializer_kwargs)
-        return Response(serializer.data)
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(project__workspace__in=member_of_workspaces)
 
 
 class JobArtifactShortcutView(
@@ -438,28 +524,28 @@ class JobArtifactShortcutView(
     # The serializer class is dummy here as this is not used
     serializer_class = JobArtifactSerializer
     # FIXME: implement permission class that checks for access to this jobrun in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfJobDefAttributePermission]
 
     # overwrite the default view and serializer for detail page
     # We will retrieve the artifact and send binary
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        artifact = instance.artifact.all().first()
 
         try:
+            artifact = instance.artifact.all().first()
             location = os.path.join(artifact.storage_location, artifact.filename)
+        except (ObjectDoesNotExist, AttributeError, Exception) as e:
+            return Response(
+                {"message_type": "error", "message": "Artifact was not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        else:
             response = HttpResponseRedirect(
                 "{BASE_URL}/files/artifacts/{LOCATION}".format(
                     BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=location,
                 )
             )
             return response
-        except Exception as e:
-            print(e)
-
-        return Response(
-            {"message_type": "error", "message": "Artifact was not found"}, status=404
-        )
 
 
 class JobArtifactView(
@@ -477,12 +563,26 @@ class JobArtifactView(
     queryset = JobArtifact.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobArtifactSerializer
-    # FIXME: implement permission class that checks for access to this jobartifact in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfJobRunAttributePermission]
 
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = artifact_upload_finish
     upload_finished_message = "artifact upload finished"
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        return queryset.filter(
+            jobrun__jobdef__project__workspace__in=member_of_workspaces
+        )
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return obj.filename

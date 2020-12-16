@@ -50,6 +50,16 @@ class JobArtifact(SlimBaseModel):
         with open(self.stored_path, "rb") as f:
             return f.read()
 
+    def write(self, stream):
+        """
+            Write contents to the filesystem
+        """
+        os.makedirs(
+            os.path.join(settings.ARTIFACTS_ROOT, self.storage_location), exist_ok=True
+        )
+        with open(self.stored_path, "wb") as f:
+            f.write(stream.read())
+
     def prune(self):
         os.remove(self.stored_path)
 

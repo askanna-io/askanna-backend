@@ -77,6 +77,11 @@ class IsMemberOfJobDefAttributePermission(IsWorkspaceMemberBasePermission):
                 return Workspace.objects.filter(
                     project__jobdef__short_uuid=jobdef_suuid
                 )
+            jobrun_suuid = view.get_parents_query_dict().get("jobrun__short_uuid", None)
+            if jobrun_suuid is not None:
+                return Workspace.objects.filter(
+                    project__jobdef__jobrun__short_uuid=jobrun_suuid
+                )
 
         return None
 
