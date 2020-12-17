@@ -27,6 +27,7 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
             On the fly reading a zip archive and returns the information about what files are in the archive
         """
         filelist = []
+        parents = []
         with ZipFile(os.path.join(instance.stored_path)) as zippackage:
             for f in zippackage.infolist():
                 if (
@@ -37,7 +38,8 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
                 ):
                     continue
                 fpath_parts = f.filename.split("/")
-                fpath = "/".join(fpath_parts[: len(fpath_parts) - 1])
+                fpath = "/".join(fpath_parts[:len(fpath_parts) - 1])
+                parents.append(fpath)
                 r = {
                     "path": f.filename,
                     "parent": fpath or "/",
@@ -51,10 +53,16 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
                 filelist.append(r)
 
         # also get all directories
-        # we remove the root entry "/"
-        directories = sorted(
-            list(set(map(lambda x: x["parent"], filelist)) - set(["/"]))
-        )
+        # "unwind" all directories, it can be the case that directories only contain directories
+        # which will cause this not te be listed in the zip
+        # let's fix this
+        directories = []
+        for parent in parents:
+            # just add the parent of this parent back
+            fpath_parts = parent.split("/")
+            directories.append(parent)
+            directories.append("/".join(fpath_parts[:len(fpath_parts) - 1]))
+        directories = sorted(list(set(directories) - set(["/"])))
 
         dirlist = []
         for d in directories:
