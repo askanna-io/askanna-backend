@@ -21,17 +21,17 @@ class Package(AuthorModel, BaseModel):
     size = models.IntegerField(help_text="Size of this package in bytes")
 
     @property
-    def new_storage_location(self):
+    def storage_location(self):
         return os.path.join(self.project.uuid.hex, self.uuid.hex,)
 
     @property
     def stored_path(self):
         return os.path.join(
-            settings.PACKAGES_ROOT, self.new_storage_location, self._filename
+            settings.PACKAGES_ROOT, self.storage_location, self.filename
         )
 
     @property
-    def _filename(self):
+    def filename(self):
         return "package_{}.zip".format(self.uuid.hex)
 
     @property
