@@ -41,7 +41,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             return {
                 "uuid": package.uuid,
                 "short_uuid": package.short_uuid,
-                "name": package.uuid,
+                "name": package.original_filename,
             }
         return {
             "uuid": None,
