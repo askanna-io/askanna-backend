@@ -62,7 +62,7 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
             fpath_parts = parent.split("/")
             directories.append(parent)
             directories.append("/".join(fpath_parts[:len(fpath_parts) - 1]))
-        directories = sorted(list(set(directories) - set(["/"])))
+        directories = sorted(list(set(directories) - set(["/"]) - set([""])))
 
         dirlist = []
         for d in directories:
