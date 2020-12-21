@@ -65,6 +65,16 @@ class ChunkedPackagePartSerializer(serializers.ModelSerializer):
 
 
 class PackageSerializerDetail(BaseArchiveDetailSerializer):
+
+    filename = serializers.SerializerMethodField("get_filename")
+
+    def get_filename(self, instance):
+        """
+        The filename is stored in another property field which is only accesible on the instance level, not on databaselevel
+        """
+        filename = instance.original_filename
+        return filename
+
     class Meta:
         model = Package
         fields = "__all__"
