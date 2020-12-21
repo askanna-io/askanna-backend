@@ -68,12 +68,16 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
         for d in directories:
             path_elements = d.split("/")
             parent = "/".join(path_elements[: len(path_elements) - 1])
+            name = d.replace(parent + "/", "")
+            if not name:
+                # if the name becomes blank, we remove the entry
+                continue
 
             dirlist.append(
                 {
                     "path": d,
                     "parent": parent or "/",
-                    "name": d.replace(parent + "/", ""),
+                    "name": name,
                     "is_dir": True,
                     "size": reduce(
                         lambda x, y: x + y["size"],
