@@ -104,7 +104,8 @@ class PersonViewSet(
         """Extend update process to conditionally re-send invitation email."""
         super().perform_update(serializer)
 
-        if serializer.get_status(serializer.instance) == "invited":
+        if serializer.status == "invited":
+            # only resend invite if it was requested
             serializer.send_invite()
 
     def perform_destroy(self, instance):
