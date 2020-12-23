@@ -100,14 +100,6 @@ class PersonViewSet(
         serializer.send_invite()
         return instance
 
-    def perform_update(self, serializer):
-        """Extend update process to conditionally re-send invitation email."""
-        super().perform_update(serializer)
-
-        if serializer.status == "invited":
-            # only resend invite if it was requested
-            serializer.send_invite()
-
     def perform_destroy(self, instance):
         """Delete invitations and soft-delete membersips."""
         try:

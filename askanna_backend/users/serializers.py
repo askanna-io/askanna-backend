@@ -378,6 +378,10 @@ class PersonSerializer(serializers.Serializer):
         if status == "accepted" and self.get_status(instance) == "invited":
             self.change_membership_to_accepted(instance)
 
+        if status == "invited":
+            # only resend invite if it was requested
+            self.send_invite()
+
         for field, value in validated_data.items():
             setattr(instance, field, value)
 
