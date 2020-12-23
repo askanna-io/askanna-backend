@@ -14,6 +14,7 @@ class User(SlimBaseForAuthModel, AbstractUser):
     # around the globe.
 
     name = CharField(_("Name of User"), blank=True, max_length=255)
+    front_end_domain = models.CharField(max_length=1024, null=True, default=None)
 
     def get_absolute_url(self):
         return reverse("users:detail", kwargs={"username": self.username})

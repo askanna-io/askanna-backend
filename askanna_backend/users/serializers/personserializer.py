@@ -28,11 +28,16 @@ from users.models import (
     User,
     UserProfile,
 )
-from users.signals import password_reset_signal
+from users.signals import password_reset_signal, user_created_signal
 from workspace.models import Workspace
 
 
 class ReadWriteSerializerMethodField(serializers.Field):
+    """
+    Code taken from: https://stackoverflow.com/questions/40555472/django-rest-serializer-method-writable-field?rq=1
+    FIXME: to document what it does
+    """
+
     def __init__(self, method_name=None, **kwargs):
         self.method_name = method_name
         kwargs["source"] = "*"
@@ -50,96 +55,6 @@ class ReadWriteSerializerMethodField(serializers.Field):
 
     def to_internal_value(self, data):
         return {self.field_name: data}
-
-
-class UserSerializer(serializers.Serializer):
-    name = serializers.CharField(required=False)
-    email = serializers.CharField(required=True)
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(write_only=True, required=True)
-    short_uuid = serializers.CharField(read_only=True)
-    created = serializers.DateTimeField(read_only=True)
-
-    class Meta:
-        model = User
-        fields = "__all__"
-
-    def create(self, validated_data):
-        """
-        This function creates an user account and set the password
-        """
-        password = validated_data.pop("password")
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
-
-    def validate(self, data):
-        """
-        This function validates the data
-        """
-        data = super().validate(data)
-        self.validate_username(data)
-        self.validate_email_is_unique(data)
-        self.validate_password_length(data)
-        self.validate_password_not_similar_username(data)
-
-        return data
-
-    def validate_username(self, data):
-        """This function validates if the username is unique.
-        If not, a ValidationError is raised"""
-        if "username" in data:
-            username = data["username"]
-
-            if User.objects.filter(Q(username=username)).exists():
-                raise serializers.ValidationError(
-                    {
-                        "username": [
-                            "This email is already used. You can join the workspace by signing in with an existing account."
-                        ]
-                    }
-                )
-
-        return data
-
-    def validate_email_is_unique(self, data):
-        """This function validates if the email is unique"""
-        if "email" in data:
-            email = data["email"]
-
-            if User.objects.filter(Q(email=email)).exists():
-                raise serializers.ValidationError(
-                    {"email": ["This email already exists"]}
-                )
-
-    def validate_password_length(self, data):
-        """This function validates if the password is longer than 10 characters.
-        If not, a ValidationError is raised"""
-
-        if "password" in data:
-            password = data["password"]
-
-            if len(password) < 10:
-                raise serializers.ValidationError(
-                    {"password": ["The password should be longer than 10 characters"]}
-                )
-
-    def validate_password_not_similar_username(self, data):
-        """This function validates if the password is not similar to the username.
-        If this is the case, a ValidationError is raised"""
-
-        if "username" and "password" in data:
-            if data["username"] in data["password"]:
-                raise serializers.ValidationError(
-                    {"password": ["The password should not be similar to the username"]}
-                )
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = "__all__"
 
 
 class PersonSerializer(serializers.Serializer):
@@ -434,78 +349,3 @@ class PersonSerializer(serializers.Serializer):
         )
         msg.attach_alternative(html_version, "text/html")
         msg.send()
-
-
-class PasswordResetSerializer(DefaultPasswordResetSerializer):
-    """
-    Serializer for requesting a password reset e-mail.
-    """
-
-    front_end_domain = serializers.CharField(
-        required=False, default=settings.ASKANNA_UI_URL
-    )
-    password_reset_form_class = PasswordResetForm
-
-    def get_email_options(self) -> dict:
-        return {"from_email": "AskAnna <support@askanna.io>"}
-
-    def save(self):
-        """
-        We change the opts for sending the password reset e-mail. (AskAnna)
-        """
-        request = self.context.get("request")
-        # Set some values to trigger the send_email method.
-
-        domain = self.validated_data.get("front_end_domain", "")
-        domain = domain.replace("https://", "").replace("http://", "")
-        domain = domain.rstrip("/")
-        is_secure = "https" in self.validated_data.get("front_end_domain", "")
-
-        opts = {
-            "domain_override": domain,
-            "use_https": is_secure,
-            "request": request,
-            "subject_template_name": "registration/password_reset_subject.txt",
-            "email_template_name": "registration/password_reset_email.txt",
-            "html_email_template_name": "registration/password_reset_email.html",
-        }
-
-        opts.update(self.get_email_options())
-        self.reset_form.save(**opts)
-        email = self.reset_form.cleaned_data["email"]
-        users = list(self.reset_form.get_users(email))
-
-        # log the password reset request
-        password_reset_signal.send(
-            sender=self.__class__,
-            request=request,
-            domain=domain,
-            users=users,
-            email=email,
-        )
-
-
-class PasswordResetStatusSerializer(serializers.Serializer):
-    status = serializers.CharField(required=False)
-    token = serializers.CharField(allow_blank=False)
-    uid = serializers.CharField(allow_blank=False)
-
-    def validate(self, attrs):
-        self._errors = {}
-
-        # Decode the uidb64 to uid to get User object
-        try:
-            uid = force_text(uid_decoder(attrs["uid"]))
-            self.user = User._default_manager.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            raise ValidationError({"uid": ["Invalid value"], "status": "invalid"})
-        else:
-            print("survived the uid check")
-
-        if not default_token_generator.check_token(self.user, attrs["token"]):
-            raise ValidationError({"token": ["Invalid value"], "status": "invalid"})
-
-        return attrs
-
-    def to_representation(self, instance):
-        return {"status": "valid"}
