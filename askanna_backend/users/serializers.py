@@ -161,12 +161,12 @@ class PersonSerializer(serializers.Serializer):
 
     token_signer = signing.TimestampSigner()
 
-    def generate_token(self):
+    def generate_token(self, instance=None):
         """
         This function returns the token with as value the uuid of the instance
         """
-
-        return self.token_signer.sign(self.instance.uuid)
+        instance = instance or self.instance
+        return self.token_signer.sign(instance.uuid)
 
     def get_workspace(self, instance):
         """
@@ -288,7 +288,9 @@ class PersonSerializer(serializers.Serializer):
         """
         This function creates the Invitation
         """
-        return Invitation.objects.create(**validated_data)
+        instance = Invitation.objects.create(**validated_data)
+        self.send_invite(instance=instance)
+        return instance
 
     def validate(self, data):
         """
@@ -405,19 +407,20 @@ class PersonSerializer(serializers.Serializer):
 
         return fields
 
-    def send_invite(self):
+    def send_invite(self, instance=None):
         """This function generates the token when the invitation is send.
-        A mail is sent to the email that is given as input when creating the invitation"""
-        token = self.generate_token()
-        workspace_uuid = self.instance.object_uuid
+        A mail is sent to the email that is given as input when creating the invitation """
+        instance = instance or self.instance
+        token = self.generate_token(instance)
+        workspace_uuid = instance.object_uuid
         workspace = Workspace.objects.get(uuid=workspace_uuid)
 
         data = {
             "token": token,
             "workspace_name": workspace,
             "workspace_short_uuid": workspace.short_uuid,
-            "web_ui_url": self.instance.invitation.front_end_url.rstrip("/"),
-            "people_short_uuid": self.instance.short_uuid,
+            "web_ui_url": instance.invitation.front_end_url.rstrip("/"),
+            "people_short_uuid": instance.short_uuid,
         }
 
         subject = f"You’re invited to join {workspace} on AskAnna"
@@ -427,7 +430,7 @@ class PersonSerializer(serializers.Serializer):
         html_version = render_to_string("emails/invitation_email.html", data)
 
         msg = EmailMultiAlternatives(
-            subject, text_version, from_email, [self.instance.invitation.email]
+            subject, text_version, from_email, [instance.invitation.email]
         )
         msg.attach_alternative(html_version, "text/html")
         msg.send()
