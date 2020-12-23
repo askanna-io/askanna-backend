@@ -94,19 +94,6 @@ class PersonViewSet(
         request.data.update(parents)
         request.data["object_type"] = MSP_WORKSPACE
 
-    def perform_create(self, serializer):
-        """This function calls the send invite on the serializer and returns the instance"""
-        instance = super().perform_create(serializer)
-        serializer.send_invite()
-        return instance
-
-    def perform_update(self, serializer):
-        """Extend update process to conditionally re-send invitation email."""
-        super().perform_update(serializer)
-
-        if serializer.get_status(serializer.instance) == "invited":
-            serializer.send_invite()
-
     def perform_destroy(self, instance):
         """Delete invitations and soft-delete membersips."""
         try:
