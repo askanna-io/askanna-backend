@@ -19,6 +19,7 @@ ROOT_DIR = (
     environ.Path(__file__) - 3
 )  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
 APPS_DIR = ROOT_DIR.path("askanna_backend")
+RESOURCES_DIR = ROOT_DIR.path("resources")
 TESTS_DIR = ROOT_DIR.path("tests")
 TEST_RESOURCES_DIR = TESTS_DIR.path("resources")
 

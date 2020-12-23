@@ -27,14 +27,25 @@ class UserAdmin(auth_admin.UserAdmin):
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
     list_display = [
+        "short_uuid",
         "uuid",
         "user",
         "object_uuid",
+        "role",
+        "job_title",
+        "created",
     ]
 
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid"]
+
+    def get_queryset(self, request):
+        """
+        We don't want to list invites (user=None)
+        """
+        qs = super().get_queryset(request)
+        return qs.filter(user__isnull=False)
 
     def has_add_permission(self, request, obj=None):
         """ want to force users always to create memberships with user profile"""
@@ -44,9 +55,13 @@ class MembershipAdmin(admin.ModelAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = [
+        "short_uuid",
         "uuid",
         "user",
         "object_uuid",
+        "role",
+        "job_title",
+        "created",
     ]
 
     date_hierarchy = "created"
