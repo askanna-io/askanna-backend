@@ -14,7 +14,11 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
-from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
+from core.views import (
+    BaseChunkedPartViewSet,
+    BaseUploadFinishMixin,
+    SerializerByActionMixin,
+)
 from package.listeners import *
 from package.models import Package, ChunkedPackagePart
 from package.serializers import (
@@ -27,6 +31,7 @@ from package.signals import package_upload_finish
 
 
 class PackageViewSet(
+    SerializerByActionMixin,
     BaseUploadFinishMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -46,10 +51,9 @@ class PackageViewSet(
     upload_finished_signal = package_upload_finish
     upload_finished_message = "package upload finished"
 
-    def get_serializer_class(self):
-        if self.request.method.upper() in ["POST"]:
-            return PackageCreateSerializer
-        return self.serializer_class
+    serializer_classes_by_action = {
+        "post": PackageCreateSerializer,
+    }
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return obj.filename

@@ -40,10 +40,16 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
                 fpath_parts = f.filename.split("/")
                 fpath = "/".join(fpath_parts[:len(fpath_parts) - 1])
                 parents.append(fpath)
+
+                name = f.filename.replace(fpath + "/", "")
+                if not name:
+                    # if the name becomes blank, we remove the entry
+                    continue
+
                 r = {
                     "path": f.filename,
                     "parent": fpath or "/",
-                    "name": f.filename.replace(fpath + "/", ""),
+                    "name": name,
                     "is_dir": f.is_dir(),
                     "size": f.file_size,
                     "last_modified": datetime.datetime(*f.date_time),

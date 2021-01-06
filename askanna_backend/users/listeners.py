@@ -8,8 +8,20 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template import loader
 
-from users.models import PasswordResetLog, Membership, MSP_WORKSPACE, WS_ADMIN, User, UserProfile
-from users.signals import password_reset_signal, user_created_signal
+from users.models import (
+    PasswordResetLog,
+    Membership,
+    MSP_WORKSPACE,
+    WS_ADMIN,
+    User,
+    UserProfile,
+)
+from users.signals import (
+    password_reset_signal,
+    user_created_signal,
+    password_changed_signal,
+    email_changed_signal,
+)
 from workspace.models import Workspace
 
 
@@ -22,6 +34,34 @@ def visitor_ip_address(request):
     else:
         ip = request.META.get("REMOTE_ADDR")
     return ip
+
+
+def send_email(
+    subject_template_name: str,
+    email_template_name: str,
+    html_email_template_name: str,
+    from_email: str,
+    to_email: str,
+    context: dict = {},
+    attachments: list = [],
+):
+    """
+    Send email function which loads templates from the filesytem
+    """
+    subject = loader.render_to_string(subject_template_name, context)
+    # Email subject *must not* contain newlines
+    subject = "".join(subject.splitlines())
+    body = loader.render_to_string(email_template_name, context)
+
+    email_message = EmailMultiAlternatives(subject, body, from_email, [to_email])
+    if html_email_template_name is not None:
+        html_email = loader.render_to_string(html_email_template_name, context)
+        email_message.attach_alternative(html_email, "text/html")
+
+    for attachment in attachments:
+        email_message.attach_file(attachment)
+
+    email_message.send()
 
 
 @receiver(password_reset_signal)
@@ -100,17 +140,6 @@ def send_welcome_email_after_registration(
     context = {
         "user": user,
     }
-
-    subject = loader.render_to_string(subject_template_name, context)
-    # Email subject *must not* contain newlines
-    subject = "".join(subject.splitlines())
-    body = loader.render_to_string(email_template_name, context)
-
-    email_message = EmailMultiAlternatives(subject, body, from_email, [to_email])
-    if html_email_template_name is not None:
-        html_email = loader.render_to_string(html_email_template_name, context)
-        email_message.attach_alternative(html_email, "text/html")
-
     # add the attachments
     terms_of_use_dir = settings.RESOURCES_DIR.path("terms_and_conditions")
     attachments = [
@@ -121,7 +150,65 @@ def send_welcome_email_after_registration(
         terms_of_use_dir.path("Data Processing Agreement - AskAnna - 20201214.pdf"),
     ]
 
-    for attachment in attachments:
-        email_message.attach_file(attachment)
+    send_email(
+        subject_template_name,
+        email_template_name,
+        html_email_template_name,
+        from_email,
+        to_email,
+        context,
+        attachments,
+    )
 
-    email_message.send()
+
+@receiver(email_changed_signal)
+def send_email_changed(sender, user, request, old_email, **kwargs):
+    """
+    We send an e-mail to confirm the e-mail change
+    """
+
+    subject_template_name = "emails/email_changed_subject.txt"
+    email_template_name = "emails/email_changed_email.txt"
+    html_email_template_name = "emails/email_changed_email.html"
+    from_email = "AskAnna <support@askanna.io>"
+    to_email = "{} <{}>".format(user.name, old_email)
+
+    context = {
+        "user": user,
+    }
+
+    send_email(
+        subject_template_name,
+        email_template_name,
+        html_email_template_name,
+        from_email,
+        to_email,
+        context,
+    )
+
+
+@receiver(password_changed_signal)
+def send_password_changed(sender, user, request, **kwargs):
+    """
+    We send an e-mail to confirm the password change
+    """
+
+    subject_template_name = "emails/password_changed_subject.txt"
+    email_template_name = "emails/password_changed_email.txt"
+    html_email_template_name = "emails/password_changed_email.html"
+    from_email = "AskAnna <support@askanna.io>"
+    to_email = "{} <{}>".format(user.name, user.email)
+
+    context = {
+        "user": user,
+    }
+
+    send_email(
+        subject_template_name,
+        email_template_name,
+        html_email_template_name,
+        from_email,
+        to_email,
+        context,
+    )
+

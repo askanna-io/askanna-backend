@@ -3,9 +3,8 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import pre_delete, post_delete
+from django.db.models.signals import pre_delete, post_delete, pre_save
 from django.dispatch import receiver
-
 from yaml import load, dump
 
 try:
@@ -16,6 +15,7 @@ except ImportError:
 from job.models import JobDef
 from package.models import Package
 from package.signals import package_upload_finish
+from users.models import MSP_WORKSPACE
 
 
 @receiver(package_upload_finish)
@@ -79,3 +79,29 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
 @receiver(pre_delete, sender=Package)
 def delete_package(sender, instance, **kwargs):
     instance.prune()
+
+
+@receiver(pre_save, sender=Package)
+def add_member_to_package(sender, instance, **kwargs):
+    """
+    On update of a package, add the member to it who created this.
+    We already thave the user, but we lookup the membership for it
+    (we know this by project->workspace)
+    We only know the instance.created_by when an upload was finished
+    So this signal is executed twice, but we only update when the
+    created_by is filled
+    """
+    if (not instance.member) and instance.created_by:
+        # first lookup which member this could be based on workspace
+        in_workspace = instance.project.workspace
+        member_query = instance.created_by.memberships.filter(
+            object_uuid=in_workspace.uuid,
+            object_type=MSP_WORKSPACE,
+            deleted__isnull=True,
+        )
+        if member_query.exists():
+            # get the membership out of it
+            membership = member_query.first()
+            if membership:
+                instance.member = membership
+

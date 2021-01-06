@@ -6,7 +6,6 @@ import uuid
 from django.db import models
 
 from core.models import BaseModel, SlimBaseModel
-
 from job.models.const import JOB_STATUS
 
 
@@ -20,13 +19,8 @@ class JobRun(BaseModel):
     jobid = models.CharField(max_length=120, blank=True, null=True)
     status = models.CharField(max_length=20, choices=JOB_STATUS)
 
-    # stats
-    runtime = models.FloatField(default=0)  # FIXME: check with job system
-    memory = models.FloatField(default=0)  # FIXME: check with job system
-
-    # FIXME: check time series storage for info on resource usage
-
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
+    member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
 
     class Meta:
         ordering = ["-created"]

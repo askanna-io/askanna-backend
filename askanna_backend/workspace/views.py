@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.schemas.openapi import AutoSchema
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from core.views import PermissionByActionMixin
 from users.models import MSP_WORKSPACE, Membership, Invitation
 from users.permissions import (
     RequestHasAccessToMembershipPermission,
@@ -50,6 +51,7 @@ class RoleFilterSet(django_filters.FilterSet):
 
 
 class PersonViewSet(
+    PermissionByActionMixin,
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
@@ -62,23 +64,13 @@ class PersonViewSet(
     lookup_field = "short_uuid"
     serializer_class = PersonSerializer
     permission_classes = [
-        RequestHasAccessToMembershipPermission & RoleUpdateByAdminOnlyPermission,
+        RoleUpdateByAdminOnlyPermission,
+        RequestHasAccessToMembershipPermission,
     ]
 
     permission_classes_by_action = {
         "retrieve": [RequestIsValidInvite | RequestHasAccessToMembershipPermission],
     }
-
-    def get_permissions(self):
-        try:
-            # return permission_classes depending on `action`
-            return [
-                permission()
-                for permission in self.permission_classes_by_action[self.action]
-            ]
-        except KeyError:
-            # action is not set return default permission_classes
-            return [permission() for permission in self.permission_classes]
 
     def get_parents_query_dict(self):
         """This function retrieves the workspace uuid from the workspace short_uuid"""

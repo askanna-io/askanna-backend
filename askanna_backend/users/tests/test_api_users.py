@@ -196,3 +196,136 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
             "The password should be longer than 10 characters.",
             response.data.get("password"),
         )
+
+
+class TestUserUpdateAPI(BaseUsers, APITestCase):
+    """
+    Testing the update function for the /v1/accounts/{short_uuid}
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "user-detail",
+            kwargs={"version": "v1", "short_uuid": self.users["user"].short_uuid},
+        )
+
+    def test_update_user_as_admin(self):
+        """
+        We can update an user as admin/superuser
+        """
+
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            self.url,
+            {
+                "password": "1234567890abcdef",
+                "email": "new-email@askanna.dev",
+                "old_password": "password-user",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_user_as_user(self):
+        """
+        We can update an user as user on own user account
+        """
+
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            self.url,
+            {
+                "password": "1234567890abcdef",
+                "email": "new-email@askanna.dev",
+                "old_password": "password-user",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_user_as_other_user(self):
+        """
+        An other user cannot update a non-owning user account
+        """
+
+        token = self.users["userB"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            self.url,
+            {
+                "password": "1234567890abcdef",
+                "email": "new-email@askanna.dev",
+                "old_password": "password-admin",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_user_as_anonymous(self):
+        """
+        A not logged in user cannot update anything
+        """
+
+        response = self.client.patch(
+            self.url,
+            {
+                "password": "1234567890abcdef",
+                "email": "new-email@askanna.dev",
+                "old_password": "password-admin",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_user_as_user_missing_old_password(self):
+        """
+        We can NOT update an user as user on own user account without current password
+        """
+
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            self.url,
+            {"password": "1234567890abcdef", "email": "new-email@askanna.dev"},
+            format="json",
+        )
+        self.assertIn(
+            "To change your password, you also need to provide the current password.",
+            str(response.content),
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_user_as_user_emailblank(self):
+        """
+        We can NOT update an user as user on own user account with blank email
+        """
+
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(self.url, {"email": ""}, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Enter a valid email address.", str(response.content))
+
+    def test_update_user_as_user_wrong_password(self):
+        """
+        We can update an user as user on own user account, but with wrong password
+        expect error
+        """
+
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            self.url,
+            {"password": "1234567890abcdef", "old_password": "password-user-wrong",},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("The current password is incorrect.", str(response.content))

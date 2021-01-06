@@ -138,8 +138,8 @@ class TestProfileAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_member_can_not_change_own_job_title(self):
-        """The job_title field of a member can not be changed by the member itself."""
+    def test_member_can_change_own_job_title(self):
+        """The job_title field of a member can be changed by the member itself."""
         url = reverse(
             "workspace-people-detail",
             kwargs={
@@ -155,7 +155,26 @@ class TestProfileAPI(APITestCase):
         response = self.client.patch(
             url, {"job_title": "a new job title"}, format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["job_title"], "a new job title")
+
+    def test_member_can_change_own_name(self):
+        """The name field of a member can be changed by the member itself."""
+        url = reverse(
+            "workspace-people-detail",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "short_uuid": self.member_a_profile.short_uuid,
+            },
+        )
+
+        token = self.users["member_a"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(url, {"name": "my new name"}, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "my new name")
 
     def test_admin_can_change_other_member_job_title(self):
         """The job_title field can be changed by an admin."""

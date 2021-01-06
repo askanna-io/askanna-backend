@@ -110,3 +110,42 @@ class BaseUploadFinishMixin:
         response = Response({"message": self.upload_finished_message}, status=200)
         response["Cache-Control"] = "no-cache"
         return response
+
+
+class SerializerByActionMixin:
+    def get_serializer_class(self):
+        """
+        Return different serializer class for each http method
+
+        Example setup:
+        serializer_classes_by_action = {
+            "post": UserCreateSerializer,
+            "put": UserUpdateSerializer,
+            "patch": UserUpdateSerializer,
+        }
+        """
+        actions = self.serializer_classes_by_action
+        action_method = self.request.method.lower()
+
+        serializer = actions.get(action_method)
+        if not serializer:
+            # return default serializer in case we don't find a specified one for method specific
+            return self.serializer_class
+        return serializer
+
+
+class PermissionByActionMixin:
+    def get_permissions(self):
+        """
+        Return different permissions for each action if this is defined
+        otherwise return default `permissions_classes`
+        """
+        try:
+            # return permission_classes depending on `action`
+            return [
+                permission()
+                for permission in self.permission_classes_by_action[self.action]
+            ]
+        except KeyError:
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes]

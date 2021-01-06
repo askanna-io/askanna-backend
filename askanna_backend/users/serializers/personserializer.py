@@ -111,27 +111,22 @@ class PersonSerializer(serializers.Serializer):
     def get_name(self, instance):
         """
         This function gets the name from the user.
-        Either from the invitation or from the already accepted memberships.
         """
-        try:
-            instance.invitation.name
-        except Invitation.DoesNotExist:
-            if instance.user:
-                return instance.user.get_name()
-            return None
-        else:
-            return instance.invitation.name
+        if not instance.name and instance.user:
+            return instance.user.get_name()
+        return instance.name
 
     def get_email(self, instance):
         """
         This function checks if there already exist an invitation.
         If it does then it uses the email from the invitation, otherwise it uses the email of the user.
         """
+        if instance.user:
+            return instance.user.email
+
         try:
             instance.invitation
         except Invitation.DoesNotExist:
-            if instance.user:
-                return instance.user.email
             return None
         else:
             return instance.invitation.email
@@ -300,6 +295,7 @@ class PersonSerializer(serializers.Serializer):
             self.send_invite()
 
         for field, value in validated_data.items():
+            print(field, value)
             setattr(instance, field, value)
 
         instance.save()

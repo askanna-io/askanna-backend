@@ -20,6 +20,17 @@ class Package(AuthorModel, BaseModel):
     )
     size = models.IntegerField(help_text="Size of this package in bytes")
 
+    member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
+
+    @property
+    def relation_to_json(self):
+        return {
+            "relation": "package",
+            "name": self.original_filename,
+            "uuid": str(self.uuid),
+            "short_uuid": str(self.short_uuid),
+        }
+
     @property
     def storage_location(self):
         return os.path.join(self.project.uuid.hex, self.uuid.hex,)
@@ -41,6 +52,16 @@ class Package(AuthorModel, BaseModel):
         """
         with open(self.stored_path, "rb") as f:
             return f.read()
+
+    def write(self, stream):
+        """
+            Write contents to the filesystem
+        """
+        os.makedirs(
+            os.path.join(settings.PACKAGES_ROOT, self.storage_location), exist_ok=True
+        )
+        with open(self.stored_path, "wb") as f:
+            f.write(stream.read())
 
     def prune(self):
         """

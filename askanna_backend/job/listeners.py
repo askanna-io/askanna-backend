@@ -3,7 +3,8 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import pre_delete, post_delete
+from django.db.models.signals import pre_delete, post_delete, pre_save, post_save
+from django.db.transaction import on_commit
 from django.dispatch import receiver
 
 from yaml import load, dump
@@ -13,8 +14,9 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
-from job.models import JobArtifact, JobOutput, JobPayload
-from job.signals import artifact_upload_finish
+from job.models import JobArtifact, JobOutput, JobPayload, JobRun
+from job.signals import artifact_upload_finish, start_jobrun_dockerized
+from users.models import MSP_WORKSPACE
 
 
 @receiver(artifact_upload_finish)
@@ -47,3 +49,50 @@ def delete_joboutput(sender, instance, **kwargs):
 @receiver(pre_delete, sender=JobPayload)
 def delete_jobpayload(sender, instance, **kwargs):
     instance.prune()
+
+
+@receiver(post_save, sender=JobRun)
+def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs):
+    """
+    Create a JobOutput everytime a JobRun gets created.
+    """
+    if created:
+        try:
+            JobOutput.objects.create(
+                jobrun=instance, jobdef=instance.jobdef.uuid, owner=instance.owner
+            )
+        except Exception as exc:
+            # FIXME: need custom exception for more context
+            raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
+
+
+@receiver(post_save, sender=JobRun)
+def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
+    """
+    Every time a new record is created, send the new job to celery
+    """
+    if created:
+        on_commit(lambda: start_jobrun_dockerized.delay(instance.uuid))
+
+
+@receiver(pre_save, sender=JobRun)
+def add_member_to_jobrun(sender, instance, **kwargs):
+    """
+    On creation of the jobrun, add the member to it who created this.
+    We already thave the user, but we lookup the membership for it
+    (we know this by job->project->workspace)
+    """
+    if not instance.member:
+        # first lookup which member this could be based on workspace
+        in_workspace = instance.jobdef.project.workspace
+        member_query = instance.owner.memberships.filter(
+            object_uuid=in_workspace.uuid,
+            object_type=MSP_WORKSPACE,
+            deleted__isnull=True,
+        )
+        if member_query.exists():
+            # get the membership out of it
+            membership = member_query.first()
+            if membership:
+                instance.member = membership
+
