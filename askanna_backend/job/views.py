@@ -18,7 +18,12 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from core.mixins import HybridUUIDMixin
 from core.utils import get_config
-from core.views import BaseChunkedPartViewSet, BaseUploadFinishMixin
+from core.views import (
+    BaseChunkedPartViewSet,
+    BaseUploadFinishMixin,
+    PermissionByActionMixin,
+    SerializerByActionMixin,
+)
 from job.models import (
     ChunkedArtifactPart,
     ChunkedJobOutputPart,
@@ -60,7 +65,7 @@ from users.models import MSP_WORKSPACE
 
 class StartJobView(viewsets.GenericViewSet):
     queryset = JobDef.objects.all()
-    lookup_field = "uuid"
+    lookup_field = "short_uuid"
     serializer_class = StartJobSerializer
     permission_classes = [IsMemberOfProjectAttributePermission]
 
@@ -77,30 +82,17 @@ class StartJobView(viewsets.GenericViewSet):
         ).values_list("object_uuid", flat=True)
         return queryset.filter(project__workspace__in=member_of_workspaces)
 
-    def get_object(self):
-        # TODO: move this to a mixin
-        queryset = self.filter_queryset(self.get_queryset())
-        filter_kwargs = {}
-        query_val = self.kwargs.get("uuid", None)
-        if query_val:
-            filter_kwargs = {"uuid": query_val}
-        else:
-            filter_kwargs = {"short_uuid": self.kwargs.get("short_uuid")}
-        obj = get_object_or_404(queryset, **filter_kwargs)
-        return obj
-
     def do_ingest_short(self, request, **kwargs):
         return self.do_ingest(request, **kwargs)
 
     def do_ingest(self, request, uuid=None, **kwargs):
         """
         We accept any data that is sent in request.data
-        The provided `uuid` is really existing, as this is checked by the .get_object
-        We specificed the `lookup_field` to search for uuid.
         """
         jobdef = self.get_object()
 
         # validate whether request.data is really a json structure
+        print(request.headers.items(), request.data)
         if "Content-Length" not in request.headers.keys():
             raise ParseError(detail="'Content-Length' HTTP-header is required")
         try:
@@ -185,18 +177,6 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
         return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
-
-    def get_object(self):
-        # TODO: move this to a mixin
-        queryset = self.filter_queryset(self.get_queryset())
-        filter_kwargs = {}
-        query_val = self.kwargs.get("uuid", None)
-        if query_val:
-            filter_kwargs = {"uuid": query_val}
-        else:
-            filter_kwargs = {"short_uuid": self.kwargs.get("short_uuid")}
-        obj = get_object_or_404(queryset, **filter_kwargs)
-        return obj
 
     def get_result(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
@@ -700,6 +680,8 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
 
 
 class JobVariableView(
+    PermissionByActionMixin,
+    SerializerByActionMixin,
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -730,6 +712,12 @@ class JobVariableView(
         ],
     }
 
+    serializer_classes_by_action = {
+        "post": JobVariableCreateSerializer,
+        "put": JobVariableUpdateSerializer,
+        "patch": JobVariableUpdateSerializer,
+    }
+
     def initial(self, request, *args, **kwargs):
         """
         Set default request.data in case we need this
@@ -754,28 +742,6 @@ class JobVariableView(
 
             if hasattr(request.data, "_mutable"):
                 setattr(request.data, "_mutable", False)
-
-    def get_permissions(self):
-        try:
-            # return permission_classes depending on `action`
-            return [
-                permission()
-                for permission in self.permission_classes_by_action[self.action]
-            ]
-        except KeyError:
-            # action is not set return default permission_classes
-            return [permission() for permission in self.permission_classes]
-
-    def get_serializer_class(self):
-        """
-        Return different serializer class for update
-
-        """
-        if self.request.method.upper() in ["PUT", "PATCH"]:
-            return JobVariableUpdateSerializer
-        if self.request.method.upper() in ["POST"]:
-            return JobVariableCreateSerializer
-        return self.serializer_class
 
     def get_queryset(self):
         """

@@ -121,11 +121,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_package(self, instance):
         package = instance.package
         if package:
-            return {
-                "name": package.original_filename,
-                "uuid": package.uuid,
-                "short_uuid": package.short_uuid,
-            }
+            return package.relation_to_json
         return {"name": "latest", "uuid": None, "short_uuid": None}
 
     def get_project(self, instance):
@@ -138,12 +134,11 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_user(self, instance):
         if instance.owner:
-            return {
-                "name": instance.owner.get_name(),
-                "uuid": instance.owner.uuid,
-                "short_uuid": instance.owner.short_uuid,
-            }
+            if instance.member:
+                return instance.member.relation_to_json
+            return instance.owner.relation_to_json
         return {
+            "relation": "user",
             "name": None,
             "uuid": None,
             "short_uuid": None,
@@ -151,7 +146,7 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobRun
-        fields = "__all__"
+        exclude = ["member"]
 
 
 class JobArtifactSerializer(serializers.ModelSerializer):

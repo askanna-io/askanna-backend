@@ -1,7 +1,16 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 
-from job.models import JobArtifact, JobDef, JobPayload, JobRun, JobOutput, JobVariable, ChunkedJobOutputPart, ChunkedArtifactPart
+from job.models import (
+    JobArtifact,
+    JobDef,
+    JobPayload,
+    JobRun,
+    JobOutput,
+    JobVariable,
+    ChunkedJobOutputPart,
+    ChunkedArtifactPart,
+)
 
 
 @admin.register(JobDef)
@@ -44,10 +53,9 @@ class JobRunAdmin(admin.ModelAdmin):
         "jobdef",
         "payload",
         "status",
-        "runtime",
-        "memory",
         "created",
         "owner",
+        "member",
     ]
 
     date_hierarchy = "created"
@@ -63,8 +71,10 @@ class JobOutputAdmin(admin.ModelAdmin):
     list_filter = ("created", "exit_code")
     search_fields = ["uuid", "short_uuid", "owner"]
 
+
 admin.site.register(ChunkedJobOutputPart)
 admin.site.register(ChunkedArtifactPart)
+
 
 @admin.register(JobVariable)
 class JobVariableAdmin(admin.ModelAdmin):

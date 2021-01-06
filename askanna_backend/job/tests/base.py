@@ -7,6 +7,10 @@ from django.conf import settings
 
 
 class BaseJobTestDef:
+    def file_to_bytes(self, fp):
+        with fp:
+            return fp.read()
+
     @classmethod
     def setup_class(cls):
         cls.users = {
@@ -24,19 +28,80 @@ class BaseJobTestDef:
 
         # setup variables
         cls.workspace = Workspace.objects.create(**{"title": "WorkspaceX",})
+        cls.workspace2 = Workspace.objects.create(**{"title": "WorkspaceY",})
         cls.project = Project.objects.create(
             **{"name": "TestProject", "workspace": cls.workspace}
         )
-        cls.package = Package.objects.create(
-            project=cls.project, size=1, title="TestPackage"
+        cls.project2 = Project.objects.create(
+            **{"name": "TestProject2", "workspace": cls.workspace2}
         )
+        # make the admin user member of the workspace
+        cls.admin_member = Membership.objects.create(
+            object_type=MSP_WORKSPACE,
+            object_uuid=cls.workspace.uuid,
+            user=cls.users["admin"],
+            role=WS_ADMIN,
+        )
+        # make the memberA user member of the workspace
+        cls.memberA_member = Membership.objects.create(
+            object_type=MSP_WORKSPACE,
+            object_uuid=cls.workspace.uuid,
+            user=cls.users["user"],
+            role=WS_MEMBER,
+            name="membername",
+        )
+        # make the memberA user member of the workspace2
+        cls.memberA_member2 = Membership.objects.create(
+            object_type=MSP_WORKSPACE,
+            object_uuid=cls.workspace2.uuid,
+            user=cls.users["user"],
+            role=WS_MEMBER,
+            name="membername2",
+        )
+
+        cls.package = Package.objects.create(
+            project=cls.project,
+            size=1,
+            title="TestPackage",
+            created_by=cls.users["user"],
+        )
+        cls.package.write(
+            open(settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"), "rb",)
+        )
+
+        cls.package2 = Package.objects.create(
+            project=cls.project2,
+            size=1,
+            title="TestPackage2",
+            created_by=cls.users["user"],
+        )
+        cls.package2.write(
+            open(settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"), "rb",)
+        )
+
         cls.jobdef = JobDef.objects.create(name="TestJobDef", project=cls.project,)
+        cls.jobdef2 = JobDef.objects.create(name="TestJobDef2", project=cls.project2,)
         cls.jobruns = {
             "run1": JobRun.objects.create(
-                package=cls.package, jobdef=cls.jobdef, status="SUBMITTED"
+                package=cls.package,
+                jobdef=cls.jobdef,
+                status="SUBMITTED",
+                owner=cls.users["user"],
+                member=cls.memberA_member,
             ),
             "run2": JobRun.objects.create(
-                package=cls.package, jobdef=cls.jobdef, status="SUBMITTED"
+                package=cls.package,
+                jobdef=cls.jobdef,
+                status="SUBMITTED",
+                owner=cls.users["user"],
+                member=cls.memberA_member,
+            ),
+            "run3": JobRun.objects.create(
+                package=cls.package2,
+                jobdef=cls.jobdef2,
+                status="SUBMITTED",
+                owner=cls.users["user"],
+                member=cls.memberA_member2,
             ),
         }
         cls.artifact = JobArtifact.objects.create(
@@ -63,20 +128,6 @@ class BaseJobTestDef:
                 "is_masked": True,
                 "project": cls.project,
             }
-        )
-        # make the admin user member of the workspace
-        admin_member = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace.uuid,
-            user=cls.users["admin"],
-            role=WS_ADMIN,
-        )
-        # make the memberA user member of the workspace
-        memberA_member = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace.uuid,
-            user=cls.users["user"],
-            role=WS_MEMBER,
         )
 
     @classmethod

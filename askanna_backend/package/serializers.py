@@ -21,12 +21,11 @@ class PackageSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, instance):
         user = instance.created_by
+        member = instance.member
         if user:
-            return {
-                "name": user.get_name(),
-                "uuid": str(user.uuid),
-                "short_uuid": str(user.short_uuid),
-            }
+            if member:
+                return member.relation_to_json
+            return user.relation_to_json
 
         return {
             "name": "",

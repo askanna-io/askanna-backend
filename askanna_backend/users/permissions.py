@@ -53,7 +53,10 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
 
         if view.action in ["create", "retrieve", "list"]:
             parents = view.get_parents_query_dict()
-            is_member = user.is_authenticated and user.memberships.filter(deleted__isnull=True, **parents).exists()
+            is_member = (
+                user.is_authenticated
+                and user.memberships.filter(deleted__isnull=True, **parents).exists()
+            )
             return is_member
 
         return False
@@ -66,7 +69,11 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
         user = request.user
         parents = view.get_parents_query_dict()
         # member_role is a tuple with the role.
-        member_role = user.memberships.filter(deleted__isnull=True, **parents).values_list("role").first()
+        member_role = (
+            user.memberships.filter(deleted__isnull=True, **parents)
+            .values_list("role")
+            .first()
+        )
         is_member = bool(member_role)
         is_admin = is_member and WS_ADMIN in member_role
 
@@ -83,9 +90,6 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
 
             if request.data.get("status") == "invited":
                 return is_member
-
-            if "job_title" in request.data:
-                return is_admin
 
             return (not obj.deleted and obj.user == request.user) or is_admin
 
@@ -110,8 +114,12 @@ class RequestIsValidInvite(permissions.BasePermission):
         """
         user = request.user
         parents = view.get_parents_query_dict()
-        not_member = user.is_anonymous or not user.memberships.filter(**parents).exists()
-        return not_member and view.action == "retrieve" and "token" in request.query_params
+        not_member = (
+            user.is_anonymous or not user.memberships.filter(**parents).exists()
+        )
+        return (
+            not_member and view.action == "retrieve" and "token" in request.query_params
+        )
 
     def has_object_permission(self, request, view, obj):
         """
@@ -135,7 +143,9 @@ class RequestIsValidInvite(permissions.BasePermission):
 
 class IsOwnerOfUser(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.uuid == request.user.uuid or request.user.is_superuser
+        return not (request.user.is_anonymous) and (
+            obj.uuid == request.user.uuid or request.user.is_superuser
+        )
 
 
 class IsNotAlreadyMember(permissions.BasePermission):

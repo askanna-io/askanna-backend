@@ -12,8 +12,10 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from core.views import PermissionByActionMixin, SerializerByActionMixin
 from users.serializers import (
     UserCreateSerializer,
+    UserUpdateSerializer,
     UserSerializer,
     PasswordResetStatusSerializer,
     PasswordResetSerializer,
@@ -24,6 +26,8 @@ User = get_user_model()
 
 
 class UserView(
+    SerializerByActionMixin,
+    PermissionByActionMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -32,6 +36,7 @@ class UserView(
 ):
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
+    lookup_field = "short_uuid"
     serializer_class = UserSerializer
 
     permission_classes_by_action = {
@@ -41,21 +46,8 @@ class UserView(
         "partial_update": [IsOwnerOfUser],
     }
 
-    def get_serializer_class(self):
-        """
-        Return different serializer class for create
-        """
-        if self.request.method.upper() in ["POST"]:
-            return UserCreateSerializer
-        return self.serializer_class
-
-    def get_permissions(self):
-        try:
-            # return permission_classes depending on `action`
-            return [
-                permission()
-                for permission in self.permission_classes_by_action[self.action]
-            ]
-        except KeyError:
-            # action is not set return default permission_classes
-            return [permission() for permission in self.permission_classes]
+    serializer_classes_by_action = {
+        "post": UserCreateSerializer,
+        "put": UserUpdateSerializer,
+        "patch": UserUpdateSerializer,
+    }

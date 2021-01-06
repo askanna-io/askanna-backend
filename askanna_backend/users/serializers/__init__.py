@@ -1,6 +1,7 @@
 from .personserializer import PersonSerializer
 from .userserializer import (
     UserCreateSerializer,
+    UserUpdateSerializer,
     UserProfileSerializer,
     UserSerializer,
 )

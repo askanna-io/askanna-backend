@@ -2,6 +2,7 @@ from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from core.views import SerializerByActionMixin
 from users.models import MSP_WORKSPACE
 from .models import Project
 from .permissions import IsMemberOfProjectWorkspacePermission
@@ -13,6 +14,7 @@ from .serializers import (
 
 
 class ProjectView(
+    SerializerByActionMixin,
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -26,15 +28,11 @@ class ProjectView(
     lookup_field = "short_uuid"
     permission_classes = [IsMemberOfProjectWorkspacePermission]
 
-    def get_serializer_class(self):
-        """
-        Return different serializer class for POST
-        """
-        if self.request.method.upper() in ["POST"]:
-            return ProjectCreateSerializer
-        elif self.request.method.upper() in ["PUT", "PATCH"]:
-            return ProjectUpdateSerializer
-        return self.serializer_class
+    serializer_classes_by_action = {
+        "post": ProjectCreateSerializer,
+        "put": ProjectUpdateSerializer,
+        "patch": ProjectUpdateSerializer,
+    }
 
     def get_queryset(self):
         """

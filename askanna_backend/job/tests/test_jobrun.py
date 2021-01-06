@@ -29,7 +29,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), len(self.jobruns.items()))
+        self.assertEqual(len(response.data), 2)
 
     def test_list_as_member(self):
         """
@@ -40,7 +40,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), len(self.jobruns.items()))
+        self.assertEqual(len(response.data), 3)
 
     def test_list_as_nonmember(self):
         """
@@ -75,6 +75,17 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
             },
         )
 
+    def test_list_as_member(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
     def test_list_as_nonmember(self):
         """
         We can not list jobruns as non-member of a workspace
@@ -96,6 +107,14 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         self.url = reverse(
             "jobrun-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid,},
+        )
+        self.url_run2 = reverse(
+            "jobrun-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid,},
+        )
+        self.url_other_workspace = reverse(
+            "jobrun-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid,},
         )
 
     def test_detail_as_admin(self):
@@ -123,6 +142,71 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
         )
+
+    def test_detail_as_member_other_run(self):
+        """
+        We can get details of a jobrun as a member
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url_run2, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.data.get("short_uuid") == self.jobruns["run2"].short_uuid
+        )
+
+    def test_detail_as_member_changed_membername(self):
+        """
+        We can get details of a jobrun as a member
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
+        )
+        self.assertEqual(response.data.get("owner").get("name"), "membername")
+
+        # now change membername to new membername
+        self.memberA_member.name = "new membername"
+        self.memberA_member.save()
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
+        )
+        self.assertEqual(response.data.get("owner").get("name"), "new membername")
+
+        # now change back new membername to membername
+        self.memberA_member.name = "membername"
+        self.memberA_member.save()
+
+    def test_detail_as_member_workspacemembername_different_in_other_workspace(self):
+        """
+        We can get details of a jobrun as a member
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        # first visit 1st workspace
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
+        )
+        self.assertEqual(response.data.get("owner").get("name"), "membername")
+
+        # then visit 2nd workspace
+        response = self.client.get(self.url_other_workspace, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.data.get("short_uuid") == self.jobruns["run3"].short_uuid
+        )
+        self.assertEqual(response.data.get("owner").get("name"), "membername2")
 
     def test_detail_as_nonmember(self):
         """
@@ -157,10 +241,31 @@ class TestJobJobRunDetailAPI(TestJobRunDetailAPI):
                 "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
             },
         )
+        self.url_run2 = reverse(
+            "job-runs-detail",
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.jobruns["run2"].short_uuid,
+                "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
+            },
+        )
+        self.url_other_workspace = reverse(
+            "job-runs-detail",
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.jobruns["run3"].short_uuid,
+                "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
+            },
+        )
+
+    def test_detail_as_member_workspacemembername_different_in_other_workspace(self):
+        """
+        This detail page is not applicable when in jobjob detail
+        """
+        pass
 
 
 class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
-
     """
     Test to get manifest of a Jobrun
     """
@@ -274,7 +379,6 @@ class TestJobRunLogShortCutAPI(TestJobRunLogAPI):
 
 
 class TestJobRunResultAPI(BaseJobTestDef, APITestCase):
-
     """
     Test to get result of a Jobrun
     """
@@ -324,7 +428,6 @@ class TestJobRunResultAPI(BaseJobTestDef, APITestCase):
 
 
 class TestJobRunStatusAPI(BaseJobTestDef, APITestCase):
-
     """
     Test to get result of a Jobrun
     """
@@ -437,7 +540,8 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
     def test_startjob_with_invalid_json(self):
         """
-        We can start a job as an admin
+        Starting jobs with invalid json is not possible
+        in this case the json is posted as string
         """
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -446,6 +550,53 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.post(
             self.url, payload, format="json", HTTP_HOST="testserver"
+        )
+        self.assertIn(
+            "JSON not valid, please check and try again", str(response.content)
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_startjob_with_payload_in_uri(self):
+        """
+        We can start jobs with payload given in the uri (as get arguments)
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        payload = {"example_payload": "startjob"}
+
+        response = self.client.post(self.url, payload, HTTP_HOST="testserver")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_startjob_with_payload_empty(self):
+        """
+        We cannot start jobs with empty payload
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        payload = None
+
+        response = self.client.post(self.url, payload, HTTP_HOST="testserver")
+        self.assertEqual(
+            response.data.get("detail"), "'Content-Length' HTTP-header is required"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_startjob_with_payload_in_uri_empty(self):
+        """
+        We cannot start jobs with empty payload given by the uri
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        payload = None
+
+        response = self.client.post(
+            self.url, payload, format="json", HTTP_HOST="testserver"
+        )
+        self.assertEqual(
+            response.data.get("detail"), "'Content-Length' HTTP-header is required"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

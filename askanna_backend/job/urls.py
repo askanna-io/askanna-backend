@@ -101,13 +101,6 @@ urlpatterns = [
         name="run-job-deprecated",
     ),
     path(
-        r"v1/run/<uuid:uuid>/",
-        StartJobView.as_view({"post": "do_ingest"}, detail=True),
-    ),
-    path(
-        r"v1/run/<uuid:uuid>", StartJobView.as_view({"post": "do_ingest"}, detail=True),
-    ),
-    path(
         r"v1/result/<shortuuid:short_uuid>/",
         JobResultView.as_view({"get": "get_result"}, detail=True),
         kwargs={"uuid": None},

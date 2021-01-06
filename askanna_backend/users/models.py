@@ -22,6 +22,18 @@ class User(SlimBaseForAuthModel, AbstractUser):
     def get_name(self):
         return self.name or self.get_full_name() or self.username or self.short_uuid
 
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "user",
+            "name": self.get_name(),
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
+
 
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
@@ -87,6 +99,25 @@ class Membership(SlimBaseModel):
         blank=True,
         null=True,
     )
+    name = models.CharField(_("Name of User"), blank=True, max_length=255)
+
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "membership",
+            "name": self.get_name(),
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
+
+    def get_name(self):
+        """
+        If the membership name is set, return this otherwise return the users name
+        """
+        return self.name or self.user.get_name()
 
     class Meta:
         ordering = ["-created"]
@@ -101,7 +132,6 @@ class UserProfile(Membership):
 
 
 class Invitation(Membership):
-    name = models.CharField(_("Name of User"), blank=True, max_length=255)
     email = models.EmailField(blank=False)
     front_end_url = models.URLField()
 

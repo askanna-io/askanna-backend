@@ -42,7 +42,7 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 2)
 
     def test_list_as_nonmember(self):
         """
@@ -76,6 +76,17 @@ class TestProjectJobListAPI(TestJobListAPI):
                 "parent_lookup_project__short_uuid": self.project.short_uuid,
             },
         )
+
+    def test_list_as_member(self):
+        """
+        We can list job as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
 
     def test_list_as_nonmember(self):
         """

@@ -1,34 +1,23 @@
+# -*- coding: utf-8 -*-
 import docker
 import json
 import os
-import sys
 import stat
+import sys
 import tempfile
 
 from celery import shared_task
-
 from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+import django.dispatch
 from django.utils.module_loading import import_string
-from django.db.transaction import on_commit
 from django.template.loader import render_to_string
 
-
 from core.utils import get_config
-import django.dispatch
+from job.models import JobDef, JobRun, JobPayload, JobOutput, JobVariable
+from package.models import Package
 
 artifact_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
 result_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
-
-from job.models import (
-    JobDef,
-    JobRun,
-    JobPayload,
-    JobOutput,
-    JobVariable
-)
-from package.models import Package
 
 
 @shared_task(bind=True)
@@ -128,7 +117,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     runner_command = [
         "/bin/bash",
         "-c",
-        "askanna jobrun-manifest --output /dev/stdout | bash"
+        "askanna jobrun-manifest --output /dev/stdout | bash",
     ]
 
     runner_variables = {
@@ -153,12 +142,14 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         # we have a valid dict from the payload
         for k, v in pl.payload.items():
             if isinstance(v, (list, dict)):
-                payload_variables[ "PLV_"+k ] = json.dumps(v)[:10000] # limit to 10.000 chars
+                # limit to 10.000 chars
+                payload_variables["PLV_" + k] = json.dumps(v)[:10000]
             elif isinstance(v, (str)):
-                payload_variables[ "PLV_"+k ] = v[:10000] # limit to 10.000 chars
+                # limit to 10.000 chars
+                payload_variables["PLV_" + k] = v[:10000]
             else:
                 # we have a bool or number
-                payload_variables[ "PLV_"+k ] = v
+                payload_variables["PLV_" + k] = v
 
     # set environment variables
     env_variables = {}
@@ -195,7 +186,6 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         print(logline)
         op.stdout.append(logline)
 
-
         if logline[-1].startswith("AskAnna exit_code="):
             # we handle this and set the jr.status = "FAILED"
             op.exit_code = int(logline[-1].replace("AskAnna exit_code=", ""))
@@ -209,35 +199,3 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     jr.status = "COMPLETED"
     jr.save()
 
-
-@receiver(post_save, sender=JobRun)
-def create_job_output_for_new_jobrun_signal(
-    sender, instance, created, **kwargs
-):  # noqa
-    """
-    Create a JobOutput everytime a JobRun gets created.
-
-    FIXME:
-        - check with the owner approach, if the property name or field changes
-          in relation to the permission system approach, we will have to
-          adjust accordingly.
-    """
-    if created:
-        try:
-            JobOutput.objects.create(
-                jobrun=instance, jobdef=instance.jobdef.uuid, owner=instance.owner
-            )
-        except Exception as exc:
-            # FIXME: need custom exception for more context
-            raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
-
-
-@receiver(post_save, sender=JobRun)
-def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
-    """
-    Every time a new record is created, send the new job to celery
-    """
-    if created:
-        # print(instance.uuid, instance.short_uuid)
-        # on_commit(lambda: start_jobrun.delay(instance.uuid))
-        on_commit(lambda: start_jobrun_dockerized.delay(instance.uuid))
