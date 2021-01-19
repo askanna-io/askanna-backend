@@ -331,7 +331,7 @@ class TestProjectDeleteAPI(BaseProjectTest):
             job_url, self.payload, format="json", HTTP_HOST="testserver",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        job_run_suuid = response.data.get("run_uuid")
+        job_run_suuid = response.data.get("short_uuid")
 
         # Fix issue for a job that was not run, so create output
         self.jobrun = JobRun.objects.get(short_uuid=job_run_suuid)

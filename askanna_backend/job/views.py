@@ -149,10 +149,15 @@ class StartJobView(viewsets.GenericViewSet):
             {
                 "message_type": "status",
                 "status": "queued",
-                "run_uuid": jobrun.short_uuid,
+                "uuid": jobrun.uuid,
+                "short_uuid": jobrun.short_uuid,
                 "created": jobrun.created,
                 "updated": jobrun.modified,
-                "next_url": "{}://{}/v1/status/{}".format(
+                "finished": None,
+                "job": jobrun.jobdef.relation_to_json,
+                "project": jobrun.jobdef.project.relation_to_json,
+                "workspace": jobrun.jobdef.project.workspace.relation_to_json,
+                "next_url": "{}://{}/v1/status/{}/".format(
                     request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
                 ),
             }
@@ -184,17 +189,21 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
 
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
-        next_url = "{}://{}/v1/status/{}".format(
+        next_url = "{}://{}/v1/status/{}/".format(
             request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
         )
-        finished_next_url = "{}://{}/v1/result/{}".format(
+        finished_next_url = "{}://{}/v1/result/{}/".format(
             request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
         )
         base_status = {
             "message_type": "status",
-            "jobrun_uuid": jobrun.short_uuid,
+            "uuid": jobrun.uuid,
+            "short_uuid": jobrun.short_uuid,
             "created": jobrun.created,
             "updated": jobrun.modified,
+            "job": jobrun.jobdef.relation_to_json,
+            "project": jobrun.jobdef.project.relation_to_json,
+            "workspace": jobrun.jobdef.project.workspace.relation_to_json,
             "next_url": next_url,
         }
 
