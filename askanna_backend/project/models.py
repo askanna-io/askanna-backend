@@ -51,6 +51,14 @@ class Project(AuthorModel, ActivatorModel, DescriptionModel, SlimBaseModel):
     def __str__(self):
         return " - ".join([self.name, str(self.uuid)])
 
+    @property
+    def relation_to_json(self):
+        return {
+            "name": self.name,
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
+
     class Meta:
         ordering = ["name"]
 

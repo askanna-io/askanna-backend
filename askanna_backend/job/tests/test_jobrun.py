@@ -637,7 +637,7 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
             self.startjob_url, payload, format="json", HTTP_HOST="testserver"
         )
         self.jobruns["after_payload"] = JobRun.objects.get(
-            short_uuid=response.data.get("run_uuid")
+            short_uuid=response.data.get("short_uuid")
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.client.credentials()
@@ -749,7 +749,7 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.jobruns["after_payload"] = JobRun.objects.get(
-            short_uuid=response.data.get("run_uuid")
+            short_uuid=response.data.get("short_uuid")
         )
         # get the payload of this jobrun
 

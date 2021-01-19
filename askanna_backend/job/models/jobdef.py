@@ -57,6 +57,14 @@ class JobDef(BaseModel):
     def __str__(self):
         return self.name
 
+    @property
+    def relation_to_json(self):
+        return {
+            "name": self.name,
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
+
     class Meta:
         ordering = ["-created"]
         verbose_name = "Job Definition"
