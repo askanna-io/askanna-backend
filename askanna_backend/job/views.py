@@ -1,4 +1,5 @@
 import json
+import io
 import os
 import re
 
@@ -121,13 +122,7 @@ class StartJobView(viewsets.GenericViewSet):
         job_pl = JobPayload.objects.create(
             jobdef=jobdef, size=size, lines=lines, owner=request.user
         )
-
-        store_path = [settings.PAYLOADS_ROOT, job_pl.storage_location]
-
-        # store incoming data as payload (in file format)
-        os.makedirs(os.path.join(*store_path), exist_ok=True)
-        with open(os.path.join(*store_path, "payload.json"), "w") as f:
-            f.write(json_string)
+        job_pl.write(io.StringIO(json_string))
 
         # FIXME: Determine wheter we need the latest or pinned package
         # Fetch the latest package found in the jobdef.project

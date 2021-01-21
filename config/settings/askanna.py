@@ -18,3 +18,6 @@ def settings(config, env):
 
     # Setting for deletion of Docker containers after a run
     config.DOCKER_AUTO_REMOVE_CONTAINER = env.bool("DOCKER_AUTO_REMOVE_CONTAINER", default=False)
+
+    # Setting for internal job runs
+    config.JOB_CREATE_PROJECT_SUUID = "640q-2AMP-T5BL-Cnml"

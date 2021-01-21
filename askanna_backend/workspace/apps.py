@@ -7,3 +7,4 @@ class WorkspaceConfig(AppConfig):
 
     def ready(self):
         from workspace import signals
+        from workspace import listeners
