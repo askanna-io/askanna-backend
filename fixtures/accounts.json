@@ -1,72 +1,42 @@
 [
-    {
-        "model": "account.emailaddress",
-        "pk": 1,
-        "fields": {
-            "user": 1,
-            "email": "devops+anna@askanna.io",
-            "verified": true,
-            "primary": true
-        }
-    },
-    {
-        "model": "account.emailaddress",
-        "pk": 2,
-        "fields": {
-            "user": 2,
-            "email": "anthony@askanna.io",
-            "verified": true,
-            "primary": true
-        }
-    },
-    {
-        "model": "account.emailaddress",
-        "pk": 3,
-        "fields": {
-            "user": 3,
-            "email": "devops@askanna.io",
-            "verified": true,
-            "primary": true
-        }
-    },
-    {
-        "model": "account.emailaddress",
-        "pk": 4,
-        "fields": {
-            "user": 4,
-            "email": "robbert@askanna.io",
-            "verified": true,
-            "primary": true
-        }
-    },
-    {
-        "model": "account.emailaddress",
-        "pk": 5,
-        "fields": {
-            "user": 5,
-            "email": "andrii@askanna.io",
-            "verified": true,
-            "primary": true
-        }
-    },
-    {
-        "model": "account.emailaddress",
-        "pk": 6,
-        "fields": {
-            "user": 6,
-            "email": "vitas@propositionhero.com",
-            "verified": true,
-            "primary": true
-        }
-    },
-    {
-        "model": "account.emailaddress",
-        "pk": 7,
-        "fields": {
-            "user": 7,
-            "email": "caya@askanna.io",
-            "verified": true,
-            "primary": true
-        }
+  {
+    "model": "account.emailaddress",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "email": "devops+anna@askanna.io",
+      "verified": true,
+      "primary": true
     }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "email": "anthony@askanna.io",
+      "verified": true,
+      "primary": true
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "email": "robbert@askanna.io",
+      "verified": true,
+      "primary": true
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 4,
+    "fields": {
+      "user": 4,
+      "email": "andrii@askanna.io",
+      "verified": true,
+      "primary": true
+    }
+  }
 ]
