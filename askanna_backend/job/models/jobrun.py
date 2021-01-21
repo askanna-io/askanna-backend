@@ -5,6 +5,7 @@ import uuid
 
 from django.db import models
 
+from core.fields import ArrayField
 from core.models import BaseModel, SlimBaseModel
 from job.models.const import JOB_STATUS
 
@@ -21,6 +22,9 @@ class JobRun(BaseModel):
 
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
+
+    # The labels field stores what is generated from the metrics
+    labels = ArrayField(models.CharField(max_length=4096), blank=True, default=list)
 
     class Meta:
         ordering = ["-created"]
