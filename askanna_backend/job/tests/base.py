@@ -1,8 +1,10 @@
+from django.db.models import signals
 from job.models import JobDef, JobRun, JobPayload, JobVariable, JobArtifact
 from project.models import Project
 from package.models import Package
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
+from workspace.listeners import install_demo_project_in_workspace
 from django.conf import settings
 
 
@@ -13,6 +15,7 @@ class BaseJobTestDef:
 
     @classmethod
     def setup_class(cls):
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
         cls.users = {
             "admin": User.objects.create(
                 username="admin",

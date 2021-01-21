@@ -46,8 +46,26 @@ class JobPayload(SlimBaseModel):
             # FIXME: in future be in-determined for which filetype
             # FIXME: refactor job system to provide filetype
         """
+        return json.loads(self.read)
+
+    @property
+    def read(self):
+        """
+            Read the payload from filesystem and return as JSON object
+        """
+
         with open(self.stored_path, "r") as f:
-            return json.loads(f.read())
+            return f.read()
+
+    def write(self, stream):
+        """
+            Write contents to the filesystem
+        """
+        os.makedirs(
+            os.path.join(settings.PAYLOADS_ROOT, self.storage_location), exist_ok=True
+        )
+        with open(self.stored_path, "w") as f:
+            f.write(stream.read())
 
     def prune(self):
         os.remove(self.stored_path)

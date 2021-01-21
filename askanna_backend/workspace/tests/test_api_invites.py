@@ -1,6 +1,7 @@
 """Define tests for API of invitation workflow."""
 import pytest
 from django.core import mail
+from django.db.models import signals
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -18,11 +19,15 @@ from users.models import (
 from users.serializers import PersonSerializer
 
 from ..models import Workspace
+from ..listeners import install_demo_project_in_workspace
 
 pytestmark = pytest.mark.django_db
 
-
 class TestInviteAPI(APITestCase):
+    @classmethod
+    def setup_class(cls):
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
+
     def setUp(self):
         self.users = {
             "admin": User.objects.create(username="admin", email="admin@example.com"),
