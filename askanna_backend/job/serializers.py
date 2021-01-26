@@ -13,6 +13,7 @@ from job.models import (
     ChunkedJobOutputPart,
     JobOutput,
     JobVariable,
+    RunMetrics,
 )
 from project.models import Project
 
@@ -311,3 +312,14 @@ class JobVariableUpdateSerializer(serializers.ModelSerializer):
             "created": instance.created,
             "modified": instance.modified,
         }
+
+
+class RunMetricsSerializer(serializers.ModelSerializer):
+    """Serializer for RunMetrics model."""
+
+    class Meta:
+        """Options for RunMetricsSerializer."""
+
+        model = RunMetrics
+        fields = ["uuid", "short_uuid", "metrics"]
+        read_only_fields = ["uuid", "short_uuid"]

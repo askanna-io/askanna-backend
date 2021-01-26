@@ -2,6 +2,9 @@
 
 import core.fields
 from django.db import migrations, models
+import django.db.models.deletion
+import django_extensions.db.fields
+import uuid
 
 
 class Migration(migrations.Migration):
@@ -20,5 +23,52 @@ class Migration(migrations.Migration):
                 default=list,
                 size=None,
             ),
+        ),
+        migrations.CreateModel(
+            name="RunMetrics",
+            fields=[
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("title", models.CharField(max_length=255, verbose_name="title")),
+                (
+                    "description",
+                    models.TextField(blank=True, null=True, verbose_name="description"),
+                ),
+                ("deleted", models.DateTimeField(blank=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("metrics", core.fields.JSONField()),
+                (
+                    "jobrun",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="mertrics",
+                        to="job.JobRun",
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "Run Metrics",
+                "verbose_name_plural": "Run Metrics",
+                "ordering": ["-created"],
+            },
         ),
     ]

@@ -6,6 +6,7 @@ import re
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http.response import Http404
 from django.template.loader import render_to_string
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
@@ -34,6 +35,7 @@ from job.models import (
     JobPayload,
     JobRun,
     JobVariable,
+    RunMetrics,
 )
 from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.permissions import (
@@ -58,6 +60,7 @@ from job.serializers import (
     JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
     StartJobSerializer,
+    RunMetricsSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
@@ -765,4 +768,75 @@ class JobVariableView(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
         return queryset.filter(project__workspace__in=member_of_workspaces)
+
+
+class RunMetricsView(
+    PermissionByActionMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = RunMetrics.objects.all()
+    lookup_field = "jobrun__short_uuid"
+    serializer_class = RunMetricsSerializer
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    permission_classes_by_action = {
+        "list": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "create": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "update": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "partial_update": [IsAuthenticated, IsAdminUser,],
+    }
+    # update() and perform_update() are copied from mixins.UpdateModelMixin
+    # since we do not want to implement a partial_update() method yet.
+    # partial_update should be implemented with some way of partially
+    # modifying the metrics JSON value.
+    # Something like http://jsonpatch.com/
+    def update(self, request, *args, **kwargs):
+        """Process a request to update a RunMetric instance."""
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, "_prefetched_objects_cache", None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        """Save the given serializer."""
+        serializer.save()
+
+    def new_object(self):
+        """Return a new RunMetrics instance or raise 404 if Run does not exists."""
+        # Do not use direct Class to avoid hardcoded dependencies.
+        Model = self.get_queryset().model
+
+        # Get parent instance.
+        parent_queryset = Model.jobrun.field.related_model.objects
+        filter_kwargs = {"short_uuid": self.kwargs[self.lookup_field]}
+        parent = get_object_or_404(parent_queryset, **filter_kwargs)
+
+        # Generate the new instance.
+        run_metrics = Model(jobrun=parent)
+
+        # May raise a permission denied
+        self.check_object_permissions(self.request, run_metrics)
+
+        return run_metrics
+
+    def get_object(self):
+        """Return the RunMetrics instance for the JobRun with the given id or 404."""
+        try:
+            return super().get_object()
+        except Http404:
+            return self.new_object()
 

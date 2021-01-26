@@ -15,10 +15,13 @@ from job.views import (
     JobVariableView,
     ProjectJobViewSet,
     StartJobView,
+    RunMetricsView,
 )
 from project.urls import project_route
 from project.urls import router as prouter
 from utils.urls import router
+
+router.register(r"metric", RunMetricsView, basename="metric")
 
 project_route.register(
     r"jobs",

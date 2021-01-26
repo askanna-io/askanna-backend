@@ -2,15 +2,19 @@
 from django.contrib import admin
 
 from job.models import (
-    JobArtifact,
-    JobDef,
-    JobPayload,
-    JobRun,
-    JobOutput,
-    JobVariable,
     ChunkedJobOutputPart,
     ChunkedArtifactPart,
+    JobArtifact,
+    JobDef,
+    JobOutput,
+    JobPayload,
+    JobRun,
+    JobVariable,
+    RunMetrics,
 )
+
+admin.site.register(ChunkedJobOutputPart)
+admin.site.register(ChunkedArtifactPart)
 
 
 @admin.register(JobDef)
@@ -72,10 +76,6 @@ class JobOutputAdmin(admin.ModelAdmin):
     search_fields = ["uuid", "short_uuid", "owner"]
 
 
-admin.site.register(ChunkedJobOutputPart)
-admin.site.register(ChunkedArtifactPart)
-
-
 @admin.register(JobVariable)
 class JobVariableAdmin(admin.ModelAdmin):
     list_display = [
@@ -94,3 +94,19 @@ class JobVariableAdmin(admin.ModelAdmin):
     date_hierarchy = "created"
     list_filter = ("created",)
     search_fields = ["uuid", "short_uuid", "name"]
+
+
+@admin.register(RunMetrics)
+class RunMetricsAdmin(admin.ModelAdmin):
+    list_display = [
+        "uuid",
+        "short_uuid",
+        "metrics",
+    ]
+    list_display_links = (
+        "uuid",
+        "short_uuid",
+    )
+
+    raw_id_fields = ["jobrun"]
+    search_fields = ["uuid", "uuid__short_uuid"]
