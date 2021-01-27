@@ -12,7 +12,7 @@ from workspace.models import Workspace
 from .base import BaseJobTestDef
 
 
-class TestMertricsListAPI(BaseJobTestDef, APITestCase):
+class TestMetricsListAPI(BaseJobTestDef, APITestCase):
     """
     Test to list the RunMetrics
     """
@@ -52,6 +52,58 @@ class TestMertricsListAPI(BaseJobTestDef, APITestCase):
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
+
+    def test_list_as_anonymous(self):
+        """
+        We can list metrics as member of a workspace
+        """
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
+    """
+    Test to get detail on specific metrics for a jobrun
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "metric-detail",
+            kwargs={
+                "version": "v1",
+                "jobrun__short_uuid": self.jobruns.get("run1").short_uuid,
+            },
+        )
+
+    def test_detail_as_admin(self):
+        """
+        We can list metrics as admin of a workspace
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_as_member(self):
+        """
+        We can list metrics as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_as_nonmember(self):
+        """
+        We can list metrics as member of a workspace
+        """
+        token = self.users["user_nonmember"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_as_anonymous(self):
         """

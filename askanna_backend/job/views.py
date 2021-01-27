@@ -773,7 +773,6 @@ class JobVariableView(
 class RunMetricsView(
     PermissionByActionMixin,
     mixins.RetrieveModelMixin,
-    mixins.DestroyModelMixin,
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -783,13 +782,13 @@ class RunMetricsView(
 
     permission_classes = [
         IsAuthenticated,
+        IsMemberOfJobRunAttributePermission | IsAdminUser,
     ]
 
     permission_classes_by_action = {
         "list": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
         "create": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
         "update": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "partial_update": [IsAuthenticated, IsAdminUser,],
     }
     # update() and perform_update() are copied from mixins.UpdateModelMixin
     # since we do not want to implement a partial_update() method yet.
