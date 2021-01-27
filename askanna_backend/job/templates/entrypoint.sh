@@ -11,7 +11,7 @@ askanna package-download > /dev/null
 cd /code
 
 echo 'AskAnna is running job "{{jd.name }}" for project "{{pr.name}}"'
-echo 'The job is running on "run_{{jr.short_uuid}}"'
+echo 'We are running on "run_{{jr.short_uuid}}"'
 
 last_status=0
 
@@ -26,10 +26,15 @@ if [ "$last_status" -ne "0" ]
 then
   # AskAnna runner detected a non-zero exitcode and proceed with finishing uploading artificacts right now
   # we don't store the result, as this job will not have any valid results because of the crash we just detected
+
+  echo ""
+  echo "The run failed:"
+  # The following line is for AskAnna backend
   echo "AskAnna exit_code=${last_status}"
 
   # let's store the artifact for this run and exit
-  echo "Saving result and artifact..."
+  echo ""
+  echo "Saving artifact..."
   cd /code
   askanna artifact add
 
@@ -51,4 +56,5 @@ cd /code
 askanna upload-result
 askanna artifact add
 
-echo "Job succeeded"
+echo ""
+echo "Run succeeded"
