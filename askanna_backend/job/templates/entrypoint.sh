@@ -10,7 +10,8 @@ askanna package-download > /dev/null
 # first navigate to the folder where user code is located
 cd /code
 
-echo 'AskAnna is running for project "{{pr.name}}" and running on "{{pr.short_uuid}}"'
+echo 'AskAnna is running job "{{jd.name }}" for project "{{pr.name}}"'
+echo 'The job is running on "run_{{jr.short_uuid}}"'
 
 last_status=0
 
@@ -28,7 +29,9 @@ then
   echo "AskAnna exit_code=${last_status}"
 
   # let's store the artifact for this run and exit
-  askanna artifact
+  echo "Saving result and artifact..."
+  cd /code
+  askanna artifact add
 
   # exit with stame status as the crashed job
   exit $last_status
@@ -41,13 +44,11 @@ fi
 {% endfor %}
 # end userland
 
-echo "Saving results as artifact"
+echo "Saving result and artifact..."
 
 # forcefull going back into code directory
 cd /code
-
 askanna upload-result
-
 askanna artifact add
 
 echo "Job succeeded"
