@@ -126,7 +126,7 @@
       "user": 3,
       "name": "Robbert"
     }
-  }
+  },
   {
     "model": "users.membership",
     "pk": "52dac286-4153-4491-90f2-e72e8c005d98",
@@ -174,5 +174,5 @@
       "user": 4,
       "name": "Andrii"
     }
-  },
+  }
 ]
