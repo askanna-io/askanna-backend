@@ -25,10 +25,20 @@ class IsWorkspaceMemberBasePermission(permissions.BasePermission):
         workspace_uuid_qs = self.get_workspace_queryset(request, view, obj)
         # If a workspace queryset was returned grant access based on its membership.
         if workspace_uuid_qs is not None:
+            print(
+                "ismemberofworkspace",
+                self.membership_queryset.filter(
+                    object_uuid=workspace_uuid_qs.values("uuid")[:1],
+                    object_type=MSP_WORKSPACE,
+                    user=user,
+                    deleted__isnull=True,
+                ).exists(),
+            )
             return self.membership_queryset.filter(
                 object_uuid=workspace_uuid_qs.values("uuid")[:1],
                 object_type=MSP_WORKSPACE,
                 user=user,
+                deleted__isnull=True,
             ).exists()
 
         # For listings when we do not know the workspace, then grant access and let the

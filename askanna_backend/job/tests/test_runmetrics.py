@@ -9,7 +9,12 @@ from package.models import Package
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
 
-from .base import BaseJobTestDef
+from .base import (
+    BaseJobTestDef,
+    metric_response_bad,
+    metric_response_good,
+    metric_response_good_small,
+)
 
 
 class TestMetricsListAPI(BaseJobTestDef, APITestCase):
@@ -71,43 +76,105 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
             "metric-detail",
             kwargs={
                 "version": "v1",
-                "jobrun__short_uuid": self.jobruns.get("run1").short_uuid,
+                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
             },
         )
 
     def test_detail_as_admin(self):
         """
-        We can list metrics as admin of a workspace
+        We get detail metrics as admin of a workspace
         """
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("metrics"), metric_response_good)
 
-    def test_list_as_member(self):
+    def test_detail_as_member(self):
         """
-        We can list metrics as member of a workspace
+        We get detail metrics as member of a workspace
         """
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("metrics"), metric_response_good)
 
-    def test_list_as_nonmember(self):
+    def test_detail_as_nonmember(self):
         """
-        We can list metrics as member of a workspace
+        As a non-member we cannot get the details for a jobrun and it's metrics
         """
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_list_as_anonymous(self):
+    def test_detail_as_anonymous(self):
         """
-        We can list metrics as member of a workspace
+        We get not get detail metrics as anonymous
+        """
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
+    """
+    We update the metrics of a run
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "metric-detail",
+            kwargs={
+                "version": "v1",
+                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+            },
+        )
+
+    def test_update_as_admin(self):
+        """
+        We update metrics as admin of a workspace
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.put(
+            self.url, {"metrics": metric_response_good_small}, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("metrics"), metric_response_good_small)
+
+    def test_update_as_member(self):
+        """
+        We update metrics as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.put(
+            self.url, {"metrics": metric_response_good_small}, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("metrics"), metric_response_good_small)
+
+    def test_update_as_nonmember(self):
+        """
+        We cannot update metrics as nonmember of a workspace
+        """
+        token = self.users["user_nonmember"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.put(
+            self.url, {"metrics": metric_response_good_small}, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_as_anonymous(self):
+        """
+        We cannot update metrics as anonymous
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

@@ -1,11 +1,65 @@
 from django.db.models import signals
-from job.models import JobDef, JobRun, JobPayload, JobVariable, JobArtifact
+from job.models import JobDef, JobRun, JobPayload, JobVariable, JobArtifact, RunMetrics
 from project.models import Project
 from package.models import Package
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
 from workspace.listeners import install_demo_project_in_workspace
 from django.conf import settings
+
+metric_response_good = [
+    {
+        "metric": [
+            {"name": "Accuracy", "value": "0.876", "type": "integer"},
+            {"name": "Quality", "value": "Good", "type": "string"},
+        ],
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+        ],
+    },
+    {
+        "metric": [
+            {"name": "Accuracy", "value": "0.623", "type": "integer"},
+            {"name": "Quality", "value": "Ok", "type": "string"},
+        ],
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
+        ],
+    },
+]
+metric_response_good_small = [
+    {
+        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"},],
+        "label": [{"name": "city", "value": "Rotterdam", "type": "string"},],
+    },
+    {
+        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"},],
+        "label": [{"name": "city", "value": "Amsterdam", "type": "string"},],
+    },
+]
+metric_response_bad = [
+    {
+        "metric": [
+            {"name": "Accuracy", "value": "0.876", "type": "integer"},
+            {"name": "Quality", "value": "Good", "type": "string"},
+        ],
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+        ],
+    },
+    {
+        "metric": [{"name": "Accuracy", "value": "0.623"}, {"name": "Quality"},],
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "value": "null"},
+        ],
+    },
+]
 
 
 class BaseJobTestDef:
@@ -15,7 +69,9 @@ class BaseJobTestDef:
 
     @classmethod
     def setup_class(cls):
-        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
+        signals.post_save.disconnect(
+            install_demo_project_in_workspace, sender=Workspace
+        )
         cls.users = {
             "admin": User.objects.create(
                 username="admin",
@@ -105,6 +161,17 @@ class BaseJobTestDef:
                 status="SUBMITTED",
                 owner=cls.users["user"],
                 member=cls.memberA_member2,
+            ),
+        }
+        cls.runmetrics = {
+            "run1": RunMetrics.objects.create(
+                jobrun=cls.jobruns["run1"], metrics=metric_response_good
+            ),
+            "run2": RunMetrics.objects.create(
+                jobrun=cls.jobruns["run2"], metrics=metric_response_bad
+            ),
+            "run3": RunMetrics.objects.create(
+                jobrun=cls.jobruns["run3"], metrics=metric_response_bad
             ),
         }
         cls.artifact = JobArtifact.objects.create(

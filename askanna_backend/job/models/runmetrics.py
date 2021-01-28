@@ -11,7 +11,7 @@ class RunMetrics(BaseModel):
     jobrun = models.ForeignKey(
         "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="mertrics"
     )
-    metrics = JSONField()
+    metrics = JSONField(blank=True, null=True)
 
     # short_uuid is taken from the parent JobRun model.
     @property

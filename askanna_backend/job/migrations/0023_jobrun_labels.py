@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
                         serialize=False,
                     ),
                 ),
-                ("metrics", core.fields.JSONField()),
+                ("metrics", core.fields.JSONField(blank=True, null=True)),
                 (
                     "jobrun",
                     models.ForeignKey(

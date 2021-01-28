@@ -781,15 +781,37 @@ class RunMetricsView(
     serializer_class = RunMetricsSerializer
 
     permission_classes = [
-        IsAuthenticated,
         IsMemberOfJobRunAttributePermission | IsAdminUser,
     ]
 
     permission_classes_by_action = {
-        "list": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "create": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "update": [IsAuthenticated, IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "list": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
     }
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        print("member_of_workspaces", member_of_workspaces)
+        print(
+            "acces to objects",
+            queryset.filter(
+                jobrun__jobdef__project__workspace__in=member_of_workspaces
+            ),
+        )
+        return queryset.filter(
+            jobrun__jobdef__project__workspace__in=member_of_workspaces
+        )
+
     # update() and perform_update() are copied from mixins.UpdateModelMixin
     # since we do not want to implement a partial_update() method yet.
     # partial_update should be implemented with some way of partially
@@ -814,22 +836,24 @@ class RunMetricsView(
         """Save the given serializer."""
         serializer.save()
 
-    def new_object(self):
-        """Return a new RunMetrics instance or raise 404 if Run does not exists."""
-        # Do not use direct Class to avoid hardcoded dependencies.
+    def get_parent_instance(self):
         Model = self.get_queryset().model
-
         # Get parent instance.
         parent_queryset = Model.jobrun.field.related_model.objects
         filter_kwargs = {"short_uuid": self.kwargs[self.lookup_field]}
         parent = get_object_or_404(parent_queryset, **filter_kwargs)
+        return parent
 
+    def new_object(self):
+        """Return a new RunMetrics instance or raise 404 if Run does not exists."""
+        # Do not use direct Class to avoid hardcoded dependencies.
+        Model = self.get_queryset().model
+        parent = self.get_parent_instance()
         # Generate the new instance.
         run_metrics = Model(jobrun=parent)
 
         # May raise a permission denied
         self.check_object_permissions(self.request, run_metrics)
-
         return run_metrics
 
     def get_object(self):
@@ -837,5 +861,17 @@ class RunMetricsView(
         try:
             return super().get_object()
         except Http404:
-            return self.new_object()
+            """
+            Here the metrics object doesn't exist yet, but we only create one if
+            it is a member of the workspace, so check permissions towards the run object
+            """
+            parent = self.get_parent_instance()
+            for permission in [IsMemberOfJobDefAttributePermission()]:
+                if not permission.has_object_permission(
+                    request=self.request, view=self, obj=parent
+                ):
+                    self.permission_denied(
+                        self.request, message=getattr(permission, "message", None)
+                    )
 
+            return self.new_object()
