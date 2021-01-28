@@ -8,10 +8,13 @@ omit =
     # don't cover html & txt files
     *.html
     *.txt
+    # don't cover .sh files
+    *.sh
 plugins =
     django_coverage_plugin
 
 [report]
+precision = 2
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Have to re-enable the standard pragma

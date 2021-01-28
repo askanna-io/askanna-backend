@@ -4,6 +4,14 @@ from uuid import uuid4
 
 from django.urls import register_converter
 
+from yaml import load, dump
+
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
+
 # From https://pythonhosted.org/shorten/user/examples.html
 
 
@@ -16,9 +24,9 @@ URLSAFE_DISSIMILAR = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz-
 
 def bx_encode(n, alphabet):
     """
-    Encodes an integer :attr:`n` in base ``len(alphabet)`` with 
+    Encodes an integer :attr:`n` in base ``len(alphabet)`` with
     digits in :attr:`alphabet`.
-    
+
     ::
         # 'ba'
         bx_encode(3, 'abc')
@@ -48,7 +56,7 @@ def bx_decode(string, alphabet=DEFAULT, mapping=None):
     """
     Transforms a string in :attr:`alphabet` to an integer.
 
-    If :attr:`mapping` is provided, each key must map to its 
+    If :attr:`mapping` is provided, each key must map to its
     positional value without duplicates.
     ::
         mapping = {'a': 0, 'b': 1, 'c': 2}
@@ -58,7 +66,7 @@ def bx_decode(string, alphabet=DEFAULT, mapping=None):
     :param string:       a string consisting of key from `alphabet`.
     :param alphabet:     a 0-based iterable.
 
-    :param mapping:      a :class:`Mapping <collection.Mapping>`. If `None`, 
+    :param mapping:      a :class:`Mapping <collection.Mapping>`. If `None`,
                             the inverse of `alphabet` is used, with values mapped
                             to indices.
     """
@@ -119,8 +127,9 @@ class GoogleTokenGenerator:
 
         return "-".join(group(token, group_size)[:groups])
 
+
 class ShortUUIDConverter:
-    regex = '[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}'
+    regex = "[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}"
 
     def to_python(self, value):
         return value
@@ -128,17 +137,11 @@ class ShortUUIDConverter:
     def to_url(self, value):
         return value
 
-register_converter(ShortUUIDConverter, 'shortuuid')
+
+register_converter(ShortUUIDConverter, "shortuuid")
 
 
-
-from yaml import load, dump
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
-def get_config(filename:str) -> dict:
+def get_config(filename: str) -> dict:
     # FIXME: put this into a general askanna-utils to read askanna.yml
-    config = load(open(os.path.expanduser(filename), 'r'), Loader=Loader)
+    config = load(open(os.path.expanduser(filename), "r"), Loader=Loader)
     return config

@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 User = get_user_model()
 
 
-## User views provided by the cookiecutter project
+# User views provided by the cookiecutter project
 class UserDetailView(LoginRequiredMixin, DetailView):
 
     model = User
@@ -50,4 +50,3 @@ class UserRedirectView(LoginRequiredMixin, RedirectView):
 
 
 user_redirect_view = UserRedirectView.as_view()
-

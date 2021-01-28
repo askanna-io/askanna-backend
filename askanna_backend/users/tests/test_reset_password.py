@@ -1,17 +1,15 @@
 import re
 
+from django.core import mail
 from django.urls import reverse
 import pytest
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from workspace.models import Workspace
-from workspace.views import PersonViewSet
-from users.models import User, PasswordResetLog
+from users.models import PasswordResetLog
 from .base_tests import BaseUsers
 
 pytestmark = pytest.mark.django_db
-from django.core import mail
 
 
 class TestResetPasswordAPI(BaseUsers, APITestCase):
@@ -43,7 +41,8 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
         self.assertEqual(
-            invite_email.subject, "Password reset instructions for your account on AskAnna"
+            invite_email.subject,
+            "Password reset instructions for your account on AskAnna",
         )
         self.assertEqual(invite_email.to, [self.users["user"].email])
         self.assertEqual(invite_email.from_email, "AskAnna <support@askanna.io>")
@@ -57,13 +56,14 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         Request a reset for an existing account
         """
         response = self.client.post(
-            self.url, {"email": self.users["user"].email,}, format="json",
+            self.url, {"email": self.users["user"].email}, format="json",
         )
 
         self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
         self.assertEqual(
-            invite_email.subject, "Password reset instructions for your account on AskAnna"
+            invite_email.subject,
+            "Password reset instructions for your account on AskAnna",
         )
         self.assertEqual(invite_email.to, [self.users["user"].email])
         self.assertEqual(invite_email.from_email, "AskAnna <support@askanna.io>")
@@ -182,7 +182,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
 
         msg = invite_email.body
         invite_link = re.search(
-            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",
+            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",  # noqa
             msg,
             re.I | re.M,
         )
@@ -193,7 +193,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
-        response = self.client.get(self.status_url, {"token": token, "uid": uid,},)
+        response = self.client.get(self.status_url, {"token": token, "uid": uid},)
         print(response.content)
 
         self.assertTrue(response.data.get("status") == "valid")
@@ -233,13 +233,13 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")
+        # token = invite_link.group("token")
         uid = invite_link.group("uid")
 
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
-        response = self.client.get(self.status_url, {"token": "", "uid": uid,},)
+        response = self.client.get(self.status_url, {"token": "", "uid": uid},)
 
         self.assertTrue(response.data.get("token") == ["This field may not be blank."])
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -279,12 +279,12 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         token = invite_link.group("token")
-        uid = invite_link.group("uid")
+        # uid = invite_link.group("uid")
 
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
-        response = self.client.get(self.status_url, {"token": token, "uid": "",},)
+        response = self.client.get(self.status_url, {"token": token, "uid": ""},)
 
         self.assertTrue(response.data.get("uid") == ["This field may not be blank."])
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -323,14 +323,14 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")
+        # token = invite_link.group("token")
         uid = invite_link.group("uid")
 
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
         response = self.client.get(
-            self.status_url, {"token": "someinvalidtoken", "uid": uid,},
+            self.status_url, {"token": "someinvalidtoken", "uid": uid},
         )
 
         self.assertTrue(response.data.get("status") == ["invalid"])
@@ -372,13 +372,13 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         token = invite_link.group("token")
-        uid = invite_link.group("uid")
+        # uid = invite_link.group("uid")
 
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
         response = self.client.get(
-            self.status_url, {"token": token, "uid": "someinvaliduid",},
+            self.status_url, {"token": token, "uid": "someinvaliduid"},
         )
 
         self.assertTrue(response.data.get("status") == ["invalid"])

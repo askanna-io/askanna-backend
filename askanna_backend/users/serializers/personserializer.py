@@ -1,23 +1,12 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Model, Q
 from django.template.loader import render_to_string
-from django.utils import timezone
-from django.utils.encoding import force_text
-from django.utils.http import urlsafe_base64_decode as uid_decoder
 
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-from rest_auth.serializers import (
-    PasswordResetSerializer as DefaultPasswordResetSerializer,
-    PasswordResetConfirmSerializer as DefaultPasswordResetConfirmSerializer,
-)
-
-from users.forms import PasswordResetForm
 from users.models import (
     MEMBERSHIPS,
     MSP_WORKSPACE,
@@ -25,10 +14,8 @@ from users.models import (
     WS_MEMBER,
     Invitation,
     Membership,
-    User,
     UserProfile,
 )
-from users.signals import password_reset_signal, user_created_signal
 from workspace.models import Workspace
 
 
@@ -69,6 +56,7 @@ class PersonSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=ROLES, default=WS_MEMBER)
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
     user = serializers.SerializerMethodField("get_user")
+    avatar = serializers.SerializerMethodField("get_avatar")
     token = serializers.CharField(write_only=True)
     front_end_url = serializers.URLField(
         required=False, default=settings.ASKANNA_UI_URL
@@ -89,24 +77,28 @@ class PersonSerializer(serializers.Serializer):
         object_uuid=uuid to Workspace
         """
         workspace = Workspace.objects.get(uuid=instance.object_uuid)
-        return {
-            "name": workspace.title,
-            "short_uuid": workspace.short_uuid,
-            "uuid": workspace.uuid,
-        }
+        return workspace.relation_to_json
 
     def get_user(self, instance):
+        """
+        We need to return the user relation, but with avatar
+        extract from current instance and add this to the user relation serialization
+
+        """
         if instance.user:
-            return {
-                "name": instance.user.get_name(),
-                "short_uuid": instance.user.short_uuid,
-                "uuid": instance.user.uuid,
-            }
+            return instance.user.relation_to_json
         return {
-            "name": None,
-            "short_uuid": None,
             "uuid": None,
+            "short_uuid": None,
+            "name": None,
         }
+
+    def get_avatar(self, instance):
+        """
+        Return avatar only for this membership
+        """
+        membership_rel = instance.relation_to_json
+        return membership_rel["avatar"]
 
     def get_name(self, instance):
         """
@@ -190,6 +182,7 @@ class PersonSerializer(serializers.Serializer):
         self.invalidate_invite(instance)
         userprofile = UserProfile()
         userprofile.membership_ptr = instance
+        print(instance.created, instance.modified)
         instance.object_type = MSP_WORKSPACE
         userprofile.save_base(raw=True)
         instance.user = self._context["request"].user
@@ -282,8 +275,8 @@ class PersonSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         """
         This function does the following:
-            1. if the request changes the status to accepted when the initial status is invited and there exists a token,
-                the change_membership_to_accepted function is called
+            1. if the request changes the status to accepted when the initial status is invited and
+               there exists a token, the change_membership_to_accepted function is called
             2. It updates the fields that are given in the validated_data and reloads model values from the database
         """
         status = validated_data.get("status", None)

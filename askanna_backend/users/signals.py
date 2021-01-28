@@ -12,3 +12,5 @@ password_changed_signal = django.dispatch.Signal(providing_args=["user", "reques
 email_changed_signal = django.dispatch.Signal(
     providing_args=["user", "request", "old_email"]
 )
+
+avatar_changed_signal = django.dispatch.Signal(providing_args=["instance"])

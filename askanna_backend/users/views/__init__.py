@@ -1,4 +1,4 @@
-from .user import UserView
+from .user import UserView, PersonViewSet  # noqa
 from .django import (
     user_detail_view,
     user_update_view,
@@ -7,4 +7,4 @@ from .django import (
     UserUpdateView,
     UserRedirectView,
 )
-from .password import PasswordResetView, PasswordResetStatus
+from .password import PasswordResetView, PasswordResetStatus  # noqa

@@ -1,15 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
-from django.core import signing
-from django.core.mail import EmailMultiAlternatives
-from django.db.models import Model, Q
-from django.template.loader import render_to_string
-from django.utils import timezone
 from django.utils.encoding import force_text
 from django.utils.http import urlsafe_base64_decode as uid_decoder
-from rest_auth.serializers import (
-    PasswordResetConfirmSerializer as DefaultPasswordResetConfirmSerializer,
-)
 from rest_auth.serializers import (
     PasswordResetSerializer as DefaultPasswordResetSerializer,
 )
@@ -17,18 +9,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from users.forms import PasswordResetForm
-from users.models import (
-    MEMBERSHIPS,
-    MSP_WORKSPACE,
-    ROLES,
-    WS_MEMBER,
-    Invitation,
-    Membership,
-    User,
-    UserProfile,
-)
-from users.signals import password_reset_signal, user_created_signal
-from workspace.models import Workspace
+from users.models import User
+from users.signals import password_reset_signal
 
 
 class PasswordResetSerializer(DefaultPasswordResetSerializer):

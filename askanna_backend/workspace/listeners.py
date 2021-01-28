@@ -1,33 +1,40 @@
-import io
-import json
-import os
-import sys
-from zipfile import ZipFile
+# import io
+# import json
+# import os
+# import sys
 
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import post_save
+# from django.conf import settings
+# from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from yaml import load, dump
-
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
-from job.models import JobDef, JobPayload, JobRun
-from package.models import Package
+# from job.models import JobDef, JobPayload, JobRun
+# from package.models import Package
 from workspace.models import Workspace
-from users.models import User
+from users.models import (
+    # User,
+    Membership,
+)
+
+
+@receiver(post_delete, sender=Workspace)
+def remove_memberships_after_workspace_removal(sender, instance, **kwargs):
+    """
+    Memberships don't have a hard link, so remove manually
+    """
+    members_in_workspace = Membership.objects.filter(
+        object_type="WS", object_uuid=instance.uuid
+    )
+    for member in members_in_workspace:
+        member.delete()
 
 
 @receiver(post_save, sender=Workspace)
 def install_demo_project_in_workspace(sender, instance, **kwargs):
     # this code is disabled untill the `askanna run` is finished`
-
-    workspace = instance
-    workspace_suuid = workspace.short_uuid
+    pass
+    # workspace = instance
+    # workspace_suuid = workspace.short_uuid
 
     # trigger celery job with the following args:
     # workspace_suuid

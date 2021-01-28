@@ -43,7 +43,7 @@ test:
     - cat coverage.xml | sed -e "s.filename=\".filename=\"askanna_backend/.g" > report.coverage.xml
     - coverage html
     - coverage report
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+)\%/'
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+([\d\.]+)\%/'
   artifacts:
     expire_in: 2 weeks
     name: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"

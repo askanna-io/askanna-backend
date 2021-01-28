@@ -11,7 +11,8 @@ from uuid import UUID
 class IsMemberOfProjectBasedOnPayload(permissions.BasePermission):
     """
     We check the payload for POST, PUT, PATCH requests.
-    We check on the field "project" which we use to determine whether the user is a member of the workspace of that project
+    We check on the field "project" which we use to determine whether
+    the user is a member of the workspace of that project
     """
 
     def has_permission(self, request, view):
