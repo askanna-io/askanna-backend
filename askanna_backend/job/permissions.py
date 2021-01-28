@@ -93,10 +93,6 @@ class IsMemberOfJobRunAttributePermission(IsWorkspaceMemberBasePermission):
     def get_workspace_queryset(self, request, view, obj=None):
         """Queryset for the workspace for the current project."""
         if obj:
-            print(
-                obj,
-                Workspace.objects.filter(uuid=obj.jobrun.jobdef.project.workspace_id),
-            )
             return Workspace.objects.filter(uuid=obj.jobrun.jobdef.project.workspace_id)
 
         if hasattr(view, "get_parents_query_dict"):

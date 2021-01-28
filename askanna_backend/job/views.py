@@ -802,13 +802,6 @@ class RunMetricsView(
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        print("member_of_workspaces", member_of_workspaces)
-        print(
-            "acces to objects",
-            queryset.filter(
-                jobrun__jobdef__project__workspace__in=member_of_workspaces
-            ),
-        )
         return queryset.filter(
             jobrun__jobdef__project__workspace__in=member_of_workspaces
         )

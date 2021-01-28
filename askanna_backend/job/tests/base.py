@@ -210,3 +210,4 @@ class BaseJobTestDef:
         cls.variable.delete()
         cls.variable_masked.delete()
         cls.workspace.delete()  # this will cascade delete child items
+        cls.workspace2.delete()
