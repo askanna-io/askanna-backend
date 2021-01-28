@@ -130,7 +130,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     }
 
     payload_variables = {}
-    if type(pl.payload) == type({}):
+    if isinstance(pl.payload, dict):
         # we have a valid dict from the payload
         for k, v in pl.payload.items():
             if isinstance(v, (list, dict)):

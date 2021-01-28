@@ -1,7 +1,5 @@
 import uuid
 
-from .utils import GoogleTokenGenerator, bx_decode
-
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django_extensions.db.models import (
@@ -9,6 +7,8 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleDescriptionModel,
 )
+
+from .utils import GoogleTokenGenerator
 
 
 class DeletedModel(models.Model):

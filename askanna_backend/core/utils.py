@@ -129,7 +129,7 @@ class GoogleTokenGenerator:
 
 
 class ShortUUIDConverter:
-    regex = "[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}"
+    regex = r"[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}"
 
     def to_python(self, value):
         return value
