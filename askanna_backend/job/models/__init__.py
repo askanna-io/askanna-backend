@@ -1,9 +1,10 @@
-from .const import JOB_STATUS, ENV_CHOICES
-from .chunkedartifact import ChunkedArtifactPart
-from .jobartifact import JobArtifact
-from .jobdef import JobDef, JOB_BACKENDS
-from .jobpayload import JobPayload
-from .joboutput import JobOutput, ChunkedJobOutputPart
-from .jobrun import JobRun
-from .jobvariable import JobVariable
-from .runmetrics import RunMetrics
+# -*- coding: utf-8 -*-
+from .const import JOB_STATUS, ENV_CHOICES  # noqa
+from .chunkedartifact import ChunkedArtifactPart  # noqa
+from .jobartifact import JobArtifact  # noqa
+from .jobdef import JobDef, JOB_BACKENDS  # noqa
+from .jobpayload import JobPayload  # noqa
+from .joboutput import JobOutput, ChunkedJobOutputPart  # noqa
+from .jobrun import JobRun  # noqa
+from .jobvariable import JobVariable  # noqa
+from .runmetrics import RunMetrics  # noqa

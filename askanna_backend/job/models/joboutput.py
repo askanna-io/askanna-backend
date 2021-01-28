@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
-import json
 import os
-import uuid
 
 from django.db import models
 from django.conf import settings
-from django.utils.module_loading import import_string
 
 from core.fields import JSONField
-from core.models import BaseModel, SlimBaseModel
-
-from job.models.const import JOB_STATUS
+from core.models import SlimBaseModel
 
 
 class JobOutput(SlimBaseModel):
@@ -56,7 +51,7 @@ class JobOutput(SlimBaseModel):
         try:
             with open(self.stored_path, "rb") as f:
                 return f.read()
-        except:
+        except FileNotFoundError:
             return b""
 
     def prune(self):

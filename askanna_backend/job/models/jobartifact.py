@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-import json
 import os
-import uuid
 
 from django.db import models
 from django.conf import settings
 
-from core.models import BaseModel, SlimBaseModel
+from core.models import SlimBaseModel
 
 
 class JobArtifact(SlimBaseModel):
@@ -62,6 +60,21 @@ class JobArtifact(SlimBaseModel):
 
     def prune(self):
         os.remove(self.stored_path)
+
+    def get_name(self):
+        return self.filename
+
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "artifact",
+            "name": self.get_name(),
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
 
     class Meta:
         ordering = ["-created"]

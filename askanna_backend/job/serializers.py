@@ -1,6 +1,5 @@
-import base64
-
-from django.conf import settings
+# -*- coding: utf-8 -*-
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from core.serializers import BaseArchiveDetailSerializer
@@ -73,11 +72,7 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_jobdef(self, instance):
         jobdef = instance.jobdef
-        return {
-            "name": jobdef.name,
-            "uuid": jobdef.uuid,
-            "short_uuid": jobdef.short_uuid,
-        }
+        return jobdef.relation_to_json
 
     def get_jobid(self, instance):
         # FIXME: this is to fix empty jobids from unran Celery jobs
@@ -103,6 +98,7 @@ class JobRunSerializer(serializers.ModelSerializer):
         # FIXME: replace with actual version information
         # stick version to the package version
         return {
+            "relation": "version",
             "name": "latest",
             "uuid": "",
             "short_uuid": "2222-3333-2222-2222",
@@ -112,18 +108,19 @@ class JobRunSerializer(serializers.ModelSerializer):
         has_artifact = instance.artifact.exists()
         if has_artifact:
             artifact = instance.artifact.first()
-            return {
-                "name": artifact.filename,
-                "uuid": artifact.uuid,
-                "short_uuid": artifact.short_uuid,
-            }
-        return {"name": None, "uuid": None, "short_uuid": None}
+            return artifact.relation_to_json
+        return {"relation": "artifact", "name": None, "uuid": None, "short_uuid": None}
 
     def get_package(self, instance):
         package = instance.package
         if package:
             return package.relation_to_json
-        return {"name": "latest", "uuid": None, "short_uuid": None}
+        return {
+            "relation": "package",
+            "name": "latest",
+            "uuid": None,
+            "short_uuid": None,
+        }
 
     def get_project(self, instance):
         project = instance.jobdef.project
@@ -153,19 +150,11 @@ class JobArtifactSerializer(serializers.ModelSerializer):
 
     def get_project(self, instance):
         project = instance.jobrun.jobdef.project
-        return {
-            "name": project.name,
-            "uuid": project.uuid,
-            "short_uuid": project.short_uuid,
-        }
+        return project.relation_to_json
 
     def get_jobrun(self, instance):
         jobrun = instance.jobrun
-        return {
-            "name": jobrun.name,
-            "uuid": jobrun.uuid,
-            "short_uuid": jobrun.short_uuid,
-        }
+        return jobrun.relation_to_json
 
     class Meta:
         model = JobArtifact
@@ -206,7 +195,7 @@ class JobVariableCreateSerializer(serializers.ModelSerializer):
         # or is it a uuid?
         try:
             dbproject = Project.objects.get(short_uuid=project)
-        except:
+        except ObjectDoesNotExist:
             dbproject = Project.objects.get(uuid=project)
 
         # return uuid for this project
@@ -228,11 +217,7 @@ class JobVariableCreateSerializer(serializers.ModelSerializer):
             "name": instance.name,
             "value": instance.value,
             "is_masked": instance.is_masked,
-            "project": {
-                "name": instance.project.name,
-                "uuid": instance.project.uuid,
-                "short_uuid": instance.project.short_uuid,
-            },
+            "project": instance.project.relation_to_json,
             "created": instance.created,
             "modified": instance.modified,
         }
@@ -261,11 +246,7 @@ class JobVariableSerializer(serializers.ModelSerializer):
         """
             return short project relation info
         """
-        return {
-            "name": instance.project.name,
-            "uuid": instance.project.uuid,
-            "short_uuid": instance.project.short_uuid,
-        }
+        return instance.project.relation_to_json
 
     class Meta:
         model = JobVariable
@@ -300,22 +281,18 @@ class JobVariableUpdateSerializer(serializers.ModelSerializer):
             "name": instance.name,
             "value": instance.value,
             "is_masked": instance.is_masked,
-            "project": {
-                "name": instance.project.name,
-                "uuid": instance.project.uuid,
-                "short_uuid": instance.project.short_uuid,
-            },
+            "project": instance.project.relation_to_json,
             "created": instance.created,
             "modified": instance.modified,
         }
 
 
 class RunMetricsSerializer(serializers.ModelSerializer):
-    """Serializer for RunMetrics model."""
+    """Serializer for RunMetrics model.
+    At this moment we take in as-is, no futher validation etc.
+    """
 
     class Meta:
-        """Options for RunMetricsSerializer."""
-
         model = RunMetrics
         fields = ["uuid", "short_uuid", "metrics"]
         read_only_fields = ["uuid", "short_uuid"]

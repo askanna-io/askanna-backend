@@ -2,20 +2,13 @@ import os
 from zipfile import ZipFile
 
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import pre_delete, post_delete, pre_save, post_save
+from django.db.models.signals import pre_delete, pre_save, post_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
 
-from yaml import load, dump
-
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
 from job.models import JobArtifact, JobOutput, JobPayload, JobRun
-from job.signals import artifact_upload_finish, start_jobrun_dockerized
+from job.signals import artifact_upload_finish
+from job.tasks import start_jobrun_dockerized
 from users.models import MSP_WORKSPACE
 
 
@@ -95,4 +88,3 @@ def add_member_to_jobrun(sender, instance, **kwargs):
             membership = member_query.first()
             if membership:
                 instance.member = membership
-

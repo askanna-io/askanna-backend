@@ -1,15 +1,15 @@
-from collections import Mapping
+from collections.abc import Mapping
 import os
 from uuid import uuid4
 
 from django.urls import register_converter
 
-from yaml import load, dump
+from yaml import load
 
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader, Dumper
+    from yaml import Loader
 
 
 # From https://pythonhosted.org/shorten/user/examples.html

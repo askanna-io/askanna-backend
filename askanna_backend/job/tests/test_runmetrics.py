@@ -1,17 +1,10 @@
-import json
+# -*- coding: utf-8 -*-
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from job.models import JobDef, JobRun, JobPayload
-from project.models import Project
-from package.models import Package
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
-from workspace.models import Workspace
-
 from .base import (
     BaseJobTestDef,
-    metric_response_bad,
     metric_response_good,
     metric_response_good_small,
 )
@@ -178,4 +171,3 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-

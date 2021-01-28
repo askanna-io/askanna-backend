@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-import json
-import os
-import uuid
-
 from django.db import models
 
 from core.fields import ArrayField
-from core.models import BaseModel, SlimBaseModel
+from core.models import BaseModel
 from job.models.const import JOB_STATUS
 
 
@@ -25,6 +21,21 @@ class JobRun(BaseModel):
 
     # The labels field stores what is generated from the metrics
     labels = ArrayField(models.CharField(max_length=4096), blank=True, default=list)
+
+    def get_name(self):
+        return ""
+
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "jobrun",
+            "name": self.get_name(),
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
 
     class Meta:
         ordering = ["-created"]

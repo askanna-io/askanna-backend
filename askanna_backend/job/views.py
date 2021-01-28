@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import io
 import os
@@ -39,9 +40,7 @@ from job.models import (
 )
 from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.permissions import (
-    IsMemberOfArtifactAttributePermission,
     IsMemberOfJobDefAttributePermission,
-    IsMemberOfJobOutputAttributePermission,
     IsMemberOfJobRunAttributePermission,
     IsMemberOfProjectAttributePermission,
 )
@@ -55,7 +54,6 @@ from job.serializers import (
     JobPayloadSerializer,
     JobRunSerializer,
     JobSerializer,
-    JobVariableCreateSerializer,
     JobVariableSerializer,
     JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
@@ -594,9 +592,7 @@ class JobArtifactView(
             short_uuid=self.kwargs.get("parent_lookup_jobrun__short_uuid")
         )
         data = request.data.copy()
-        data.update(
-            **{"jobrun": str(jobrun.pk),}
-        )
+        data.update(**{"jobrun": str(jobrun.pk)})
 
         serializer = JobArtifactSerializerForInsert(data=data)
         serializer.is_valid(raise_exception=True)

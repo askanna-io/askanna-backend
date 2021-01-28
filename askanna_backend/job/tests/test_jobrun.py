@@ -1,13 +1,10 @@
+# -*- coding: utf-8 -*-
 import json
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from job.models import JobDef, JobRun, JobPayload
-from project.models import Project
-from package.models import Package
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
-from workspace.models import Workspace
+from job.models import JobRun, JobPayload
 
 from .base import BaseJobTestDef
 
@@ -106,15 +103,15 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
     def setUp(self):
         self.url = reverse(
             "jobrun-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid,},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
         self.url_run2 = reverse(
             "jobrun-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid,},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid},
         )
         self.url_other_workspace = reverse(
             "jobrun-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid,},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
         )
 
     def test_detail_as_admin(self):

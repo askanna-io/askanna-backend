@@ -1,6 +1,4 @@
-from django.utils.module_loading import import_string
-
-
+# -*- coding: utf-8 -*-
 # Define a few enums that will represent options in the models.
 
 # Environment Options  # noqa
@@ -21,4 +19,3 @@ JOB_STATUS = (
     ("FAILED", "FAILED"),
     ("SUCCESS", "SUCCESS"),
 )
-

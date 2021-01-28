@@ -1,4 +1,5 @@
-from django.conf.urls import include, re_path
+# -*- coding: utf-8 -*-
+from django.conf.urls import include
 from django.urls import path, re_path
 
 from job.views import (

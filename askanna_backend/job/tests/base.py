@@ -1,11 +1,12 @@
+# -*- coding: utf-8 -*-
+from django.conf import settings
 from django.db.models import signals
-from job.models import JobDef, JobRun, JobPayload, JobVariable, JobArtifact, RunMetrics
+from job.models import JobDef, JobRun, JobVariable, JobArtifact, RunMetrics
 from project.models import Project
 from package.models import Package
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
 from workspace.listeners import install_demo_project_in_workspace
-from django.conf import settings
 
 metric_response_good = [
     {
@@ -32,12 +33,12 @@ metric_response_good = [
 ]
 metric_response_good_small = [
     {
-        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"},],
-        "label": [{"name": "city", "value": "Rotterdam", "type": "string"},],
+        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
     },
     {
-        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"},],
-        "label": [{"name": "city", "value": "Amsterdam", "type": "string"},],
+        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
+        "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
     },
 ]
 metric_response_bad = [
@@ -52,7 +53,7 @@ metric_response_bad = [
         ],
     },
     {
-        "metric": [{"name": "Accuracy", "value": "0.623"}, {"name": "Quality"},],
+        "metric": [{"name": "Accuracy", "value": "0.623"}, {"name": "Quality"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -86,8 +87,8 @@ class BaseJobTestDef:
         }
 
         # setup variables
-        cls.workspace = Workspace.objects.create(**{"title": "WorkspaceX",})
-        cls.workspace2 = Workspace.objects.create(**{"title": "WorkspaceY",})
+        cls.workspace = Workspace.objects.create(**{"title": "WorkspaceX"})
+        cls.workspace2 = Workspace.objects.create(**{"title": "WorkspaceY"})
         cls.project = Project.objects.create(
             **{"name": "TestProject", "workspace": cls.workspace}
         )
