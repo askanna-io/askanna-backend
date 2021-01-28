@@ -1,6 +1,4 @@
-from django.urls import path, re_path, include
-from utils.urls import router
-from users.views import UserView
+from django.urls import path
 
 from askanna_backend.users.views import PasswordResetStatus, PasswordResetView
 

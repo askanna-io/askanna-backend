@@ -1,19 +1,16 @@
-import json
 import socket
 
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMultiAlternatives
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.template import loader
-
+from PIL import Image
 from users.models import (
     PasswordResetLog,
     Membership,
     MSP_WORKSPACE,
     WS_ADMIN,
-    User,
     UserProfile,
 )
 from users.signals import (
@@ -21,6 +18,7 @@ from users.signals import (
     user_created_signal,
     password_changed_signal,
     email_changed_signal,
+    avatar_changed_signal,
 )
 from workspace.models import Workspace
 
@@ -77,7 +75,7 @@ def handle_log_password_reset(sender, signal, users, request, domain, email, **k
 
     # create logentry for an password reset attempt
     for idx, user in enumerate(users):
-        prl = PasswordResetLog.objects.create(
+        _ = PasswordResetLog.objects.create(
             email=email,
             user=user,
             remote_ip=remote_ip,
@@ -90,7 +88,7 @@ def handle_log_password_reset(sender, signal, users, request, domain, email, **k
     # but still interesting to see if there was an attempt to reset
     # for a specific e-mailaddress
     if not users:
-        prl = PasswordResetLog.objects.create(
+        _ = PasswordResetLog.objects.create(
             email=email,
             user=None,
             remote_ip=remote_ip,
@@ -212,3 +210,31 @@ def send_password_changed(sender, user, request, **kwargs):
         context,
     )
 
+
+@receiver(avatar_changed_signal)
+def convert_avatars(sender, instance, **kwargs):
+    """
+    Upon writing a new avatar to the filesystem, we convert this avatar to several sizes and always save as PNG
+    """
+    userprofile = instance
+
+    for spec_name, spec_size in userprofile.avatar_specs.items():
+        filename = instance.stored_path_with_name(spec_name)
+        with Image.open(userprofile.stored_path) as im:
+            im.thumbnail(spec_size)
+            im.save(filename, "png")
+
+
+@receiver(pre_delete, sender=Membership)
+def remove_membership(sender, instance, **kwargs):
+    instance.prune()
+
+
+@receiver(post_save, sender=UserProfile)
+def install_avatar_after_new_membership(sender, instance, created, **kwargs):
+    """
+    Install a default avatar for the user when a profile was created
+    """
+    if created:
+        instance.refresh_from_db()
+        instance.install_default_avatar()

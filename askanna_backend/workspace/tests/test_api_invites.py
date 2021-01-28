@@ -23,10 +23,13 @@ from ..listeners import install_demo_project_in_workspace
 
 pytestmark = pytest.mark.django_db
 
+
 class TestInviteAPI(APITestCase):
     @classmethod
     def setup_class(cls):
-        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
+        signals.post_save.disconnect(
+            install_demo_project_in_workspace, sender=Workspace
+        )
 
     def setUp(self):
         self.users = {
@@ -448,6 +451,32 @@ class TestInviteAPI(APITestCase):
         self.assertEqual(
             response.data["user"][0], "User is already part of this workspace"
         )
+
+    def test_accept_invite_wrong_status(self):
+        """
+        We cannot accept an invite when the status is not "invited" or "accepted"
+        """
+        url = reverse(
+            "workspace-people-detail",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "short_uuid": self.invitation.short_uuid,
+            },
+        )
+
+        token = self.users["user_a"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            url,
+            {
+                "status": "wrong-status",
+                "token": PersonSerializer(self.invitation).generate_token(),
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_accept_invite_with_deleted_profile(self):
         """An invite can be accepted by a user with a soft-deleted profile."""

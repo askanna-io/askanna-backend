@@ -3,7 +3,7 @@ from django.utils.module_loading import import_string
 
 # Define a few enums that will represent options in the models.
 
-## Environment Options  # noqa
+# Environment Options  # noqa
 ENV_CHOICES = (
     ("python2.7", "python2.7"),
     ("python3.5", "python3.5"),
@@ -11,7 +11,7 @@ ENV_CHOICES = (
     ("python3.7", "python3.7"),
 )
 
-## Status of a job execution  # noqa
+# Status of a job execution  # noqa
 JOB_STATUS = (
     ("SUBMITTED", "SUBMITTED"),
     ("COMPLETED", "COMPLETED"),

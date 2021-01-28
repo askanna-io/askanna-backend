@@ -1,4 +1,5 @@
-from .personserializer import PersonSerializer
+from .profileimageserializer import ProfileImageSerializer  # noqa
+from .personserializer import PersonSerializer  # noqa
 from .userserializer import (
     UserCreateSerializer,
     UserUpdateSerializer,

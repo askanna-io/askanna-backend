@@ -5,20 +5,17 @@ from django.contrib.auth import authenticate
 from django.core.validators import validate_email
 from django.db.models import Q
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
-from users.forms import PasswordResetForm
+
 from users.models import (
     User,
     UserProfile,
 )
 from users.signals import (
-    password_reset_signal,
     user_created_signal,
     password_changed_signal,
     email_changed_signal,
 )
-from workspace.models import Workspace
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -221,4 +218,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = "__all__"
-

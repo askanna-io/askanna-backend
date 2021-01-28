@@ -3,8 +3,6 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from workspace.models import Workspace
-from workspace.views import PersonViewSet
 from users.models import User
 from .base_tests import BaseUsers
 
@@ -324,7 +322,7 @@ class TestUserUpdateAPI(BaseUsers, APITestCase):
 
         response = self.client.patch(
             self.url,
-            {"password": "1234567890abcdef", "old_password": "password-user-wrong",},
+            {"password": "1234567890abcdef", "old_password": "password-user-wrong"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

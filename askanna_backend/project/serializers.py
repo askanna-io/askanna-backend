@@ -12,11 +12,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     package = serializers.SerializerMethodField("get_package")
 
     def get_workspace(self, instance):
-        return {
-            "uuid": instance.workspace.uuid,
-            "short_uuid": instance.workspace.short_uuid,
-            "name": instance.workspace.uuid,
-        }
+        return instance.workspace.relation_to_json
 
     def get_created_by(self, instance):
         if instance.created_by is not None:
@@ -133,11 +129,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
             "short_uuid": instance.short_uuid,
             "name": instance.name,
             "description": instance.description,
-            "workspace": {
-                "uuid": instance.workspace.uuid,
-                "short_uuid": instance.workspace.short_uuid,
-                "name": instance.workspace.uuid,
-            },
+            "workspace": instance.workspace.relation_to_json,
             "created_by": {
                 "uuid": instance.created_by.uuid,
                 "short_uuid": instance.created_by.short_uuid,

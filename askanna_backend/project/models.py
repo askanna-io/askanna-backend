@@ -51,10 +51,17 @@ class Project(AuthorModel, ActivatorModel, DescriptionModel, SlimBaseModel):
     def __str__(self):
         return " - ".join([self.name, str(self.uuid)])
 
+    def get_name(self):
+        return self.name
+
     @property
     def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
         return {
-            "name": self.name,
+            "relation": "project",
+            "name": self.get_name(),
             "uuid": str(self.uuid),
             "short_uuid": self.short_uuid,
         }

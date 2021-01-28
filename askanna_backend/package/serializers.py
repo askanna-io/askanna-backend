@@ -47,7 +47,8 @@ class PackageSerializer(serializers.ModelSerializer):
 
     def get_filename(self, instance):
         """
-        The filename is stored in another property field which is only accesible on the instance level, not on databaselevel
+        The filename is stored in another property field which is only accesible
+        on the instance level, not on databaselevel
         """
         filename = instance.original_filename
         return filename
@@ -69,7 +70,8 @@ class PackageSerializerDetail(BaseArchiveDetailSerializer):
 
     def get_filename(self, instance):
         """
-        The filename is stored in another property field which is only accesible on the instance level, not on databaselevel
+        The filename is stored in another property field which is only accesible
+        on the instance level, not on databaselevel
         """
         filename = instance.original_filename
         return filename
