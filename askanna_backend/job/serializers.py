@@ -46,7 +46,7 @@ class JobPayloadSerializer(serializers.ModelSerializer):
     project = serializers.SerializerMethodField("get_project")
 
     def get_project(self, instance):
-        return str(instance.jobdef.uuid)
+        return instance.jobdef.project.relation_to_json
 
     class Meta:
         model = JobPayload
@@ -127,11 +127,7 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     def get_project(self, instance):
         project = instance.jobdef.project
-        return {
-            "name": project.name,
-            "uuid": project.uuid,
-            "short_uuid": project.short_uuid,
-        }
+        return project.relation_to_json
 
     def get_user(self, instance):
         if instance.owner:

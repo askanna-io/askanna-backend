@@ -1,11 +1,16 @@
-from django.contrib.auth.models import AbstractUser, Group
+import datetime
+import os
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import JSONField
 
 from django.db.models import CharField
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-from core.models import BaseModel, SlimBaseModel, SlimBaseForAuthModel
+from core.models import SlimBaseModel, SlimBaseForAuthModel
+
+from users.signals import avatar_changed_signal
 
 
 class User(SlimBaseForAuthModel, AbstractUser):
@@ -101,6 +106,90 @@ class Membership(SlimBaseModel):
     )
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
 
+    avatar_specs = {
+        "icon": (60, 60),
+        "small": (120, 120),
+        "medium": (180, 180),
+        "large": (240, 240),
+    }
+
+    def install_default_avatar(self):
+        self.write(
+            open(
+                settings.RESOURCES_DIR.path(settings.USERPROFILE_DEFAULT_AVATAR), "rb",
+            )
+        )
+
+    def delete_avatar(self):
+        """
+        Remove existing avatars from the system for this user.
+        And install default avatar
+        """
+        self.prune()
+
+    def stored_path_with_name(self, name):
+        filename = "avatar_{}_{}.png".format(self.uuid.hex, name)
+        return os.path.join(settings.AVATARS_ROOT, self.storage_location, filename)
+
+    def storage_location_with_name(self, name):
+        filename = "avatar_{}_{}.png".format(self.uuid.hex, name)
+        return os.path.join(self.storage_location, filename)
+
+    @property
+    def storage_location(self):
+        return os.path.join(self.uuid.hex,)
+
+    @property
+    def stored_path(self):
+        return os.path.join(settings.AVATARS_ROOT, self.storage_location, self.filename)
+
+    @property
+    def filename(self):
+        return "avatar_{}.image".format(self.uuid.hex)
+
+    def prune(self):
+        for spec_name, spec_size in self.avatar_specs.items():
+            filename = self.stored_path_with_name(spec_name)
+            try:
+                os.remove(filename)
+            except (FileNotFoundError, Exception) as e:
+                print(e, type(e))
+
+        try:
+            os.remove(self.stored_path)
+        except (FileNotFoundError, Exception) as e:
+            print(e, type(e))
+
+    @property
+    def read(self):
+        """
+            Read the avatar from filesystem
+        """
+
+        with open(self.stored_path, "rb") as f:
+            return f.read()
+
+    def write(self, stream):
+        """
+            Write contents to the filesystem, as is without changing image format
+        """
+        os.makedirs(
+            os.path.join(settings.AVATARS_ROOT, self.storage_location), exist_ok=True
+        )
+        with open(self.stored_path, "wb") as f:
+            f.write(stream.read())
+
+        avatar_changed_signal.send(sender=self.__class__, instance=self)
+
+    def prepend_cdn_url(self, location):
+        return "{BASE_URL}/files/avatars/{LOCATION}".format(
+            BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=location
+        )
+
+    def append_timestamp_to_url(self, location):
+        timestamp = datetime.datetime.timestamp(self.modified)
+        return "{location}?{timestamp}".format(location=location, timestamp=timestamp)
+
     @property
     def relation_to_json(self):
         """
@@ -111,13 +200,28 @@ class Membership(SlimBaseModel):
             "name": self.get_name(),
             "uuid": str(self.uuid),
             "short_uuid": self.short_uuid,
+            "avatar": dict(
+                zip(
+                    self.avatar_specs.keys(),
+                    [
+                        self.append_timestamp_to_url(
+                            self.prepend_cdn_url(self.storage_location_with_name(f))
+                        )
+                        for f in self.avatar_specs.keys()
+                    ],
+                )
+            ),
         }
 
     def get_name(self):
         """
         If the membership name is set, return this otherwise return the users name
         """
-        return self.name or self.user.get_name()
+        if self.name:
+            return self.name
+        if self.user:
+            return self.user.get_name()
+        return ""
 
     class Meta:
         ordering = ["-created"]

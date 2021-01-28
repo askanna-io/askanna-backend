@@ -13,9 +13,7 @@ def settings(config, env):
     # WhiteNoise
     # ------------------------------------------------------------------------------
     # http://whitenoise.evans.io/en/latest/django.html#using-whitenoise-in-development
-    config.INSTALLED_APPS = [
-        "whitenoise.runserver_nostatic",
-    ] + config.INSTALLED_APPS
+    config.INSTALLED_APPS = ["whitenoise.runserver_nostatic",] + config.INSTALLED_APPS
 
     # STATIC
     # ------------------------------------------------------------------------------
@@ -66,6 +64,7 @@ def settings(config, env):
     config.BLOB_ROOT = str(config.STORAGE_ROOT("blob"))
     config.PROJECTS_ROOT = str(config.STORAGE_ROOT("projects"))
     config.PAYLOADS_ROOT = str(config.STORAGE_ROOT.path("projects").path("payloads"))
+    config.AVATARS_ROOT = str(config.STORAGE_ROOT("avatars"))
 
     if env.str("ASKANNA_HOST_TMP_ROOT", None):
         config.HOST_TMP_ROOT = env.str("ASKANNA_HOST_TMP_ROOT")
@@ -73,6 +72,7 @@ def settings(config, env):
     # Create the folders if not exists
     for folder in [
         config.ARTIFACTS_ROOT,
+        config.AVATARS_ROOT,
         config.PACKAGES_ROOT,
         config.UPLOAD_ROOT,
         config.BLOB_ROOT,

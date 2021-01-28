@@ -338,7 +338,7 @@ class JobRunView(
             commands.append({"command": command, "print_command": print_command})
 
         entrypoint_string = render_to_string(
-            "entrypoint.sh", {"commands": commands, "pr": pr}
+            "entrypoint.sh", {"commands": commands, "pr": pr, "jd": jd, "jr": jr}
         )
 
         return HttpResponse(entrypoint_string)

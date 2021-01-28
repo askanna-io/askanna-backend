@@ -4,13 +4,14 @@ import tempfile
 import uuid
 from zipfile import ZipFile
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.conf import settings
 
 from job.models import JobDef
 from package.models import Package
 from project.models import Project
 from workspace.models import Workspace
+
 
 def package(src: str) -> str:
 
@@ -21,10 +22,11 @@ def package(src: str) -> str:
     tmpdir = tempfile.mkdtemp(prefix="askanna-package")
 
     random_name = os.path.join(
-        tmpdir, "{pwd_dir_name}_{random_suffix}.zip".format(
-            pwd_dir_name=pwd_dir_name,
-            random_suffix=random_suffix
-        ))
+        tmpdir,
+        "{pwd_dir_name}_{random_suffix}.zip".format(
+            pwd_dir_name=pwd_dir_name, random_suffix=random_suffix
+        ),
+    )
 
     zipFilesInDir(src, random_name, lambda x: x)
     return random_name
@@ -34,15 +36,16 @@ def package(src: str) -> str:
 def zipFilesInDir(dirName, zipFileName, filter):
     os.chdir(dirName)
     # create a ZipFile object
-    with ZipFile(zipFileName, mode='w') as zipObj:
+    with ZipFile(zipFileName, mode="w") as zipObj:
         # Iterate over all the files in directory
-        for folderName, subfolders, filenames in os.walk('.'):
+        for folderName, subfolders, filenames in os.walk("."):
             for filename in filenames:
                 if filter(filename):
                     # create complete filepath of file in directory
                     filePath = os.path.join(folderName, filename)
                     # Add file to zip
                     zipObj.write(filePath)
+
 
 class Command(BaseCommand):
     help = "Install initial fixtures for askanna create project"
@@ -75,7 +78,9 @@ class Command(BaseCommand):
         # create the package for the project
         # use from our `resources/projects/askanna_core` folder
 
-        package_archive = package(settings.ROOT_DIR.path("resources/projects/askanna_core"))
+        package_archive = package(
+            settings.ROOT_DIR.path("resources/projects/askanna_core")
+        )
 
         # register package
         pkg = Package.objects.create(
@@ -83,4 +88,4 @@ class Command(BaseCommand):
             project=project,
             size=os.stat(package_archive).st_size,
         )
-        pkg.write(open(package_archive, 'rb'))
+        pkg.write(open(package_archive, "rb"))

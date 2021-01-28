@@ -46,8 +46,7 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
         When an invitation is accepted, the user cannot be part of a workspace
         """
         user = request.user
-
-        if view.action in ["partial_update", "destroy"]:
+        if view.action in ["partial_update", "destroy", "avatar"]:
             # Let has_object_permission deal with this request.
             return user.is_authenticated
 
@@ -75,7 +74,7 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
             .first()
         )
         is_member = bool(member_role)
-        is_admin = is_member and WS_ADMIN in member_role
+        is_admin = is_member and (WS_ADMIN in member_role)
 
         if view.action == "destroy":
             try:
@@ -83,7 +82,7 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
             except Invitation.DoesNotExist:
                 return is_admin and obj.user != user
 
-        if view.action == "partial_update":
+        if view.action in ["partial_update", "avatar"]:
             if request.data.get("status") == "accepted":
                 # Let the serializer validate if a user can accept an invitation.
                 return user.is_authenticated
