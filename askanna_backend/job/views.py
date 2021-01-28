@@ -774,6 +774,7 @@ class RunMetricsView(
     PermissionByActionMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = RunMetrics.objects.all()
@@ -812,29 +813,11 @@ class RunMetricsView(
             jobrun__jobdef__project__workspace__in=member_of_workspaces
         )
 
-    # update() and perform_update() are copied from mixins.UpdateModelMixin
-    # since we do not want to implement a partial_update() method yet.
     # partial_update should be implemented with some way of partially
     # modifying the metrics JSON value.
     # Something like http://jsonpatch.com/
-    def update(self, request, *args, **kwargs):
-        """Process a request to update a RunMetric instance."""
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        if getattr(instance, "_prefetched_objects_cache", None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
-
-        return Response(serializer.data)
-
-    def perform_update(self, serializer):
-        """Save the given serializer."""
-        serializer.save()
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
     def get_parent_instance(self):
         Model = self.get_queryset().model
