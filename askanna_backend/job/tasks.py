@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 import docker
 
-from job.models import JobRun, JobVariable
+from job.models import JobRun, JobVariable, RunMetrics
 
 
 @shared_task(bind=True)
@@ -190,3 +190,26 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
     jr.status = "COMPLETED"
     jr.save()
+
+
+@shared_task(bind=True)
+def extract_metrics_labels(self, metrics_uuid):
+    """
+    Extract labels in .metrics and store the list of labels in .jobrun.labels
+    """
+    runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
+    if not runmetrics.metrics:
+        # we don't have metrics stored, as this is None (by default on creation)
+        return
+
+    alllabels = []
+    for metric in runmetrics.metrics:
+        labels = metric.get("label")
+        if not labels:
+            continue
+
+        for label_obj in labels:
+            alllabels.append(label_obj.get("name"))
+
+    runmetrics.jobrun.labels = list(set(alllabels) - set([None]))
+    runmetrics.jobrun.save(update_fields=["labels"])

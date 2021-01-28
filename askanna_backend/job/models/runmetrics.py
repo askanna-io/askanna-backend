@@ -2,14 +2,14 @@
 from django.db import models
 
 from core.fields import JSONField
-from core.models import BaseModel
+from core.models import SlimBaseModel
 
 
-class RunMetrics(BaseModel):
+class RunMetrics(SlimBaseModel):
     """Store metrics for a JobRun."""
 
     jobrun = models.ForeignKey(
-        "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="mertrics"
+        "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="metrics"
     )
     metrics = JSONField(blank=True, null=True)
 

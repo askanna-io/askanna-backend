@@ -39,11 +39,6 @@ class Migration(migrations.Migration):
                         auto_now=True, verbose_name="modified"
                     ),
                 ),
-                ("title", models.CharField(max_length=255, verbose_name="title")),
-                (
-                    "description",
-                    models.TextField(blank=True, null=True, verbose_name="description"),
-                ),
                 ("deleted", models.DateTimeField(blank=True, null=True)),
                 (
                     "uuid",
@@ -60,7 +55,7 @@ class Migration(migrations.Migration):
                     "jobrun",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="mertrics",
+                        related_name="metrics",
                         to="job.JobRun",
                     ),
                 ),

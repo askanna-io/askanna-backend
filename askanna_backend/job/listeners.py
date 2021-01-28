@@ -6,9 +6,9 @@ from django.db.models.signals import pre_delete, pre_save, post_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
 
-from job.models import JobArtifact, JobOutput, JobPayload, JobRun
+from job.models import JobArtifact, JobOutput, JobPayload, JobRun, RunMetrics
 from job.signals import artifact_upload_finish
-from job.tasks import start_jobrun_dockerized
+from job.tasks import start_jobrun_dockerized, extract_metrics_labels
 from users.models import MSP_WORKSPACE
 
 
@@ -88,3 +88,15 @@ def add_member_to_jobrun(sender, instance, **kwargs):
             membership = member_query.first()
             if membership:
                 instance.member = membership
+
+
+@receiver(post_save, sender=RunMetrics)
+def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
+    """
+    After saving metrics, we want to update the linked
+    JobRun.labels to put the static labels in there
+    We don't do this in a django instance, we delegate this
+    to a celery task.
+    """
+
+    on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
