@@ -2,11 +2,11 @@
 from django.db import models
 
 from core.fields import ArrayField
-from core.models import BaseModel
+from core.models import SlimBaseModel
 from job.models.const import JOB_STATUS
 
 
-class JobRun(BaseModel):
+class JobRun(SlimBaseModel):
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
@@ -20,7 +20,9 @@ class JobRun(BaseModel):
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
 
     # The labels field stores what is generated from the metrics
-    labels = ArrayField(models.CharField(max_length=4096), blank=True, default=list)
+    metric_labels = ArrayField(
+        models.CharField(max_length=4096), blank=True, default=list
+    )
 
     def get_name(self):
         return ""

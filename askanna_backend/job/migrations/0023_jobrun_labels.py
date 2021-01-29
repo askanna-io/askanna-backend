@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="jobrun",
-            name="labels",
+            name="metric_labels",
             field=core.fields.ArrayField(
                 base_field=models.CharField(max_length=4096),
                 blank=True,
@@ -24,6 +24,8 @@ class Migration(migrations.Migration):
                 size=None,
             ),
         ),
+        migrations.RemoveField(model_name="jobrun", name="description",),
+        migrations.RemoveField(model_name="jobrun", name="title",),
         migrations.CreateModel(
             name="RunMetrics",
             fields=[

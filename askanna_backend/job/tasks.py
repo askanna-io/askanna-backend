@@ -211,5 +211,5 @@ def extract_metrics_labels(self, metrics_uuid):
         for label_obj in labels:
             alllabels.append(label_obj.get("name"))
 
-    runmetrics.jobrun.labels = list(set(alllabels) - set([None]))
+    runmetrics.jobrun.metric_labels = list(set(alllabels) - set([None]))
     runmetrics.jobrun.save(update_fields=["labels"])
