@@ -31,3 +31,11 @@ def settings(config, env):
         "assets/src_assets_icons_ask-anna-default-gravatar.png"
     )
 
+    # Set default docker image for the runner
+    # config.RUNNER_DEFAULT_DOCKER_IMAGE = (
+    #     "gitlab.askanna.io:4567/askanna/askanna-cli:3.7-slim-master"
+    # )
+    config.RUNNER_DEFAULT_DOCKER_IMAGE = (
+        "gitlab.askanna.io:4567/askanna/askanna-cli/review/metrics-sdk:3.7-slim"
+    )
+
