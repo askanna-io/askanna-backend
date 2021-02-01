@@ -192,7 +192,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     jr.save()
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name="job.tasks.extract_metrics_labels")
 def extract_metrics_labels(self, metrics_uuid):
     """
     Extract labels in .metrics and store the list of labels in .jobrun.labels
@@ -212,4 +212,4 @@ def extract_metrics_labels(self, metrics_uuid):
             alllabels.append(label_obj.get("name"))
 
     runmetrics.jobrun.metric_labels = list(set(alllabels) - set([None]))
-    runmetrics.jobrun.save(update_fields=["labels"])
+    runmetrics.jobrun.save(update_fields=["metric_labels"])

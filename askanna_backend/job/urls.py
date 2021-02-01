@@ -38,6 +38,13 @@ project_route.register(
     parents_query_lookups=["project__short_uuid"],
 )
 
+project_route.register(
+    r"metrics",
+    RunMetricsView,
+    basename="project-metric",
+    parents_query_lookups=["jobrun__jobdef__project__short_uuid"],
+)
+
 job_variable = router.register(r"variable", JobVariableView, basename="variable")
 job_route = router.register(r"job", JobActionView, basename="job")
 job_route.register(
@@ -51,6 +58,13 @@ job_route.register(
     JobPayloadView,
     basename="job-payload",
     parents_query_lookups=["jobdef__short_uuid"],
+)
+
+job_route.register(
+    r"metrics",
+    RunMetricsView,
+    basename="job-metric",
+    parents_query_lookups=["jobrun__jobdef__short_uuid"],
 )
 
 jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")

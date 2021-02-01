@@ -292,7 +292,12 @@ class RunMetricsSerializer(serializers.ModelSerializer):
     At this moment we take in as-is, no futher validation etc.
     """
 
+    def to_representation(self, instance):
+        print("in db:", instance.metrics)
+        return instance.metrics
+
     class Meta:
         model = RunMetrics
         fields = ["uuid", "short_uuid", "metrics"]
         read_only_fields = ["uuid", "short_uuid"]
+

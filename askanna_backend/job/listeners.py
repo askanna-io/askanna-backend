@@ -1,6 +1,7 @@
 import os
 from zipfile import ZipFile
 
+from config.celery_app import app as celery_app
 from django.conf import settings
 from django.db.models.signals import pre_delete, pre_save, post_save
 from django.db.transaction import on_commit
@@ -99,4 +100,9 @@ def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
     to a celery task.
     """
 
-    on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
+    # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
+    celery_app.send_task(
+        "job.tasks.extract_metrics_labels",
+        args=None,
+        kwargs={"metrics_uuid": instance.uuid},
+    )

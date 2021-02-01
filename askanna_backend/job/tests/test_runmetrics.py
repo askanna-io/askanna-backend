@@ -82,7 +82,7 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("metrics"), metric_response_good)
+        self.assertEqual(response.data, metric_response_good)
 
     def test_detail_as_member(self):
         """
@@ -92,8 +92,9 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
+        print("van response:", response.data, response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("metrics"), metric_response_good)
+        self.assertEqual(response.data, metric_response_good)
 
     def test_detail_as_nonmember(self):
         """
@@ -138,7 +139,7 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
             self.url, {"metrics": metric_response_good_small}, format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("metrics"), metric_response_good_small)
+        self.assertEqual(response.data, metric_response_good_small)
 
     def test_update_as_member(self):
         """
@@ -150,8 +151,9 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         response = self.client.put(
             self.url, {"metrics": metric_response_good_small}, format="json",
         )
+        print("van response:", response.data, response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("metrics"), metric_response_good_small)
+        self.assertEqual(response.data, metric_response_good_small)
 
     def test_update_as_nonmember(self):
         """
