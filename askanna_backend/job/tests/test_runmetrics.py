@@ -92,7 +92,6 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(self.url, format="json",)
-        print("van response:", response.data, response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, metric_response_good)
 
@@ -151,7 +150,6 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         response = self.client.put(
             self.url, {"metrics": metric_response_good_small}, format="json",
         )
-        print("van response:", response.data, response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, metric_response_good_small)
 
@@ -173,3 +171,82 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ProjectTestMetricsListAPI(TestMetricsListAPI):
+    def setUp(self):
+        self.url = reverse(
+            "project-metric-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__jobdef__project__short_uuid": self.project.short_uuid,
+            },
+        )
+
+    def test_list_as_admin(self):
+        """
+        We can list metrics as admin of a workspace, by project
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_list_as_member(self):
+        """
+        We can list metrics as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+
+class JobTestMetricsListAPI(TestMetricsListAPI):
+    def setUp(self):
+        self.url = reverse(
+            "job-metric-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__jobdef__short_uuid": self.jobdef.short_uuid,
+            },
+        )
+
+    def test_list_as_member(self):
+        """
+        We can list metrics as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+
+class ProjectTestMetricsDetailAPI(TestMetricsDetailAPI):
+    def setUp(self):
+        self.url = reverse(
+            "project-metric-detail",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__jobdef__project__short_uuid": self.project.short_uuid,
+                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+            },
+        )
+
+
+class JobTestMetricsDetailAPI(TestMetricsDetailAPI):
+    def setUp(self):
+        self.url = reverse(
+            "job-metric-detail",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__jobdef__short_uuid": self.jobdef.short_uuid,
+                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+            },
+        )
