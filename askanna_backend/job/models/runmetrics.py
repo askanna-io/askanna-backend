@@ -13,6 +13,9 @@ class RunMetrics(SlimBaseModel):
     )
     metrics = JSONField(blank=True, null=True)
 
+    count = models.PositiveIntegerField(editable=False, default=0)
+    size = models.PositiveIntegerField(editable=False, default=0)
+
     # short_uuid is taken from the parent JobRun model.
     @property
     def short_uuid(self):

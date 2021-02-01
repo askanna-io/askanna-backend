@@ -53,6 +53,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("metrics", core.fields.JSONField(blank=True, null=True)),
+                ("count", models.PositiveIntegerField(default=0, editable=False)),
+                ("size", models.PositiveIntegerField(default=0, editable=False)),
                 (
                     "jobrun",
                     models.ForeignKey(

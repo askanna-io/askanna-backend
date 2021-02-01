@@ -100,6 +100,11 @@ def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
     to a celery task.
     """
 
+    update_fields = kwargs.get("update_fields")
+    if update_fields:
+        # we don't do anything if this was an update on specific fields
+        return
+
     # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
     celery_app.send_task(
         "job.tasks.extract_metrics_labels",

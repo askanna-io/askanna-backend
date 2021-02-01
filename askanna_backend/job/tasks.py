@@ -203,13 +203,19 @@ def extract_metrics_labels(self, metrics_uuid):
         return
 
     alllabels = []
+    count = 0
     for metric in runmetrics.metrics:
-        labels = metric.get("label")
-        if not labels:
-            continue
-
+        labels = metric.get("label", [])
         for label_obj in labels:
             alllabels.append(label_obj.get("name"))
 
+        # count number of metrics
+        metrics = metric.get("metric", [])
+        count += len(metrics)
+
     runmetrics.jobrun.metric_labels = list(set(alllabels) - set([None]))
     runmetrics.jobrun.save(update_fields=["metric_labels"])
+
+    runmetrics.count = count
+    runmetrics.size = len(json.dumps(runmetrics.metrics))
+    runmetrics.save(update_fields=["count", "size"])

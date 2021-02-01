@@ -293,7 +293,6 @@ class RunMetricsSerializer(serializers.ModelSerializer):
     """
 
     def to_representation(self, instance):
-        print("in db:", instance.metrics)
         return instance.metrics
 
     class Meta:
