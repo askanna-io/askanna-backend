@@ -89,7 +89,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
     # get runner image
     # FIXME: allow user to define which one to use
-    runner_image = "gitlab.askanna.io:4567/askanna/askanna-cli:3.7-slim-master"
+    runner_image = settings.RUNNER_DEFAULT_DOCKER_IMAGE
 
     # pull image first
     client.images.pull(
@@ -203,6 +203,7 @@ def extract_metrics_labels(self, metrics_uuid):
         return
 
     alllabels = []
+    allkeys = []
     count = 0
     for metric in runmetrics.metrics:
         labels = metric.get("label", [])
@@ -211,10 +212,13 @@ def extract_metrics_labels(self, metrics_uuid):
 
         # count number of metrics
         metrics = metric.get("metric", [])
+        for metric_obj in metrics:
+            allkeys.append(metric_obj.get("name"))
         count += len(metrics)
 
     runmetrics.jobrun.metric_labels = list(set(alllabels) - set([None]))
-    runmetrics.jobrun.save(update_fields=["metric_labels"])
+    runmetrics.jobrun.metric_keys = list(set(allkeys) - set([None]))
+    runmetrics.jobrun.save(update_fields=["metric_labels", "metric_keys"])
 
     runmetrics.count = count
     runmetrics.size = len(json.dumps(runmetrics.metrics))

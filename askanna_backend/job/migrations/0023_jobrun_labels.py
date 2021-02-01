@@ -24,6 +24,16 @@ class Migration(migrations.Migration):
                 size=None,
             ),
         ),
+        migrations.AddField(
+            model_name="jobrun",
+            name="metric_keys",
+            field=core.fields.ArrayField(
+                base_field=models.CharField(max_length=8192),
+                blank=True,
+                default=list,
+                size=None,
+            ),
+        ),
         migrations.RemoveField(model_name="jobrun", name="description",),
         migrations.RemoveField(model_name="jobrun", name="title",),
         migrations.CreateModel(

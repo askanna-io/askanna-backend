@@ -23,6 +23,10 @@ class JobRun(SlimBaseModel):
     metric_labels = ArrayField(
         models.CharField(max_length=4096), blank=True, default=list
     )
+    # The keys field stores what is generated from the metrics
+    metric_keys = ArrayField(
+        models.CharField(max_length=8192), blank=True, default=list
+    )
 
     def get_name(self):
         return ""

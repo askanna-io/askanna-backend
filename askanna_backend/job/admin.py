@@ -56,6 +56,8 @@ class JobRunAdmin(admin.ModelAdmin):
         "jobid",
         "jobdef",
         "payload",
+        "metric_labels",
+        "metric_keys",
         "status",
         "created",
         "owner",
@@ -101,7 +103,8 @@ class RunMetricsAdmin(admin.ModelAdmin):
     list_display = [
         "uuid",
         "short_uuid",
-        "metrics",
+        "count",
+        "size",
     ]
     list_display_links = (
         "uuid",

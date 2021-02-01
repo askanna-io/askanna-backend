@@ -66,6 +66,17 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     jobdef = serializers.SerializerMethodField("get_jobdef")
 
+    metrics = serializers.SerializerMethodField("get_metrics")
+
+    def get_metrics(self, instance):
+        metrics = instance.metrics.get()
+        return {
+            "count": metrics.count,
+            "size": metrics.size,
+            "labels": instance.metric_labels,
+            "keys": instance.metric_keys,
+        }
+
     def get_payload(self, instance):
         payload = JobPayloadSerializer(instance.payload, many=False)
         return payload.data
