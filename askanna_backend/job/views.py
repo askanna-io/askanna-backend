@@ -788,6 +788,24 @@ class RunMetricsView(
         "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
     }
 
+    @action(detail=True, methods=["get"])
+    def meta(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return Response(
+            {
+                "uuid": instance.uuid,
+                "short_uuid": instance.short_uuid,
+                "project": instance.jobrun.jobdef.project.relation_to_json,
+                "jobdef": instance.jobrun.jobdef.relation_to_json,
+                "run": instance.jobrun.relation_to_json,
+                "size": instance.size,
+                "count": instance.count,
+                "labels": instance.jobrun.metric_labels,
+                "created": instance.created,
+                "modified": instance.modified,
+            }
+        )
+
     # Override because we don't return the full object, just the `metrics` field
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
