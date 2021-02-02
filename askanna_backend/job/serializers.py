@@ -69,7 +69,15 @@ class JobRunSerializer(serializers.ModelSerializer):
     metrics = serializers.SerializerMethodField("get_metrics")
 
     def get_metrics(self, instance):
-        metrics = instance.metrics.get()
+        try:
+            metrics = instance.metrics.get()
+        except:
+            return {
+                "count": 0,
+                "size": 0,
+                "labels": [],
+                "keys": [],
+            }
         return {
             "count": metrics.count,
             "size": metrics.size,
