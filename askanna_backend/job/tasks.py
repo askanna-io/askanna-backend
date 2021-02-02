@@ -61,8 +61,8 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     # First save current Celery id to the jobid field
     jr = JobRun.objects.get(pk=jobrun_uuid)
     jr.jobid = self.request.id
-    jr.status = "PENDING"
-    jr.save(update_fields=["jobid", "status"])
+    jr.save(update_fields=["jobid"])
+    jr.to_pending()
 
     # What is the jobdef specified?
     jd = jr.jobdef
@@ -149,8 +149,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     env_variables.update(**payload_variables)
     env_variables.update(**runner_variables)
 
-    jr.status = "IN_PROGRESS"
-    jr.save(update_fields=["status"])
+    jr.to_inprogress()
 
     container = client.containers.run(
         runner_image,
@@ -182,14 +181,11 @@ def start_jobrun_dockerized(self, jobrun_uuid):
             # we handle this and set the jr.status = "FAILED"
             op.exit_code = int(logline[-1].replace("AskAnna exit_code=", ""))
             op.save()
-            jr.status = "FAILED"
-            jr.save()
+            jr.to_failed()
             return
 
     op.save()
-
-    jr.status = "COMPLETED"
-    jr.save(update_fields=["status"])
+    jr.to_completed()
 
 
 @shared_task(bind=True, name="job.tasks.extract_metrics_labels")

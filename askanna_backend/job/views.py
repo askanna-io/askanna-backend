@@ -94,7 +94,7 @@ class StartJobView(viewsets.GenericViewSet):
         jobdef = self.get_object()
 
         # validate whether request.data is really a json structure
-        print(request.headers.items(), request.data)
+        # print(request.headers.items(), request.data)
         if "Content-Length" not in request.headers.keys():
             raise ParseError(detail="'Content-Length' HTTP-header is required")
         try:
@@ -875,6 +875,8 @@ class RunMetricsView(
             Here the metrics object doesn't exist yet, but we only create one if
             it is a member of the workspace, so check permissions towards the run object
             """
+
+            # First try to see the parent exist
             parent = self.get_parent_instance()
             for permission in [IsMemberOfJobDefAttributePermission()]:
                 if not permission.has_object_permission(

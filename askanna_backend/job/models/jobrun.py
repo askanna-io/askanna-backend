@@ -28,6 +28,22 @@ class JobRun(SlimBaseModel):
         models.CharField(max_length=8192), blank=True, default=list
     )
 
+    def set_status(self, status_code):
+        self.status = status_code
+        self.save(update_fields=["status"])
+
+    def to_pending(self):
+        self.set_status("PENDING")
+
+    def to_failed(self):
+        self.set_status("FAILED")
+
+    def to_completed(self):
+        self.set_status("COMPLETED")
+
+    def to_inprogress(self):
+        self.set_status("IN_PROGRESS")
+
     def get_name(self):
         return ""
 
