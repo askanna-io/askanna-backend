@@ -30,7 +30,7 @@ class JobRun(SlimBaseModel):
 
     def set_status(self, status_code):
         self.status = status_code
-        self.save(update_fields=["status"])
+        self.save(update_fields=["status", "modified"])
 
     def to_pending(self):
         self.set_status("PENDING")
