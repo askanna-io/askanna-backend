@@ -106,8 +106,10 @@ def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
         return
 
     # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
-    celery_app.send_task(
-        "job.tasks.extract_metrics_labels",
-        args=None,
-        kwargs={"metrics_uuid": instance.uuid},
+    on_commit(
+        lambda: celery_app.send_task(
+            "job.tasks.extract_metrics_labels",
+            args=None,
+            kwargs={"metrics_uuid": instance.uuid},
+        )
     )
