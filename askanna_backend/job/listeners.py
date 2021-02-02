@@ -99,7 +99,6 @@ def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
     We don't do this in a django instance, we delegate this
     to a celery task.
     """
-
     update_fields = kwargs.get("update_fields")
     if update_fields:
         # we don't do anything if this was an update on specific fields

@@ -774,6 +774,10 @@ class RunMetricsView(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
+
+    # we removed 'patch' from the http_method_names as we don't suppor this in this view
+    # - post and delete
+    http_method_names = ["get", "put", "head", "options", "trace"]
     queryset = RunMetrics.objects.all()
     lookup_field = "jobrun__short_uuid"
     serializer_class = RunMetricsSerializer
@@ -841,12 +845,6 @@ class RunMetricsView(
         return queryset.filter(
             jobrun__jobdef__project__workspace__in=member_of_workspaces
         )
-
-    # partial_update should be implemented with some way of partially
-    # modifying the metrics JSON value.
-    # Something like http://jsonpatch.com/
-    def partial_update(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
 
     def get_parent_instance(self):
         Model = self.get_queryset().model

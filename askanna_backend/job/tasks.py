@@ -189,7 +189,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     op.save()
 
     jr.status = "COMPLETED"
-    jr.save()
+    jr.save(update_fields=["status"])
 
 
 @shared_task(bind=True, name="job.tasks.extract_metrics_labels")
@@ -198,10 +198,10 @@ def extract_metrics_labels(self, metrics_uuid):
     Extract labels in .metrics and store the list of labels in .jobrun.labels
     """
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
+    jobrun = runmetrics.jobrun
     if not runmetrics.metrics:
         # we don't have metrics stored, as this is None (by default on creation)
         return
-
     alllabels = []
     allkeys = []
     count = 0
@@ -216,9 +216,9 @@ def extract_metrics_labels(self, metrics_uuid):
             allkeys.append(metric_obj.get("name"))
         count += len(metrics)
 
-    runmetrics.jobrun.metric_labels = list(set(alllabels) - set([None]))
-    runmetrics.jobrun.metric_keys = list(set(allkeys) - set([None]))
-    runmetrics.jobrun.save(update_fields=["metric_labels", "metric_keys"])
+    jobrun.metric_keys = list(set(allkeys) - set([None]))
+    jobrun.metric_labels = list(set(alllabels) - set([None]))
+    jobrun.save(update_fields=["metric_labels", "metric_keys"])
 
     runmetrics.count = count
     runmetrics.size = len(json.dumps(runmetrics.metrics))
