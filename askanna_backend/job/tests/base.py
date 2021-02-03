@@ -126,7 +126,7 @@ class BaseJobTestDef:
             created_by=cls.users["user"],
         )
         cls.package.write(
-            open(settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"), "rb",)
+            open(settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"), "rb",)
         )
 
         cls.package2 = Package.objects.create(
@@ -139,8 +139,19 @@ class BaseJobTestDef:
             open(settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"), "rb",)
         )
 
+        cls.package3 = Package.objects.create(
+            project=cls.project2,
+            size=1,
+            title="TestPackage3",
+            created_by=cls.users["user"],
+        )
+        cls.package3.write(
+            open(settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"), "rb",)
+        )
+
         cls.jobdef = JobDef.objects.create(name="TestJobDef", project=cls.project,)
-        cls.jobdef2 = JobDef.objects.create(name="TestJobDef2", project=cls.project2,)
+        cls.jobdef2 = JobDef.objects.create(name="my-test-job", project=cls.project2,)
+        cls.jobdef3 = JobDef.objects.create(name="my-test-job3", project=cls.project2,)
         cls.jobruns = {
             "run1": JobRun.objects.create(
                 package=cls.package,
@@ -157,6 +168,13 @@ class BaseJobTestDef:
                 member=cls.memberA_member,
             ),
             "run3": JobRun.objects.create(
+                package=cls.package2,
+                jobdef=cls.jobdef3,
+                status="SUBMITTED",
+                owner=cls.users["user"],
+                member=cls.memberA_member2,
+            ),
+            "run4": JobRun.objects.create(
                 package=cls.package2,
                 jobdef=cls.jobdef2,
                 status="SUBMITTED",

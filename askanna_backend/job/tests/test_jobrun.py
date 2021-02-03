@@ -37,7 +37,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_nonmember(self):
         """
@@ -309,6 +309,52 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_manifest_as_member_no_config_found(self):
+        """
+        There is no askanna.yml found
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        print(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("AskAnna could not find the file:", str(response.content))
+
+    def test_manifest_as_member_no_job_not_found(self):
+        """
+        The job is not found in askanna.yml
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        url = reverse(
+            "jobrun-manifest",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
+        )
+
+        response = self.client.get(url, format="json",)
+        print(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("AskAnna could not start the job", str(response.content))
+
+    def test_manifest_as_member_correct_job(self):
+        """
+        The job is not found in askanna.yml
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        url = reverse(
+            "jobrun-manifest",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run4"].short_uuid},
+        )
+
+        response = self.client.get(url, format="json",)
+        print(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("python my_script.py", str(response.content))
 
 
 class TestJobRunLogAPI(BaseJobTestDef, APITestCase):

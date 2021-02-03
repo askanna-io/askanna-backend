@@ -2,6 +2,7 @@ import os
 import uuid
 
 from core.models import AuthorModel, BaseModel
+from package.signals import package_upload_finish
 from django.conf import settings
 from django.db import models
 
@@ -62,6 +63,11 @@ class Package(AuthorModel, BaseModel):
         )
         with open(self.stored_path, "wb") as f:
             f.write(stream.read())
+
+        # unpack the package via signal
+        package_upload_finish.send(
+            sender=self.__class__, postheaders={}, obj=self,
+        )
 
     def prune(self):
         """
