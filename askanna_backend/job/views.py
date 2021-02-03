@@ -797,10 +797,10 @@ class RunMetricsView(
         instance = self.get_object()
         return Response(
             {
-                "uuid": instance.uuid,
                 "short_uuid": instance.short_uuid,
                 "project": instance.jobrun.jobdef.project.relation_to_json,
-                "jobdef": instance.jobrun.jobdef.relation_to_json,
+                "workspace": instance.jobrun.jobdef.project.workspace.relation_to_json,
+                "job": instance.jobrun.jobdef.relation_to_json,
                 "run": instance.jobrun.relation_to_json,
                 "size": instance.size,
                 "count": instance.count,
