@@ -14,6 +14,7 @@ repos:
   - repo: local
     hooks:
       - id: flake8
+        args: ["--config=setup.cfg", "--ignore=E203"]
         name: flake8
         entry: flake8
         language: python

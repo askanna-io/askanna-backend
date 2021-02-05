@@ -74,6 +74,14 @@ jobrun_route.register(
     basename="jobrun-payload",
     parents_query_lookups=["jobrun__short_uuid"],
 )
+
+jobrun_route.register(
+    r"metrics",
+    RunMetricsView,
+    basename="run-metric",
+    parents_query_lookups=["jobrun__short_uuid"],
+)
+
 artifact_route = jobrun_route.register(
     r"artifact",
     JobArtifactView,

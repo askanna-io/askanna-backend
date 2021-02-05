@@ -80,17 +80,17 @@ def bx_decode(string, alphabet=DEFAULT, mapping=None):
     if not isinstance(mapping, Mapping):
         raise TypeError("a Mapping is required")
 
-    sum = 0
+    sum_of_string = 0
 
     for digit in string:
         try:
-            sum = base * sum + mapping[digit]
+            sum_of_string = base * sum_of_string + mapping[digit]
         except KeyError:
             raise ValueError(
                 "invalid literal for bx_decode with base %i: '%s'" % (base, digit)
             )
 
-    return sum
+    return sum_of_string
 
 
 def group(string, n):
