@@ -797,7 +797,7 @@ class RunMetricsView(
         instance = self.get_object()
         return Response(
             {
-                "short_uuid": instance.short_uuid,
+                "suuid": instance.short_uuid,
                 "project": instance.jobrun.jobdef.project.relation_to_json,
                 "workspace": instance.jobrun.jobdef.project.workspace.relation_to_json,
                 "job": instance.jobrun.jobdef.relation_to_json,
