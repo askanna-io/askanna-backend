@@ -10,20 +10,61 @@ from workspace.listeners import install_demo_project_in_workspace
 
 metric_response_good = [
     {
-        "metric": [
-            {"name": "Accuracy", "value": "0.876", "type": "integer"},
-            {"name": "Quality", "value": "Good", "type": "string"},
+        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
         ],
+    },
+    {
+        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
     },
     {
-        "metric": [
-            {"name": "Accuracy", "value": "0.623", "type": "integer"},
-            {"name": "Quality", "value": "Ok", "type": "string"},
+        "metric": [{"name": "Quality", "value": "Good", "type": "string"}],
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
         ],
+    },
+    {
+        "metric": [{"name": "Quality", "value": "Ok", "type": "string"}],
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
+        ],
+    },
+]
+metric_response_good_reversed = [
+    {
+        "metric": [{"name": "Quality", "value": "Ok", "type": "string"}],
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
+        ],
+    },
+    {
+        "metric": [{"name": "Quality", "value": "Good", "type": "string"}],
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+        ],
+    },
+    {
+        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+        ],
+    },
+    {
+        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Define the model that stores the metrics for a job run."""
+import json
 import os
+
 from django.conf import settings
 from django.db import models
 
@@ -60,14 +62,40 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
 
     def load_metrics_from_file(self, reverse=False):
         path = reverse and self.stored_path_reversed_sort or self.stored_path
-        with open(path, "r") as f:
-            return f.read()
+        try:
+            with open(path, "r") as f:
+                return json.loads(f.read())
+        except FileExistsError as e:
+            raise e
+
+    def create_reversed_sort(self):
+        reversed_metrics = sorted(
+            self.metrics,
+            key=lambda x: (
+                x["metric"][0]["name"],
+                x["metric"][0]["type"],
+                x["metric"][0]["value"],
+            ),
+            reverse=True,
+        )
+        os.makedirs(self.get_base_path(), exist_ok=True)
+        with open(self.stored_path_reversed_sort, "w") as f:
+            f.write(json.dumps(reversed_metrics))
 
     def get_sorted(self, reverse=False) -> dict:
         """
-        Load sorted metrics from filesystem,
+        Load sorted metrics from filesystem, if not found create first from `self.metrics`
         """
-        return self.load_metrics_from_file(reverse=reverse)
+        if reverse:
+            try:
+                metrics = self.load_metrics_from_file(reverse=reverse)
+            except FileNotFoundError:
+                self.create_reversed_sort()
+                metrics = self.load_metrics_from_file(reverse=reverse)
+                return metrics
+            else:
+                return metrics
+        return self.metrics
 
     # def apply_filter(self, filter_cond: [] = None) -> dict:
     #     if not self.applied_filters:

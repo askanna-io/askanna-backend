@@ -71,7 +71,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_metrics(self, instance):
         try:
             metrics = instance.metrics.get()
-        except:
+        except ObjectDoesNotExist:
             return {
                 "count": 0,
                 "size": 0,
@@ -312,6 +312,13 @@ class RunMetricsSerializer(serializers.ModelSerializer):
     """
 
     def to_representation(self, instance):
+        # print(self.context["request"].query_params)
+        """
+        This is used in 'list' views
+        """
+        ordering = self.context.get("request").query_params.get("ordering", [])
+        if ordering == "-metric.name":
+            return instance.get_sorted(reverse=True)
         return instance.metrics
 
     class Meta:

@@ -7,6 +7,7 @@ from .base import (
     BaseJobTestDef,
     metric_response_good,
     metric_response_good_small,
+    metric_response_good_reversed,
 )
 
 
@@ -111,6 +112,17 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_detail_as_member_reversed(self):
+        """
+        We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url + "?ordering=-metric.name", format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, metric_response_good_reversed)
 
 
 class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):

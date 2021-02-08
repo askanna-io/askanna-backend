@@ -525,7 +525,7 @@ class JobArtifactShortcutView(
         try:
             artifact = instance.artifact.all().first()
             location = os.path.join(artifact.storage_location, artifact.filename)
-        except (ObjectDoesNotExist, AttributeError, Exception) as e:
+        except (ObjectDoesNotExist, AttributeError, Exception):
             return Response(
                 {"message_type": "error", "message": "Artifact was not found"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -812,7 +812,14 @@ class RunMetricsView(
 
     # Override because we don't return the full object, just the `metrics` field
     def retrieve(self, request, *args, **kwargs):
+        """
+        This is used in 'detail' views
+        """
         instance = self.get_object()
+        ordering = request.query_params.get("ordering", [])
+        print("ordering=", ordering)
+        if ordering == "-metric.name":
+            return Response(instance.get_sorted(reverse=True))
         return Response(instance.metrics)
 
     # Override because we don't return the full object, just the `metrics` field
