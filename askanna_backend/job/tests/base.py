@@ -225,13 +225,13 @@ class BaseJobTestDef:
         }
         cls.runmetrics = {
             "run1": RunMetrics.objects.create(
-                jobrun=cls.jobruns["run1"], metrics=metric_response_good
+                jobrun=cls.jobruns["run1"], metrics=metric_response_good, count=4
             ),
             "run2": RunMetrics.objects.create(
-                jobrun=cls.jobruns["run2"], metrics=metric_response_bad
+                jobrun=cls.jobruns["run2"], metrics=metric_response_bad, count=2
             ),
             "run3": RunMetrics.objects.create(
-                jobrun=cls.jobruns["run3"], metrics=metric_response_bad
+                jobrun=cls.jobruns["run3"], metrics=metric_response_bad, count=2
             ),
         }
         cls.artifact = JobArtifact.objects.create(

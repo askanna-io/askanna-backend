@@ -813,14 +813,14 @@ class RunMetricsView(
     # Override because we don't return the full object, just the `metrics` field
     def retrieve(self, request, *args, **kwargs):
         """
-        This is used in 'detail' views
+        This is used in 'detail' views, we call '.to_representation' explicitly as we can eiter get
+        a list or dict, which will raise errors from the serializer (not the expected type)
         """
         instance = self.get_object()
-        ordering = request.query_params.get("ordering", [])
-        print("ordering=", ordering)
-        if ordering == "-metric.name":
-            return Response(instance.get_sorted(reverse=True))
-        return Response(instance.metrics)
+        serializer_kwargs = {}
+        serializer_kwargs["context"] = self.get_serializer_context()
+        serializer = self.get_serializer(instance, **serializer_kwargs)
+        return Response(serializer.to_representation(instance))
 
     # Override because we don't return the full object, just the `metrics` field
     def update(self, request, *args, **kwargs):

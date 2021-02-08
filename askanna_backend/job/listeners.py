@@ -9,7 +9,7 @@ from django.dispatch import receiver
 
 from job.models import JobArtifact, JobOutput, JobPayload, JobRun, RunMetrics
 from job.signals import artifact_upload_finish
-from job.tasks import start_jobrun_dockerized, extract_metrics_labels
+from job.tasks import start_jobrun_dockerized
 from users.models import MSP_WORKSPACE
 
 

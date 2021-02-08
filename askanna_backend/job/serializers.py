@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from urllib.parse import urlencode
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
@@ -314,12 +316,50 @@ class RunMetricsSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         # print(self.context["request"].query_params)
         """
-        This is used in 'list' views
+        This is used in 'list' and 'detail' views
         """
-        ordering = self.context.get("request").query_params.get("ordering", [])
+        request = self.context.get("request")
+        ordering = request.query_params.get("ordering", [])
+        offset = request.query_params.get("offset", 0)
+        limit = request.query_params.get("limit", 100)
+        limit_or_offset = request.query_params.get(
+            "offset"
+        ) or request.query_params.get("limit")
+        count = instance.count
+        metrics = instance.metrics
+
         if ordering == "-metric.name":
-            return instance.get_sorted(reverse=True)
-        return instance.metrics
+            metrics = instance.get_sorted(reverse=True)
+
+        if limit_or_offset:
+            original_params = request.query_params.copy()
+            # return paged metrics
+            offset = int(offset)
+            limit = int(limit)
+            results = metrics
+
+            if count:
+                # are we having lines?
+                results = metrics[offset : offset + limit]
+            response_json = {"count": count, "results": results}
+
+            scheme = request.scheme
+            path = request.path
+            host = request.META["HTTP_HOST"]
+
+            if offset + limit < count:
+                original_params["offset"] = offset + limit
+            if offset - limit > -1:
+                original_params["offset"] = offset - limit
+
+            urlparams = urlencode(original_params)
+            response_json["previous"] = "{scheme}://{host}{path}?{params}".format(
+                scheme=scheme, host=host, path=path, params=urlparams
+            )
+            return response_json
+
+        # by default, return all metrics
+        return metrics
 
     class Meta:
         model = RunMetrics

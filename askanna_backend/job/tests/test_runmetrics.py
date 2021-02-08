@@ -124,6 +124,25 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, metric_response_good_reversed)
 
+    def test_detail_as_member_reversed_with_limit_2(self):
+        """
+        We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(
+            self.url + "?ordering=-metric.name&limit=2&offset=0",
+            format="json",
+            HTTP_HOST="testserver",
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data.get("results"), metric_response_good_reversed[0:2]
+        )
+        self.assertEqual(response.data.get("count"), 4)
+
 
 class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
     """
