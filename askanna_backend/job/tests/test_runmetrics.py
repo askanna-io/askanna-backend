@@ -143,6 +143,19 @@ class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.data.get("count"), 4)
 
+    def test_detail_as_member_metricsmeta(self):
+        """
+        Retrieve the meta information about the metrics
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(
+            self.url + "meta/", format="json", HTTP_HOST="testserver",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 4)
+
 
 class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
     """
