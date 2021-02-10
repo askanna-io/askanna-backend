@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
-from package.models import Package
 from project.models import Project
-from users.models import Membership, MSP_WORKSPACE
+from users.models import MSP_WORKSPACE
 from workspace.models import Workspace
 
 
@@ -120,7 +119,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         request = self.context["request"]
         url = "{scheme}://{host}/{workspace}/project/{project}".format(
             scheme=request.scheme,
-            host=request.get_host().replace("-api", "").replace("api", ""),
+            host=request.get_host().replace("-api", "").replace("api.", ""),
             workspace=instance.workspace.short_uuid,
             project=instance.short_uuid,
         )
