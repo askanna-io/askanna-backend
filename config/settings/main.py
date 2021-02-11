@@ -45,7 +45,10 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 try:
-    DATABASES = {"default": env.db("DATABASE_URL")}
+    DATABASES = {
+        "default": env.db("DATABASE_URL"),
+        "stats": env.db("STATS_DATABASE_URL"),
+    }
 except environ.ImproperlyConfigured:
     DATABASES = {
         "default": {
@@ -55,11 +58,22 @@ except environ.ImproperlyConfigured:
             "PASSWORD": env.str("POSTGRES_PASSWORD"),
             "HOST": env.str("POSTGRES_HOST"),
             "PORT": env.str("POSTGRES_PORT"),
-        }
+        },
+        "stats": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env.str("POSTGRES_DB"),
+            "USER": env.str("POSTGRES_USER"),
+            "PASSWORD": env.str("POSTGRES_PASSWORD"),
+            "HOST": env.str("POSTGRES_HOST"),
+            "PORT": env.str("POSTGRES_PORT"),
+        },
     }
 
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
+
+DATABASE_ROUTERS = ["core.dbrouter.StatsRouter"]
+
 
 # URLS
 # ------------------------------------------------------------------------------
