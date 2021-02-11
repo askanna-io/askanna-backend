@@ -74,12 +74,12 @@ metric_response_good_reversed = [
 ]
 metric_response_good_small = [
     {
-        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
-        "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-    },
-    {
         "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
         "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
+    },
+    {
+        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
     },
 ]
 metric_response_bad = [

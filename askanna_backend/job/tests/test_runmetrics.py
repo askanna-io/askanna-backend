@@ -182,6 +182,8 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
             self.url, {"metrics": metric_response_good_small}, format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data)
+        print(metric_response_good_small)
         self.assertEqual(response.data, metric_response_good_small)
 
     def test_update_as_member(self):

@@ -99,15 +99,15 @@ class JobVariableAdmin(admin.ModelAdmin):
 @admin.register(RunMetrics)
 class RunMetricsAdmin(admin.ModelAdmin):
     list_display = [
-        "uuid",
+        "jobrun",
         "short_uuid",
         "count",
         "size",
     ]
     list_display_links = (
-        "uuid",
+        "jobrun",
         "short_uuid",
     )
 
     raw_id_fields = ["jobrun"]
-    search_fields = ["uuid", "uuid__short_uuid"]
+    search_fields = ["jobrun", "short_uuid"]

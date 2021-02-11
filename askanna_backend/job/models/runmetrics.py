@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """Define the model that stores the metrics for a job run."""
+import io
 import json
 import os
 
 from django.conf import settings
 from django.db import models
 
-from core.fields import JSONField
 from core.models import SlimBaseModel, ArtifactModelMixin
 
 
@@ -36,7 +36,16 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
     jobrun = models.ForeignKey(
         "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="metrics"
     )
-    metrics = JSONField(blank=True, null=True)
+
+    @property
+    def metrics(self):
+        print("getting metrics")
+        return self.get_sorted()
+
+    @metrics.setter
+    def metrics(self, value):
+        print("saving metrics", value)
+        self.write(io.StringIO(json.dumps(value)))
 
     count = models.PositiveIntegerField(editable=False, default=0)
     size = models.PositiveIntegerField(editable=False, default=0)
@@ -95,7 +104,7 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
                 return metrics
             else:
                 return metrics
-        return self.metrics
+        return self.load_metrics_from_file(reverse=False)
 
     # def apply_filter(self, filter_cond: [] = None) -> dict:
     #     if not self.applied_filters:

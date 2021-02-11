@@ -828,11 +828,10 @@ class RunMetricsView(
 
     # Override because we don't return the full object, just the `metrics` field
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
+        _ = kwargs.pop("partial", False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        instance.metrics = request.data.get("metrics", [])
+        instance.save()
 
         if getattr(instance, "_prefetched_objects_cache", None):
             # If 'prefetch_related' has been applied to a queryset, we need to
@@ -855,10 +854,6 @@ class RunMetricsView(
         ).values_list("object_uuid", flat=True)
         return queryset.filter(
             jobrun__jobdef__project__workspace__in=member_of_workspaces
-        ).select_related(
-            "jobrun__jobdef",
-            "jobrun__jobdef__project",
-            "jobrun__jobdef__project__workspace",
         )
 
     def get_parent_instance(self):
