@@ -12,6 +12,7 @@ from users.models import (
     MSP_WORKSPACE,
     WS_ADMIN,
     UserProfile,
+    Invitation,
 )
 from users.signals import (
     password_reset_signal,
@@ -234,6 +235,16 @@ def remove_membership(sender, instance, **kwargs):
 def install_avatar_after_new_membership(sender, instance, created, **kwargs):
     """
     Install a default avatar for the user when a profile was created
+    """
+    if created:
+        instance.refresh_from_db()
+        instance.install_default_avatar()
+
+
+@receiver(post_save, sender=Invitation)
+def install_avatar_after_new_invite(sender, instance, created, **kwargs):
+    """
+    Install a default avatar for the user when he was invited
     """
     if created:
         instance.refresh_from_db()
