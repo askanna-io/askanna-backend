@@ -23,6 +23,7 @@ def log_stats_from_container(self, container_id, jobrun_suuid):
     for stat in container.stats(stream=True, decode=True):
         statslog.append(stat)
 
+    print(json.dumps(statslog))
     # write statslog away to stats database
 
 

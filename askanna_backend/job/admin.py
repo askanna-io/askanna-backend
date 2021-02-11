@@ -56,8 +56,6 @@ class JobRunAdmin(admin.ModelAdmin):
         "jobid",
         "jobdef",
         "payload",
-        "metric_labels",
-        "metric_keys",
         "status",
         "created",
         "owner",
