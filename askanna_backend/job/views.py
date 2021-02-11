@@ -278,7 +278,11 @@ class JobRunView(
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
+        return queryset.filter(
+            jobdef__project__workspace__in=member_of_workspaces
+        ).select_related(
+            "jobdef", "jobdef__project", "package", "payload", "owner", "member"
+        )
 
     @action(
         detail=True, methods=["get"], name="JobRun Manifest",
@@ -851,6 +855,10 @@ class RunMetricsView(
         ).values_list("object_uuid", flat=True)
         return queryset.filter(
             jobrun__jobdef__project__workspace__in=member_of_workspaces
+        ).select_related(
+            "jobrun__jobdef",
+            "jobrun__jobdef__project",
+            "jobrun__jobdef__project__workspace",
         )
 
     def get_parent_instance(self):

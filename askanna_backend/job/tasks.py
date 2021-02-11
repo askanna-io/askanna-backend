@@ -9,7 +9,21 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 import docker
 
+from config.celery_app import app as celery_app
 from job.models import JobRun, JobVariable, RunMetrics
+
+
+@shared_task(bind=True, name="job.tasks.log_stats_from_container")
+def log_stats_from_container(self, container_id, jobrun_suuid):
+    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+    container = client.containers.get(container_id)
+
+    statslog = []
+
+    for stat in container.stats(stream=True, decode=True):
+        statslog.append(stat)
+
+    # write statslog away to stats database
 
 
 @shared_task(bind=True)
@@ -167,6 +181,11 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         detach=True,
         auto_remove=settings.DOCKER_AUTO_REMOVE_CONTAINER,
         # remove=True,  # remove container after run
+    )
+    celery_app.send_task(
+        "job.tasks.log_stats_from_container",
+        args=None,
+        kwargs={"container_id": container.id, "jobrun_suuid": jr.short_uuid},
     )
 
     # logs = container.logs()

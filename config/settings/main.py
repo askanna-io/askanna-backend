@@ -125,6 +125,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    print("Turn on dbconnection middleware")
+    MIDDLEWARE.append("core.middleware.DebugDBConnectionMiddelware")
+
 
 # TEMPLATES
 # ------------------------------------------------------------------------------
