@@ -7,4 +7,4 @@ from .jobpayload import JobPayload  # noqa
 from .joboutput import JobOutput, ChunkedJobOutputPart  # noqa
 from .jobrun import JobRun  # noqa
 from .jobvariable import JobVariable  # noqa
-from .runmetrics import RunMetrics  # noqa
+from .runmetrics import RunMetrics, RunMetricsRow  # noqa

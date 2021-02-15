@@ -5,8 +5,10 @@ import json
 import os
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 
+from core.fields import JSONField
 from core.models import SlimBaseModel, ArtifactModelMixin
 
 
@@ -136,3 +138,26 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
         ordering = ["-created"]
         verbose_name = "Run Metrics"
         verbose_name_plural = "Run Metrics"
+
+
+class RunMetricsRow(SlimBaseModel):
+    jobrun_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+    metric = JSONField(
+        help_text="JSON field as list with multiple objects which are metrics, but we limit to one for db scanning only"
+    )
+    label = JSONField(
+        help_text="JSON field as list with multiple objects which are labels"
+    )
+
+    class Meta:
+        ordering = ["-created"]
+        indexes = [
+            GinIndex(
+                name="metric_json_index",
+                fields=["metric"],
+                opclasses=["jsonb_path_ops"],
+            ),
+            GinIndex(
+                name="label_json_index", fields=["label"], opclasses=["jsonb_path_ops"]
+            ),
+        ]

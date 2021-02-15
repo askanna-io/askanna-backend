@@ -10,7 +10,7 @@ from django.utils.module_loading import import_string
 import docker
 
 from config.celery_app import app as celery_app
-from job.models import JobRun, JobVariable, RunMetrics
+from job.models import JobRun, JobVariable, RunMetrics, RunMetricsRow
 
 
 @shared_task(bind=True, name="job.tasks.log_stats_from_container")
@@ -239,3 +239,14 @@ def extract_metrics_labels(self, metrics_uuid):
     runmetrics.count = count
     runmetrics.size = len(json.dumps(runmetrics.metrics))
     runmetrics.save(update_fields=["count", "size"])
+
+
+@shared_task(bind=True, name="job.tasks.move_metrics_to_rows")
+def move_metrics_to_rows(self, metrics_uuid):
+    runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
+
+    # remove old rows if any
+    RunMetricsRow.objects.filter(jobrun_suuid=runmetrics.short_uuid).delete()
+
+    for metric in runmetrics.metrics:
+        RunMetricsRow.objects.create(**metric)
