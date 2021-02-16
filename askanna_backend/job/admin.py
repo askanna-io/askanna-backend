@@ -11,6 +11,7 @@ from job.models import (
     JobRun,
     JobVariable,
     RunMetrics,
+    RunMetricsRow,
 )
 
 admin.site.register(ChunkedJobOutputPart)
@@ -111,3 +112,26 @@ class RunMetricsAdmin(admin.ModelAdmin):
 
     raw_id_fields = ["jobrun"]
     search_fields = ["jobrun", "short_uuid"]
+
+
+@admin.register(RunMetricsRow)
+class RunMetricsRowAdmin(admin.ModelAdmin):
+    list_display = [
+        "project_suuid",
+        "job_suuid",
+        "run_suuid",
+        "short_uuid",
+        "metric",
+        "label",
+    ]
+    list_display_links = (
+        "project_suuid",
+        "job_suuid",
+        "run_suuid",
+    )
+
+    search_fields = [
+        "project_suuid",
+        "job_suuid",
+        "run_suuid",
+    ]
