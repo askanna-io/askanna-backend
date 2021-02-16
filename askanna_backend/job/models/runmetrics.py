@@ -157,6 +157,7 @@ class RunMetricsRow(SlimBaseModel):
         help_text="JSON field as list with multiple objects which are labels"
     )
 
+    # Redefine the created field, we want this to be overwritabe and with other default
     created = models.DateTimeField(default=timezone.now)
 
     class Meta:

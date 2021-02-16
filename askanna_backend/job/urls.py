@@ -17,6 +17,7 @@ from job.views import (
     ProjectJobViewSet,
     StartJobView,
     RunMetricsView,
+    RunMetricsRowView,
 )
 from project.urls import project_route
 from project.urls import router as prouter
@@ -45,6 +46,13 @@ project_route.register(
     parents_query_lookups=["jobrun__jobdef__project__short_uuid"],
 )
 
+project_route.register(
+    r"metrics",
+    RunMetricsRowView,
+    basename="project-metric",
+    parents_query_lookups=["project_suuid"],
+)
+
 job_variable = router.register(r"variable", JobVariableView, basename="variable")
 job_route = router.register(r"job", JobActionView, basename="job")
 job_route.register(
@@ -67,6 +75,13 @@ job_route.register(
     parents_query_lookups=["jobrun__jobdef__short_uuid"],
 )
 
+job_route.register(
+    r"metrics",
+    RunMetricsRowView,
+    basename="job-metric",
+    parents_query_lookups=["job_suuid"],
+)
+
 jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
 jobrun_route.register(
     r"payload",
@@ -80,6 +95,13 @@ jobrun_route.register(
     RunMetricsView,
     basename="run-metric",
     parents_query_lookups=["jobrun__short_uuid"],
+)
+
+jobrun_route.register(
+    r"metrics",
+    RunMetricsRowView,
+    basename="run-metric",
+    parents_query_lookups=["run_suuid"],
 )
 
 artifact_route = jobrun_route.register(

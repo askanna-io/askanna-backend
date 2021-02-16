@@ -37,6 +37,7 @@ from job.models import (
     JobRun,
     JobVariable,
     RunMetrics,
+    RunMetricsRow,
 )
 from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.permissions import (
@@ -59,6 +60,7 @@ from job.serializers import (
     JobVariableUpdateSerializer,
     StartJobSerializer,
     RunMetricsSerializer,
+    RunMetricsRowSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
@@ -770,11 +772,31 @@ class JobVariableView(
         return queryset.filter(project__workspace__in=member_of_workspaces)
 
 
+class RunMetricsRowView(
+    PermissionByActionMixin,
+    NestedViewSetMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = RunMetricsRow.objects.all().order_by("created")
+    lookup_field = "run_suuid"  # not needed for listviews
+    serializer_class = RunMetricsRowSerializer
+
+    permission_classes = [
+        IsMemberOfJobRunAttributePermission | IsAdminUser,
+    ]
+
+    permission_classes_by_action = {
+        "list": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+    }
+
+
 class RunMetricsView(
     PermissionByActionMixin,
     NestedViewSetMixin,
     mixins.RetrieveModelMixin,
-    mixins.ListModelMixin,
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
