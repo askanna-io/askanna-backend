@@ -64,6 +64,7 @@ from job.serializers import (
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
+from project.models import Project
 from users.models import MSP_WORKSPACE
 
 
@@ -791,6 +792,24 @@ class RunMetricsRowView(
         "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
         "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
     }
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        member_of_projects = Project.objects.filter(
+            workspace_id__in=member_of_workspaces
+        ).values_list("short_uuid", flat=True)[
+            ::-1
+        ]  # hard convert to list for cross db query
+        return queryset.filter(project_suuid__in=member_of_projects)
 
 
 class RunMetricsView(

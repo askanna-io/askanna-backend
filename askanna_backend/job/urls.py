@@ -24,6 +24,7 @@ from project.urls import router as prouter
 from utils.urls import router
 
 router.register(r"metric", RunMetricsView, basename="metric")
+router.register(r"metric", RunMetricsRowView, basename="metric")
 
 project_route.register(
     r"jobs",

@@ -223,10 +223,7 @@ class ProjectTestMetricsListAPI(TestMetricsListAPI):
     def setUp(self):
         self.url = reverse(
             "project-metric-list",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobrun__jobdef__project__short_uuid": self.project.short_uuid,
-            },
+            kwargs={"version": "v1", "project_suuid": self.project.short_uuid},
         )
 
     def test_list_as_admin(self):
@@ -258,7 +255,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
             "job-metric-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__jobdef__short_uuid": self.jobdef.short_uuid,
+                "parent_lookup_job_suuid": self.jobdef.short_uuid,
             },
         )
 
@@ -280,8 +277,8 @@ class ProjectTestMetricsDetailAPI(TestMetricsDetailAPI):
             "project-metric-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__jobdef__project__short_uuid": self.project.short_uuid,
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+                "parent_lookup_project_suuid": self.project.short_uuid,
+                "run_suuid": self.runmetrics.get("run1").short_uuid,
             },
         )
 
@@ -292,7 +289,7 @@ class JobTestMetricsDetailAPI(TestMetricsDetailAPI):
             "job-metric-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__jobdef__short_uuid": self.jobdef.short_uuid,
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+                "parent_lookup_job_suuid": self.jobdef.short_uuid,
+                "run_suuid": self.runmetrics.get("run1").short_uuid,
             },
         )
