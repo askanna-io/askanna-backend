@@ -342,7 +342,12 @@ class RunMetricsSerializer(serializers.ModelSerializer):
             if count:
                 # are we having lines?
                 results = metrics[offset : offset + limit]
-            response_json = {"count": count, "results": results}
+            response_json = {
+                "count": count,
+                "results": results,
+                "next": None,
+                "previous": None,
+            }
 
             scheme = request.scheme
             path = request.path
@@ -350,13 +355,18 @@ class RunMetricsSerializer(serializers.ModelSerializer):
 
             if offset + limit < count:
                 original_params["offset"] = offset + limit
+
+                urlparams = urlencode(original_params)
+                response_json["next"] = "{scheme}://{host}{path}?{params}".format(
+                    scheme=scheme, host=host, path=path, params=urlparams
+                )
             if offset - limit > -1:
                 original_params["offset"] = offset - limit
 
-            urlparams = urlencode(original_params)
-            response_json["previous"] = "{scheme}://{host}{path}?{params}".format(
-                scheme=scheme, host=host, path=path, params=urlparams
-            )
+                urlparams = urlencode(original_params)
+                response_json["previous"] = "{scheme}://{host}{path}?{params}".format(
+                    scheme=scheme, host=host, path=path, params=urlparams
+                )
             return response_json
 
         # by default, return all metrics
