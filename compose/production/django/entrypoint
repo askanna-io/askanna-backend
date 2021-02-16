@@ -30,7 +30,7 @@ until postgres_ready; do
 done
 echo >&2 'PostgreSQL is available'
 
-stats_postgres_ready() {
+runinfo_postgres_ready() {
     python <<END
 import sys
 
@@ -38,7 +38,7 @@ import psycopg2
 
 try:
     psycopg2.connect(
-        dbname="stats",
+        dbname="runinfo",
         user="${POSTGRES_USER}",
         password="${POSTGRES_PASSWORD}",
         host="${POSTGRES_HOST}",
@@ -62,7 +62,7 @@ except psycopg2.OperationalError:
     conn.set_isolation_level( autocommit )
 
     cursor = conn.cursor()
-    cursor.execute("CREATE DATABASE stats")
+    cursor.execute("CREATE DATABASE runinfo")
     cursor.close()
     conn.close()
     # exit and re-connect next time
@@ -71,11 +71,11 @@ sys.exit(0)
 
 END
 }
-until stats_postgres_ready; do
-    echo >&2 'Waiting for PostgreSQL statsdatabase to become available...'
+until runinfo_postgres_ready; do
+    echo >&2 'Waiting for PostgreSQL runinfo to become available...'
     sleep 1
 done
-echo >&2 'PostgreSQL statsdatabase is available'
+echo >&2 'PostgreSQL runinfo is available'
 
 USER=django
 GROUP=django
