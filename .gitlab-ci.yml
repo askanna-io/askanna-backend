@@ -1,6 +1,6 @@
 variables:
   DATABASE_URL: postgresql://anna:pass@postgres/askanna_backend
-  STATS_DATABASE_URL: postgresql://anna:pass@postgres/askanna_stats
+  RUNINFO_DATABASE_URL: postgresql://anna:pass@postgres/runinfo
   REDIS_URL: redis://redis:6379/0
   CELERY_BROKER_URL: redis://redis:6379/0
   POSTGRES_HOST: postgres
