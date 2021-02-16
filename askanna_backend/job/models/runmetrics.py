@@ -141,7 +141,15 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
 
 
 class RunMetricsRow(SlimBaseModel):
-    jobrun_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+    # we keep hard references to the project/job/run suuid because this model doesn't have
+    # hard relations to the other database models
+
+    # project_suuid and job_suuid should not be exposed
+
+    project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+    job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+    run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+
     metric = JSONField(
         help_text="JSON field as list with multiple objects which are metrics, but we limit to one for db scanning only"
     )
