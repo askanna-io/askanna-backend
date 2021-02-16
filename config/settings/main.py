@@ -265,3 +265,5 @@ if env.bool("DJANGO_DEBUG_TOOLBAR", default=False):
         "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
         "SHOW_TEMPLATE_CONTEXT": True,
     }
+
+TEST = "test" in " ".join(sys.argv)

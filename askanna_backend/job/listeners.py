@@ -125,11 +125,16 @@ def move_metrics_to_rows(sender, instance, created, **kwargs):
         # we don't do anything if this was an update on specific fields
         return
 
-    # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
-    on_commit(
-        lambda: celery_app.send_task(
-            "job.tasks.move_metrics_to_rows",
-            args=None,
-            kwargs={"metrics_uuid": instance.uuid},
+    if settings.TEST:
+        from job.tasks import move_metrics_to_rows
+
+        move_metrics_to_rows(**{"metrics_uuid": instance.uuid})
+    else:
+        # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.move_metrics_to_rows",
+                args=None,
+                kwargs={"metrics_uuid": instance.uuid},
+            )
         )
-    )
