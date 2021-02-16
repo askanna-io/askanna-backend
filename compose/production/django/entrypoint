@@ -45,6 +45,25 @@ try:
         port="${POSTGRES_PORT}",
     )
 except psycopg2.OperationalError:
+    # get the isolation leve for autocommit
+    autocommit = psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
+    print ("ISOLATION_LEVEL_AUTOCOMMIT:", psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+
+    # set the isolation level for the connection's cursors
+    # will raise ActiveSqlTransaction exception otherwise
+    conn.set_isolation_level( autocommit )
+    conn = psycopg2.connect(
+        dbname="postgres",
+        user="${POSTGRES_USER}",
+        password="${POSTGRES_PASSWORD}",
+        host="${POSTGRES_HOST}",
+        port="${POSTGRES_PORT}",
+    )
+    cursor = conn.cursor()
+    cursor.execute("CREATE DATABASE stats")
+    cursor.close()
+    conn.close()
+    # exit and re-connect next time
     sys.exit(-1)
 sys.exit(0)
 
