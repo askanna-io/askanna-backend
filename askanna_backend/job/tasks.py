@@ -214,6 +214,9 @@ def extract_metrics_labels(self, metrics_uuid):
     """
     Extract labels in .metrics and store the list of labels in .jobrun.labels
     """
+    print("*" * 30)
+    print("Running job 'extract_metrics_labels'")
+    print("*" * 30)
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
     jobrun = runmetrics.jobrun
     if not runmetrics.metrics:
@@ -244,6 +247,9 @@ def extract_metrics_labels(self, metrics_uuid):
 
 @shared_task(bind=True, name="job.tasks.move_metrics_to_rows")
 def move_metrics_to_rows(self, metrics_uuid):
+    print("*" * 30)
+    print("Running job 'move_metrics_to_rows'")
+    print("*" * 30)
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
 
     # remove old rows if any

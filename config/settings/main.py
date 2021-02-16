@@ -192,7 +192,8 @@ FIELD_ENCRYPTION_KEY = env.str(
 
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
-TEST_RUNNER = "django.test.runner.DiscoverRunner"
+# https://docs.celeryproject.org/projects/django-celery/en/2.4/cookbook/unit-testing.html
+TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
 
 
 # CACHES

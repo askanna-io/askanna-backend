@@ -105,6 +105,8 @@ metric_response_bad = [
 
 
 class BaseJobTestDef:
+    databases = {"default", "stats"}
+
     def file_to_bytes(self, fp):
         with fp:
             return fp.read()

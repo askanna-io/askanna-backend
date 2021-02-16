@@ -9,9 +9,8 @@ class StatsRouter:
         """
         Attempts to read auth and contenttypes models go to auth_db.
         """
-        print(model.__name__)
+        print("r", model.__name__)
         if model.__name__.lower() in self.route_model_labels:
-            print("here")
             return "stats"
         return "default"
 
@@ -19,6 +18,7 @@ class StatsRouter:
         """
         Attempts to write auth and contenttypes models go to auth_db.
         """
+        print("w", model.__name__)
         if model.__name__.lower() in self.route_model_labels:
             return "stats"
         return "default"
@@ -30,6 +30,4 @@ class StatsRouter:
         if db == "stats" and model_name in self.route_model_labels:
             do_migrate = True
 
-        if db == "stats":
-            print(db, app_label, model_name, do_migrate)
         return do_migrate

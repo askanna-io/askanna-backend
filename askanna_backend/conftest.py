@@ -18,3 +18,9 @@ def user() -> settings.AUTH_USER_MODEL:
 @pytest.fixture
 def request_factory() -> RequestFactory:
     return RequestFactory()
+
+
+@pytest.fixture(scope="session")
+def celery_config():
+    return {"broker_url": "redis://", "result_backend": "redis://"}
+
