@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import json
 import os
 import sys
@@ -249,8 +250,12 @@ def move_metrics_to_rows(self, metrics_uuid):
     RunMetricsRow.objects.filter(run_suuid=runmetrics.short_uuid).delete()
 
     for metric in runmetrics.metrics:
+        metric["created"] = datetime.datetime.fromisoformat(metric["created"])
         metric["project_suuid"] = runmetrics.jobrun.jobdef.project.short_uuid
         metric["job_suuid"] = runmetrics.jobrun.jobdef.short_uuid
         # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
         metric["run_suuid"] = runmetrics.jobrun.short_uuid
-        RunMetricsRow.objects.create(**metric)
+        rmtr = RunMetricsRow.objects.create(**metric)
+
+        print(metric["created"], rmtr.created)
+

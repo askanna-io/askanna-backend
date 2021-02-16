@@ -7,6 +7,7 @@ import os
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
+from django.utils import timezone
 
 from core.fields import JSONField
 from core.models import SlimBaseModel, ArtifactModelMixin
@@ -145,7 +146,6 @@ class RunMetricsRow(SlimBaseModel):
     # hard relations to the other database models
 
     # project_suuid and job_suuid should not be exposed
-
     project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
@@ -156,6 +156,8 @@ class RunMetricsRow(SlimBaseModel):
     label = JSONField(
         help_text="JSON field as list with multiple objects which are labels"
     )
+
+    created = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["-created"]
