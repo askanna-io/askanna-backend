@@ -28,7 +28,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 6)
 
     def test_list_as_member(self):
         """
@@ -39,7 +39,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 8)
 
     def test_list_as_nonmember(self):
         """
@@ -182,6 +182,8 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
             self.url, {"metrics": metric_response_good_small}, format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response.data)
+        print(metric_response_good_small)
         self.assertEqual(response.data, metric_response_good_small)
 
     def test_update_as_member(self):
@@ -223,7 +225,7 @@ class ProjectTestMetricsListAPI(TestMetricsListAPI):
             "project-metric-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__jobdef__project__short_uuid": self.project.short_uuid,
+                "parent_lookup_project_suuid": self.project.short_uuid,
             },
         )
 
@@ -236,7 +238,7 @@ class ProjectTestMetricsListAPI(TestMetricsListAPI):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 6)
 
     def test_list_as_member(self):
         """
@@ -247,7 +249,7 @@ class ProjectTestMetricsListAPI(TestMetricsListAPI):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 6)
 
 
 class JobTestMetricsListAPI(TestMetricsListAPI):
@@ -256,7 +258,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
             "job-metric-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__jobdef__short_uuid": self.jobdef.short_uuid,
+                "parent_lookup_job_suuid": self.jobdef.short_uuid,
             },
         )
 
@@ -269,7 +271,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 6)
 
 
 class ProjectTestMetricsDetailAPI(TestMetricsDetailAPI):

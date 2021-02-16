@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """Define the model that stores the metrics for a job run."""
+import io
 import json
 import os
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
+from django.utils import timezone
 
 from core.fields import JSONField
 from core.models import SlimBaseModel, ArtifactModelMixin
@@ -36,7 +39,16 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
     jobrun = models.ForeignKey(
         "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="metrics"
     )
-    metrics = JSONField(blank=True, null=True)
+
+    @property
+    def metrics(self):
+        print("getting metrics")
+        return self.get_sorted()
+
+    @metrics.setter
+    def metrics(self, value):
+        print("saving metrics", value)
+        self.write(io.StringIO(json.dumps(value)))
 
     count = models.PositiveIntegerField(editable=False, default=0)
     size = models.PositiveIntegerField(editable=False, default=0)
@@ -95,7 +107,7 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
                 return metrics
             else:
                 return metrics
-        return self.metrics
+        return self.load_metrics_from_file(reverse=False)
 
     # def apply_filter(self, filter_cond: [] = None) -> dict:
     #     if not self.applied_filters:
@@ -127,3 +139,36 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
         ordering = ["-created"]
         verbose_name = "Run Metrics"
         verbose_name_plural = "Run Metrics"
+
+
+class RunMetricsRow(SlimBaseModel):
+    # we keep hard references to the project/job/run suuid because this model doesn't have
+    # hard relations to the other database models
+
+    # project_suuid and job_suuid should not be exposed
+    project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+    job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+    run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
+
+    metric = JSONField(
+        help_text="JSON field as list with multiple objects which are metrics, but we limit to one for db scanning only"
+    )
+    label = JSONField(
+        help_text="JSON field as list with multiple objects which are labels"
+    )
+
+    # Redefine the created field, we want this to be overwritabe and with other default
+    created = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created"]
+        indexes = [
+            GinIndex(
+                name="metric_json_index",
+                fields=["metric"],
+                opclasses=["jsonb_path_ops"],
+            ),
+            GinIndex(
+                name="label_json_index", fields=["label"], opclasses=["jsonb_path_ops"]
+            ),
+        ]

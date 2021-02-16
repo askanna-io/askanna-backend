@@ -5,7 +5,7 @@ set -o pipefail
 set -o nounset
 
 postgres_ready() {
-python << END
+    python <<END
 import sys
 
 import psycopg2
@@ -25,17 +25,60 @@ sys.exit(0)
 END
 }
 until postgres_ready; do
-  >&2 echo 'Waiting for PostgreSQL to become available...'
-  sleep 1
+    echo >&2 'Waiting for PostgreSQL to become available...'
+    sleep 1
 done
->&2 echo 'PostgreSQL is available'
+echo >&2 'PostgreSQL is available'
 
+stats_postgres_ready() {
+    python <<END
+import sys
+
+import psycopg2
+
+try:
+    psycopg2.connect(
+        dbname="stats",
+        user="${POSTGRES_USER}",
+        password="${POSTGRES_PASSWORD}",
+        host="${POSTGRES_HOST}",
+        port="${POSTGRES_PORT}",
+    )
+except psycopg2.OperationalError:
+    # get the isolation leve for autocommit
+    autocommit = psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
+    print ("ISOLATION_LEVEL_AUTOCOMMIT:", psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+
+    # set the isolation level for the connection's cursors
+    # will raise ActiveSqlTransaction exception otherwise
+    conn.set_isolation_level( autocommit )
+    conn = psycopg2.connect(
+        dbname="postgres",
+        user="${POSTGRES_USER}",
+        password="${POSTGRES_PASSWORD}",
+        host="${POSTGRES_HOST}",
+        port="${POSTGRES_PORT}",
+    )
+    cursor = conn.cursor()
+    cursor.execute("CREATE DATABASE stats")
+    cursor.close()
+    conn.close()
+    # exit and re-connect next time
+    sys.exit(-1)
+sys.exit(0)
+
+END
+}
+until stats_postgres_ready; do
+    echo >&2 'Waiting for PostgreSQL statsdatabase to become available...'
+    sleep 1
+done
+echo >&2 'PostgreSQL statsdatabase is available'
 
 USER=django
 GROUP=django
 # Create django user and group if missing.
-if ! id django
-then
+if ! id django; then
     # ----------------------------------------------------------------------------#
     # Make the django user have the same UID and GID as the owner of the
     # workdir. This avoids conflicts with owner/group for linux mounted volumes.
@@ -43,13 +86,13 @@ then
     # ----------------------------------------------------------------------------#
     # Create the django group, if possible with same GID as owner of
     # workdir.
-    >&2 echo 'Creating django group'
+    echo >&2 'Creating django group'
     DIR_GID=$(stat -c '%g' .)
     addgroup -S -g $DIR_GID $GROUP || addgroup -S $GROUP
     # ----------------------------------------------------------------------------#
     # Create the django user, if possible with same UID as owner of
     # workdir.
-    >&2 echo 'Creating django user'
+    echo >&2 'Creating django user'
     DIR_UID=$(stat -c '%u' .)
     adduser -S -u $DIR_UID -G $GROUP $USER || adduser -S -G $GROUP $USER
 fi
@@ -59,15 +102,13 @@ fi
 # propagate to the mounted volume from the host.
 # Change owner of the workdir so that django can freely modify files
 # under it if needed.
-if [[ $(stat -c '%g' .) == 0 ]]
-then
-    >&2 echo 'Ensuring workdir ownership by django user'
+if [[ $(stat -c '%g' .) == 0 ]]; then
+    echo >&2 'Ensuring workdir ownership by django user'
     chown django:django .
-    >&2 echo 'Ensuring storage_root ownership by django user'
+    echo >&2 'Ensuring storage_root ownership by django user'
     mkdir -p storage_root
     chown django:django storage_root
 fi
-
 
 # From: https://vitorbaptista.com/how-to-access-hosts-docker-socket-without-root
 # Based on https://github.com/jenkinsci/docker/issues/196#issuecomment-179486312
@@ -81,14 +122,13 @@ if [ -S ${DOCKER_SOCKET} ]; then
     FILE_GNAME=$(stat -c '%G' ${DOCKER_SOCKET})
 
     # Create the group if it does not exists.
-    if ! grep -q $FILE_GNAME /etc/group
-    then
-        >&2 echo 'Creating docker group'
+    if ! grep -q $FILE_GNAME /etc/group; then
+        echo >&2 'Creating docker group'
         addgroup --gid ${FILE_GID} ${DOCKER_GROUP}
         FILE_GNAME=${DOCKER_GROUP}
     fi
 
-    >&2 echo 'Adding django user to the docker group'
+    echo >&2 'Adding django user to the docker group'
     addgroup django ${FILE_GNAME}
 fi
 

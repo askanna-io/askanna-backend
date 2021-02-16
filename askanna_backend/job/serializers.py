@@ -15,6 +15,7 @@ from job.models import (
     JobOutput,
     JobVariable,
     RunMetrics,
+    RunMetricsRow,
 )
 from project.models import Project
 
@@ -365,4 +366,14 @@ class RunMetricsSerializer(serializers.ModelSerializer):
         model = RunMetrics
         fields = ["uuid", "short_uuid", "metrics"]
         read_only_fields = ["uuid", "short_uuid"]
+
+
+class RunMetricsRowSerializer(serializers.ModelSerializer):
+    """Serializer for RunMetricsRow model.
+    """
+
+    class Meta:
+        model = RunMetricsRow
+        fields = ["run_suuid", "metric", "label", "created"]
+        read_only_fields = ["run_suuid"]
 

@@ -112,3 +112,29 @@ def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
             kwargs={"metrics_uuid": instance.uuid},
         )
     )
+
+
+@receiver(post_save, sender=RunMetrics)
+def move_metrics_to_rows(sender, instance, created, **kwargs):
+    """
+    After saving metrics, we save the individueal rows to
+    a new table which allows us to query the metrics
+    """
+    update_fields = kwargs.get("update_fields")
+    if update_fields:
+        # we don't do anything if this was an update on specific fields
+        return
+
+    if settings.TEST:
+        from job.tasks import move_metrics_to_rows
+
+        move_metrics_to_rows(**{"metrics_uuid": instance.uuid})
+    else:
+        # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.move_metrics_to_rows",
+                args=None,
+                kwargs={"metrics_uuid": instance.uuid},
+            )
+        )

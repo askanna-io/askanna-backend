@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import json
 import os
 import sys
@@ -10,7 +11,7 @@ from django.utils.module_loading import import_string
 import docker
 
 from config.celery_app import app as celery_app
-from job.models import JobRun, JobVariable, RunMetrics
+from job.models import JobRun, JobVariable, RunMetrics, RunMetricsRow
 
 
 @shared_task(bind=True, name="job.tasks.log_stats_from_container")
@@ -213,6 +214,9 @@ def extract_metrics_labels(self, metrics_uuid):
     """
     Extract labels in .metrics and store the list of labels in .jobrun.labels
     """
+    print("*" * 30)
+    print("Running job 'extract_metrics_labels'")
+    print("*" * 30)
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
     jobrun = runmetrics.jobrun
     if not runmetrics.metrics:
@@ -239,3 +243,25 @@ def extract_metrics_labels(self, metrics_uuid):
     runmetrics.count = count
     runmetrics.size = len(json.dumps(runmetrics.metrics))
     runmetrics.save(update_fields=["count", "size"])
+
+
+@shared_task(bind=True, name="job.tasks.move_metrics_to_rows")
+def move_metrics_to_rows(self, metrics_uuid):
+    print("*" * 30)
+    print("Running job 'move_metrics_to_rows'")
+    print("*" * 30)
+    runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
+
+    # remove old rows if any
+    RunMetricsRow.objects.filter(run_suuid=runmetrics.short_uuid).delete()
+
+    for metric in runmetrics.metrics:
+        metric["created"] = datetime.datetime.fromisoformat(metric["created"])
+        metric["project_suuid"] = runmetrics.jobrun.jobdef.project.short_uuid
+        metric["job_suuid"] = runmetrics.jobrun.jobdef.short_uuid
+        # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
+        metric["run_suuid"] = runmetrics.jobrun.short_uuid
+        rmtr = RunMetricsRow.objects.create(**metric)
+
+        print(metric["created"], rmtr.created)
+

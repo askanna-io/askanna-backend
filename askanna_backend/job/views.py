@@ -37,6 +37,7 @@ from job.models import (
     JobRun,
     JobVariable,
     RunMetrics,
+    RunMetricsRow,
 )
 from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.permissions import (
@@ -59,9 +60,11 @@ from job.serializers import (
     JobVariableUpdateSerializer,
     StartJobSerializer,
     RunMetricsSerializer,
+    RunMetricsRowSerializer,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from package.models import Package
+from project.models import Project
 from users.models import MSP_WORKSPACE
 
 
@@ -770,11 +773,49 @@ class JobVariableView(
         return queryset.filter(project__workspace__in=member_of_workspaces)
 
 
+class RunMetricsRowView(
+    PermissionByActionMixin,
+    NestedViewSetMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = RunMetricsRow.objects.all().order_by("created")
+    lookup_field = "run_suuid"  # not needed for listviews
+    serializer_class = RunMetricsRowSerializer
+
+    permission_classes = [
+        IsMemberOfJobRunAttributePermission | IsAdminUser,
+    ]
+
+    permission_classes_by_action = {
+        "list": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+    }
+
+    def get_queryset(self):
+        """
+        For listings return only values from projects
+        where the current user had access to
+        meaning also beeing part of a certain workspace
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+        member_of_projects = Project.objects.filter(
+            workspace_id__in=member_of_workspaces
+        ).values_list("short_uuid", flat=True)[
+            ::-1
+        ]  # hard convert to list for cross db query
+        return queryset.filter(project_suuid__in=member_of_projects)
+
+
 class RunMetricsView(
     PermissionByActionMixin,
     NestedViewSetMixin,
     mixins.RetrieveModelMixin,
-    mixins.ListModelMixin,
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -828,11 +869,10 @@ class RunMetricsView(
 
     # Override because we don't return the full object, just the `metrics` field
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
+        _ = kwargs.pop("partial", False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        instance.metrics = request.data.get("metrics", [])
+        instance.save()
 
         if getattr(instance, "_prefetched_objects_cache", None):
             # If 'prefetch_related' has been applied to a queryset, we need to
@@ -855,10 +895,6 @@ class RunMetricsView(
         ).values_list("object_uuid", flat=True)
         return queryset.filter(
             jobrun__jobdef__project__workspace__in=member_of_workspaces
-        ).select_related(
-            "jobrun__jobdef",
-            "jobrun__jobdef__project",
-            "jobrun__jobdef__project__workspace",
         )
 
     def get_parent_instance(self):

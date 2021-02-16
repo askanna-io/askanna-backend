@@ -10,80 +10,101 @@ from workspace.listeners import install_demo_project_in_workspace
 
 metric_response_good = [
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Quality", "value": "Good", "type": "string"}],
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Quality", "value": "Ok", "type": "string"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
 ]
 metric_response_good_reversed = [
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Quality", "value": "Ok", "type": "string"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Quality", "value": "Good", "type": "string"}],
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
 ]
 metric_response_good_small = [
     {
-        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
-        "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-    },
-    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
         "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
+        "created": "2021-02-14T12:00:01.123456",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
+        "created": "2021-02-14T12:00:01.123456",
     },
 ]
 metric_response_bad = [
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [
             {"name": "Accuracy", "value": "0.876", "type": "integer"},
             {"name": "Quality", "value": "Good", "type": "string"},
@@ -92,19 +113,24 @@ metric_response_bad = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
     {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": [{"name": "Accuracy", "value": "0.623"}, {"name": "Quality"}],
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "value": "null"},
         ],
+        "created": "2021-02-14T12:00:01.123456",
     },
 ]
 
 
 class BaseJobTestDef:
+    databases = {"default", "stats"}
+
     def file_to_bytes(self, fp):
         with fp:
             return fp.read()
