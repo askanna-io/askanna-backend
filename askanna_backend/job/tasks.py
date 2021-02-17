@@ -23,8 +23,6 @@ def log_stats_from_container(self, container_id, jobrun_suuid):
 
     for stat in container.stats(stream=True, decode=True):
         statslog.append(stat)
-
-    print(json.dumps(statslog))
     # write statslog away to stats database
 
 
@@ -214,18 +212,16 @@ def extract_metrics_labels(self, metrics_uuid):
     """
     Extract labels in .metrics and store the list of labels in .jobrun.labels
     """
-    print("*" * 30)
-    print("Running job 'extract_metrics_labels'")
-    print("*" * 30)
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
     jobrun = runmetrics.jobrun
     if not runmetrics.metrics:
+        print("no metrics found")
         # we don't have metrics stored, as this is None (by default on creation)
         return
     alllabels = []
     allkeys = []
     count = 0
-    for metric in runmetrics.metrics:
+    for metric in runmetrics.metrics[::]:
         labels = metric.get("label", [])
         for label_obj in labels:
             alllabels.append(label_obj.get("name"))
@@ -247,9 +243,6 @@ def extract_metrics_labels(self, metrics_uuid):
 
 @shared_task(bind=True, name="job.tasks.move_metrics_to_rows")
 def move_metrics_to_rows(self, metrics_uuid):
-    print("*" * 30)
-    print("Running job 'move_metrics_to_rows'")
-    print("*" * 30)
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
 
     # remove old rows if any
@@ -261,7 +254,4 @@ def move_metrics_to_rows(self, metrics_uuid):
         metric["job_suuid"] = runmetrics.jobrun.jobdef.short_uuid
         # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
         metric["run_suuid"] = runmetrics.jobrun.short_uuid
-        rmtr = RunMetricsRow.objects.create(**metric)
-
-        print(metric["created"], rmtr.created)
-
+        RunMetricsRow.objects.create(**metric)

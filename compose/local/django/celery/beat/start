@@ -3,6 +3,7 @@
 set -o errexit
 set -o nounset
 
-
 rm -f './celerybeat.pid'
-celery -A config.celery_app beat -l INFO
+
+# celery -A config.celery_app beat -l INFO
+watchmedo auto-restart --directory=./askanna_backend/ --pattern=*.py --recursive -- celery -A config.celery_app beat -l INFO
