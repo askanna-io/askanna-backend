@@ -315,7 +315,6 @@ class RunMetricsSerializer(serializers.ModelSerializer):
     """
 
     def to_representation(self, instance):
-        # print(self.context["request"].query_params)
         """
         This is used in 'list' and 'detail' views
         """

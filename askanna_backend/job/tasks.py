@@ -215,7 +215,6 @@ def extract_metrics_labels(self, metrics_uuid):
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
     jobrun = runmetrics.jobrun
     if not runmetrics.metrics:
-        print("no metrics found")
         # we don't have metrics stored, as this is None (by default on creation)
         return
     alllabels = []

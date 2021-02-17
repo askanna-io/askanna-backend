@@ -107,30 +107,6 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
                 return metrics
         return self.load_metrics_from_file(reverse=False)
 
-    # def apply_filter(self, filter_cond: [] = None) -> dict:
-    #     if not self.applied_filters:
-    #         self.filtered_metrics = self.metrics.copy()
-
-    #     self.applied_filters.append(filter_cond)
-    #     # apply the filter condition
-    #     filter_scope, filter_key, filter_operation, filter_value = filter_cond
-
-    #     for metric in self.filtered_metrics:
-    #         # select scope to check (metric or label)
-    #         scoped_search = metric[filter_scope]
-    #         # find filter_key and do match
-    #         hit = scoped_search.get(filter_key)
-    #         filtered_in = []
-    #         if hit:
-    #             # for now only to equal comparison
-    #             if hit == filter_value:
-    #                 # we include this metric
-    #                 filtered_in.append(hit)
-    #             else:
-    #                 pass
-
-    #     return self
-
     class Meta:
         """Options for RunMetrics."""
 
