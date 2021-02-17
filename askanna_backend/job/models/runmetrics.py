@@ -42,12 +42,10 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
 
     @property
     def metrics(self):
-        print("getting metrics")
         return self.get_sorted()
 
     @metrics.setter
     def metrics(self, value):
-        print("saving metrics", value)
         self.write(io.StringIO(json.dumps(value)))
 
     count = models.PositiveIntegerField(editable=False, default=0)
