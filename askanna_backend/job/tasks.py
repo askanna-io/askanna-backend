@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 import docker
 
-from config.celery_app import app as celery_app
+# from config.celery_app import app as celery_app
 from job.models import JobRun, JobVariable, RunMetrics, RunMetricsRow
 
 
@@ -182,11 +182,12 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         auto_remove=settings.DOCKER_AUTO_REMOVE_CONTAINER,
         # remove=True,  # remove container after run
     )
-    celery_app.send_task(
-        "job.tasks.log_stats_from_container",
-        args=None,
-        kwargs={"container_id": container.id, "jobrun_suuid": jr.short_uuid},
-    )
+
+    # celery_app.send_task(
+    #     "job.tasks.log_stats_from_container",
+    #     args=None,
+    #     kwargs={"container_id": container.id, "jobrun_suuid": jr.short_uuid},
+    # )
 
     # logs = container.logs()
     op.stdout = []
