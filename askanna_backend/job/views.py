@@ -180,7 +180,17 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
+        return queryset.filter(
+            jobdef__project__workspace__in=member_of_workspaces
+        ).select_related(
+            "package",
+            "payload",
+            "payload__project",
+            "jobdef",
+            "jobdef__project",
+            "owner",
+            "member",
+        )
 
     def get_result(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
@@ -284,7 +294,15 @@ class JobRunView(
         return queryset.filter(
             jobdef__project__workspace__in=member_of_workspaces
         ).select_related(
-            "jobdef", "jobdef__project", "package", "payload", "owner", "member"
+            "jobdef",
+            "jobdef__project",
+            "payload",
+            "payload__jobdef",
+            "payload__jobdef__project",
+            "package",
+            "owner",
+            "member",
+            "output",
         )
 
     @action(

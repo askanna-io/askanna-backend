@@ -127,11 +127,18 @@ class JobRunSerializer(serializers.ModelSerializer):
         }
 
     def get_artifact(self, instance):
-        has_artifact = instance.artifact.exists()
-        if has_artifact:
+        try:
             artifact = instance.artifact.first()
+            assert artifact is not None, "No artifact"
+        except AssertionError:
+            return {
+                "relation": "artifact",
+                "name": None,
+                "uuid": None,
+                "short_uuid": None,
+            }
+        else:
             return artifact.relation_to_json
-        return {"relation": "artifact", "name": None, "uuid": None, "short_uuid": None}
 
     def get_package(self, instance):
         package = instance.package
