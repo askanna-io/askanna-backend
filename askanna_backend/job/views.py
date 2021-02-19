@@ -27,6 +27,7 @@ from core.views import (
     PermissionByActionMixin,
     SerializerByActionMixin,
 )
+from job.filters import RunFilter
 from job.models import (
     ChunkedArtifactPart,
     ChunkedJobOutputPart,
@@ -185,7 +186,7 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
         ).select_related(
             "package",
             "payload",
-            "payload__project",
+            "payload__jobdef__project",
             "jobdef",
             "jobdef__project",
             "owner",
@@ -279,6 +280,8 @@ class JobRunView(
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsMemberOfJobDefAttributePermission]
+
+    filterset_class = RunFilter
 
     def get_queryset(self):
         """
