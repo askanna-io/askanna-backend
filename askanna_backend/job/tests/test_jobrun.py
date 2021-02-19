@@ -57,6 +57,43 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_list_as_member_filter_by_job(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        filter_params = {"job": self.jobdef.short_uuid}
+        response = self.client.get(self.url, filter_params, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_list_as_member_filter_by_jobs(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        filter_params = {
+            "job": ",".join([self.jobdef.short_uuid, self.jobdef2.short_uuid])
+        }
+        response = self.client.get(self.url, filter_params, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+
+    def test_list_as_member_filter_by_project(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
+
 
 class TestJobJobRunListAPI(TestJobRunListAPI):
     """
@@ -92,6 +129,43 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_as_member_filter_by_job(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        filter_params = {"job": self.jobdef.short_uuid}
+        response = self.client.get(self.url, filter_params, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_list_as_member_filter_by_jobs(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        filter_params = {
+            "job": ",".join([self.jobdef.short_uuid, self.jobdef2.short_uuid])
+        }
+        response = self.client.get(self.url, filter_params, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_list_as_member_filter_by_project(self):
+        """
+        We can list jobruns as member of a workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
 
 
 class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
