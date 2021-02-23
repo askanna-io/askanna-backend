@@ -27,7 +27,7 @@ from core.views import (
     PermissionByActionMixin,
     SerializerByActionMixin,
 )
-from job.filters import RunFilter
+from job.filters import RunFilter, MetricFilter
 from job.models import (
     ChunkedArtifactPart,
     ChunkedJobOutputPart,
@@ -804,6 +804,7 @@ class RunMetricsRowView(
     lookup_field = "run_suuid"  # not needed for listviews
     serializer_class = RunMetricsRowSerializer
 
+    filterset_class = MetricFilter
     permission_classes = [
         IsMemberOfJobRunAttributePermission | IsAdminUser,
     ]

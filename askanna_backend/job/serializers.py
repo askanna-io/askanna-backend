@@ -169,7 +169,7 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobRun
-        exclude = ["member"]
+        exclude = ["member", "metric_labels", "metric_keys"]
 
 
 class JobArtifactSerializer(serializers.ModelSerializer):
@@ -392,4 +392,3 @@ class RunMetricsRowSerializer(serializers.ModelSerializer):
         model = RunMetricsRow
         fields = ["run_suuid", "metric", "label", "created"]
         read_only_fields = ["run_suuid"]
-
