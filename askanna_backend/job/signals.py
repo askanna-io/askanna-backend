@@ -2,19 +2,14 @@
 import docker
 import json
 import os
-import stat
 import sys
-import tempfile
 
 from celery import shared_task
 from django.conf import settings
 import django.dispatch
 from django.utils.module_loading import import_string
-from django.template.loader import render_to_string
 
-from core.utils import get_config
-from job.models import JobDef, JobRun, JobPayload, JobOutput, JobVariable
-from package.models import Package
+from job.models import JobVariable, JobRun
 
 artifact_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
 result_upload_finish = django.dispatch.Signal(providing_args=["postheaders"])
@@ -138,7 +133,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     }
 
     payload_variables = {}
-    if type(pl.payload) == type({}):
+    if isinstance(pl.payload, dict):
         # we have a valid dict from the payload
         for k, v in pl.payload.items():
             if isinstance(v, (list, dict)):
@@ -169,6 +164,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
             "jobrun": jr.short_uuid,
             "project": pr.short_uuid,
             "jobdef": jd.short_uuid,
+            "askanna_environment": settings.ASKANNA_ENVIRONMENT,
         },
         hostname=hostname,
         stdout=True,
@@ -198,4 +194,3 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
     jr.status = "COMPLETED"
     jr.save()
-
