@@ -1,5 +1,5 @@
 import django_filters
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.schemas.openapi import AutoSchema
 
@@ -13,7 +13,12 @@ class MySchema(AutoSchema):
         return ["workspace"]
 
 
-class WorkspaceViewSet(viewsets.ReadOnlyModelViewSet):
+class WorkspaceViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = Workspace.objects.all()
     serializer_class = WorkspaceSerializer
     lookup_field = "short_uuid"
