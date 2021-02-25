@@ -12,9 +12,16 @@ from ..models import Workspace
 pytestmark = pytest.mark.django_db
 
 
-class TestWorkspaceAPI(APITestCase):
+class BaseWorkspace:
     def setUp(self):
         self.users = {
+            "anna": User.objects.create(
+                username="anna",
+                is_staff=True,
+                is_superuser=True,
+                email="anna@askanna.dev",
+            ),
+            "admin": User.objects.create(username="admin"),
             "member": User.objects.create(username="member"),
             "non_member": User.objects.create(username="non_member"),
         }
@@ -23,19 +30,31 @@ class TestWorkspaceAPI(APITestCase):
         self.workspace_c = Workspace.objects.create(title="test workspace b")
         self.workspace_d = Workspace.objects.create(title="test workspace b")
 
-        # make the member user admin of the workspace
         self.member_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=self.workspace_a.uuid,
             user=self.users["member"],
-            role=WS_ADMIN,
+            role=WS_MEMBER,
         )
-        # make the member user member of the workspace
-        self.admin_profile = UserProfile.objects.create(
+        self.member_profileb = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=self.workspace_b.uuid,
             user=self.users["member"],
             role=WS_MEMBER,
+        )
+        # make the admin user member of the workspace a
+        self.admin_profile = UserProfile.objects.create(
+            object_type=MSP_WORKSPACE,
+            object_uuid=self.workspace_a.uuid,
+            user=self.users["admin"],
+            role=WS_ADMIN,
+        )
+        # make the admin user member of the workspace b
+        self.admin_profile = UserProfile.objects.create(
+            object_type=MSP_WORKSPACE,
+            object_uuid=self.workspace_b.uuid,
+            user=self.users["admin"],
+            role=WS_ADMIN,
         )
         # make the member user deleted member of the workspace
         self.deleted_profile = UserProfile.objects.create(
@@ -43,59 +62,189 @@ class TestWorkspaceAPI(APITestCase):
             object_uuid=self.workspace_c.uuid,
             user=self.users["member"],
             role=WS_ADMIN,
-            deleted=timezone.now()
+            deleted=timezone.now(),
         )
 
-    def test_anonymous_user_does_not_get_list_of_workspaces(self):
-        """A anonymous user has no access to workspace list."""
-        url = reverse(
-            "workspace-list",
-            kwargs={
-                "version": "v1",
-            },
-        )
 
-        response = self.client.get(
-            url,
-        )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("workspace-list", kwargs={"version": "v1"})
 
-    def test_non_member_see_no_workspaces(self):
-        """A user with no memberships see no workspaces."""
-        url = reverse(
-            "workspace-list",
-            kwargs={
-                "version": "v1",
-            },
-        )
-
-        token = self.users["non_member"].auth_token
+    def test_list_as_anna(self):
+        """
+        By default Anna shoudl not be able to list any workspaces.
+        """
+        token = self.users["anna"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(
-            url,
-        )
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
-    def test_member_see_only_its_workspaces(self):
-        """A member gets only workspaces it belongs to."""
-        url = reverse(
-            "workspace-list",
-            kwargs={
-                "version": "v1",
-            },
-        )
-
-        token = self.users["member"].auth_token
+    def test_list_as_admin(self):
+        """
+        List the workspace as an admin of the workspace a, but also member of b
+        """
+        token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(
-            url,
-        )
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
         uuids = [r["uuid"] for r in response.data]
         self.assertIn(str(self.workspace_a.uuid), uuids)
         self.assertIn(str(self.workspace_b.uuid), uuids)
+
+    def test_list_as_member_see_only_its_workspaces(self):
+        """A member gets only workspaces it belongs to."""
+
+        token = self.users["member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+        uuids = [r["uuid"] for r in response.data]
+        self.assertIn(str(self.workspace_a.uuid), uuids)
+        self.assertIn(str(self.workspace_b.uuid), uuids)
+
+    def test_list_as_non_member_see_no_workspaces(self):
+        """A user with no memberships see no workspaces."""
+
+        token = self.users["non_member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+    def test_list_as_nonymous_user_does_not_get_list_of_workspaces(self):
+        """A anonymous user has no access to workspace list."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-detail",
+            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid},
+        )
+
+    def test_detail_as_anna(self):
+        """
+        By default askanna users cannot see workspace details if not member
+        """
+        token = self.users["anna"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_detail_as_admin(self):
+
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_detail_as_member(self):
+
+        token = self.users["member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_detail_as_nonmember(self):
+
+        token = self.users["non_member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-detail",
+            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid},
+        )
+
+    def test_update_as_anna(self):
+        """
+        By default no update possible by askanna users
+        """
+        token = self.users["anna"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_details = {"title": "New workspace name", "description": "A new world"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_as_admin(self):
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_details = {"title": "New workspace name", "description": "A new world"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("title"), "New workspace name")
+        self.assertEqual(response.data.get("description"), "A new world")
+
+    def test_update_as_member(self):
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_details = {"title": "New workspace name", "description": "A new world"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("title"), "New workspace name")
+        self.assertEqual(response.data.get("description"), "A new world")
+
+    def test_update_as_member_title(self):
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_details = {"title": "New workspace name 2"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("title"), "New workspace name 2")
+        self.assertEqual(response.data.get("description"), None)
+
+    def test_update_as_member_description(self):
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_details = {"description": "A new world 2"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("title"), "test workspace a")
+        self.assertEqual(response.data.get("description"), "A new world 2")
+
+    def test_update_as_nonmember(self):
+        token = self.users["non_member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        new_details = {"title": "New workspace name", "description": "A new world"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_as_anonymous(self):
+        new_details = {"title": "New workspace name", "description": "A new world"}
+
+        response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
