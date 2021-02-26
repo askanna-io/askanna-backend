@@ -69,9 +69,9 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     jobdef = serializers.SerializerMethodField("get_jobdef")
 
-    metrics = serializers.SerializerMethodField("get_metrics")
+    metricmeta = serializers.SerializerMethodField("get_metricmeta")
 
-    def get_metrics(self, instance):
+    def get_metricmeta(self, instance):
         try:
             metrics = instance.metrics.get()
         except ObjectDoesNotExist:

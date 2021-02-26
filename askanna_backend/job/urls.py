@@ -23,9 +23,6 @@ from project.urls import project_route
 from project.urls import router as prouter
 from utils.urls import router
 
-router.register(r"metric", RunMetricsView, basename="metric")
-router.register(r"metric", RunMetricsRowView, basename="metric")
-
 project_route.register(
     r"jobs",
     ProjectJobViewSet,
@@ -38,13 +35,6 @@ project_route.register(
     JobVariableView,
     basename="project-variable",
     parents_query_lookups=["project__short_uuid"],
-)
-
-project_route.register(
-    r"metrics",
-    RunMetricsView,
-    basename="project-metric",
-    parents_query_lookups=["jobrun__jobdef__project__short_uuid"],
 )
 
 project_route.register(
@@ -71,17 +61,32 @@ job_route.register(
 
 job_route.register(
     r"metrics",
-    RunMetricsView,
-    basename="job-metric",
-    parents_query_lookups=["jobrun__jobdef__short_uuid"],
-)
-
-job_route.register(
-    r"metrics",
     RunMetricsRowView,
     basename="job-metric",
     parents_query_lookups=["job_suuid"],
 )
+
+
+# new url scheme using runinfo
+
+runinfo_route = router.register(r"runinfo", JobRunView, basename="runinfo")
+
+# runinfo_route.register(
+#     r"metrics",
+#     RunMetricsView,
+#     basename="run-metric",
+#     parents_query_lookups=["jobrun__short_uuid"],
+# )
+
+runinfo_route.register(
+    r"metrics",
+    RunMetricsRowView,
+    basename="run-metric",
+    parents_query_lookups=["run_suuid"],
+)
+
+
+# older url schemes using jobrun
 
 jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
 jobrun_route.register(
@@ -89,20 +94,6 @@ jobrun_route.register(
     JobPayloadView,
     basename="jobrun-payload",
     parents_query_lookups=["jobrun__short_uuid"],
-)
-
-jobrun_route.register(
-    r"metrics",
-    RunMetricsView,
-    basename="run-metric",
-    parents_query_lookups=["jobrun__short_uuid"],
-)
-
-jobrun_route.register(
-    r"metrics",
-    RunMetricsRowView,
-    basename="run-metric",
-    parents_query_lookups=["run_suuid"],
 )
 
 artifact_route = jobrun_route.register(
@@ -137,6 +128,16 @@ jobresult_route.register(
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
     re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
+    path(
+        r"v1/runinfo/<shortuuid:jobrun__short_uuid>/metrics/update/",
+        RunMetricsView.as_view({"put": "update"}, detail=True),
+        name="runinfo-metric-update",
+    ),
+    path(
+        r"v1/runinfo/<shortuuid:jobrun__short_uuid>/metrics/meta/",
+        RunMetricsView.as_view({"get": "meta"}, detail=True),
+        name="runinfo-metric-meta",
+    ),
     path(
         r"v1/run/<shortuuid:short_uuid>/",
         StartJobView.as_view({"post": "do_ingest_short"}, detail=True),

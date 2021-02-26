@@ -17,7 +17,13 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("metric-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "run-metric-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_run_suuid": self.runmetrics.get("run1").short_uuid,
+            },
+        )
 
     def test_list_as_admin(self):
         """
@@ -28,7 +34,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 6)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_member(self):
         """
@@ -39,7 +45,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 8)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_nonmember(self):
         """
@@ -60,101 +66,102 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
-    """
-    Test to get detail on specific metrics for a jobrun
-    """
+# class TestMetricsDetailAPI(BaseJobTestDef, APITestCase):
+#     """
+#     Test to get detail on specific metrics for a jobrun
+#     """
 
-    def setUp(self):
-        self.url = reverse(
-            "metric-detail",
-            kwargs={
-                "version": "v1",
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-            },
-        )
+#     def setUp(self):
+#         self.url = reverse(
+#             "run-metric-list",
+#             kwargs={
+#                 "version": "v1",
+#                 "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+#             },
+#         )
 
-    def test_detail_as_admin(self):
-        """
-        We get detail metrics as admin of a workspace
-        """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+#     def test_detail_as_admin(self):
+#         """
+#         We get detail metrics as admin of a workspace
+#         """
+#         token = self.users["admin"].auth_token
+#         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, metric_response_good)
+#         response = self.client.get(self.url, format="json",)
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(response.data, metric_response_good)
 
-    def test_detail_as_member(self):
-        """
-        We get detail metrics as member of a workspace
-        """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, metric_response_good)
+#     def test_detail_as_member(self):
+#         """
+#         We get detail metrics as member of a workspace
+#         """
+#         token = self.users["user"].auth_token
+#         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-    def test_detail_as_nonmember(self):
-        """
-        As a non-member we cannot get the details for a jobrun and it's metrics
-        """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+#         response = self.client.get(self.url, format="json",)
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(response.data, metric_response_good)
 
-        response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+#     def test_detail_as_nonmember(self):
+#         """
+#         As a non-member we cannot get the details for a jobrun and it's metrics
+#         """
+#         token = self.users["user_nonmember"].auth_token
+#         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-    def test_detail_as_anonymous(self):
-        """
-        We get not get detail metrics as anonymous
-        """
-        response = self.client.get(self.url, format="json",)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+#         response = self.client.get(self.url, format="json",)
+#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_detail_as_member_reversed(self):
-        """
-        We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
-        """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+#     def test_detail_as_anonymous(self):
+#         """
+#         We get not get detail metrics as anonymous
+#         """
+#         response = self.client.get(self.url, format="json",)
+#         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        response = self.client.get(self.url + "?ordering=-metric.name", format="json",)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, metric_response_good_reversed)
+#     def test_detail_as_member_reversed(self):
+#         """
+#         We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
+#         """
+#         token = self.users["user"].auth_token
+#         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-    def test_detail_as_member_reversed_with_limit_2(self):
-        """
-        We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
-        """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+#         response = self.client.get(self.url + "?ordering=-metric.name", format="json",)
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(response.data, metric_response_good_reversed)
 
-        response = self.client.get(
-            self.url + "?ordering=-metric.name&limit=2&offset=0",
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        print(response.data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            response.data.get("results"), metric_response_good_reversed[0:2]
-        )
-        self.assertEqual(response.data.get("count"), 4)
+#     def test_detail_as_member_reversed_with_limit_2(self):
+#         """
+#         We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
+#         """
+#         token = self.users["user"].auth_token
+#         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-    def test_detail_as_member_metricsmeta(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+#         response = self.client.get(
+#             self.url + "?ordering=-metric.name&limit=2&offset=0",
+#             format="json",
+#             HTTP_HOST="testserver",
+#         )
+#         print(response.data)
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(
+#             response.data.get("results"), metric_response_good_reversed[0:2]
+#         )
+#         self.assertEqual(response.data.get("count"), 4)
 
-        response = self.client.get(
-            self.url + "meta/", format="json", HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("count"), 4)
+#     def test_detail_as_member_metricsmeta(self):
+#         """
+#         Retrieve the meta information about the metrics
+#         """
+#         token = self.users["user"].auth_token
+#         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+#         response = self.client.get(
+#             self.url + "meta/", format="json", HTTP_HOST="testserver",
+#         )
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(response.data.get("count"), 4)
 
 
 class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
@@ -164,11 +171,8 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "metric-detail",
-            kwargs={
-                "version": "v1",
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-            },
+            "runinfo-metric-update",
+            kwargs={"jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,},
         )
 
     def test_update_as_admin(self):
@@ -262,6 +266,17 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
             },
         )
 
+    def test_list_as_admin(self):
+        """
+        We can list metrics as member of a workspace
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json",)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 6)
+
     def test_list_as_member(self):
         """
         We can list metrics as member of a workspace
@@ -273,26 +288,3 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
 
-
-class ProjectTestMetricsDetailAPI(TestMetricsDetailAPI):
-    def setUp(self):
-        self.url = reverse(
-            "project-metric-detail",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobrun__jobdef__project__short_uuid": self.project.short_uuid,
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-            },
-        )
-
-
-class JobTestMetricsDetailAPI(TestMetricsDetailAPI):
-    def setUp(self):
-        self.url = reverse(
-            "job-metric-detail",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobrun__jobdef__short_uuid": self.jobdef.short_uuid,
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-            },
-        )
