@@ -804,6 +804,9 @@ class RunMetricsRowView(
     lookup_field = "run_suuid"  # not needed for listviews
     serializer_class = RunMetricsRowSerializer
 
+    # Override default, remove OrderingFilter because we use the DjangoFilterBackend version
+    filter_backends = (DjangoFilterBackend,)
+
     filterset_class = MetricFilter
     permission_classes = [
         IsMemberOfJobRunAttributePermission | IsAdminUser,
