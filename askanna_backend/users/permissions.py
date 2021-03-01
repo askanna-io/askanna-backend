@@ -42,7 +42,8 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """
-        If the action is to create, retrieve, list an invitation or memberships the user has to be part of the workspace
+        If the action is to create, retrieve, list an invitation or memberships the user has to be
+        part of the workspace
         When an invitation is accepted, the user cannot be part of a workspace
         """
         user = request.user

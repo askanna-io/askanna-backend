@@ -125,7 +125,7 @@ class RunMetricsRow(SlimBaseModel):
     run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
 
     metric = JSONField(
-        help_text="JSON field as list with multiple objects which are metrics, but we limit to one for db scanning only"
+        help_text="JSON field as list with multiple objects which are metrics, but we limit to one"
     )
     label = JSONField(
         help_text="JSON field as list with multiple objects which are labels"
