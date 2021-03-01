@@ -1,19 +1,10 @@
-from django.urls import path
+from django.conf.urls import include, re_path
+
 from utils.urls import router
 from users.views import UserView
 
-from users.views import (
-    user_redirect_view,
-    user_update_view,
-    user_detail_view,
-)
-
-
 user_route = router.register(r"accounts", UserView)
 
-app_name = "users"
 urlpatterns = [
-    path("~redirect/", view=user_redirect_view, name="redirect"),
-    path("~update/", view=user_update_view, name="update"),
-    path("<str:username>/", view=user_detail_view, name="detail"),
+    re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
 ]
