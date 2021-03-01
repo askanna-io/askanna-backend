@@ -97,7 +97,7 @@ class PersonSerializer(serializers.Serializer):
         """
         Return avatar only for this membership
         """
-        membership_rel = instance.relation_to_json
+        membership_rel = instance.relation_to_json_with_avatar
         return membership_rel["avatar"]
 
     def get_name(self, instance):
