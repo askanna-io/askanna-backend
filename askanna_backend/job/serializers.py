@@ -61,7 +61,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField("get_version")
     project = serializers.SerializerMethodField("get_project")
     owner = serializers.SerializerMethodField("get_user")
-    trigger = serializers.SerializerMethodField("get_user")
+    trigger = serializers.SerializerMethodField("get_trigger")
     runner = serializers.SerializerMethodField("get_runner")
     jobid = serializers.SerializerMethodField("get_jobid")
 
@@ -69,9 +69,9 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     jobdef = serializers.SerializerMethodField("get_jobdef")
 
-    metricmeta = serializers.SerializerMethodField("get_metricmeta")
+    metricsmeta = serializers.SerializerMethodField("get_metricsmeta")
 
-    def get_metricmeta(self, instance):
+    def get_metricsmeta(self, instance):
         try:
             metrics = instance.metrics.get()
         except ObjectDoesNotExist:
@@ -158,7 +158,7 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_user(self, instance):
         if instance.owner:
             if instance.member:
-                return instance.member.relation_to_json
+                return instance.member.relation_to_json_with_avatar
             return instance.owner.relation_to_json
         return {
             "relation": "user",
