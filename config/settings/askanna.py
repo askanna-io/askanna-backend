@@ -1,5 +1,7 @@
 """Askanna related settings."""
 
+import urllib
+
 from .settings_decorator import configclass
 
 
@@ -10,9 +12,30 @@ def settings(config, env):
         "ASKANNA_INVITATION_VALID_HOURS", 168
     )
 
+    api_environments = {
+        "api": "production",
+        "beta-api": "beta",
+    }
+
+    default_ui_url = {
+        "api": "https://askanna.eu",
+        "beta-api": "https://beta.askanna.eu",
+    }
+
     config.ASKANNA_API_URL = env.str("ASKANNA_API_URL", "https://api.askanna.io")
     config.ASKANNA_CDN_URL = env.str("ASKANNA_CDN_URL", "https://cdn-api.askanna.io")
-    config.ASKANNA_UI_URL = env.str("ASKANNA_UI_URL", "https://beta.askanna.eu")
+
+    # Determine whether we are beta/production/review, defaults to 'review'
+    parsed_url = urllib.parse.urlparse(config.ASKANNA_API_URL)
+
+    config.ASKANNA_UI_URL = env.str(
+        "ASKANNA_UI_URL",
+        default_ui_url.get(parsed_url.netloc.split(".")[0], "https://beta.askanna.eu"),
+    )
+
+    config.ASKANNA_ENVIRONMENT = api_environments.get(
+        parsed_url.netloc.split(".")[0], "review"
+    )
 
     # AskAnna Docker settings
     config.ASKANNA_DOCKER_USER = env.str("ASKANNA_DOCKER_USER", default=None)
