@@ -70,7 +70,6 @@ class JobRunSerializer(serializers.ModelSerializer):
     owner = serializers.SerializerMethodField("get_user")
     trigger = serializers.SerializerMethodField("get_trigger")
     runner = serializers.SerializerMethodField("get_runner")
-    jobid = serializers.SerializerMethodField("get_jobid")
 
     payload = serializers.SerializerMethodField("get_payload")
 
@@ -102,10 +101,6 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_jobdef(self, instance):
         jobdef = instance.jobdef
         return jobdef.relation_to_json
-
-    def get_jobid(self, instance):
-        # FIXME: this is to fix empty jobids from unran Celery jobs
-        return instance.jobid
 
     def get_runner(self, instance):
         # FIXME: replace with actual values
@@ -176,4 +171,9 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobRun
-        exclude = ["member", "metric_labels", "metric_keys"]
+        exclude = [
+            "jobid",
+            "member",
+            "metric_keys",
+            "metric_labels",
+        ]

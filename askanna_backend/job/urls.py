@@ -37,13 +37,6 @@ project_route.register(
     parents_query_lookups=["project__short_uuid"],
 )
 
-project_route.register(
-    r"metrics",
-    RunMetricsRowView,
-    basename="project-metric",
-    parents_query_lookups=["project_suuid"],
-)
-
 job_variable = router.register(r"variable", JobVariableView, basename="variable")
 job_route = router.register(r"job", JobActionView, basename="job")
 job_route.register(
@@ -71,12 +64,12 @@ job_route.register(
 
 runinfo_route = router.register(r"runinfo", JobRunView, basename="runinfo")
 
-# runinfo_route.register(
-#     r"metrics",
-#     RunMetricsView,
-#     basename="run-metric",
-#     parents_query_lookups=["jobrun__short_uuid"],
-# )
+runinfo_route.register(
+    r"metrics",
+    RunMetricsView,
+    basename="run-metric",
+    parents_query_lookups=["jobrun__short_uuid"],
+)
 
 runinfo_route.register(
     r"metrics",
@@ -128,16 +121,6 @@ jobresult_route.register(
 urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
     re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
-    path(
-        r"v1/runinfo/<shortuuid:jobrun__short_uuid>/metrics/update/",
-        RunMetricsView.as_view({"put": "update"}, detail=True),
-        name="runinfo-metric-update",
-    ),
-    path(
-        r"v1/runinfo/<shortuuid:jobrun__short_uuid>/metrics/meta/",
-        RunMetricsView.as_view({"get": "meta"}, detail=True),
-        name="runinfo-metric-meta",
-    ),
     path(
         r"v1/run/<shortuuid:short_uuid>/",
         StartJobView.as_view({"post": "do_ingest_short"}, detail=True),

@@ -840,7 +840,6 @@ class RunMetricsRowView(
 class RunMetricsView(
     PermissionByActionMixin,
     NestedViewSetMixin,
-    mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -857,8 +856,6 @@ class RunMetricsView(
     ]
 
     permission_classes_by_action = {
-        "list": [IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
         "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
     }
 
@@ -879,18 +876,6 @@ class RunMetricsView(
                 "modified": instance.modified,
             }
         )
-
-    # Override because we don't return the full object, just the `metrics` field
-    def retrieve(self, request, *args, **kwargs):
-        """
-        This is used in 'detail' views, we call '.to_representation' explicitly as we can eiter get
-        a list or dict, which will raise errors from the serializer (not the expected type)
-        """
-        instance = self.get_object()
-        serializer_kwargs = {}
-        serializer_kwargs["context"] = self.get_serializer_context()
-        serializer = self.get_serializer(instance, **serializer_kwargs)
-        return Response(serializer.to_representation(instance))
 
     # Override because we don't return the full object, just the `metrics` field
     def update(self, request, *args, **kwargs):
