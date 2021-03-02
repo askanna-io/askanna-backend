@@ -8,10 +8,12 @@ from celery import shared_task
 from celery.schedules import crontab
 from dateutil import parser
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.module_loading import import_string
 import docker
 
 from config.celery_app import app as celery_app
+from core.models import Setting
 from job.models import JobRun, JobVariable, RunMetrics, RunMetricsRow
 
 
@@ -104,7 +106,13 @@ def start_jobrun_dockerized(self, jobrun_uuid):
 
     # get runner image
     # FIXME: allow user to define which one to use
-    runner_image = settings.RUNNER_DEFAULT_DOCKER_IMAGE
+    # the default image can be set in core.models.Setting
+    try:
+        docker_image_setting = Setting.objects.get(name="RUNNER_DEFAULT_DOCKER_IMAGE")
+    except ObjectDoesNotExist:
+        runner_image = settings.RUNNER_DEFAULT_DOCKER_IMAGE
+    else:
+        runner_image = docker_image_setting.value
 
     # pull image first
     client.images.pull(

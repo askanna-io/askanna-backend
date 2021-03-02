@@ -55,10 +55,6 @@ def settings(config, env):
     )
 
     # Set default docker image for the runner
-    # config.RUNNER_DEFAULT_DOCKER_IMAGE = (
-    #     "gitlab.askanna.io:4567/askanna/askanna-cli:3.7-slim-master"
-    # )
     config.RUNNER_DEFAULT_DOCKER_IMAGE = (
-        "gitlab.askanna.io:4567/askanna/askanna-cli/review/metrics-sdk:3.7-slim"
+        "gitlab.askanna.io:4567/askanna/askanna-cli:3.7-slim-master"
     )
-
