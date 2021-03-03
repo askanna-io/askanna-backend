@@ -272,9 +272,10 @@ def clean_dangling_images():
     """
     We clean dangling images and volumes
     """
-    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    print(client.images.prune(filters={"dangling": True}))
-    print(client.volumes.prune())
+    if settings.ASKANNA_ENVIRONMENT == "production":
+        client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+        print(client.images.prune(filters={"dangling": True}))
+        print(client.volumes.prune())
 
 
 @celery_app.task(name="job.tasks.clean_containers_after_run")
