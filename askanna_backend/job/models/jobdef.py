@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
-import json
-import os
-import uuid
 
 from django.db import models
-from django.conf import settings
-from django.contrib.postgres.fields import JSONField
-from django.utils.module_loading import import_string
 
-from core.fields import JSONField  # noqa
-from core.models import BaseModel, SlimBaseModel
-
+from core.models import BaseModel
 from job.models.const import ENV_CHOICES, JOB_BACKENDS
 
 
@@ -57,10 +49,14 @@ class JobDef(BaseModel):
     def __str__(self):
         return self.name
 
+    def get_name(self):
+        return self.name
+
     @property
     def relation_to_json(self):
         return {
-            "name": self.name,
+            "relation": "jobdef",
+            "name": self.get_name(),
             "uuid": str(self.uuid),
             "short_uuid": self.short_uuid,
         }
@@ -69,11 +65,3 @@ class JobDef(BaseModel):
         ordering = ["-created"]
         verbose_name = "Job Definition"
         verbose_name_plural = "Job Definitions"
-
-    @property
-    def status(self):
-        """
-        Returns the state of the last JobRun.
-        """
-        backend = import_string(self.backend)
-        return backend(self.uuid).info()

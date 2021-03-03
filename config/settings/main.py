@@ -45,7 +45,10 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 try:
-    DATABASES = {"default": env.db("DATABASE_URL")}
+    DATABASES = {
+        "default": env.db("DATABASE_URL"),
+        "runinfo": env.db("RUNINFO_DATABASE_URL"),
+    }
 except environ.ImproperlyConfigured:
     DATABASES = {
         "default": {
@@ -55,11 +58,22 @@ except environ.ImproperlyConfigured:
             "PASSWORD": env.str("POSTGRES_PASSWORD"),
             "HOST": env.str("POSTGRES_HOST"),
             "PORT": env.str("POSTGRES_PORT"),
-        }
+        },
+        "runinfo": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "runinfo",
+            "USER": env.str("POSTGRES_USER"),
+            "PASSWORD": env.str("POSTGRES_PASSWORD"),
+            "HOST": env.str("POSTGRES_HOST"),
+            "PORT": env.str("POSTGRES_PORT"),
+        },
     }
 
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
+
+DATABASE_ROUTERS = ["core.dbrouter.RunInfoRouter"]
+
 
 # URLS
 # ------------------------------------------------------------------------------
@@ -125,6 +139,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    print("Turn on dbconnection middleware")
+    MIDDLEWARE.append("core.middleware.DebugDBConnectionMiddelware")
+
 
 # TEMPLATES
 # ------------------------------------------------------------------------------
@@ -174,7 +192,8 @@ FIELD_ENCRYPTION_KEY = env.str(
 
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
-TEST_RUNNER = "django.test.runner.DiscoverRunner"
+# https://docs.celeryproject.org/projects/django-celery/en/2.4/cookbook/unit-testing.html
+TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
 
 
 # CACHES
@@ -246,3 +265,5 @@ if env.bool("DJANGO_DEBUG_TOOLBAR", default=False):
         "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
         "SHOW_TEMPLATE_CONTEXT": True,
     }
+
+TEST = "test" in " ".join(sys.argv)

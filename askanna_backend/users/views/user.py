@@ -109,7 +109,6 @@ class PersonViewSet(
     )
     def avatar(self, request, **kwargs):
         instance = self.get_object()
-        # print(instance)
 
         if request.method.lower() == "delete":
             # delete avatar
@@ -117,10 +116,9 @@ class PersonViewSet(
             return Response("", status=204)
 
         serializer = ProfileImageSerializer(instance=instance, data=request.data,)
-        is_valid = serializer.is_valid(raise_exception=True)
+        # will raise exeptions when needed
+        serializer.is_valid(raise_exception=True)
 
-        if is_valid:
-            # save the image to the userprofile
-            serializer.save()
-
-        return Response({"valid": is_valid})
+        # save the image to the userprofile
+        serializer.save()
+        return Response({"valid": True})

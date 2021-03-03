@@ -1,16 +1,10 @@
 import django_filters
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.schemas.openapi import AutoSchema
 
 from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
-
-
-class MySchema(AutoSchema):
-    def get_tags(self, path, method):
-        return ["workspace"]
 
 
 class WorkspaceViewSet(
@@ -22,7 +16,6 @@ class WorkspaceViewSet(
     queryset = Workspace.objects.all()
     serializer_class = WorkspaceSerializer
     lookup_field = "short_uuid"
-    schema = MySchema()
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

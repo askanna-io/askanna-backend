@@ -29,6 +29,7 @@ class IsWorkspaceMemberBasePermission(permissions.BasePermission):
                 object_uuid=workspace_uuid_qs.values("uuid")[:1],
                 object_type=MSP_WORKSPACE,
                 user=user,
+                deleted__isnull=True,
             ).exists()
 
         # For listings when we do not know the workspace, then grant access and let the

@@ -1,18 +1,36 @@
 # -*- coding: utf-8 -*-
-import json
 import os
-import uuid
 
-from django.db import models
 from django.conf import settings
+from django.db import models
 
-from core.models import BaseModel, SlimBaseModel
+from core.models import SlimBaseModel, ArtifactModelMixin
 
 
-class JobArtifact(SlimBaseModel):
+class JobArtifact(ArtifactModelMixin, SlimBaseModel):
     """
     Output of a JobRun stored into an archive
     """
+
+    filetype = "artifact"
+    filextension = "zip"
+    filereadmode = "rb"
+    filewritemode = "wb"
+
+    def get_storage_location(self):
+        return os.path.join(
+            self.jobrun.jobdef.project.uuid.hex,
+            self.jobrun.jobdef.uuid.hex,
+            self.jobrun.uuid.hex,
+        )
+
+    def get_base_path(self):
+        return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location)
+
+    def get_full_path(self):
+        return os.path.join(
+            settings.ARTIFACTS_ROOT, self.storage_location, self.filename
+        )
 
     jobrun = models.ForeignKey(
         "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="artifact"
@@ -21,47 +39,16 @@ class JobArtifact(SlimBaseModel):
     size = models.PositiveIntegerField(editable=False, default=0)
 
     @property
-    def storage_location(self):
-        return os.path.join(
-            self.jobrun.jobdef.project.uuid.hex,
-            self.jobrun.jobdef.uuid.hex,
-            self.jobrun.uuid.hex,
-        )
-
-    def __str__(self):
-        return str(self.uuid)
-
-    @property
-    def stored_path(self):
-        return os.path.join(
-            settings.ARTIFACTS_ROOT, self.storage_location, self.filename
-        )
-
-    @property
-    def filename(self):
-        return "artifact_{}.zip".format(self.uuid.hex)
-
-    @property
-    def read(self):
+    def relation_to_json(self):
         """
-            Read the artifact from filesystem and return as Zip
+        Used for the serializer to trace back to this instance
         """
-
-        with open(self.stored_path, "rb") as f:
-            return f.read()
-
-    def write(self, stream):
-        """
-            Write contents to the filesystem
-        """
-        os.makedirs(
-            os.path.join(settings.ARTIFACTS_ROOT, self.storage_location), exist_ok=True
-        )
-        with open(self.stored_path, "wb") as f:
-            f.write(stream.read())
-
-    def prune(self):
-        os.remove(self.stored_path)
+        return {
+            "relation": "artifact",
+            "name": self.get_name(),
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+        }
 
     class Meta:
         ordering = ["-created"]

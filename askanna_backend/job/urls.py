@@ -1,4 +1,5 @@
-from django.conf.urls import include, re_path
+# -*- coding: utf-8 -*-
+from django.conf.urls import include
 from django.urls import path, re_path
 
 from job.views import (
@@ -15,6 +16,8 @@ from job.views import (
     JobVariableView,
     ProjectJobViewSet,
     StartJobView,
+    RunMetricsView,
+    RunMetricsRowView,
 )
 from project.urls import project_route
 from project.urls import router as prouter
@@ -49,6 +52,35 @@ job_route.register(
     parents_query_lookups=["jobdef__short_uuid"],
 )
 
+job_route.register(
+    r"metrics",
+    RunMetricsRowView,
+    basename="job-metric",
+    parents_query_lookups=["job_suuid"],
+)
+
+
+# new url scheme using runinfo
+
+runinfo_route = router.register(r"runinfo", JobRunView, basename="runinfo")
+
+runinfo_route.register(
+    r"metrics",
+    RunMetricsView,
+    basename="run-metric",
+    parents_query_lookups=["jobrun__short_uuid"],
+)
+
+runinfo_route.register(
+    r"metrics",
+    RunMetricsRowView,
+    basename="run-metric",
+    parents_query_lookups=["run_suuid"],
+)
+
+
+# older url schemes using jobrun
+
 jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
 jobrun_route.register(
     r"payload",
@@ -56,6 +88,7 @@ jobrun_route.register(
     basename="jobrun-payload",
     parents_query_lookups=["jobrun__short_uuid"],
 )
+
 artifact_route = jobrun_route.register(
     r"artifact",
     JobArtifactView,

@@ -12,16 +12,26 @@ def settings(config, env):
         "ASKANNA_INVITATION_VALID_HOURS", 168
     )
 
-    config.ASKANNA_API_URL = env.str("ASKANNA_API_URL", "https://api.askanna.io")
-    config.ASKANNA_CDN_URL = env.str("ASKANNA_CDN_URL", "https://cdn-api.askanna.io")
-    config.ASKANNA_UI_URL = env.str("ASKANNA_UI_URL", "https://beta.askanna.eu")
-
-    # Determine whether we are beta/production/review, defaults to 'review'
-    parsed_url = urllib.parse.urlparse(config.ASKANNA_API_URL)
     api_environments = {
         "api": "production",
         "beta-api": "beta",
     }
+
+    default_ui_url = {
+        "api": "https://askanna.eu",
+        "beta-api": "https://beta.askanna.eu",
+    }
+
+    config.ASKANNA_API_URL = env.str("ASKANNA_API_URL", "https://api.askanna.io")
+    config.ASKANNA_CDN_URL = env.str("ASKANNA_CDN_URL", "https://cdn-api.askanna.io")
+
+    # Determine whether we are beta/production/review, defaults to 'review'
+    parsed_url = urllib.parse.urlparse(config.ASKANNA_API_URL)
+
+    config.ASKANNA_UI_URL = env.str(
+        "ASKANNA_UI_URL",
+        default_ui_url.get(parsed_url.netloc.split(".")[0], "https://beta.askanna.eu"),
+    )
 
     config.ASKANNA_ENVIRONMENT = api_environments.get(
         parsed_url.netloc.split(".")[0], "review"
@@ -42,4 +52,9 @@ def settings(config, env):
     # Setting for avatars
     config.USERPROFILE_DEFAULT_AVATAR = (
         "assets/src_assets_icons_ask-anna-default-gravatar.png"
+    )
+
+    # Set default docker image for the runner
+    config.RUNNER_DEFAULT_DOCKER_IMAGE = (
+        "gitlab.askanna.io:4567/askanna/askanna-cli:3.7-slim-master"
     )

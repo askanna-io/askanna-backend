@@ -2,15 +2,20 @@
 from django.contrib import admin
 
 from job.models import (
-    JobArtifact,
-    JobDef,
-    JobPayload,
-    JobRun,
-    JobOutput,
-    JobVariable,
     ChunkedJobOutputPart,
     ChunkedArtifactPart,
+    JobArtifact,
+    JobDef,
+    JobOutput,
+    JobPayload,
+    JobRun,
+    JobVariable,
+    RunMetrics,
+    RunMetricsRow,
 )
+
+admin.site.register(ChunkedJobOutputPart)
+admin.site.register(ChunkedArtifactPart)
 
 
 @admin.register(JobDef)
@@ -72,10 +77,6 @@ class JobOutputAdmin(admin.ModelAdmin):
     search_fields = ["uuid", "short_uuid", "owner"]
 
 
-admin.site.register(ChunkedJobOutputPart)
-admin.site.register(ChunkedArtifactPart)
-
-
 @admin.register(JobVariable)
 class JobVariableAdmin(admin.ModelAdmin):
     list_display = [
@@ -94,3 +95,43 @@ class JobVariableAdmin(admin.ModelAdmin):
     date_hierarchy = "created"
     list_filter = ("created",)
     search_fields = ["uuid", "short_uuid", "name"]
+
+
+@admin.register(RunMetrics)
+class RunMetricsAdmin(admin.ModelAdmin):
+    list_display = [
+        "jobrun",
+        "short_uuid",
+        "count",
+        "size",
+    ]
+    list_display_links = (
+        "jobrun",
+        "short_uuid",
+    )
+
+    raw_id_fields = ["jobrun"]
+    search_fields = ["jobrun", "short_uuid"]
+
+
+@admin.register(RunMetricsRow)
+class RunMetricsRowAdmin(admin.ModelAdmin):
+    list_display = [
+        "project_suuid",
+        "job_suuid",
+        "run_suuid",
+        "short_uuid",
+        "metric",
+        "label",
+    ]
+    list_display_links = (
+        "project_suuid",
+        "job_suuid",
+        "run_suuid",
+    )
+
+    search_fields = [
+        "project_suuid",
+        "job_suuid",
+        "run_suuid",
+    ]

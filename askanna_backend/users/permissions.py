@@ -42,22 +42,21 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """
-        If the action is to create, retrieve, list an invitation or memberships the user has to be part of the workspace
+        If the action is to create, retrieve, list an invitation or memberships the user has to be
+        part of the workspace
         When an invitation is accepted, the user cannot be part of a workspace
         """
         user = request.user
         if view.action in ["partial_update", "destroy", "avatar"]:
             # Let has_object_permission deal with this request.
             return user.is_authenticated
-
-        if view.action in ["create", "retrieve", "list"]:
+        elif view.action in ["create", "retrieve", "list"]:
             parents = view.get_parents_query_dict()
             is_member = (
                 user.is_authenticated
                 and user.memberships.filter(deleted__isnull=True, **parents).exists()
             )
             return is_member
-
         return False
 
     def has_object_permission(self, request, view, obj):

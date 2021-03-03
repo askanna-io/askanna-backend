@@ -10,15 +10,9 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 import config.urls
-from job.models import JobDef, JobRun, JobPayload
-from project.models import Project
-from package.models import Package
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
-from workspace.models import Workspace
+from .base import BaseJobTestDef
 
 pytestmark = pytest.mark.django_db
-
-from .base import BaseJobTestDef
 
 
 class TestArtifactListAPI(BaseJobTestDef, APITestCase):
@@ -76,7 +70,7 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class TestArtifactListAPI(BaseJobTestDef, APITestCase):
+class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
     """
     Test to get a detail from  the artifacts
     """
@@ -146,12 +140,10 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         The short-uuid is from a job-run where the artifact is generated from
         """
         self.url = reverse(
-            "shortcut-artifact",
-            kwargs={"short_uuid": self.jobruns["run1"].short_uuid,},
+            "shortcut-artifact", kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
         )
         self.url_no_artifact = reverse(
-            "shortcut-artifact",
-            kwargs={"short_uuid": self.jobruns["run2"].short_uuid,},
+            "shortcut-artifact", kwargs={"short_uuid": self.jobruns["run2"].short_uuid},
         )
 
         self.setUpUrls()

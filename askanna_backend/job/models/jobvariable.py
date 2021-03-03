@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
-import json
-import os
-import uuid
-
 from django.db import models
-from django.conf import settings
 from encrypted_model_fields.fields import EncryptedTextField
 
-
-from core.models import BaseModel, SlimBaseModel
+from core.models import SlimBaseModel
 
 
 class JobVariable(SlimBaseModel):

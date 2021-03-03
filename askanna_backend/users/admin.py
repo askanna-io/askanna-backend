@@ -36,6 +36,7 @@ class MembershipAdmin(admin.ModelAdmin):
         "created",
     ]
 
+    raw_id_fields = ["user"]
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid"]
@@ -64,6 +65,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         "created",
     ]
 
+    raw_id_fields = ["user"]
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid"]
@@ -78,6 +80,7 @@ class InvitationAdmin(admin.ModelAdmin):
         "object_type",
     ]
 
+    raw_id_fields = ["user"]
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid"]
@@ -115,7 +118,7 @@ class InvitationAdmin(admin.ModelAdmin):
 
 
 @admin.register(PasswordResetLog)
-class InvitationAdmin(admin.ModelAdmin):
+class PasswordResetLogAdmin(admin.ModelAdmin):
     list_display = [
         "uuid",
         "email",
@@ -126,6 +129,11 @@ class InvitationAdmin(admin.ModelAdmin):
         "created",
     ]
 
+    raw_id_fields = ["user"]
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid", "email", "remote_ip"]
+
+    def has_add_permission(self, request, obj=None):
+        """ disable adding logs manually, since that doesn't make sense """
+        return False

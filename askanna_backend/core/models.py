@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
+import os
 import uuid
-
-from .utils import GoogleTokenGenerator, bx_decode
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -9,6 +9,9 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleDescriptionModel,
 )
+from encrypted_model_fields.fields import EncryptedTextField
+
+from .utils import GoogleTokenGenerator
 
 
 class DeletedModel(models.Model):
@@ -83,3 +86,68 @@ class AuthorModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class ArtifactModelMixin:
+    """
+    Providing basic accessors to the file on the filesystem related to the model
+    """
+
+    filetype = "file"
+    filextension = "justafile"
+    filereadmode = "r"
+    filewritemode = "w"
+
+    @property
+    def storage_location(self):
+        return self.get_storage_location()
+
+    def __str__(self):
+        return str(self.uuid)
+
+    def get_storage_location(self):
+        raise NotImplementedError(
+            f"Please implement 'get_storage_location' for {self.__class__.__name__}"
+        )
+
+    def get_base_path(self):
+        raise NotImplementedError(
+            f"Please implement 'get_full_path' for {self.__class__.__name__}"
+        )
+
+    def get_full_path(self):
+        raise NotImplementedError(
+            f"Please implement 'get_base_path' for {self.__class__.__name__}"
+        )
+
+    @property
+    def stored_path(self):
+        return self.get_full_path()
+
+    @property
+    def filename(self):
+        return "{}_{}.{}".format(self.filetype, self.uuid.hex, self.filextension)
+
+    def get_name(self):
+        return self.filename
+
+    @property
+    def read(self):
+        with open(self.stored_path, self.filereadmode) as f:
+            return f.read()
+
+    def write(self, stream):
+        """
+            Write contents to the filesystem
+        """
+        os.makedirs(self.get_base_path(), exist_ok=True)
+        with open(self.stored_path, self.filewritemode) as f:
+            f.write(stream.read())
+
+    def prune(self):
+        os.remove(self.stored_path)
+
+
+class Setting(SlimBaseModel):
+    name = models.CharField(max_length=32, blank=True, unique=True)
+    value = EncryptedTextField(max_length=4096, blank=True, null=True)

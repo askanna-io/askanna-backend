@@ -1,15 +1,15 @@
-from collections import Mapping
+from collections.abc import Mapping
 import os
 from uuid import uuid4
 
 from django.urls import register_converter
 
-from yaml import load, dump
+from yaml import load
 
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader, Dumper
+    from yaml import Loader
 
 
 # From https://pythonhosted.org/shorten/user/examples.html
@@ -80,17 +80,17 @@ def bx_decode(string, alphabet=DEFAULT, mapping=None):
     if not isinstance(mapping, Mapping):
         raise TypeError("a Mapping is required")
 
-    sum = 0
+    sum_of_string = 0
 
     for digit in string:
         try:
-            sum = base * sum + mapping[digit]
+            sum_of_string = base * sum_of_string + mapping[digit]
         except KeyError:
             raise ValueError(
                 "invalid literal for bx_decode with base %i: '%s'" % (base, digit)
             )
 
-    return sum
+    return sum_of_string
 
 
 def group(string, n):
@@ -129,7 +129,7 @@ class GoogleTokenGenerator:
 
 
 class ShortUUIDConverter:
-    regex = "[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}"
+    regex = r"[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}"
 
     def to_python(self, value):
         return value

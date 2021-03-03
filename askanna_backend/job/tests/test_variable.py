@@ -1,16 +1,13 @@
+# -*- coding: utf-8 -*-
 import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from job.models import JobVariable
-from project.models import Project
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
-from workspace.models import Workspace
+from .base import BaseJobTestDef
 
 pytestmark = pytest.mark.django_db
-
-from .base import BaseJobTestDef
 
 
 class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
@@ -551,4 +548,3 @@ class TestProjectVariableDeleteAPI(TestVariableDeleteAPI):
                 "parent_lookup_project__short_uuid": self.project.short_uuid,
             },
         )
-

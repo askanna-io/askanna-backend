@@ -191,7 +191,7 @@ class Membership(SlimBaseModel):
         return "{location}?{timestamp}".format(location=location, timestamp=timestamp)
 
     @property
-    def relation_to_json(self):
+    def relation_to_json_with_avatar(self):
         """
         Used for the serializer to trace back to this instance
         """
@@ -211,6 +211,18 @@ class Membership(SlimBaseModel):
                     ],
                 )
             ),
+        }
+
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "membership",
+            "name": self.get_name(),
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
         }
 
     def get_name(self):

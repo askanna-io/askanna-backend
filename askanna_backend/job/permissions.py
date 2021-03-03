@@ -1,11 +1,11 @@
 """Define permissions class for Job related access control."""
 from rest_framework import permissions
-from project.models import Project
-from users.models import Membership, WS_ADMIN, WS_MEMBER
+from uuid import UUID
 
+from project.models import Project
+from users.models import Membership
 from workspace.models import Workspace
 from workspace.permissions import IsWorkspaceMemberBasePermission
-from uuid import UUID
 
 
 class IsMemberOfProjectBasedOnPayload(permissions.BasePermission):

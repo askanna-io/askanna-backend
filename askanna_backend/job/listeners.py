@@ -1,21 +1,15 @@
 import os
 from zipfile import ZipFile
 
+from config.celery_app import app as celery_app
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import pre_delete, post_delete, pre_save, post_save
+from django.db.models.signals import pre_delete, pre_save, post_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
 
-from yaml import load, dump
-
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
-from job.models import JobArtifact, JobOutput, JobPayload, JobRun
-from job.signals import artifact_upload_finish, start_jobrun_dockerized
+from job.models import JobArtifact, JobOutput, JobPayload, JobRun, RunMetrics
+from job.signals import artifact_upload_finish
+from job.tasks import start_jobrun_dockerized
 from users.models import MSP_WORKSPACE
 
 
@@ -96,3 +90,51 @@ def add_member_to_jobrun(sender, instance, **kwargs):
             if membership:
                 instance.member = membership
 
+
+@receiver(post_save, sender=RunMetrics)
+def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
+    """
+    After saving metrics, we want to update the linked
+    JobRun.labels to put the static labels in there
+    We don't do this in a django instance, we delegate this
+    to a celery task.
+    """
+    update_fields = kwargs.get("update_fields")
+    if update_fields:
+        # we don't do anything if this was an update on specific fields
+        return
+
+    # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
+    on_commit(
+        lambda: celery_app.send_task(
+            "job.tasks.extract_metrics_labels",
+            args=None,
+            kwargs={"metrics_uuid": instance.uuid},
+        )
+    )
+
+
+@receiver(post_save, sender=RunMetrics)
+def move_metrics_to_rows(sender, instance, created, **kwargs):
+    """
+    After saving metrics, we save the individueal rows to
+    a new table which allows us to query the metrics
+    """
+    update_fields = kwargs.get("update_fields")
+    if update_fields:
+        # we don't do anything if this was an update on specific fields
+        return
+
+    if settings.TEST:
+        from job.tasks import move_metrics_to_rows
+
+        move_metrics_to_rows(**{"metrics_uuid": instance.uuid})
+    else:
+        # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.move_metrics_to_rows",
+                args=None,
+                kwargs={"metrics_uuid": instance.uuid},
+            )
+        )

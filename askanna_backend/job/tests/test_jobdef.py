@@ -3,15 +3,9 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from job.models import JobDef, JobRun, JobPayload
-from project.models import Project
-from package.models import Package
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
-from workspace.models import Workspace
+from .base import BaseJobTestDef
 
 pytestmark = pytest.mark.django_db
-
-from .base import BaseJobTestDef
 
 
 class TestJobListAPI(BaseJobTestDef, APITestCase):
@@ -42,7 +36,7 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
 
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_nonmember(self):
         """
@@ -234,4 +228,3 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
         """
         response = self.client.get(self.url, format="json",)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-

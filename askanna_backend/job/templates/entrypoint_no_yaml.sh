@@ -3,11 +3,11 @@ askanna --version
 
 echo 'AskAnna is running for project "{{pr.name}}" and running on "{{pr.short_uuid}}"'
 
-echo "AskAnna could not start the job '{{jd.name}}'"
-echo "Job '{{jd.name}}' not found in 'askanna.yml'"
-echo "Read on https://docs.askanna.io/jobs/#create-a-job on how to define a job.
+echo "AskAnna could not find the file: 'askanna.yml'"
+echo "Read on https://docs.askanna.io/code/#askannayml on how to create an 'askanna.yml' to configure a job."
+echo ""
 echo "Job failed"
 
 # the following is for AskAnna only
-echo "AskAnna exit_code=${last_status}"
+echo "AskAnna exit_code=1"
 exit 1

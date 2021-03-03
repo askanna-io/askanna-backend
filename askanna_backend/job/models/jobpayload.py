@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-import uuid
 
 from django.db import models
 from django.conf import settings
 
-from core.models import BaseModel, SlimBaseModel
+from core.models import SlimBaseModel
 
 
 class JobPayload(SlimBaseModel):
