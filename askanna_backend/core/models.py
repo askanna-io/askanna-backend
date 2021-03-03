@@ -49,7 +49,7 @@ class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
         if not self.short_uuid and self.uuid:
             # FIXME: mode this part of code outside save to check for potential collision in existing set
             google_token = GoogleTokenGenerator()
-            self.short_uuid = google_token.create_token(key="", uuid=self.uuid)
+            self.short_uuid = google_token.create_token(uuid_in=self.uuid)
         super().save(*args, **kwargs)
 
     class Meta:
@@ -77,7 +77,7 @@ class ActivatedModel(ActivatorModel, BaseModel):
 
 class AuthorModel(models.Model):
     """
-        Adding created_by to the model to register who created this instance
+    Adding created_by to the model to register who created this instance
     """
 
     created_by = models.ForeignKey(
@@ -138,7 +138,7 @@ class ArtifactModelMixin:
 
     def write(self, stream):
         """
-            Write contents to the filesystem
+        Write contents to the filesystem
         """
         os.makedirs(self.get_base_path(), exist_ok=True)
         with open(self.stored_path, self.filewritemode) as f:
