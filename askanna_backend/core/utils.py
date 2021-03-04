@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 from collections.abc import Mapping
+import datetime
 import os
-from uuid import uuid4
+import uuid
 
 from django.urls import register_converter
 
@@ -111,18 +113,18 @@ class GoogleTokenGenerator:
 
     alphabet = DEFAULT
 
-    def create_token(self, key, uuid=None):
+    def create_token(self, uuid_in=None):
         token_length = 16
         group_size = 4
         groups = int(token_length / group_size)
 
         # Generate a random UUID if not given
-        if not uuid:
-            uuid = uuid4()
+        if not uuid_in:
+            uuid_in = uuid.uuid4()
 
         # Convert it to a number with the given alphabet,
         # padding with the 0-symbol as needed)
-        token = bx_encode(int(uuid.hex, 16), self.alphabet)
+        token = bx_encode(int(uuid_in.hex, 16), self.alphabet)
         token = token.rjust(token_length, self.alphabet[0])
 
         return "-".join(group(token, group_size)[:groups])
@@ -145,3 +147,13 @@ def get_config(filename: str) -> dict:
     # FIXME: put this into a general askanna-utils to read askanna.yml
     config = load(open(os.path.expanduser(filename), "r"), Loader=Loader)
     return config
+
+
+def find_last_modified(directory, filelist):
+    latest_modified = datetime.datetime(1970, 1, 1, 0, 0, 0)
+    sub_dir_files = filter(lambda x: x["parent"].startswith(directory), filelist)
+    for f in sub_dir_files:
+        if f.get("last_modified") > latest_modified:
+            latest_modified = f.get("last_modified")
+
+    return latest_modified
