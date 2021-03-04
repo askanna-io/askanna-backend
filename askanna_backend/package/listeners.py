@@ -3,14 +3,14 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import pre_delete, post_delete, pre_save
+from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
-from yaml import load, dump
+from yaml import load
 
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader, Dumper
+    from yaml import Loader
 
 from job.models import JobDef
 from package.models import Package
@@ -68,12 +68,11 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     jobs = list(set(config.keys()) - set(reserved_keys))
 
     # create or find jobdef for each found jobs
-
     for job in jobs:
         try:
-            jd = JobDef.objects.get(name=job, project=project)
-        except ObjectDoesNotExist as e:
-            jd = JobDef.objects.create(name=job, project=project, owner=obj.created_by)
+            JobDef.objects.get(name=job, project=project)
+        except ObjectDoesNotExist:
+            JobDef.objects.create(name=job, project=project)
 
 
 @receiver(pre_delete, sender=Package)
@@ -104,4 +103,3 @@ def add_member_to_package(sender, instance, **kwargs):
             membership = member_query.first()
             if membership:
                 instance.member = membership
-

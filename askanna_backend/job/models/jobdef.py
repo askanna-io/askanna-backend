@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-
 from django.db import models
 
 from core.models import BaseModel
-from job.models.const import ENV_CHOICES, JOB_BACKENDS
 
 
 class JobDef(BaseModel):
@@ -20,31 +18,6 @@ class JobDef(BaseModel):
     project = models.ForeignKey(
         "project.Project", on_delete=models.CASCADE, blank=True, null=True
     )
-    default_payload = models.UUIDField(
-        blank=True, null=True, help_text="Default payload to use when not provided"
-    )
-
-    function = models.CharField(
-        max_length=100, blank=True, null=True, help_text="Function to execute"
-    )
-    backend = models.CharField(
-        max_length=100, choices=JOB_BACKENDS, default="job.celerybackend.CeleryJob"
-    )
-    visible = models.BooleanField(
-        default=True
-    )  # FIXME: add rationale and default value
-
-    environment = models.CharField(
-        max_length=20, choices=ENV_CHOICES, default="python3.7"
-    )
-
-    # FIXME: Should env_variables be in the JobDef, or JobPayload?
-    env_variables = models.TextField(blank=True, null=True)
-
-    # FIXME: see what name to use, since there might be a conflict with
-    # the permission system.
-    # FIXME: replace with reference to User Object.
-    owner = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.name

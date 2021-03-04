@@ -20,7 +20,7 @@ admin.site.register(ChunkedArtifactPart)
 
 @admin.register(JobDef)
 class JobDefAdmin(admin.ModelAdmin):
-    list_display = ["name", "uuid", "short_uuid", "function", "project", "created"]
+    list_display = ["name", "uuid", "short_uuid", "project", "created"]
     list_display_links = (
         "name",
         "uuid",
