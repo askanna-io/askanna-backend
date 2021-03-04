@@ -2,7 +2,7 @@
 from .const import JOB_STATUS, ENV_CHOICES  # noqa
 from .chunkedartifact import ChunkedArtifactPart  # noqa
 from .jobartifact import JobArtifact  # noqa
-from .jobdef import JobDef, JOB_BACKENDS  # noqa
+from .jobdef import JobDef  # noqa
 from .jobpayload import JobPayload  # noqa
 from .joboutput import JobOutput, ChunkedJobOutputPart  # noqa
 from .jobrun import JobRun  # noqa
