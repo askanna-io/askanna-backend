@@ -187,38 +187,59 @@ class BaseJobTestDef:
         )
 
         cls.package = Package.objects.create(
+            original_filename="project-no-yml.zip",
             project=cls.project,
             size=1,
             title="TestPackage",
             created_by=cls.users["user"],
         )
         cls.package.write(
-            open(settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"), "rb",)
+            open(
+                settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
+                "rb",
+            )
         )
 
         cls.package2 = Package.objects.create(
+            original_filename="project-001.zip",
             project=cls.project2,
             size=1,
             title="TestPackage2",
             created_by=cls.users["user"],
         )
         cls.package2.write(
-            open(settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"), "rb",)
+            open(
+                settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"),
+                "rb",
+            )
         )
 
         cls.package3 = Package.objects.create(
+            original_filename="project-no-yml.zip",
             project=cls.project2,
             size=1,
             title="TestPackage3",
             created_by=cls.users["user"],
         )
         cls.package3.write(
-            open(settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"), "rb",)
+            open(
+                settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
+                "rb",
+            )
         )
 
-        cls.jobdef = JobDef.objects.create(name="TestJobDef", project=cls.project,)
-        cls.jobdef2 = JobDef.objects.create(name="my-test-job", project=cls.project2,)
-        cls.jobdef3 = JobDef.objects.create(name="my-test-job3", project=cls.project2,)
+        cls.jobdef = JobDef.objects.create(
+            name="TestJobDef",
+            project=cls.project,
+        )
+        cls.jobdef2 = JobDef.objects.create(
+            name="my-test-job",
+            project=cls.project2,
+        )
+        cls.jobdef3 = JobDef.objects.create(
+            name="my-test-job3",
+            project=cls.project2,
+        )
         cls.jobruns = {
             "run1": JobRun.objects.create(
                 package=cls.package,

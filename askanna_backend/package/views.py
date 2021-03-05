@@ -1,5 +1,5 @@
-from django.shortcuts import render
-from django.core.files.storage import FileSystemStorage
+# -*- coding: utf-8 -*-
+import os
 from django.conf import settings
 
 from rest_framework import mixins
@@ -7,11 +7,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from rest_framework import status
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
-from resumable.files import ResumableFile
 
 from core.mixins import HybridUUIDMixin
 from core.views import (
@@ -19,7 +15,6 @@ from core.views import (
     BaseUploadFinishMixin,
     SerializerByActionMixin,
 )
-from package.listeners import *
 from package.models import Package, ChunkedPackagePart
 from package.serializers import (
     PackageSerializer,
@@ -83,7 +78,7 @@ class ProjectPackageViewSet(
     HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
 ):
 
-    queryset = Package.objects.all()
+    queryset = Package.objects.exclude(original_filename="")
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [IsAuthenticated]
