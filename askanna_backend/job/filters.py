@@ -1,5 +1,5 @@
 from django_filters import rest_framework as filters
-from django_filters import CharFilter, OrderingFilter
+from django_filters import CharFilter
 import django_filters
 
 from django_filters.constants import EMPTY_VALUES
@@ -85,7 +85,9 @@ class MetricFilter(filters.FilterSet):
     metric_value = CharFilter(field_name="metric__0__value")
     metric_type = CharFilter(field_name="metric__0__type")
 
-    label_name = CharFilter(field_name="label__0__name")
+    label_name = CharFilter(field_name="label__*__name", method="filter_array")
+    label_value = CharFilter(field_name="label__*__value", method="filter_array")
+    label_type = CharFilter(field_name="label__*__type", method="filter_array")
 
     ordering = MetricDataFilter(fields=(("created", "created"),))
 
@@ -96,6 +98,15 @@ class MetricFilter(filters.FilterSet):
         values = list(map(lambda x: x.strip(), value.split(",")))
         field_name = f"{name}__in"
         return queryset.filter(**{field_name: values})
+
+    def filter_array(self, queryset, name, value):
+        """
+        Create the __contains=[{"field": "value"}] lookup
+        """
+        field = name.split("__*__")[0]
+        subfield = name.split("__*__")[1]
+        query_field = "{}__contains".format(field)
+        return queryset.filter(**{query_field: [{subfield: value}]})
 
     class Meta:
         model = RunMetricsRow

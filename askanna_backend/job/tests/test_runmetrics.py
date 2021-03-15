@@ -30,7 +30,10 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
@@ -41,7 +44,10 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
@@ -52,7 +58,10 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
@@ -60,7 +69,10 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         """
         We can list metrics as member of a workspace
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_as_member_order_by_metricname(self):
@@ -70,11 +82,17 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url + "?ordering=-metric.name", format="json",)
+        response = self.client.get(
+            self.url + "?ordering=-metric.name",
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
-        response = self.client.get(self.url + "?ordering=metric.name", format="json",)
+        response = self.client.get(
+            self.url + "?ordering=metric.name",
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
@@ -87,9 +105,30 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
 
         query_params = {"metric_name": "Accuracy"}
 
-        response = self.client.get(self.url, query_params, format="json",)
+        response = self.client.get(
+            self.url,
+            query_params,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+    def test_list_as_member_filter_labelname(self):
+        """
+        We test the filter by label name
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        query_params = {"label_name": "product"}
+
+        response = self.client.get(
+            self.url,
+            query_params,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
 
 
 class TestMetricsMetaAPI(BaseJobTestDef, APITestCase):
@@ -116,7 +155,11 @@ class TestMetricsMetaAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver",)
+        response = self.client.get(
+            self.url,
+            format="json",
+            HTTP_HOST="testserver",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 4)
 
@@ -146,7 +189,9 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.put(
-            self.url, {"metrics": metric_response_good_small}, format="json",
+            self.url,
+            {"metrics": metric_response_good_small},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, metric_response_good_small)
@@ -159,7 +204,9 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.put(
-            self.url, {"metrics": metric_response_good_small}, format="json",
+            self.url,
+            {"metrics": metric_response_good_small},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, metric_response_good_small)
@@ -172,7 +219,9 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.put(
-            self.url, {"metrics": metric_response_good_small}, format="json",
+            self.url,
+            {"metrics": metric_response_good_small},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -180,7 +229,10 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We cannot update metrics as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -201,7 +253,10 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
 
@@ -212,7 +267,10 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
 
@@ -223,11 +281,17 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url + "?ordering=-metric.name", format="json",)
+        response = self.client.get(
+            self.url + "?ordering=-metric.name",
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
 
-        response = self.client.get(self.url + "?ordering=metric.name", format="json",)
+        response = self.client.get(
+            self.url + "?ordering=metric.name",
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
 
@@ -240,6 +304,27 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
 
         query_params = {"metric_name": "Accuracy", "job": self.jobdef.short_uuid}
 
-        response = self.client.get(self.url, query_params, format="json",)
+        response = self.client.get(
+            self.url,
+            query_params,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
+
+    def test_list_as_member_filter_labelname(self):
+        """
+        We test the filter by label name
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        query_params = {"label_name": "product"}
+
+        response = self.client.get(
+            self.url,
+            query_params,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 6)
