@@ -6,10 +6,10 @@
 # https://docs.docker.com/compose/extends/
 #   $ ln -s docker-compose.mutagen.yml docker-compose.override.yml
 
-# Can be used with local docker or with remote docker instances.
-# Local usage will improve performance on macOS.
+# Can be used with local Docker or with remote Docker instances.
+# Local usage will improve performance on Mac OS.
 
-# To use it with a remote docker instance the value of `DOCKER_HOST`
+# To use it with a remote Docker instance the value of `DOCKER_HOST`
 # needs to be set in the `.env` file.
 # DOCKER_HOST=ssh://user@host
 
