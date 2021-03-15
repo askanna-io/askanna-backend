@@ -132,7 +132,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     runner_command = [
         "/bin/bash",
         "-c",
-        "askanna jobrun-manifest --output /dev/stdout | bash",
+        "askanna-run-utils get-run-manifest --output /dev/stdout | bash",
     ]
 
     runner_variables = {
