@@ -12,9 +12,6 @@ x-services:
       - .:/app
 
 services:
-  #                       #
-  # Custom images         #
-  #                       #
   django:
     <<: *base-django
     ports:
