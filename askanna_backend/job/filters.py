@@ -30,9 +30,9 @@ class RunFilter(filters.FilterSet):
 class MetricDataFilter(django_filters.OrderingFilter):
 
     custom_ordering = [
-        ("metric.name", "Metric name", "metric__0__name"),
-        ("metric.value", "Metric value", "metric__0__value"),
-        ("metric.type", "Metric type", "metric__0__type"),
+        ("metric.name", "Metric name", "metric__name"),
+        ("metric.value", "Metric value", "metric__value"),
+        ("metric.type", "Metric type", "metric__type"),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -81,9 +81,9 @@ class MetricFilter(filters.FilterSet):
     job = CharFilter(field_name="job_suuid", method="filter_multiple")
     runs = CharFilter(field_name="run_suuid", method="filter_multiple")
 
-    metric_name = CharFilter(field_name="metric__0__name")
-    metric_value = CharFilter(field_name="metric__0__value")
-    metric_type = CharFilter(field_name="metric__0__type")
+    metric_name = CharFilter(field_name="metric__name")
+    metric_value = CharFilter(field_name="metric__value")
+    metric_type = CharFilter(field_name="metric__type")
 
     label_name = CharFilter(field_name="label__*__name", method="filter_array")
     label_value = CharFilter(field_name="label__*__value", method="filter_array")
