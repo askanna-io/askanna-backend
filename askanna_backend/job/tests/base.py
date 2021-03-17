@@ -11,7 +11,7 @@ from workspace.listeners import install_demo_project_in_workspace
 metric_response_good = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
+        "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -21,7 +21,7 @@ metric_response_good = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -30,7 +30,7 @@ metric_response_good = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Quality", "value": "Good", "type": "string"}],
+        "metric": {"name": "Quality", "value": "Good", "type": "string"},
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -39,7 +39,7 @@ metric_response_good = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Quality", "value": "Ok", "type": "string"}],
+        "metric": {"name": "Quality", "value": "Ok", "type": "string"},
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -51,7 +51,7 @@ metric_response_good = [
 metric_response_good_reversed = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Quality", "value": "Ok", "type": "string"}],
+        "metric": {"name": "Quality", "value": "Ok", "type": "string"},
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -61,7 +61,7 @@ metric_response_good_reversed = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Quality", "value": "Good", "type": "string"}],
+        "metric": {"name": "Quality", "value": "Good", "type": "string"},
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -70,7 +70,7 @@ metric_response_good_reversed = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -79,7 +79,7 @@ metric_response_good_reversed = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
+        "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -91,13 +91,13 @@ metric_response_good_reversed = [
 metric_response_good_small = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.623", "type": "integer"}],
+        "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
         "created": "2021-02-14T12:00:01.123456",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.876", "type": "integer"}],
+        "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
         "created": "2021-02-14T12:00:01.123456",
     },
@@ -105,10 +105,7 @@ metric_response_good_small = [
 metric_response_bad = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [
-            {"name": "Accuracy", "value": "0.876", "type": "integer"},
-            {"name": "Quality", "value": "Good", "type": "string"},
-        ],
+        "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
@@ -117,7 +114,7 @@ metric_response_bad = [
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": [{"name": "Accuracy", "value": "0.623"}, {"name": "Quality"}],
+        "metric": {"name": "Accuracy", "value": "0.623"},
         "label": [
             {"name": "city", "value": "Amsterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
