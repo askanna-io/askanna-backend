@@ -239,7 +239,7 @@ def extract_metrics_labels(self, metrics_uuid):
         # count number of metrics
         metrics = metric.get("metric", {})
         allkeys.append(metrics.get("name"))
-        count += len(metrics)
+        count += 1
 
     jobrun.metric_keys = list(set(allkeys) - set([None]))
     jobrun.metric_labels = list(set(alllabels) - set([None]))
