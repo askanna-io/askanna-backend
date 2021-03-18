@@ -15,7 +15,8 @@ urlpatterns = [
                 re_path(
                     r"^$",
                     RedirectView.as_view(
-                        url=reverse_lazy("schema-swagger-ui"), permanent=False
+                        url=reverse_lazy("schema-swagger-ui", kwargs={"version": "v1"}),
+                        permanent=False,
                     ),
                 ),
                 # Swagger/OpenAPI documentation
