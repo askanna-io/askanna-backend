@@ -14,7 +14,8 @@ RUN apk update \
     && apk add gettext \
     # https://docs.djangoproject.com/en/dev/ref/django-admin/#dbshell
     && apk add postgresql-client \
-    && apk add git
+    && apk add git \
+    && apk add libmagic
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements /requirements
