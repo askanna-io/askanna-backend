@@ -14,7 +14,8 @@ RUN apk update \
   # CFFI dependencies
   && apk add libffi-dev py-cffi \
   # git
-  && apk add git
+  && apk add git \
+  && apk add libmagic
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements /requirements
