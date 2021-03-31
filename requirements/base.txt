@@ -18,7 +18,7 @@ django-resumable~=0.2.0
 
 # Django
 # ------------------------------------------------------------------------------
-django==2.2.8  # pyup: < 3.0  # https://www.djangoproject.com/
+django~=2.2.8  # pyup: < 3.0  # https://www.djangoproject.com/
 django-environ==0.4.5  # https://github.com/joke2k/django-environ
 django-model-utils==3.2.0  # https://github.com/jazzband/django-model-utils
 django-allauth==0.40.0  # https://github.com/pennersr/django-allauth
@@ -45,4 +45,6 @@ docker==4.1.0
 # django encryption fields
 django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted-model-fields
 
-
+# detect fileformats
+python-magic~=0.4.22 # https://pypi.org/project/python-magic/
+filetype~=1.0.7 # https://pypi.org/project/filetype/#history

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from collections.abc import Mapping
 import datetime
+import json
 import os
 import uuid
 
 from django.urls import register_converter
-
+import filetype
+import magic
 from yaml import load
 
 try:
@@ -157,3 +159,45 @@ def find_last_modified(directory, filelist):
             latest_modified = f.get("last_modified")
 
     return latest_modified
+
+
+# File mimetype detection logic
+
+
+def is_jsonfile(filepath) -> bool:
+    """
+    Determine whether we are dealing with a JSON file
+    returns True/False
+    """
+
+    try:
+        json.load(open(filepath))
+    except json.decoder.JSONDecodeError:
+        return False
+    return True
+
+
+def detect_file_mimetype(filepath):
+    """
+    Use libmagic to determine what file we find on `filepath`.
+    We return either None or the found mimetype
+    """
+    detected_mimetype = None
+
+    try:
+        detected_mimetype = magic.from_file(filepath, mime=True)
+    except FileNotFoundError as e:
+        # something terrible happened, we stored the file but it cannot be found
+        raise e
+
+    if detected_mimetype:
+        if detected_mimetype == "text/plain":
+            # try to detect JSON
+            if is_jsonfile(filepath):
+                detected_mimetype = "application/json"
+    else:
+        kind = filetype.guess(filepath)
+        if kind:
+            detected_mimetype = kind.mime
+
+    return detected_mimetype

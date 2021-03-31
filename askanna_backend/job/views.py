@@ -195,7 +195,11 @@ class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
 
     def get_result(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
-        return HttpResponse(jobrun.output.read, content_type="")
+
+        # get the requested content-type header, if not set from database
+        content_type = request.headers.get("content-type", jobrun.output.mime_type)
+
+        return HttpResponse(jobrun.output.read, content_type=content_type)
 
     def get_status(self, request, short_uuid, **kwargs):
         jobrun = self.get_object()
@@ -274,7 +278,9 @@ def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
 
 
 class JobRunView(
-    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
 ):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
@@ -309,7 +315,9 @@ class JobRunView(
         )
 
     @action(
-        detail=True, methods=["get"], name="JobRun Manifest",
+        detail=True,
+        methods=["get"],
+        name="JobRun Manifest",
     )
     def manifest(self, request, short_uuid, **kwargs):
         instance = self.get_object()
@@ -370,7 +378,9 @@ class JobRunView(
         return HttpResponse(entrypoint_string)
 
     @action(
-        detail=True, methods=["get"], name="JobRun Log",
+        detail=True,
+        methods=["get"],
+        name="JobRun Log",
     )
     def log(self, request, short_uuid, **kwargs):
         instance = self.get_object()
@@ -525,7 +535,8 @@ class ProjectJobViewSet(
 
 
 class JobArtifactShortcutView(
-    mixins.RetrieveModelMixin, viewsets.GenericViewSet,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
 ):
     """
     Retrieve a specific artifact to be exposed over `/v1/artifact/{{ run_suuid }}`
@@ -561,7 +572,8 @@ class JobArtifactShortcutView(
         else:
             response = HttpResponseRedirect(
                 "{BASE_URL}/files/artifacts/{LOCATION}".format(
-                    BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=location,
+                    BASE_URL=settings.ASKANNA_CDN_URL,
+                    LOCATION=location,
                 )
             )
             return response
@@ -666,7 +678,9 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
 
 
 class JobResultOutputView(
-    BaseUploadFinishMixin, NestedViewSetMixin, viewsets.GenericViewSet,
+    BaseUploadFinishMixin,
+    NestedViewSetMixin,
+    viewsets.GenericViewSet,
 ):
     queryset = JobOutput.objects.all()
     lookup_field = "short_uuid"
@@ -684,10 +698,11 @@ class JobResultOutputView(
     def get_upload_target_location(self, request, obj, **kwargs) -> str:
         return os.path.join(self.upload_target_location, obj.storage_location)
 
-    # def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-    #     update_fields = ["size"]
-    #     instance_obj.size = resume_obj.size
-    #     instance_obj.save(update_fields=update_fields)
+    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+        update_fields = ["lines", "size"]
+        instance_obj.lines = len(instance_obj.read.splitlines())
+        instance_obj.size = resume_obj.size
+        instance_obj.save(update_fields=update_fields)
 
 
 class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
