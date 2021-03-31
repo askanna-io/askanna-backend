@@ -15,10 +15,25 @@ class JobOutput(SlimBaseModel):
 
     jobdef = models.UUIDField(blank=True, null=True, editable=False)
     jobrun = models.OneToOneField(
-        "job.JobRun", on_delete=models.CASCADE, to_field="uuid", related_name="output",
+        "job.JobRun",
+        on_delete=models.CASCADE,
+        to_field="uuid",
+        related_name="output",
     )
     exit_code = models.IntegerField(default=0)
     stdout = JSONField(blank=True, null=True)
+    mime_type = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Storing the mime-type of the output file",
+    )
+    size = models.PositiveIntegerField(
+        editable=False, default=0, help_text="Size of the result stored"
+    )
+    lines = models.PositiveIntegerField(
+        editable=False, default=0, help_text="Number of lines in the result"
+    )
 
     owner = models.CharField(max_length=100, blank=True, null=True)
 
@@ -46,7 +61,7 @@ class JobOutput(SlimBaseModel):
     @property
     def read(self):
         """
-            Read the result from filesystem and return
+        Read the result from filesystem and return
         """
         try:
             with open(self.stored_path, "rb") as f:

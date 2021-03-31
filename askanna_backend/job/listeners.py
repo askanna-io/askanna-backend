@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from zipfile import ZipFile
 
@@ -7,10 +8,24 @@ from django.db.models.signals import pre_delete, pre_save, post_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
 
+from core.utils import detect_file_mimetype
 from job.models import JobArtifact, JobOutput, JobPayload, JobRun, RunMetrics
-from job.signals import artifact_upload_finish
+from job.signals import artifact_upload_finish, result_upload_finish
 from job.tasks import start_jobrun_dockerized
 from users.models import MSP_WORKSPACE
+
+
+@receiver(result_upload_finish)
+def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
+    """
+    After saving the result, determine the mime-type of the file using python-magic
+    and custom logic to determine specific filetypes
+    """
+    detected_mimetype = detect_file_mimetype(obj.stored_path)
+    if detect_file_mimetype:
+        update_fields = ["mime_type"]
+        obj.mime_type = detected_mimetype
+        obj.save(update_fields=update_fields)
 
 
 @receiver(artifact_upload_finish)
