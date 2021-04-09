@@ -3,7 +3,7 @@ class RunInfoRouter:
     Redirect stats and metrics to runinfo
     """
 
-    route_model_labels = {"runmetricsrow"}
+    route_model_labels = {"runmetricsrow", "runvariablerow"}
 
     def db_for_read(self, model, **hints):
         """

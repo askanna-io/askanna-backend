@@ -52,7 +52,7 @@ class IsWorkspaceMemberBasePermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """Return `True` if the user is a member of the workspace.
-        Or we are accessing a subview where view.detail == True """
+        Or we are accessing a subview where view.detail == True"""
         return self._has_workspace_permission(request, view) or (
             view.detail and not request.user.is_anonymous
         )

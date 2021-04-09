@@ -229,7 +229,7 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We cannot update metrics as anonymous
         """
-        response = self.client.get(
+        response = self.client.put(
             self.url,
             format="json",
         )

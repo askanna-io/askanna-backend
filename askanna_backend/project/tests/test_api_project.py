@@ -1,6 +1,5 @@
 """Define tests for API of invitation workflow."""
 import json
-import os
 import pytest
 import re
 
@@ -21,6 +20,8 @@ pytestmark = pytest.mark.django_db
 
 
 class BaseProjectTest(APITestCase):
+    databases = ["default", "runinfo"]
+
     def setUp(self):
         self.users = {
             "admin_a": User.objects.create(
@@ -58,7 +59,10 @@ class BaseProjectTest(APITestCase):
 class TestProjectListAPI(BaseProjectTest):
     def setUp(self):
         super().setUp()
-        self.url = reverse("project-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "project-list",
+            kwargs={"version": "v1"},
+        )
 
     def test_list_project_as_admin(self):
         """An admin of the workspace can list projects"""
@@ -105,7 +109,10 @@ class TestProjectDetailAPI(BaseProjectTest):
         super().setUp()
         self.url = reverse(
             "project-detail",
-            kwargs={"version": "v1", "short_uuid": self.project.short_uuid,},
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.project.short_uuid,
+            },
         )
 
     def test_member_can_get_project(self):
@@ -149,7 +156,12 @@ class TestProjectDetailAPI(BaseProjectTest):
 class TestProjectCreateAPI(BaseProjectTest):
     def setUp(self):
         super().setUp()
-        self.url = reverse("project-list", kwargs={"version": "v1",},)
+        self.url = reverse(
+            "project-list",
+            kwargs={
+                "version": "v1",
+            },
+        )
 
     def test_member_can_create_project(self):
         """A member of the workspace can create a project."""
@@ -202,7 +214,10 @@ class TestProjectUpdateAPI(BaseProjectTest):
         super().setUp()
         self.url = reverse(
             "project-detail",
-            kwargs={"version": "v1", "short_uuid": self.project.short_uuid,},
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.project.short_uuid,
+            },
         )
 
     def test_member_can_update_project(self):
@@ -302,7 +317,10 @@ class TestProjectDeleteAPI(BaseProjectTest):
         super().setUp()
         self.url = reverse(
             "project-detail",
-            kwargs={"version": "v1", "short_uuid": self.project.short_uuid,},
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.project.short_uuid,
+            },
         )
         self.setUpDelete()
 
@@ -320,7 +338,10 @@ class TestProjectDeleteAPI(BaseProjectTest):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         # setup a job for the project
-        self.job = JobDef.objects.create(name="test-job", project=self.project,)
+        self.job = JobDef.objects.create(
+            name="test-job",
+            project=self.project,
+        )
 
         # our payload
         self.payload = {"test": 1, "format": "json", "user": "askanna"}
@@ -328,7 +349,10 @@ class TestProjectDeleteAPI(BaseProjectTest):
         # setup a payload for the project
         job_url = reverse("run-job", kwargs={"short_uuid": self.job.short_uuid})
         response = self.client.post(
-            job_url, self.payload, format="json", HTTP_HOST="testserver",
+            job_url,
+            self.payload,
+            format="json",
+            HTTP_HOST="testserver",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         job_run_suuid = response.data.get("short_uuid")
@@ -350,7 +374,8 @@ class TestProjectDeleteAPI(BaseProjectTest):
 
         # other urls to check
         self.payload_json_url = str(self.jobpayload.stored_path).replace(
-            str(settings.STORAGE_ROOT), "/files",
+            str(settings.STORAGE_ROOT),
+            "/files",
         )
         self.payload_exists()
 

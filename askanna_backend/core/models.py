@@ -145,7 +145,10 @@ class ArtifactModelMixin:
             f.write(stream.read())
 
     def prune(self):
-        os.remove(self.stored_path)
+        try:
+            os.remove(self.stored_path)
+        except FileNotFoundError:
+            pass
 
 
 class Setting(SlimBaseModel):

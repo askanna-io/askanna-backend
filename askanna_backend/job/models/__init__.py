@@ -8,3 +8,4 @@ from .joboutput import JobOutput, ChunkedJobOutputPart  # noqa
 from .jobrun import JobRun  # noqa
 from .jobvariable import JobVariable  # noqa
 from .runmetrics import RunMetrics, RunMetricsRow  # noqa
+from .runvariables import RunVariables, RunVariableRow  # noqa
