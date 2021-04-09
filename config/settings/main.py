@@ -58,6 +58,7 @@ except environ.ImproperlyConfigured:
             "PASSWORD": env.str("POSTGRES_PASSWORD"),
             "HOST": env.str("POSTGRES_HOST"),
             "PORT": env.str("POSTGRES_PORT"),
+            "TEST": {"DEPENDENCIES": []},
         },
         "runinfo": {
             "ENGINE": "django.db.backends.postgresql",
@@ -66,6 +67,7 @@ except environ.ImproperlyConfigured:
             "PASSWORD": env.str("POSTGRES_PASSWORD"),
             "HOST": env.str("POSTGRES_HOST"),
             "PORT": env.str("POSTGRES_PORT"),
+            "TEST": {"DEPENDENCIES": ["default"]},
         },
     }
 

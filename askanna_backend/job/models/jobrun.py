@@ -28,6 +28,15 @@ class JobRun(BaseModel):
         models.CharField(max_length=8192), blank=True, default=list
     )
 
+    # The labels field stores what is generated from the tracked_variables
+    variable_labels = ArrayField(
+        models.CharField(max_length=4096), blank=True, default=list
+    )
+    # The keys field stores what is generated from the tracked_variables
+    variable_keys = ArrayField(
+        models.CharField(max_length=8192), blank=True, default=list
+    )
+
     def set_status(self, status_code):
         self.status = status_code
         self.save(update_fields=["status", "modified"])

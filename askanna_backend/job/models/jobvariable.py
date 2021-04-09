@@ -21,8 +21,10 @@ class JobVariable(SlimBaseModel):
     value = EncryptedTextField(max_length=4096, blank=True)
     is_masked = models.BooleanField(default=False)
 
-    def __str__(self):
-        return str(self.uuid)
+    def get_value(self, show_masked=False):
+        if self.is_masked and not show_masked:
+            return "***masked***"
+        return self.value
 
     class Meta:
         ordering = ["-created"]

@@ -9,7 +9,15 @@ from django.db.transaction import on_commit
 from django.dispatch import receiver
 
 from core.utils import detect_file_mimetype
-from job.models import JobArtifact, JobOutput, JobPayload, JobRun, RunMetrics
+from job.models import (
+    JobArtifact,
+    JobOutput,
+    JobPayload,
+    JobRun,
+    RunMetrics,
+    RunVariables,
+    RunVariableRow,
+)
 from job.signals import artifact_upload_finish, result_upload_finish
 from job.tasks import start_jobrun_dockerized
 from users.models import MSP_WORKSPACE
@@ -84,6 +92,15 @@ def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
         on_commit(lambda: start_jobrun_dockerized.delay(instance.uuid))
 
 
+@receiver(post_save, sender=JobRun)
+def create_runvariables(sender, instance, created, **kwargs):
+    """
+    Create intermediate model to store variables for a run
+    """
+    if created:
+        RunVariables.objects.create(**{"jobrun": instance})
+
+
 @receiver(pre_save, sender=JobRun)
 def add_member_to_jobrun(sender, instance, **kwargs):
     """
@@ -153,3 +170,93 @@ def move_metrics_to_rows(sender, instance, created, **kwargs):
                 kwargs={"metrics_uuid": instance.uuid},
             )
         )
+
+
+@receiver(pre_delete, sender=RunMetrics)
+def delete_runmetrics(sender, instance, **kwargs):
+    instance.prune()
+
+
+@receiver(post_save, sender=RunVariables)
+def extract_labels_from_variables_to_jobrun(sender, instance, created, **kwargs):
+    """
+    After saving trackedvariables, we want to update the linked
+    JobRun.labels to put the static labels in there
+    We don't do this in a django instance, we delegate this
+    to a celery task.
+    """
+    update_fields = kwargs.get("update_fields")
+    if update_fields or created:
+        # we don't do anything if this was an update on specific fields
+        return
+
+    on_commit(
+        lambda: celery_app.send_task(
+            "job.tasks.extract_variables_labels",
+            args=None,
+            kwargs={"variables_uuid": instance.uuid},
+        )
+    )
+
+
+@receiver(post_save, sender=RunVariables)
+def move_variables_to_rows(sender, instance, created, **kwargs):
+    """
+    After saving variables, we save the individual rows to
+    a new table that allows us to query the variables
+    """
+    update_fields = kwargs.get("update_fields")
+    if update_fields or created:
+        # we don't do anything if this was an update on specific fields
+        return
+
+    if settings.TEST:
+        from job.tasks import move_variables_to_rows
+
+        move_variables_to_rows(**{"variables_uuid": instance.uuid})
+    else:
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.move_variables_to_rows",
+                args=None,
+                kwargs={"variables_uuid": instance.uuid},
+            )
+        )
+
+
+@receiver(pre_save, sender=RunVariableRow)
+def mask_secret_variables(sender, instance, **kwargs):
+    """
+    Only operate on RunVariableRow which are not yet marked as is_masked
+    We check this before actually saving to the database, giving us a chance
+    to modify this
+
+    An instance is not masked yet, if it was coming from the API (SDK call)
+
+    """
+    if not instance.is_masked:
+        variable_name = instance.variable.get("name").upper()
+        is_masked = any(
+            [
+                "KEY" in variable_name,
+                "TOKEN" in variable_name,
+                "SECRET" in variable_name,
+                "PASSWORD" in variable_name,
+            ]
+        )
+        if is_masked:
+            instance.variable["value"] = "***masked***"
+            instance.is_masked = True
+            # add the tag is_masked, but first check whether this is already in the instance.label
+            has_is_masked = "is_masked" in [
+                label.get("name") for label in instance.label
+            ]
+            if not has_is_masked:
+                instance.label.append(
+                    {"name": "is_masked", "value": None, "type": "tag"}
+                )
+
+
+@receiver(pre_delete, sender=RunVariables)
+def delete_runvariables(sender, instance, **kwargs):
+    instance.prune()

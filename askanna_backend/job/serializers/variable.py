@@ -56,16 +56,14 @@ class JobVariableSerializer(serializers.ModelSerializer):
 
     def get_value(self, instance):
         """
-            return masked value by default
+        return masked value by default
         """
         show_masked = self.context["request"].query_params.get("show_masked")
-        if instance.is_masked and not show_masked:
-            return "***masked***"
-        return instance.value
+        return instance.get_value(show_masked=show_masked)
 
     def get_project(self, instance):
         """
-            return short project relation info
+        return short project relation info
         """
         return instance.project.relation_to_json
 

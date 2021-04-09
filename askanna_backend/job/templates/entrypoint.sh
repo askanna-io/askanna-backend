@@ -56,6 +56,7 @@ cd /code
 askanna-run-utils push-result
 askanna artifact add
 askanna-run-utils push-metrics --force
+askanna-run-utils push-variables --force
 
 echo ""
 echo "Run succeeded"

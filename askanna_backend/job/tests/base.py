@@ -1,13 +1,76 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
 from django.db.models import signals
-from job.models import JobDef, JobRun, JobVariable, JobArtifact, RunMetrics
+from job.models import (
+    JobDef,
+    JobRun,
+    JobVariable,
+    JobArtifact,
+    RunMetrics,
+    RunVariables,
+)
 from project.models import Project
 from package.models import Package
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
 from workspace.listeners import install_demo_project_in_workspace
 
+
+tracked_variables_response_good = [
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
+        ],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+        ],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Quality", "value": "Good", "type": "string"},
+        "label": [
+            {"name": "city", "value": "Rotterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+        ],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Quality", "value": "Ok", "type": "string"},
+        "label": [
+            {"name": "city", "value": "Amsterdam", "type": "string"},
+            {"name": "product", "value": "TV", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
+        ],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+]
+
+variable_response_good_small = [
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
+        "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
+        "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+]
 metric_response_good = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -17,7 +80,7 @@ metric_response_good = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -26,7 +89,7 @@ metric_response_good = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -35,7 +98,7 @@ metric_response_good = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -45,7 +108,7 @@ metric_response_good = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 metric_response_good_reversed = [
@@ -57,7 +120,7 @@ metric_response_good_reversed = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -66,7 +129,7 @@ metric_response_good_reversed = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -75,7 +138,7 @@ metric_response_good_reversed = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -85,7 +148,7 @@ metric_response_good_reversed = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 metric_response_good_small = [
@@ -93,13 +156,13 @@ metric_response_good_small = [
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 metric_response_bad = [
@@ -110,7 +173,7 @@ metric_response_bad = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -120,7 +183,7 @@ metric_response_bad = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "value": "null"},
         ],
-        "created": "2021-02-14T12:00:01.123456",
+        "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 
@@ -278,6 +341,19 @@ class BaseJobTestDef:
                 jobrun=cls.jobruns["run3"], metrics=metric_response_bad, count=2
             ),
         }
+
+        cls.tracked_variables = {
+            "run1": RunVariables.objects.get(jobrun=cls.jobruns["run1"]),
+            "run2": RunVariables.objects.get(jobrun=cls.jobruns["run2"]),
+            "run3": RunVariables.objects.get(jobrun=cls.jobruns["run3"]),
+        }
+        cls.tracked_variables["run1"].variables = tracked_variables_response_good
+        cls.tracked_variables["run2"].variables = tracked_variables_response_good
+        cls.tracked_variables["run3"].variables = tracked_variables_response_good
+        cls.tracked_variables["run1"].save()
+        cls.tracked_variables["run2"].save()
+        cls.tracked_variables["run3"].save()
+
         cls.artifact = JobArtifact.objects.create(
             **{"jobrun": cls.jobruns["run1"], "size": 500}
         )

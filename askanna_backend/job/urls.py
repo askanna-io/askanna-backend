@@ -18,6 +18,8 @@ from job.views import (
     StartJobView,
     RunMetricsView,
     RunMetricsRowView,
+    RunVariablesView,
+    RunVariableRowView,
 )
 from project.urls import project_route
 from project.urls import router as prouter
@@ -51,11 +53,16 @@ job_route.register(
     basename="job-payload",
     parents_query_lookups=["jobdef__short_uuid"],
 )
-
 job_route.register(
     r"metrics",
     RunMetricsRowView,
     basename="job-metric",
+    parents_query_lookups=["job_suuid"],
+)
+job_route.register(
+    r"variables_tracked",
+    RunVariableRowView,
+    basename="job-variables",
     parents_query_lookups=["job_suuid"],
 )
 
@@ -76,6 +83,20 @@ runinfo_route.register(
     RunMetricsRowView,
     basename="run-metric",
     parents_query_lookups=["run_suuid"],
+)
+
+runinfo_route.register(
+    r"variables",
+    RunVariableRowView,
+    basename="run-variables",
+    parents_query_lookups=["run_suuid"],
+)
+
+runinfo_route.register(
+    r"variables",
+    RunVariablesView,
+    basename="run-variables",
+    parents_query_lookups=["jobrun__short_uuid"],
 )
 
 

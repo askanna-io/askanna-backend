@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -16,7 +17,10 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("variable-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "variable-list",
+            kwargs={"version": "v1"},
+        )
         self.tmp_variable = None
 
     def tearDown(self):
@@ -37,7 +41,11 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
             "project": self.project.short_uuid,
         }
 
-        response = self.client.post(self.url, new_token, format="json",)
+        response = self.client.post(
+            self.url,
+            new_token,
+            format="json",
+        )
         self.tmp_variable = response.data.get("short_uuid")
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
@@ -57,7 +65,11 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
             "project": self.project.short_uuid,
         }
 
-        response = self.client.post(self.url, new_token, format="json",)
+        response = self.client.post(
+            self.url,
+            new_token,
+            format="json",
+        )
         self.tmp_variable = response.data.get("short_uuid")
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
@@ -79,7 +91,11 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
             "project": self.project.short_uuid,
         }
 
-        response = self.client.post(self.url, new_token, format="json",)
+        response = self.client.post(
+            self.url,
+            new_token,
+            format="json",
+        )
         self.tmp_variable = response.data.get("short_uuid")
         self.assertIn(b"cannot be empty", response.content)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -100,7 +116,11 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
             "project": self.project.short_uuid,
         }
 
-        response = self.client.post(self.url, new_token, format="json",)
+        response = self.client.post(
+            self.url,
+            new_token,
+            format="json",
+        )
         self.tmp_variable = response.data.get("short_uuid")
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == " ")
@@ -121,7 +141,11 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
             "project": self.project.short_uuid,
         }
 
-        response = self.client.post(self.url, new_token, format="json",)
+        response = self.client.post(
+            self.url,
+            new_token,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_as_anonymous(self):
@@ -135,7 +159,11 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
             "project": self.project.short_uuid,
         }
 
-        response = self.client.post(self.url, new_token, format="json",)
+        response = self.client.post(
+            self.url,
+            new_token,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -145,7 +173,10 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("variable-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "variable-list",
+            kwargs={"version": "v1"},
+        )
 
     def test_list_as_admin(self):
         """
@@ -154,7 +185,10 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertTrue(len(response.data) == 2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -165,7 +199,10 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertTrue(len(response.data) == 2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -177,7 +214,10 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.data, [])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -185,7 +225,10 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         """
         We cannot list variables as anonymous user
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -211,7 +254,10 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
@@ -224,7 +270,10 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.urlformaskedvar, format="json",)
+        response = self.client.get(
+            self.urlformaskedvar,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariableMasked")
         self.assertTrue(response.data.get("value") == "***masked***")
@@ -237,7 +286,10 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
@@ -250,7 +302,10 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.urlformaskedvar, format="json",)
+        response = self.client.get(
+            self.urlformaskedvar,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariableMasked")
         self.assertTrue(response.data.get("value") == "***masked***")
@@ -264,14 +319,20 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_anonymous(self):
         """
         We cannot list variables as anonymous user
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -299,7 +360,11 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             "is_masked": True,
         }
 
-        response = self.client.patch(self.url, change_var_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_var_payload,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == "newvalue")
@@ -319,7 +384,11 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             "is_masked": True,
         }
 
-        response = self.client.patch(self.url, change_var_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_var_payload,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == "newvalue")
@@ -340,7 +409,11 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             "is_masked": False,
         }
 
-        response = self.client.patch(self.url, change_var_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_var_payload,
+            format="json",
+        )
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == " ")
@@ -363,7 +436,11 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             "is_masked": False,
         }
 
-        response = self.client.patch(self.url, change_var_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_var_payload,
+            format="json",
+        )
         self.tmp_variable = response.data.get("short_uuid")
         self.assertIn(b"cannot be empty", response.content)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -382,7 +459,11 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             "is_masked": True,
         }
 
-        response = self.client.patch(self.url, change_var_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_var_payload,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_change_as_anonymous(self):
@@ -395,7 +476,11 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             "is_masked": True,
         }
 
-        response = self.client.patch(self.url, change_var_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_var_payload,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -417,7 +502,10 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.delete(self.url, format="json",)
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_as_member(self):
@@ -427,7 +515,10 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.delete(self.url, format="json",)
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_as_nonmember(self):
@@ -438,14 +529,20 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.delete(self.url, format="json",)
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_as_anonymous(self):
         """
         We cannot list variables as anonymous user
         """
-        response = self.client.delete(self.url, format="json",)
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -490,7 +587,10 @@ class TestProjectVariableListAPI(TestVariableListAPI):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -548,3 +648,15 @@ class TestProjectVariableDeleteAPI(TestVariableDeleteAPI):
                 "parent_lookup_project__short_uuid": self.project.short_uuid,
             },
         )
+
+
+class TestVariableModel(TestCase):
+    def test_masked(self):
+        jv = JobVariable(**{"name": "test", "value": "secret", "is_masked": True})
+
+        self.assertEqual(jv.get_value(), "***masked***")
+        self.assertEqual(jv.get_value(show_masked=False), "***masked***")
+        self.assertEqual(jv.get_value(show_masked=True), "secret")
+        self.assertEqual(jv.value, "secret")
+        self.assertEqual(jv.is_masked, True)
+        self.assertTrue(jv.is_masked)

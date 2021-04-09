@@ -107,6 +107,12 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
                 return metrics
         return self.load_metrics_from_file(reverse=False)
 
+    def prune(self):
+        super().prune()
+
+        # also remove the rows of metrics attached to this object
+        RunMetricsRow.objects.filter(run_suuid=self.short_uuid).delete()
+
     class Meta:
         """Options for RunMetrics."""
 

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# from urllib.parse import urlencode
 from rest_framework import serializers
 
 from job.models import RunMetrics, RunMetricsRow
@@ -21,8 +20,7 @@ class RunMetricsSerializer(serializers.ModelSerializer):
 
 
 class RunMetricsRowSerializer(serializers.ModelSerializer):
-    """Serializer for RunMetricsRow model.
-    """
+    """Serializer for RunMetricsRow model."""
 
     class Meta:
         model = RunMetricsRow

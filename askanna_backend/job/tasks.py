@@ -14,7 +14,14 @@ import docker
 
 from config.celery_app import app as celery_app
 from core.models import Setting
-from job.models import JobRun, JobVariable, RunMetrics, RunMetricsRow
+from job.models import (
+    JobRun,
+    JobVariable,
+    RunMetrics,
+    RunMetricsRow,
+    RunVariableRow,
+    RunVariables,
+)
 
 
 @shared_task(bind=True, name="job.tasks.log_stats_from_container")
@@ -86,15 +93,39 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     pl = jr.payload
     pr = jd.project
     op = jr.output
+    tv = jr.runvariables.get()
 
     # FIXME: when versioning is in, point to version in JobRun
     package = jr.package
+
+    # log the variables set in this run
 
     # Get variables for this project / run
     _project_variables = JobVariable.objects.filter(project=pr)
     project_variables = {}
     for pv in _project_variables:
         project_variables[pv.name] = pv.value
+
+        # log the project defined variables
+        labels = [{"name": "source", "value": "project", "type": "string"}]
+        is_masked = pv.is_masked
+        if is_masked:
+            labels.append({"name": "is_masked", "value": None, "type": "tag"})
+        RunVariableRow.objects.create(
+            **{
+                "project_suuid": pr.short_uuid,
+                "job_suuid": jd.short_uuid,
+                "run_suuid": jr.short_uuid,
+                "created": datetime.datetime.now(tz=datetime.timezone.utc),
+                "variable": {
+                    "name": pv.name,
+                    "value": pv.get_value(show_masked=False),
+                    "type": "string",
+                },
+                "is_masked": is_masked,
+                "label": labels,
+            }
+        )
 
     # configure hostname for this project docker container
     hostname = pr.short_uuid
@@ -152,6 +183,24 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "RESULT_SUUID": str(op.short_uuid),
     }
 
+    for variable, value in runner_variables.items():
+        # log the worker variables
+        labels = [{"name": "source", "value": "worker", "type": "string"}]
+        RunVariableRow.objects.create(
+            **{
+                "project_suuid": pr.short_uuid,
+                "job_suuid": jd.short_uuid,
+                "run_suuid": jr.short_uuid,
+                "created": datetime.datetime.now(tz=datetime.timezone.utc),
+                "variable": {
+                    "name": variable,
+                    "value": value,
+                    "type": "string",
+                },
+                "label": labels,
+            }
+        )
+
     payload_variables = {}
     if isinstance(pl.payload, dict):
         # we have a valid dict from the payload
@@ -165,6 +214,27 @@ def start_jobrun_dockerized(self, jobrun_uuid):
             else:
                 # we have a bool or number
                 payload_variables["PLV_" + k] = v
+
+    for variable, value in payload_variables.items():
+        # log the payload variables
+        labels = [{"name": "source", "value": "payload", "type": "string"}]
+        RunVariableRow.objects.create(
+            **{
+                "project_suuid": pr.short_uuid,
+                "job_suuid": jd.short_uuid,
+                "run_suuid": jr.short_uuid,
+                "created": datetime.datetime.now(tz=datetime.timezone.utc),
+                "variable": {
+                    "name": variable,
+                    "value": value,
+                    "type": "string",
+                },
+                "label": labels,
+            }
+        )
+
+    # update the meta of trackedvariables
+    tv.update_meta()
 
     # set environment variables
     env_variables = {}
@@ -180,9 +250,9 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         environment=env_variables,
         name="run_{jobrun_suuid}".format(jobrun_suuid=jr.short_uuid),
         labels={
-            "jobrun": jr.short_uuid,
+            "run": jr.short_uuid,
             "project": pr.short_uuid,
-            "jobdef": jd.short_uuid,
+            "job": jd.short_uuid,
             "askanna_environment": settings.ASKANNA_ENVIRONMENT,
         },
         hostname=hostname,
@@ -264,6 +334,71 @@ def move_metrics_to_rows(self, metrics_uuid):
         # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
         metric["run_suuid"] = runmetrics.jobrun.short_uuid
         RunMetricsRow.objects.create(**metric)
+
+
+@shared_task(bind=True, name="job.tasks.extract_variables_labels")
+def extract_variables_labels(self, variables_uuid):
+    """
+    Extract labels in .variables and store the list of labels in .jobrun.labels
+    """
+    runvariables = RunVariables.objects.get(pk=variables_uuid)
+    jobrun = runvariables.jobrun
+    if not runvariables.variables:
+        # we don't have variables stored, as this is None (by default on creation)
+        return
+    alllabels = []
+    allkeys = []
+    count = 0
+    for variable in runvariables.variables[::]:
+        labels = variable.get("label", [])
+        for label_obj in labels:
+            alllabels.append(label_obj.get("name"))
+
+        # count number of variable
+        variables = variable.get("variable", {})
+        allkeys.append(variables.get("name"))
+        count += 1
+
+    # also count the ones in the databaase
+    dbvariables = RunVariableRow.objects.filter(
+        run_suuid=runvariables.short_uuid
+    ).exclude(label__contains=[{"name": "source", "value": "run", "type": "string"}])
+    for variable in dbvariables:
+        labels = variable.label
+        for label_obj in labels:
+            alllabels.append(label_obj.get("name"))
+
+        # count number of variable
+        variables = variable.variable
+        allkeys.append(variables.get("name"))
+        count += 1
+
+    jobrun.variable_keys = list(set(allkeys) - set([None]))
+    jobrun.variable_labels = list(set(alllabels) - set([None]))
+    jobrun.save(update_fields=["variable_labels", "variable_keys"])
+
+    runvariables.count = count
+    runvariables.size = len(json.dumps(runvariables.variables))
+    runvariables.save(update_fields=["count", "size"])
+
+
+@shared_task(bind=True, name="job.tasks.move_variables_to_rows")
+def move_variables_to_rows(self, variables_uuid):
+    runvariables = RunVariables.objects.get(pk=variables_uuid)
+
+    # remove old rows with source=run
+    RunVariableRow.objects.filter(run_suuid=runvariables.short_uuid).filter(
+        label__contains=[{"name": "source", "value": "run", "type": "string"}]
+    ).delete()
+
+    for variable in runvariables.variables:
+        variable["created"] = datetime.datetime.fromisoformat(variable["created"])
+        variable["project_suuid"] = runvariables.jobrun.jobdef.project.short_uuid
+        variable["job_suuid"] = runvariables.jobrun.jobdef.short_uuid
+        # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
+        variable["run_suuid"] = runvariables.jobrun.short_uuid
+
+        RunVariableRow.objects.create(**variable)
 
 
 @celery_app.task(name="job.tasks.clean_dangling_images")
