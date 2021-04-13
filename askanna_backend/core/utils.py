@@ -5,6 +5,7 @@ import json
 import os
 import uuid
 
+import croniter
 from django.urls import register_converter
 import filetype
 import magic
@@ -149,6 +150,70 @@ def get_config(filename: str) -> dict:
     # FIXME: put this into a general askanna-utils to read askanna.yml
     config = load(open(os.path.expanduser(filename), "r"), Loader=Loader)
     return config
+
+
+def validate_cron_line(cron_line: str) -> bool:
+    """
+    We validate the cron expression with croniter
+    """
+    try:
+        return croniter.croniter.is_valid(cron_line)
+    except AttributeError:
+        return False
+
+
+def parse_cron_line(cron_line: str) -> str:
+    """
+    parse incoming cron definition
+    if it is valid, then return the cron_line, otherwise a None
+    """
+
+    if isinstance(cron_line, str):
+        # we deal with cron strings
+        # first check whether we need to make a "translation" for @strings
+
+        alias_mapping = {
+            "@midnight": "0 0 * * *",
+            "@yearly": "0 0 1 1 *",
+            "@annually": "0 0 1 1 *",
+            "@monthly": "0 0 1 * *",
+            "@weekly": "0 0 * * 0",
+            "@daily": "0 0 * * *",
+            "@hourly": "0 * * * *",
+        }
+        cron_line = alias_mapping.get(cron_line.strip(), cron_line.strip())
+
+    elif isinstance(cron_line, dict):
+        # we deal with dictionary
+        # first check whether we have valid keys, if one invalid key is found, return None
+        valid_keys = set(["minute", "hour", "day", "month", "weekday"])
+        invalid_keys = set(cron_line.keys()) - valid_keys
+        if len(invalid_keys):
+            return None
+        cron_line = "{minute} {hour} {day} {month} {weekday}".format(
+            minute=cron_line.get("minute", "*"),
+            hour=cron_line.get("hour", "*"),
+            day=cron_line.get("day", "*"),
+            month=cron_line.get("month", "*"),
+            weekday=cron_line.get("weekday", "*"),
+        )
+
+    if not validate_cron_line(cron_line):
+        return None
+
+    return cron_line
+
+
+def parse_cron_schedule(schedule: list):
+    """
+    Determine which format it has, it can be one of the following:
+    - * * * * *  (m, h, d, m, weekday)
+    - @annotation (@yearly, @annually, @monthly, @weekly, @daily, @hourly)
+    - dict (k,v with: minute,hour,day,month,weekday)
+    """
+
+    for cron_line in schedule:
+        yield cron_line, parse_cron_line(cron_line)
 
 
 def find_last_modified(directory, filelist):

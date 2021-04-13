@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+from wsgiref.util import FileWrapper
 
 from django.http import StreamingHttpResponse, HttpResponse
-from wsgiref.util import FileWrapper
 
 
 # Define a few enums that will represent options in the models.

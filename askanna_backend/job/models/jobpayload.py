@@ -35,22 +35,19 @@ class JobPayload(SlimBaseModel):
     lines = models.PositiveIntegerField(editable=False, default=0)
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
 
-    def __str__(self):
-        return str(self.uuid)
-
     @property
     def payload(self):
         """
-            Read the payload from filesystem and return as JSON object
-            # FIXME: in future be in-determined for which filetype
-            # FIXME: refactor job system to provide filetype
+        Read the payload from filesystem and return as JSON object
+        # FIXME: in future be in-determined for which filetype
+        # FIXME: refactor job system to provide filetype
         """
         return json.loads(self.read)
 
     @property
     def read(self):
         """
-            Read the payload from filesystem and return as JSON object
+        Read the payload from filesystem and return as JSON object
         """
 
         with open(self.stored_path, "r") as f:
@@ -58,7 +55,7 @@ class JobPayload(SlimBaseModel):
 
     def write(self, stream):
         """
-            Write contents to the filesystem
+        Write contents to the filesystem
         """
         os.makedirs(
             os.path.join(settings.PAYLOADS_ROOT, self.storage_location), exist_ok=True

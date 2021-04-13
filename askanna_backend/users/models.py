@@ -1,12 +1,11 @@
+# -*- coding: utf-8 -*-
 import datetime
 import os
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import JSONField
-
-from django.db.models import CharField
 from django.db import models
-from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from core.models import SlimBaseModel, SlimBaseForAuthModel
 
@@ -18,11 +17,8 @@ class User(SlimBaseForAuthModel, AbstractUser):
     # First Name and Last Name do not cover name patterns
     # around the globe.
 
-    name = CharField(_("Name of User"), blank=True, max_length=255)
+    name = models.CharField(_("Name of User"), blank=True, max_length=255)
     front_end_domain = models.CharField(max_length=1024, null=True, default=None)
-
-    def get_absolute_url(self):
-        return reverse("users:detail", kwargs={"username": self.username})
 
     def get_name(self):
         return self.name or self.get_full_name() or self.username or self.short_uuid
@@ -116,7 +112,8 @@ class Membership(SlimBaseModel):
     def install_default_avatar(self):
         self.write(
             open(
-                settings.RESOURCES_DIR.path(settings.USERPROFILE_DEFAULT_AVATAR), "rb",
+                settings.RESOURCES_DIR.path(settings.USERPROFILE_DEFAULT_AVATAR),
+                "rb",
             )
         )
 
@@ -137,7 +134,9 @@ class Membership(SlimBaseModel):
 
     @property
     def storage_location(self):
-        return os.path.join(self.uuid.hex,)
+        return os.path.join(
+            self.uuid.hex,
+        )
 
     @property
     def stored_path(self):
@@ -163,7 +162,7 @@ class Membership(SlimBaseModel):
     @property
     def read(self):
         """
-            Read the avatar from filesystem
+        Read the avatar from filesystem
         """
 
         with open(self.stored_path, "rb") as f:
@@ -171,7 +170,7 @@ class Membership(SlimBaseModel):
 
     def write(self, stream):
         """
-            Write contents to the filesystem, as is without changing image format
+        Write contents to the filesystem, as is without changing image format
         """
         os.makedirs(
             os.path.join(settings.AVATARS_ROOT, self.storage_location), exist_ok=True

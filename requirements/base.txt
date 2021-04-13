@@ -1,4 +1,4 @@
-pytz==2019.3  # https://github.com/stub42/pytz
+pytz~=2021.1  # https://github.com/stub42/pytz
 python-slugify==4.0.0  # https://github.com/un33k/python-slugify
 Pillow==8.1.0  # https://github.com/python-pillow/Pillow
 argon2-cffi==19.2.0  # https://github.com/hynek/argon2_cffi
@@ -11,7 +11,7 @@ flower==0.9.3  # https://github.com/mher/flower
 sentry-sdk~=1.0.0  # https://github.com/getsentry/sentry-python
 
 # yaml support
-PyYAML==5.3  # https://pypi.org/project/PyYAML/#description
+PyYAML~=5.4.1  # https://pypi.org/project/PyYAML/#description
 
 # resumable upload
 django-resumable~=0.2.0
@@ -44,6 +44,9 @@ docker==4.1.0
 
 # django encryption fields
 django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted-model-fields
+
+# crontab library for scheduled jobs
+croniter~=1.0.12
 
 # detect fileformats
 python-magic~=0.4.22 # https://pypi.org/project/python-magic/

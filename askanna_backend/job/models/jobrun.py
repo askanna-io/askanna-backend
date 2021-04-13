@@ -16,6 +16,8 @@ class JobRun(BaseModel):
     jobid = models.CharField(max_length=120, blank=True, null=True)
     status = models.CharField(max_length=20, choices=JOB_STATUS)
 
+    trigger = models.CharField(max_length=20, blank=True, null=True, default="API")
+
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
 

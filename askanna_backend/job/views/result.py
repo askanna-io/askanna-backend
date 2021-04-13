@@ -86,7 +86,7 @@ class RunResultView(BaseRunResultView):
 
 
 class RunStatusView(BaseRunResultView):
-    def get_status(self, request, short_uuid, *args, **kwargs):
+    def retrieve(self, request, short_uuid, *args, **kwargs):
         jobrun = self.get_object()
         next_url = "{}://{}/v1/status/{}/".format(
             request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid

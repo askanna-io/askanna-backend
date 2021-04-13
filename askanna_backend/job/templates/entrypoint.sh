@@ -4,8 +4,17 @@ askanna --version
 mkdir -p /input >/dev/null
 mkdir -p /code >/dev/null
 
+{% if pl %}
+echo "Loading payload into the run environment"
 askanna-run-utils get-payload >/dev/null
+echo "Finished loading payload"
+{% else %}
+echo "Payload is not set"
+{% endif %}
+
+echo "Loading code package into the run environment"
 askanna-run-utils get-package >/dev/null
+echo "Finished loading code package"
 
 # first navigate to the folder where user code is located
 cd /code
