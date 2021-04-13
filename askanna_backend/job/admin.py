@@ -10,6 +10,7 @@ from job.models import (
     JobPayload,
     JobRun,
     JobVariable,
+    ScheduledJob,
     RunMetrics,
     RunMetricsRow,
     RunVariables,
@@ -18,6 +19,39 @@ from job.models import (
 
 admin.site.register(ChunkedJobOutputPart)
 admin.site.register(ChunkedArtifactPart)
+
+
+@admin.register(ScheduledJob)
+class ScheduledJobAdmin(admin.ModelAdmin):
+    def jobname(obj):
+        return obj.job.name
+
+    def project(obj):
+        return obj.job.project.get_name()
+
+    def membername(obj):
+        return obj.member.get_name()
+
+    list_display = [
+        project,
+        jobname,
+        "raw_definition",
+        "cron_definition",
+        "cron_timezone",
+        membername,
+        "last_run",
+        "next_run",
+        "created",
+    ]
+
+    list_display_links = (
+        project,
+        jobname,
+    )
+
+    date_hierarchy = "created"
+    list_filter = ("created", "modified", "deleted")
+    search_fields = ["uuid", "short_uuid", "cron_definition", "cron_timezone"]
 
 
 @admin.register(JobDef)

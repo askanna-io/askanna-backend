@@ -21,7 +21,54 @@ from job.models import (
     RunMetricsRow,
     RunVariableRow,
     RunVariables,
+    ScheduledJob,
 )
+
+from package.models import Package
+
+
+@celery_app.task(name="job.tasks.fix_missed_scheduledjobs")
+def fix_missed_scheduledjobs():
+    """
+    Fix edgecases where we didnt' ran a job, maybe because of system outage
+    Select scheduled jobs which next_run is in the past
+    Update them with `.update_next()`
+    """
+    for job in ScheduledJob.objects.filter(
+        next_run__lt=datetime.datetime.now(tz=datetime.timezone.utc)
+    ):
+        job.update_next()
+
+
+@celery_app.task(name="job.tasks.launch_scheduled_jobs")
+def launch_scheduled_jobs():
+    """
+    We launch scheduled jobs every minute
+    We select jobs for the current minute ()
+    """
+    now = datetime.datetime.now(tz=datetime.timezone.utc).replace(
+        second=0, microsecond=0
+    )
+    for job in ScheduledJob.objects.filter(
+        next_run__gte=now,
+        next_run__lt=now + datetime.timedelta(minutes=1),
+    ):
+        jobdef = job.job
+        package = (
+            Package.objects.filter(project=jobdef.project).order_by("-created").first()
+        )
+
+        # create new Jobrun and this will automaticly scheduled
+        JobRun.objects.create(
+            status="PENDING",
+            jobdef=jobdef,
+            payload=None,
+            package=package,
+            trigger="SCHEDULE",
+            owner=job.member.user,
+        )
+        job.update_last(timestamp=now)
+        job.update_next()
 
 
 @shared_task(bind=True, name="job.tasks.log_stats_from_container")
@@ -176,12 +223,18 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "PROJECT_SUUID": str(pr.short_uuid),
         "PACKAGE_UUID": str(package.uuid),
         "PACKAGE_SUUID": str(package.short_uuid),
-        "PAYLOAD_UUID": str(pl.uuid),
-        "PAYLOAD_SUUID": str(pl.short_uuid),
-        "PAYLOAD_PATH": "/input/payload.json",
         "RESULT_UUID": str(op.uuid),
         "RESULT_SUUID": str(op.short_uuid),
     }
+    if pl:
+        # we have a payload, so set the payload
+        runner_variables.update(
+            **{
+                "PAYLOAD_UUID": str(pl.uuid),
+                "PAYLOAD_SUUID": str(pl.short_uuid),
+                "PAYLOAD_PATH": "/input/payload.json",
+            }
+        )
 
     for variable, value in runner_variables.items():
         # log the worker variables
@@ -202,7 +255,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         )
 
     payload_variables = {}
-    if isinstance(pl.payload, dict):
+    if pl and isinstance(pl.payload, dict):
         # we have a valid dict from the payload
         for k, v in pl.payload.items():
             if isinstance(v, (list, dict)):
@@ -443,14 +496,24 @@ def clean_containers_after_run():
 
 
 celery_app.conf.beat_schedule = {
+    "launch_scheduled_jobs": {
+        "task": "job.tasks.launch_scheduled_jobs",
+        "schedule": crontab(minute="*"),
+        "args": (),
+    },
+    "fix_missed_scheduledjobs": {
+        "task": "job.tasks.fix_missed_scheduledjobs",
+        "schedule": crontab(minute="*/5"),
+        "args": (),
+    },
     "clean_containers_after_run": {
         "task": "job.tasks.clean_containers_after_run",
-        "schedule": crontab(minute="*/5"),
+        "schedule": crontab(minute="*/15"),
         "args": (),
     },
     "clean_dangling_images": {
         "task": "job.tasks.clean_dangling_images",
-        "schedule": crontab(minute="*/15"),
+        "schedule": crontab(hour="*"),
         "args": (),
     },
 }

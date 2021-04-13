@@ -1,23 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Credits: Philamer Sune,
-taken from: https://medium.com/@philamersune/using-postgresql-jsonfield-in-sqlite-95ad4ad2e5f1
 
-    When using the Postgres JSONField, there are use cases where we might
-    need to also use SQLite, such as in testin scenarios or experiments.
-
-    Then we need a way to enable this functionality without messing around
-    with the imports. See referred blog post for further explanation of the
-    mechanics.
-"""
-import json
-
-from django.conf import settings
 from django.contrib.postgres.fields import (
-    JSONField as DjangoJSONField,
     ArrayField as DjangoArrayField,
+    JSONField as DjangoJSONField,
 )
-from django.db.models import Field
 
 
 class JSONField(DjangoJSONField):
@@ -26,46 +12,3 @@ class JSONField(DjangoJSONField):
 
 class ArrayField(DjangoArrayField):
     pass
-
-
-if 'sqlite' in settings.DATABASES['default']['ENGINE']:
-    class JSONField(Field):
-        def db_type(self, connection):
-            return 'text'
-
-        def from_db_value(self, value, expression, connection):
-            if value is not None:
-                return self.to_python(value)
-            return value
-
-        def to_python(self, value):
-            if value is not None:
-                try:
-                    return json.loads(value)
-                except (TypeError, ValueError):
-                    return value
-            return value
-
-        def get_prep_value(self, value):
-            if value is not None:
-                return str(json.dumps(value))
-            return value
-
-        def value_to_string(self, obj):
-            return self.value_from_object(obj)
-
-    class ArrayField(JSONField):
-        def __init__(self, base_field, size=None, **kwargs):
-            """Care for DjangoArrayField's kwargs."""
-            self.base_field = base_field
-            self.size = size
-            return super().__init__(**kwargs)
-
-        def deconstruct(self):
-            """Need to create migrations properly."""
-            name, path, args, kwargs = super().deconstruct()
-            kwargs.update({
-                'base_field': self.base_field.clone(),
-                'size': self.size,
-            })
-            return name, path, args, kwargs

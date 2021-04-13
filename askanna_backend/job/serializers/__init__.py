@@ -27,6 +27,7 @@ from .run import JobRunSerializer, JobPayloadSerializer  # noqa: F401
 class JobSerializer(serializers.ModelSerializer):
     project = serializers.SerializerMethodField("get_project")
     environment = serializers.SerializerMethodField("get_environment")
+    schedules = serializers.SerializerMethodField("get_schedules")
 
     def get_project(self, instance):
         return instance.project.relation_to_json
@@ -34,6 +35,17 @@ class JobSerializer(serializers.ModelSerializer):
     def get_environment(self, instance):
         # FIXME: this is for backwards compatibility, must be removed once workers are in place
         return "python3.7"
+
+    def get_schedules(self, instance):
+        schedules = instance.schedules.order_by("next_run")
+        return [
+            {
+                "raw_definition": schedule.raw_definition,
+                "next_run": schedule.next_run,
+                "last_run": schedule.last_run,
+            }
+            for schedule in schedules
+        ]
 
     class Meta:
         model = JobDef

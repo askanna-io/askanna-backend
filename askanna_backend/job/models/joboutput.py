@@ -51,9 +51,6 @@ class JobOutput(SlimBaseModel):
             self.jobrun.uuid.hex,
         )
 
-    def __str__(self):
-        return str(self.uuid)
-
     @property
     def filename(self):
         return "result_{}.output".format(self.uuid.hex)

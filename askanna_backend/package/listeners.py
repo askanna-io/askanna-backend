@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
+import pytz
 from yaml import load
 
 try:
@@ -12,7 +13,8 @@ try:
 except ImportError:
     from yaml import Loader
 
-from job.models import JobDef
+from core.utils import parse_cron_schedule
+from job.models import JobDef, ScheduledJob
 from package.models import Package
 from package.signals import package_upload_finish
 from users.models import MSP_WORKSPACE
@@ -70,9 +72,36 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     # create or find jobdef for each found jobs
     for job in jobs:
         try:
-            JobDef.objects.get(name=job, project=project)
+            jd = JobDef.objects.get(name=job, project=project)
         except ObjectDoesNotExist:
-            JobDef.objects.create(name=job, project=project)
+            jd = JobDef.objects.create(name=job, project=project)
+
+        # clear existing schedules
+        ScheduledJob.objects.filter(job=jd).delete()
+
+        # see wheter we need to add as scheduled job to it.
+        job_in_yaml = config.get(job)
+        schedule = job_in_yaml.get("schedule")
+        timezone = job_in_yaml.get("timezone")
+
+        if timezone not in pytz.all_timezones:
+            # defaulting timezone to UTC if not set correctly
+            timezone = "UTC"
+
+        if schedule:
+            # parse the schedule
+            cron_format = parse_cron_schedule(schedule)
+            for schedule_line, cron_line in cron_format:
+                if cron_line is not None:
+                    # create scheduled job
+                    scheduled_job = ScheduledJob.objects.create(
+                        job=jd,
+                        raw_definition=schedule_line,
+                        cron_definition=cron_line,
+                        cron_timezone=timezone,
+                        member=obj.member,
+                    )
+                    scheduled_job.update_next()
 
 
 @receiver(pre_delete, sender=Package)

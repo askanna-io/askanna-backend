@@ -99,7 +99,7 @@ class StartJobView(viewsets.GenericViewSet):
             assert isinstance(
                 request.data, dict
             ), "JSON not valid, please check and try again"
-        except Exception as e:
+        except AssertionError as e:
             return Response(
                 data={
                     "message_type": "error",
@@ -135,6 +135,7 @@ class StartJobView(viewsets.GenericViewSet):
             jobdef=jobdef,
             payload=job_pl,
             package=package,
+            trigger="API",
             owner=request.user,
         )
 
