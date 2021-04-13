@@ -24,10 +24,8 @@ from core.views import (
 )
 from job.models import (
     ChunkedArtifactPart,
-    ChunkedJobOutputPart,
     JobArtifact,
     JobDef,
-    JobOutput,
     JobPayload,
     JobRun,
     JobVariable,
@@ -40,24 +38,27 @@ from job.permissions import (
 )
 from job.serializers import (
     ChunkedArtifactPartSerializer,
-    ChunkedJobOutputPartSerializer,
     JobArtifactSerializer,
     JobArtifactSerializerDetail,
     JobArtifactSerializerForInsert,
-    JobOutputSerializer,
     JobPayloadSerializer,
-    JobRunSerializer,
     JobSerializer,
     JobVariableSerializer,
     JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
     StartJobSerializer,
 )
-from job.signals import artifact_upload_finish, result_upload_finish
+from job.signals import artifact_upload_finish
 from package.models import Package
 from users.models import MSP_WORKSPACE
 
 from .metrics import RunMetricsRowView, RunMetricsView  # noqa: F401
+from .result import (  # noqa: F401
+    RunStatusView,
+    RunResultView,
+    RunOutputView,
+    ChunkedJobOutputViewSet,
+)
 from .runs import JobRunView, JobJobRunView  # noqa: F401
 from .runvariables import RunVariableRowView, RunVariablesView  # noqa: F401
 
@@ -155,84 +156,6 @@ class StartJobView(viewsets.GenericViewSet):
                 ),
             }
         )
-
-
-class JobResultView(NestedViewSetMixin, viewsets.GenericViewSet):
-    queryset = JobRun.objects.all()
-    lookup_field = "short_uuid"
-    serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
-
-    def get_queryset(self):
-        """
-        For listings return only values from projects
-        where the current user had access to
-        meaning also beeing part of a certain workspace
-        """
-        queryset = super().get_queryset()
-        user = self.request.user
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
-        return queryset.filter(
-            jobdef__project__workspace__in=member_of_workspaces
-        ).select_related(
-            "package",
-            "payload",
-            "payload__jobdef__project",
-            "jobdef",
-            "jobdef__project",
-            "owner",
-            "member",
-        )
-
-    def get_result(self, request, short_uuid, **kwargs):
-        jobrun = self.get_object()
-
-        # get the requested content-type header, if not set from database
-        content_type = request.headers.get("content-type", jobrun.output.mime_type)
-
-        return HttpResponse(jobrun.output.read, content_type=content_type)
-
-    def get_status(self, request, short_uuid, **kwargs):
-        jobrun = self.get_object()
-        next_url = "{}://{}/v1/status/{}/".format(
-            request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
-        )
-        finished_next_url = "{}://{}/v1/result/{}/".format(
-            request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
-        )
-        base_status = {
-            "message_type": "status",
-            "uuid": jobrun.uuid,
-            "short_uuid": jobrun.short_uuid,
-            "created": jobrun.created,
-            "updated": jobrun.modified,
-            "job": jobrun.jobdef.relation_to_json,
-            "project": jobrun.jobdef.project.relation_to_json,
-            "workspace": jobrun.jobdef.project.workspace.relation_to_json,
-            "next_url": next_url,
-        }
-
-        # translate the jobrun.status (celery) to our status
-        status_trans = {
-            "SUBMITTED": "queued",
-            "PENDING": "queued",
-            "PAUSED": "paused",
-            "IN_PROGRESS": "running",
-            "FAILED": "failed",
-            "SUCCESS": "finished",
-            "COMPLETED": "finished",
-        }
-
-        job_status = status_trans.get(jobrun.status, "unknown")
-        base_status["status"] = job_status
-
-        if job_status == "finished":
-            base_status["next_url"] = finished_next_url
-            base_status["finished"] = base_status["updated"]
-
-        return Response(base_status)
 
 
 class JobActionView(
@@ -483,60 +406,6 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
     serializer_class = ChunkedArtifactPartSerializer
     # FIXME: implement permission class that checks for access to this chunk in workspace>project->jobartifact.
     permission_classes = [IsAuthenticated]
-
-
-class JobResultOutputView(
-    BaseUploadFinishMixin,
-    NestedViewSetMixin,
-    viewsets.GenericViewSet,
-):
-    queryset = JobOutput.objects.all()
-    lookup_field = "short_uuid"
-    serializer_class = JobOutputSerializer
-    # FIXME: implement permission class that checks for access to this joboutput in workspace>project->job.
-    permission_classes = [IsAuthenticated]
-
-    upload_target_location = settings.ARTIFACTS_ROOT
-    upload_finished_signal = result_upload_finish
-    upload_finished_message = "Job result uploaded"
-
-    def store_as_filename(self, resumable_filename: str, obj) -> str:
-        return "result_{}.output".format(obj.uuid.hex)
-
-    def get_upload_target_location(self, request, obj, **kwargs) -> str:
-        return os.path.join(self.upload_target_location, obj.storage_location)
-
-    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["lines", "size"]
-        instance_obj.lines = len(instance_obj.read.splitlines())
-        instance_obj.size = resume_obj.size
-        instance_obj.save(update_fields=update_fields)
-
-
-class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
-    """
-    Allow chunked uploading of jobresult
-    """
-
-    queryset = ChunkedJobOutputPart.objects.all()
-    serializer_class = ChunkedJobOutputPartSerializer
-    # FIXME: implement permission class that checks for access to this chunk in workspace>project->job->joboutput.
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        joboutput = JobOutput.objects.get(
-            short_uuid=self.kwargs.get("parent_lookup_joboutput__short_uuid")
-        )
-        data = request.data.copy()
-        data.update(**{"joboutput": str(joboutput.pk)})
-
-        serializer = ChunkedJobOutputPartSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
 
 
 class JobVariableView(

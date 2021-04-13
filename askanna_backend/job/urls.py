@@ -10,8 +10,9 @@ from job.views import (
     JobArtifactView,
     JobJobRunView,
     JobPayloadView,
-    JobResultOutputView,
-    JobResultView,
+    RunOutputView,
+    RunResultView,
+    RunStatusView,
     JobRunView,
     JobVariableView,
     ProjectJobViewSet,
@@ -126,7 +127,7 @@ artifact_route.register(
 
 jobresult_route = jobrun_route.register(
     r"result",
-    JobResultOutputView,
+    RunOutputView,
     basename="jobrun-result",
     parents_query_lookups=["jobrun__short_uuid"],
 )
@@ -156,14 +157,12 @@ urlpatterns = [
     ),
     path(
         r"v1/result/<shortuuid:short_uuid>/",
-        JobResultView.as_view({"get": "get_result"}, detail=True),
-        kwargs={"uuid": None},
+        RunResultView.as_view({"get": "retrieve"}, detail=True),
         name="shortcut-jobrun-result",
     ),
     path(
         r"v1/result/<shortuuid:short_uuid>",
-        JobResultView.as_view({"get": "get_result"}, detail=True),
-        kwargs={"uuid": None},
+        RunResultView.as_view({"get": "retrieve"}, detail=True),
     ),
     path(
         r"v1/log/<shortuuid:short_uuid>/",
@@ -178,14 +177,12 @@ urlpatterns = [
     ),
     path(
         r"v1/status/<shortuuid:short_uuid>/",
-        JobResultView.as_view({"get": "get_status"}, detail=True),
-        kwargs={"uuid": None},
+        RunStatusView.as_view({"get": "retrieve"}, detail=True),
         name="shortcut-jobrun-status",
     ),
     path(
         r"v1/status/<shortuuid:short_uuid>",
-        JobResultView.as_view({"get": "get_status"}, detail=True),
-        kwargs={"uuid": None},
+        RunStatusView.as_view({"get": "retrieve"}, detail=True),
     ),
     path(
         r"v1/artifact/<shortuuid:short_uuid>/",
