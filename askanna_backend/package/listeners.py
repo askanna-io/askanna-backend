@@ -76,8 +76,19 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
         except ObjectDoesNotExist:
             jd = JobDef.objects.create(name=job, project=project)
 
+        # check what existing schedules where and store the last_run and raw_definition
+        old_rules = ScheduledJob.objects.filter(job=jd)
+        old_schedules = []
+        for schedule in old_rules:
+            old_schedules.append(
+                {
+                    "last_run": schedule.last_run,
+                    "raw_definition": schedule.raw_definition,
+                }
+            )
+
         # clear existing schedules
-        ScheduledJob.objects.filter(job=jd).delete()
+        old_rules.delete()
 
         # see wheter we need to add as scheduled job to it.
         job_in_yaml = config.get(job)
@@ -94,13 +105,21 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
             for schedule_line, cron_line in cron_format:
                 if cron_line is not None:
                     # create scheduled job
-                    scheduled_job = ScheduledJob.objects.create(
-                        job=jd,
-                        raw_definition=schedule_line,
-                        cron_definition=cron_line,
-                        cron_timezone=timezone,
-                        member=obj.member,
-                    )
+                    new_schedule_def = {
+                        "job": jd,
+                        "raw_definition": schedule_line,
+                        "cron_definition": cron_line,
+                        "cron_timezone": timezone,
+                        "member": obj.member,
+                    }
+                    last_run = [
+                        old.get("last_run")
+                        for old in old_schedules
+                        if old.get("raw_definition") == schedule_line
+                    ]
+                    if len(last_run) > 0:
+                        new_schedule_def["last_run"] = last_run[0]
+                    scheduled_job = ScheduledJob.objects.create(**new_schedule_def)
                     scheduled_job.update_next()
 
 

@@ -31,11 +31,14 @@ from package.models import Package
 def fix_missed_scheduledjobs():
     """
     Fix edgecases where we didnt' ran a job, maybe because of system outage
-    Select scheduled jobs which next_run is in the past
+    Select scheduled jobs which next_run is in the past (at least 1 minute older than now)
     Update them with `.update_next()`
     """
+    now = datetime.datetime.now(tz=datetime.timezone.utc).replace(
+        second=0, microsecond=0
+    )
     for job in ScheduledJob.objects.filter(
-        next_run__lt=datetime.datetime.now(tz=datetime.timezone.utc)
+        next_run__lt=now - datetime.timedelta(minutes=1)
     ):
         job.update_next()
 
