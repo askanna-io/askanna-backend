@@ -16,7 +16,6 @@ class JobRunSerializer(serializers.ModelSerializer):
     package = serializers.SerializerMethodField("get_package")
     project = serializers.SerializerMethodField("get_project")
     owner = serializers.SerializerMethodField("get_user")
-    trigger = serializers.SerializerMethodField("get_trigger")
     runner = serializers.SerializerMethodField("get_runner")
 
     payload = serializers.SerializerMethodField("get_payload")
@@ -85,10 +84,6 @@ class JobRunSerializer(serializers.ModelSerializer):
             "memory_mib": 70,
             "job_status": 0,
         }
-
-    def get_trigger(self, instance):
-        # FIXME: return the real trigger source
-        return "API"
 
     def get_artifact(self, instance):
         try:
