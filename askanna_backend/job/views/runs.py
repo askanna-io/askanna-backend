@@ -78,6 +78,7 @@ class JobRunView(
         # What is the jobdef specified?
         jd = jr.jobdef
         pr = jd.project
+        pl = jr.payload
 
         # FIXME: when versioning is in, point to version in JobRun
         package = jr.package
@@ -91,7 +92,13 @@ class JobRunView(
         if not os.path.exists(config_file_path):
             print("askanna.yml not found")
             return HttpResponse(
-                render_to_string("entrypoint_no_yaml.sh", {"pr": pr, "jd": jd})
+                render_to_string(
+                    "entrypoint_no_yaml.sh",
+                    {
+                        "pr": pr,
+                        "jd": jd,
+                    },
+                )
             )
 
         askanna_config = get_config(config_file_path)
@@ -100,7 +107,13 @@ class JobRunView(
         if not yaml_config:
             print(f"{jd.name} is not specified in this askanna.yml, cannot start job")
             return HttpResponse(
-                render_to_string("entrypoint_job_notfound.sh", {"pr": pr, "jd": jd})
+                render_to_string(
+                    "entrypoint_job_notfound.sh",
+                    {
+                        "pr": pr,
+                        "jd": jd,
+                    },
+                )
             )
 
         job_commands = yaml_config.get("job")
@@ -121,10 +134,22 @@ class JobRunView(
             # also substitute variables we get from the PAYLOAD
             _command = string_expand_variables([command])
             command = _command[0]
-            commands.append({"command": command, "print_command": print_command})
+            commands.append(
+                {
+                    "command": command,
+                    "print_command": print_command,
+                }
+            )
 
         entrypoint_string = render_to_string(
-            "entrypoint.sh", {"commands": commands, "pr": pr, "jd": jd, "jr": jr}
+            "entrypoint.sh",
+            {
+                "commands": commands,
+                "pr": pr,
+                "jd": jd,
+                "jr": jr,
+                "pl": pl,
+            },
         )
 
         return HttpResponse(entrypoint_string)
