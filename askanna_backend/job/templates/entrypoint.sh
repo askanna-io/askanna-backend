@@ -4,7 +4,7 @@ askanna --version
 mkdir -p /input >/dev/null
 mkdir -p /code >/dev/null
 
-{% if pl %}
+{% if pl and pl.size %}
 echo "Loading payload into the run environment"
 askanna-run-utils get-payload >/dev/null
 echo "Finished loading payload"
