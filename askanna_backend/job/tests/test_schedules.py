@@ -92,11 +92,15 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
                 {
                     "last_run": None,
                     "next_run": datetime.datetime(2021, 4, 12, 18, 10, tzinfo=pytz.UTC),
+                    "cron_definition": "*/10 * * * *",
+                    "cron_timezone": "Europe/Amsterdam",
                     "raw_definition": "*/10 * * * *",
                 },
                 {
                     "last_run": None,
                     "next_run": datetime.datetime(2021, 4, 13, 16, 0, tzinfo=pytz.UTC),
+                    "cron_definition": "0 0 * * *",
+                    "cron_timezone": "Asia/Hong_Kong",
                     "raw_definition": "@midnight",
                 },
             ]
