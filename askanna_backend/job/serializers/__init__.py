@@ -41,6 +41,8 @@ class JobSerializer(serializers.ModelSerializer):
         return [
             {
                 "raw_definition": schedule.raw_definition,
+                "cron_definition": schedule.cron_definition,
+                "cron_timezone": schedule.cron_timezone,
                 "next_run": schedule.next_run,
                 "last_run": schedule.last_run,
             }
