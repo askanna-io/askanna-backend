@@ -472,7 +472,7 @@ def clean_dangling_images():
 def clean_containers_after_run():
     """
     We query all containers from Docker
-    We check which ones are older than 24 hours
+    We check which ones are older than `DOCKER_AUTO_REMOVE_TTL` hours
     Finally clean the container
     """
 
@@ -491,7 +491,7 @@ def clean_containers_after_run():
         if finished:
             finished_dt = parser.isoparse(finished)
             age = datetime.datetime.now(tz=datetime.timezone.utc) - finished_dt
-            if age > datetime.timedelta(hours=24):
+            if age > datetime.timedelta(hours=settings.DOCKER_AUTO_REMOVE_TTL):
                 print("Removing container", container.name)
                 # remove the container
                 # the print makes this removal visible in the logs

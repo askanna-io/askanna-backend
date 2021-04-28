@@ -45,6 +45,9 @@ def settings(config, env):
     config.DOCKER_AUTO_REMOVE_CONTAINER = env.bool(
         "DOCKER_AUTO_REMOVE_CONTAINER", default=False
     )
+    config.DOCKER_AUTO_REMOVE_TTL = env.int(
+        "DOCKER_AUTO_REMOVE_TTL", default=1
+    )
 
     # Setting for internal job runs
     config.JOB_CREATE_PROJECT_SUUID = "640q-2AMP-T5BL-Cnml"
