@@ -9,6 +9,7 @@ import croniter
 from django.urls import register_converter
 import filetype
 import magic
+import pytz
 from yaml import load
 
 try:
@@ -266,3 +267,14 @@ def detect_file_mimetype(filepath):
             detected_mimetype = kind.mime
 
     return detected_mimetype
+
+
+# date timezone validation
+def is_valid_timezone(timezone, default="UTC"):
+    """
+    Validate whether the timezone specified is a valid one
+    If not, return the default timezone.
+    """
+    if timezone not in pytz.all_timezones:
+        return default
+    return timezone
