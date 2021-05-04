@@ -1,4 +1,6 @@
 #!/bin/bash
+export TZ="{{ TZ }}"
+
 askanna --version
 
 mkdir -p /input >/dev/null

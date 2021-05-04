@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
-import pytz
 from yaml import load
 
 try:
@@ -13,7 +12,7 @@ try:
 except ImportError:
     from yaml import Loader
 
-from core.utils import parse_cron_schedule
+from core.utils import parse_cron_schedule, is_valid_timezone
 from job.models import JobDef, ScheduledJob
 from package.models import Package
 from package.signals import package_upload_finish
@@ -94,10 +93,7 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
         job_in_yaml = config.get(job)
         schedule = job_in_yaml.get("schedule")
         timezone = job_in_yaml.get("timezone")
-
-        if timezone not in pytz.all_timezones:
-            # defaulting timezone to UTC if not set correctly
-            timezone = "UTC"
+        timezone = is_valid_timezone(timezone, settings.TIME_ZONE)
 
         if schedule:
             # parse the schedule

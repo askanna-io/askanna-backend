@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from core.mixins import HybridUUIDMixin
-from core.utils import get_config
+from core.utils import get_config, is_valid_timezone
 from job.filters import RunFilter
 from job.models import JobRun
 from job.permissions import IsMemberOfJobDefAttributePermission
@@ -90,7 +90,7 @@ class JobRunView(
         # read config from askanna.yml
         config_file_path = os.path.join(package_path, "askanna.yml")
         if not os.path.exists(config_file_path):
-            print("askanna.yml not found")
+            # askanna.yml not found
             return HttpResponse(
                 render_to_string(
                     "entrypoint_no_yaml.sh",
@@ -102,10 +102,13 @@ class JobRunView(
             )
 
         askanna_config = get_config(config_file_path)
+        timezone = askanna_config.get("timezone", settings.TIME_ZONE)
+        timezone = is_valid_timezone(timezone)
+
         # see whether we are on the right job
         yaml_config = askanna_config.get(jd.name)
         if not yaml_config:
-            print(f"{jd.name} is not specified in this askanna.yml, cannot start job")
+            # {jd.name} is not specified in this askanna.yml, cannot start job
             return HttpResponse(
                 render_to_string(
                     "entrypoint_job_notfound.sh",
@@ -117,15 +120,8 @@ class JobRunView(
             )
 
         job_commands = yaml_config.get("job")
-        function_command = yaml_config.get(
-            "function"
-        )  # FIXME: deprecated, remove properly from system
-
-        # we don't allow both function and job commands to be set
-        if job_commands and function_command:
-            print("cannot define both job and function")
-            return HttpResponse("")
-
+        job_timezone = yaml_config.get("timezone", settings.TIME_ZONE)
+        job_timezone = is_valid_timezone(job_timezone, timezone)
         commands = []
         for command in job_commands:
             print_command = command.replace('"', '"')
@@ -149,6 +145,7 @@ class JobRunView(
                 "jd": jd,
                 "jr": jr,
                 "pl": pl,
+                "TZ": job_timezone,
             },
         )
 
