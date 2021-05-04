@@ -93,7 +93,7 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
         job_in_yaml = config.get(job)
         schedule = job_in_yaml.get("schedule")
         timezone = job_in_yaml.get("timezone")
-        timezone = is_valid_timezone(timezone, "UTC")
+        timezone = is_valid_timezone(timezone, settings.TIME_ZONE)
 
         if schedule:
             # parse the schedule
