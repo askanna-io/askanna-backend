@@ -6,6 +6,7 @@ import os
 import uuid
 
 import croniter
+from django.conf import settings
 from django.urls import register_converter
 import filetype
 import magic
@@ -270,7 +271,7 @@ def detect_file_mimetype(filepath):
 
 
 # date timezone validation
-def is_valid_timezone(timezone, default="UTC"):
+def is_valid_timezone(timezone, default=settings.TIME_ZONE):
     """
     Validate whether the timezone specified is a valid one
     If not, return the default timezone.
