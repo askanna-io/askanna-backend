@@ -25,10 +25,10 @@ class BaseWorkspace:
             "member": User.objects.create(username="member"),
             "non_member": User.objects.create(username="non_member"),
         }
-        self.workspace_a = Workspace.objects.create(title="test workspace a")
-        self.workspace_b = Workspace.objects.create(title="test workspace b")
-        self.workspace_c = Workspace.objects.create(title="test workspace b")
-        self.workspace_d = Workspace.objects.create(title="test workspace b")
+        self.workspace_a = Workspace.objects.create(name="test workspace a")
+        self.workspace_b = Workspace.objects.create(name="test workspace b")
+        self.workspace_c = Workspace.objects.create(name="test workspace b")
+        self.workspace_d = Workspace.objects.create(name="test workspace b")
 
         self.member_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
@@ -185,7 +185,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         token = self.users["anna"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        new_details = {"title": "New workspace name", "description": "A new world"}
+        new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -194,33 +194,33 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        new_details = {"title": "New workspace name", "description": "A new world"}
+        new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("title"), "New workspace name")
+        self.assertEqual(response.data.get("name"), "New workspace name")
         self.assertEqual(response.data.get("description"), "A new world")
 
     def test_update_as_member(self):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        new_details = {"title": "New workspace name", "description": "A new world"}
+        new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("title"), "New workspace name")
+        self.assertEqual(response.data.get("name"), "New workspace name")
         self.assertEqual(response.data.get("description"), "A new world")
 
-    def test_update_as_member_title(self):
+    def test_update_as_member_name(self):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        new_details = {"title": "New workspace name 2"}
+        new_details = {"name": "New workspace name 2"}
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("title"), "New workspace name 2")
+        self.assertEqual(response.data.get("name"), "New workspace name 2")
         self.assertEqual(response.data.get("description"), None)
 
     def test_update_as_member_description(self):
@@ -231,20 +231,20 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("title"), "test workspace a")
+        self.assertEqual(response.data.get("name"), "test workspace a")
         self.assertEqual(response.data.get("description"), "A new world 2")
 
     def test_update_as_nonmember(self):
         token = self.users["non_member"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        new_details = {"title": "New workspace name", "description": "A new world"}
+        new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_anonymous(self):
-        new_details = {"title": "New workspace name", "description": "A new world"}
+        new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

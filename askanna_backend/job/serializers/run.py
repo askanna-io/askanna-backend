@@ -136,3 +136,15 @@ class JobRunSerializer(serializers.ModelSerializer):
             "variable_keys",
             "variable_labels",
         ]
+
+
+class JobRunUpdateSerializer(JobRunSerializer):
+    def update(self, instance, validated_data):
+        """ "
+        Allow updates on `name` and `description` only. Ignore other fields
+        """
+        instance.name = validated_data.get("name", instance.name)
+        instance.description = validated_data.get("description", instance.description)
+        instance.save(update_fields=["name", "description"])
+        instance.refresh_from_db()
+        return instance

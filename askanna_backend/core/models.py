@@ -7,7 +7,6 @@ from django.utils.translation import ugettext_lazy as _
 from django_extensions.db.models import (
     ActivatorModel,
     TimeStampedModel,
-    TitleDescriptionModel,
 )
 from encrypted_model_fields.fields import EncryptedTextField
 
@@ -28,9 +27,32 @@ class DeletedModel(models.Model):
 
 
 class DescriptionModel(models.Model):
+    """
+    DescriptionModel
+
+    An abstract base class model that provides a description field.
+    """
 
     description = models.TextField(_("description"), blank=True, null=True)
 
+    class Meta:
+        abstract = True
+
+
+class NameModel(models.Model):
+    """
+    NameModel
+
+    An abstract base class model that provides a name field.
+    """
+
+    name = models.CharField(_("name"), max_length=255, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class NameDescriptionModel(NameModel, DescriptionModel):
     class Meta:
         abstract = True
 
@@ -64,7 +86,7 @@ class SlimBaseForAuthModel(SlimBaseModel):
         abstract = True
 
 
-class BaseModel(TitleDescriptionModel, SlimBaseModel):
+class BaseModel(NameDescriptionModel, SlimBaseModel):
     class Meta:
         abstract = True
         ordering = ["-modified"]

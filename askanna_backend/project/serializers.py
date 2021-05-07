@@ -5,11 +5,7 @@ from users.models import MSP_WORKSPACE
 from workspace.models import Workspace
 
 
-class ProjectSerializer(serializers.ModelSerializer):
-    created_by = serializers.SerializerMethodField("get_created_by")
-    workspace = serializers.SerializerMethodField("get_workspace")
-    package = serializers.SerializerMethodField("get_package")
-
+class BaseProjectSerializer:
     def get_workspace(self, instance):
         return instance.workspace.relation_to_json
 
@@ -44,6 +40,34 @@ class ProjectSerializer(serializers.ModelSerializer):
             "name": None,
         }
 
+    def to_representation(self, instance):
+        request = self.context["request"]
+        url = "{scheme}://{host}/{workspace}/project/{project}".format(
+            scheme=request.scheme,
+            host=request.get_host().replace("-api", "").replace("api.", ""),
+            workspace=instance.workspace.short_uuid,
+            project=instance.short_uuid,
+        )
+        return {
+            "uuid": instance.uuid,
+            "short_uuid": instance.short_uuid,
+            "name": instance.get_name(),
+            "description": instance.description,
+            "workspace": self.get_workspace(instance),
+            "package": self.get_package(instance),
+            "template": instance.template,
+            "created_by": self.get_created_by(instance),
+            "created": instance.created,
+            "modified": instance.modified,
+            "url": url,
+        }
+
+
+class ProjectSerializer(BaseProjectSerializer, serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField("get_created_by")
+    workspace = serializers.SerializerMethodField("get_workspace")
+    package = serializers.SerializerMethodField("get_package")
+
     class Meta:
         model = Project
         exclude = [
@@ -53,7 +77,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         ]
 
 
-class ProjectUpdateSerializer(serializers.ModelSerializer):
+class ProjectUpdateSerializer(BaseProjectSerializer, serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ["name", "description"]
@@ -65,7 +89,7 @@ class ProjectUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProjectCreateSerializer(serializers.ModelSerializer):
+class ProjectCreateSerializer(BaseProjectSerializer, serializers.ModelSerializer):
     workspace = serializers.CharField(max_length=19)
 
     class Meta:
@@ -114,28 +138,3 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
                 )
 
         return value
-
-    def to_representation(self, instance):
-        request = self.context["request"]
-        url = "{scheme}://{host}/{workspace}/project/{project}".format(
-            scheme=request.scheme,
-            host=request.get_host().replace("-api", "").replace("api.", ""),
-            workspace=instance.workspace.short_uuid,
-            project=instance.short_uuid,
-        )
-        return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
-            "name": instance.name,
-            "description": instance.description,
-            "workspace": instance.workspace.relation_to_json,
-            "created_by": {
-                "uuid": instance.created_by.uuid,
-                "short_uuid": instance.created_by.short_uuid,
-                "name": instance.created_by.get_name(),
-            },
-            "status": 1,
-            "created": instance.created,
-            "modified": instance.modified,
-            "url": url,
-        }

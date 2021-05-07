@@ -7,15 +7,17 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from core.mixins import HybridUUIDMixin
 from core.utils import get_config, is_valid_timezone
+from core.views import PermissionByActionMixin, SerializerByActionMixin
 from job.filters import RunFilter
 from job.models import JobRun
 from job.permissions import IsMemberOfJobDefAttributePermission
-from job.serializers import JobRunSerializer
+from job.serializers import JobRunSerializer, JobRunUpdateSerializer
 from users.models import MSP_WORKSPACE
 
 
@@ -30,14 +32,32 @@ def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
 
 
 class JobRunView(
+    PermissionByActionMixin,
+    SerializerByActionMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
+    # we removed 'put' from the http_method_names as we don't support this in this view
+    # - post and delete
+    http_method_names = ["get", "patch", "head", "options", "trace"]
+
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+
+    permission_classes = [
+        IsMemberOfJobDefAttributePermission | IsAdminUser,
+    ]
+
+    permission_classes_by_action = {
+        "update": [IsMemberOfJobDefAttributePermission | IsAdminUser],
+    }
+
+    serializer_classes_by_action = {
+        "patch": JobRunUpdateSerializer,
+    }
 
     filterset_class = RunFilter
 

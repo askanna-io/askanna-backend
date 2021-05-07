@@ -87,26 +87,27 @@ class RunResultView(BaseRunResultView):
 
 class RunStatusView(BaseRunResultView):
     def retrieve(self, request, short_uuid, *args, **kwargs):
-        jobrun = self.get_object()
+        run = self.get_object()
         next_url = "{}://{}/v1/status/{}/".format(
-            request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
+            request.scheme, request.META["HTTP_HOST"], run.short_uuid
         )
         finished_next_url = "{}://{}/v1/result/{}/".format(
-            request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
+            request.scheme, request.META["HTTP_HOST"], run.short_uuid
         )
         base_status = {
             "message_type": "status",
-            "uuid": jobrun.uuid,
-            "short_uuid": jobrun.short_uuid,
-            "created": jobrun.created,
-            "updated": jobrun.modified,
-            "job": jobrun.jobdef.relation_to_json,
-            "project": jobrun.jobdef.project.relation_to_json,
-            "workspace": jobrun.jobdef.project.workspace.relation_to_json,
+            "uuid": run.uuid,
+            "short_uuid": run.short_uuid,
+            "name": run.name,
+            "created": run.created,
+            "updated": run.modified,
+            "job": run.jobdef.relation_to_json,
+            "project": run.jobdef.project.relation_to_json,
+            "workspace": run.jobdef.project.workspace.relation_to_json,
             "next_url": next_url,
         }
 
-        # translate the jobrun.status (celery) to our status
+        # translate the run.status (celery) to our status
         status_trans = {
             "SUBMITTED": "queued",
             "PENDING": "queued",
@@ -117,7 +118,7 @@ class RunStatusView(BaseRunResultView):
             "COMPLETED": "finished",
         }
 
-        job_status = status_trans.get(jobrun.status, "unknown")
+        job_status = status_trans.get(run.status, "unknown")
         base_status["status"] = job_status
 
         if job_status == "finished":

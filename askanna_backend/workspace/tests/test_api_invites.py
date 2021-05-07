@@ -41,8 +41,8 @@ class TestInviteAPI(APITestCase):
                 username="user_a", email="user_a@example.com"
             ),
         }
-        self.workspace = Workspace.objects.create(title="test workspace")
-        self.workspace2 = Workspace.objects.create(title="test workspace2")
+        self.workspace = Workspace.objects.create(name="test workspace")
+        self.workspace2 = Workspace.objects.create(name="test workspace2")
         self.invitation = Invitation.objects.create(
             object_uuid=self.workspace.uuid,
             object_type=MSP_WORKSPACE,
@@ -103,7 +103,9 @@ class TestInviteAPI(APITestCase):
             },
         )
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_invite_with_token(self):
@@ -143,7 +145,9 @@ class TestInviteAPI(APITestCase):
         token = self.users["user_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_invite_as_member(self):
@@ -160,7 +164,9 @@ class TestInviteAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             {"short_uuid": self.invitation.short_uuid}.items()
@@ -181,7 +187,9 @@ class TestInviteAPI(APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             {"short_uuid": self.invitation.short_uuid}.items()
@@ -201,7 +209,9 @@ class TestInviteAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.post(
-            url, {"email": "anna_test@askanna.dev"}, format="json",
+            url,
+            {"email": "anna_test@askanna.dev"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(
@@ -221,7 +231,9 @@ class TestInviteAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.post(
-            url, {"email": "invited@example.com"}, format="json",
+            url,
+            {"email": "invited@example.com"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -244,7 +256,11 @@ class TestInviteAPI(APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.post(url, {"email": profile.user.email}, format="json",)
+        response = self.client.post(
+            url,
+            {"email": profile.user.email},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_invite_removed_member(self):
@@ -267,7 +283,11 @@ class TestInviteAPI(APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.post(url, {"email": profile.user.email}, format="json",)
+        response = self.client.post(
+            url,
+            {"email": profile.user.email},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_admin_can_revoke_invite(self):
@@ -326,7 +346,7 @@ class TestInviteAPI(APITestCase):
 
     def test_admin_can_not_revoke_invitation_from_other_workspace(self):
         """Revoking an invitation is limited to workspaces a user is member of."""
-        extra_workspace = Workspace.objects.create(title="extra test workspace")
+        extra_workspace = Workspace.objects.create(name="extra test workspace")
         extra_invitation = Invitation.objects.create(
             object_uuid=extra_workspace.uuid,
             object_type=MSP_WORKSPACE,
@@ -389,7 +409,9 @@ class TestInviteAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.post(
-            url, {"email": "anna_test@askanna.dev"}, format="json",
+            url,
+            {"email": "anna_test@askanna.dev"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -520,7 +542,11 @@ class TestInviteAPI(APITestCase):
             },
         )
 
-        response = self.client.patch(url, {}, format="json",)
+        response = self.client.patch(
+            url,
+            {},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_accept_invite_token_validated(self):
@@ -538,7 +564,12 @@ class TestInviteAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
-            url, {"status": "accepted", "token": "fake_token",}, format="json",
+            url,
+            {
+                "status": "accepted",
+                "token": "fake_token",
+            },
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("token", response.data)
@@ -558,7 +589,13 @@ class TestInviteAPI(APITestCase):
         token = self.users["user_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"status": "accepted",}, format="json",)
+        response = self.client.patch(
+            url,
+            {
+                "status": "accepted",
+            },
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("token", response.data)
         self.assertEqual(
@@ -624,7 +661,7 @@ class TestInviteAPI(APITestCase):
 
     def test_accept_invite_for_wrong_workspace_fails(self):
         """The invitation must be for the correct workspace."""
-        to_fail_workspace = Workspace.objects.create(title="will fail workspace")
+        to_fail_workspace = Workspace.objects.create(name="will fail workspace")
 
         url = reverse(
             "workspace-people-detail",
@@ -650,7 +687,7 @@ class TestInviteAPI(APITestCase):
 
     def test_list_limited_to_current_workspace(self):
         """Listing of people is correctly filtered to requested workspace."""
-        new_workspace = Workspace.objects.create(title="test workspace")
+        new_workspace = Workspace.objects.create(name="test workspace")
         filtered_invitation = Invitation.objects.create(
             object_uuid=new_workspace.uuid,
             object_type=MSP_WORKSPACE,
@@ -668,7 +705,9 @@ class TestInviteAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         uuids = [p["uuid"] for p in response.data]
@@ -732,7 +771,9 @@ class TestInviteAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.post(
-            url, {"email": "anna_test@askanna.dev"}, format="json",
+            url,
+            {"email": "anna_test@askanna.dev"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -777,7 +818,13 @@ class TestInviteAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"name": "new-name",}, format="json",)
+        response = self.client.patch(
+            url,
+            {
+                "name": "new-name",
+            },
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("name", response.data)
         self.assertEqual(response.data["name"], "new-name")
@@ -804,12 +851,21 @@ class TestInviteAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"name": "new-name",}, format="json",)
+        response = self.client.patch(
+            url,
+            {
+                "name": "new-name",
+            },
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("name", response.data)
         self.assertEqual(response.data["name"], "new-name")
 
-        response = self.client.patch(url2, format="json",)
+        response = self.client.patch(
+            url2,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("name", response.data)
         self.assertEqual(response.data["name"], "name2")

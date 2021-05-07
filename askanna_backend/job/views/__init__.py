@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-import io
 import os
 
 from django.conf import settings
@@ -9,7 +8,6 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ParseError
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -46,13 +44,12 @@ from job.serializers import (
     JobVariableSerializer,
     JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
-    StartJobSerializer,
 )
 from job.signals import artifact_upload_finish
-from package.models import Package
 from users.models import MSP_WORKSPACE
 
 from .metrics import RunMetricsRowView, RunMetricsView  # noqa: F401
+from .newrun import StartJobView  # noqa: F401
 from .result import (  # noqa: F401
     RunStatusView,
     RunResultView,
@@ -61,102 +58,6 @@ from .result import (  # noqa: F401
 )
 from .runs import JobRunView, JobJobRunView  # noqa: F401
 from .runvariables import RunVariableRowView, RunVariablesView  # noqa: F401
-
-
-class StartJobView(viewsets.GenericViewSet):
-    queryset = JobDef.objects.all()
-    lookup_field = "short_uuid"
-    serializer_class = StartJobSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
-
-    def get_queryset(self):
-        """
-        For listings return only values from projects
-        where the current user had access to
-        meaning also beeing part of a certain workspace
-        """
-        queryset = super().get_queryset()
-        user = self.request.user
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
-        return queryset.filter(project__workspace__in=member_of_workspaces)
-
-    def do_ingest_short(self, request, **kwargs):
-        return self.do_ingest(request, **kwargs)
-
-    def do_ingest(self, request, uuid=None, **kwargs):
-        """
-        We accept any data that is sent in request.data
-        """
-        jobdef = self.get_object()
-
-        # validate whether request.data is really a json structure
-        # print(request.headers.items(), request.data)
-        if "Content-Length" not in request.headers.keys():
-            raise ParseError(detail="'Content-Length' HTTP-header is required")
-        try:
-            assert isinstance(
-                request.data, dict
-            ), "JSON not valid, please check and try again"
-        except AssertionError as e:
-            return Response(
-                data={
-                    "message_type": "error",
-                    "message": "The JSON is not valid, please check and try again",
-                    "detail": str(e),
-                },
-                status=400,
-            )
-
-        # create new JobPayload
-        json_string = json.dumps(request.data)
-        size = len(json_string)
-        lines = 0
-        try:
-            lines = len(json.dumps(request.data, indent=1).splitlines())
-        except Exception:
-            pass
-
-        job_pl = JobPayload.objects.create(
-            jobdef=jobdef, size=size, lines=lines, owner=request.user
-        )
-        job_pl.write(io.StringIO(json_string))
-
-        # FIXME: Determine wheter we need the latest or pinned package
-        # Fetch the latest package found in the jobdef.project
-        package = (
-            Package.objects.filter(project=jobdef.project).order_by("-created").first()
-        )
-
-        # create new Jobrun
-        jobrun = JobRun.objects.create(
-            status="PENDING",
-            jobdef=jobdef,
-            payload=job_pl,
-            package=package,
-            trigger="API",
-            owner=request.user,
-        )
-
-        # return the JobRun id
-        return Response(
-            {
-                "message_type": "status",
-                "status": "queued",
-                "uuid": jobrun.uuid,
-                "short_uuid": jobrun.short_uuid,
-                "created": jobrun.created,
-                "updated": jobrun.modified,
-                "finished": None,
-                "job": jobrun.jobdef.relation_to_json,
-                "project": jobrun.jobdef.project.relation_to_json,
-                "workspace": jobrun.jobdef.project.workspace.relation_to_json,
-                "next_url": "{}://{}/v1/status/{}/".format(
-                    request.scheme, request.META["HTTP_HOST"], jobrun.short_uuid
-                ),
-            }
-        )
 
 
 class JobActionView(

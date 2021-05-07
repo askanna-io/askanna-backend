@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from dateutil.parser import parse as date_parse
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -15,7 +16,10 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("jobrun-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "jobrun-list",
+            kwargs={"version": "v1"},
+        )
 
     def test_list_as_admin(self):
         """
@@ -24,7 +28,10 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -35,7 +42,10 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
@@ -46,7 +56,10 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
@@ -54,7 +67,10 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         """
         We can list jobruns as member of a workspace
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_as_member_filter_by_job(self):
@@ -65,7 +81,11 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         filter_params = {"job": self.jobdef.short_uuid}
-        response = self.client.get(self.url, filter_params, format="json",)
+        response = self.client.get(
+            self.url,
+            filter_params,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -79,7 +99,11 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         filter_params = {
             "job": ",".join([self.jobdef.short_uuid, self.jobdef2.short_uuid])
         }
-        response = self.client.get(self.url, filter_params, format="json",)
+        response = self.client.get(
+            self.url,
+            filter_params,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
 
@@ -90,7 +114,10 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
@@ -116,7 +143,10 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -127,7 +157,10 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_list_as_member_filter_by_job(self):
@@ -138,7 +171,11 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         filter_params = {"job": self.jobdef.short_uuid}
-        response = self.client.get(self.url, filter_params, format="json",)
+        response = self.client.get(
+            self.url,
+            filter_params,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -152,7 +189,11 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
         filter_params = {
             "job": ",".join([self.jobdef.short_uuid, self.jobdef2.short_uuid])
         }
-        response = self.client.get(self.url, filter_params, format="json",)
+        response = self.client.get(
+            self.url,
+            filter_params,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -163,7 +204,10 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -195,7 +239,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
@@ -208,7 +255,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
@@ -221,7 +271,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url_run2, format="json",)
+        response = self.client.get(
+            self.url_run2,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run2"].short_uuid
@@ -234,7 +287,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
@@ -245,7 +301,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         self.memberA_member.name = "new membername"
         self.memberA_member.save()
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
@@ -264,7 +323,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         # first visit 1st workspace
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
@@ -272,7 +334,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.data.get("owner").get("name"), "membername")
 
         # then visit 2nd workspace
-        response = self.client.get(self.url_other_workspace, format="json",)
+        response = self.client.get(
+            self.url_other_workspace,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run3"].short_uuid
@@ -286,14 +351,20 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_anonymous(self):
         """
         We can NOT get details of a jobrun as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -354,7 +425,10 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_manifest_as_member(self):
@@ -364,7 +438,10 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_manifest_as_nonmember(self):
@@ -374,14 +451,20 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_manifest_as_anonymous(self):
         """
         We can NOT get the manifest of a jborun as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_manifest_as_member_no_config_found(self):
@@ -391,7 +474,10 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("AskAnna could not find the file:", str(response.content))
@@ -408,7 +494,10 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
             kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
         )
 
-        response = self.client.get(url, format="json",)
+        response = self.client.get(
+            url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("AskAnna could not start the job", str(response.content))
@@ -425,7 +514,10 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
             kwargs={"version": "v1", "short_uuid": self.jobruns["run4"].short_uuid},
         )
 
-        response = self.client.get(url, format="json",)
+        response = self.client.get(
+            url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("python my_script.py", str(response.content))
@@ -450,7 +542,10 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_log_as_member(self):
@@ -460,7 +555,10 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_log_as_nonmember(self):
@@ -470,14 +568,20 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_log_as_anonymous(self):
         """
         We can NOT get the log of a jborun as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -600,7 +704,10 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("run-job", kwargs={"short_uuid": self.jobdef.short_uuid},)
+        self.url = reverse(
+            "run-job",
+            kwargs={"short_uuid": self.jobdef.short_uuid},
+        )
 
     def test_startjob_as_admin(self):
         """
@@ -687,22 +794,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
     def test_startjob_with_payload_empty(self):
         """
-        We cannot start jobs with empty payload
-        """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-
-        payload = None
-
-        response = self.client.post(self.url, payload, HTTP_HOST="testserver")
-        self.assertEqual(
-            response.data.get("detail"), "'Content-Length' HTTP-header is required"
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_startjob_with_payload_in_uri_empty(self):
-        """
-        We cannot start jobs with empty payload given by the uri
+        We can start jobs with empty payload
         """
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -712,10 +804,19 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
         response = self.client.post(
             self.url, payload, format="json", HTTP_HOST="testserver"
         )
-        self.assertEqual(
-            response.data.get("detail"), "'Content-Length' HTTP-header is required"
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_startjob_with_payload_in_uri_empty(self):
+        """
+        We can start jobs with empty payload given by the uri
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        payload = None
+
+        response = self.client.post(self.url, payload, HTTP_HOST="testserver")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
@@ -726,7 +827,8 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.startjob_url = reverse(
-            "run-job", kwargs={"short_uuid": self.jobdef.short_uuid},
+            "run-job",
+            kwargs={"short_uuid": self.jobdef.short_uuid},
         )
         self.url = reverse(
             "job-payload-list",
@@ -805,7 +907,8 @@ class TestJobRunPayloadAPI(TestJobPayloadAPI):
 
     def setUp(self):
         self.startjob_url = reverse(
-            "run-job", kwargs={"short_uuid": self.jobdef.short_uuid},
+            "run-job",
+            kwargs={"short_uuid": self.jobdef.short_uuid},
         )
         self.setUpPayload()
         self.url = reverse(
@@ -827,7 +930,8 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.startjob_url = reverse(
-            "run-job", kwargs={"short_uuid": self.jobdef.short_uuid},
+            "run-job",
+            kwargs={"short_uuid": self.jobdef.short_uuid},
         )
         self.setUpPayload()
         self.url = reverse(
@@ -952,5 +1056,97 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
             self.partial_url + "?offset=1&limit=2",
             format="json",
             HTTP_HOST="testserver",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestJobRunDetailUpdateAPI(BaseJobTestDef, APITestCase):
+    """
+    Test whether we can change the name and description of the run object
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "jobrun-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
+        )
+        self.url_run2 = reverse(
+            "jobrun-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid},
+        )
+        self.url_other_workspace = reverse(
+            "jobrun-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
+        )
+
+    def run_test(self, token):
+
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        initial_response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(initial_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            initial_response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
+        )
+        self.assertEqual(initial_response.data.get("name"), self.jobruns["run1"].name)
+        self.assertEqual(
+            date_parse(initial_response.data.get("modified")),
+            self.jobruns["run1"].modified,
+        )
+        self.assertEqual(
+            initial_response.data.get("description"), self.jobruns["run1"].description
+        )
+
+        response = self.client.patch(
+            self.url,
+            {
+                "name": "new name",
+                "description": "new description",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.data.get("short_uuid") == self.jobruns["run1"].short_uuid
+        )
+        self.assertEqual(response.data.get("name"), "new name")
+        self.assertEqual(response.data.get("description"), "new description")
+        # make sure that with this update of name and description we don't modify the
+        # modified datetime of the run.
+        self.assertEqual(
+            date_parse(response.data.get("modified")),
+            self.jobruns["run1"].modified,
+        )
+
+    def test_update_as_admin(self):
+        """
+        We can update name and detail of the run as admin
+        """
+        token = self.users["admin"].auth_token
+        self.run_test(token)
+
+    def test_update_as_member(self):
+        """
+        We can update name and detail of the run as member
+        """
+        token = self.users["user"].auth_token
+        self.run_test(token)
+
+    def test_update_as_nonmember(self):
+        """
+        We can NOT update name and detail of the run as non-member
+        """
+        token = self.users["user_nonmember"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.patch(
+            self.url,
+            {
+                "name": "new name",
+                "description": "new description",
+            },
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

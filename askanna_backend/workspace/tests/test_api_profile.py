@@ -21,7 +21,7 @@ class TestProfileAPI(APITestCase):
             "member_b": User.objects.create(username="member_b"),
             "user_a": User.objects.create(username="user_a"),
         }
-        self.workspace = Workspace.objects.create(title="test workspace")
+        self.workspace = Workspace.objects.create(name="test workspace")
 
         # make the admin_a user member of the workspace
         self.admin_a_profile = UserProfile.objects.create(
@@ -66,12 +66,15 @@ class TestProfileAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, format="json",)
+        response = self.client.patch(
+            url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_admin_is_restricted_to_correct_workspace(self):
         """An admin in one workspace is not an admin in another."""
-        new_workspace = Workspace.objects.create(title="test workspace")
+        new_workspace = Workspace.objects.create(name="test workspace")
         new_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=new_workspace.uuid,
@@ -91,12 +94,16 @@ class TestProfileAPI(APITestCase):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"role": WS_ADMIN}, format="json",)
+        response = self.client.patch(
+            url,
+            {"role": WS_ADMIN},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_member_is_restricted_to_correct_workspace(self):
         """An member in one workspace can not see a member in another."""
-        new_workspace = Workspace.objects.create(title="test workspace")
+        new_workspace = Workspace.objects.create(name="test workspace")
         new_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=new_workspace.uuid,
@@ -116,7 +123,9 @@ class TestProfileAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_member_can_not_change_other_member_job_title(self):
@@ -134,7 +143,9 @@ class TestProfileAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
-            url, {"job_title": "a new job title"}, format="json",
+            url,
+            {"job_title": "a new job title"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -153,7 +164,9 @@ class TestProfileAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
-            url, {"job_title": "a new job title"}, format="json",
+            url,
+            {"job_title": "a new job title"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["job_title"], "a new job title")
@@ -172,7 +185,11 @@ class TestProfileAPI(APITestCase):
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"name": "my new name"}, format="json",)
+        response = self.client.patch(
+            url,
+            {"name": "my new name"},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "my new name")
 
@@ -191,7 +208,9 @@ class TestProfileAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
-            url, {"job_title": "a new job title"}, format="json",
+            url,
+            {"job_title": "a new job title"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["job_title"], "a new job title")
@@ -211,7 +230,9 @@ class TestProfileAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
-            url, {"job_title": "a new job title"}, format="json",
+            url,
+            {"job_title": "a new job title"},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["job_title"], "a new job title")
@@ -230,7 +251,11 @@ class TestProfileAPI(APITestCase):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"role": WS_ADMIN}, format="json",)
+        response = self.client.patch(
+            url,
+            {"role": WS_ADMIN},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             UserProfile.objects.get(pk=self.member_a_profile.pk).role, WS_ADMIN
@@ -250,7 +275,11 @@ class TestProfileAPI(APITestCase):
         token = self.users["member_b"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"role": WS_ADMIN}, format="json",)
+        response = self.client.patch(
+            url,
+            {"role": WS_ADMIN},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_change_admin_role_as_admin_works(self):
@@ -267,7 +296,11 @@ class TestProfileAPI(APITestCase):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"role": WS_MEMBER}, format="json",)
+        response = self.client.patch(
+            url,
+            {"role": WS_MEMBER},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             UserProfile.objects.get(pk=self.member_b_profile.pk).role, WS_MEMBER
@@ -287,7 +320,11 @@ class TestProfileAPI(APITestCase):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"role": WS_MEMBER}, format="json",)
+        response = self.client.patch(
+            url,
+            {"role": WS_MEMBER},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_change_admin_role_as_member_fails(self):
@@ -304,12 +341,16 @@ class TestProfileAPI(APITestCase):
         token = self.users["member_b"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(url, {"role": WS_MEMBER}, format="json",)
+        response = self.client.patch(
+            url,
+            {"role": WS_MEMBER},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_profile_requires_correct_workspace(self):
         """The path to a profile requires the correct parent be given."""
-        workspace_to_fail = Workspace.objects.create(title="workspace to fail")
+        workspace_to_fail = Workspace.objects.create(name="workspace to fail")
 
         url = reverse(
             "workspace-people-detail",
@@ -320,7 +361,9 @@ class TestProfileAPI(APITestCase):
             },
         )
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         # 401 is raised and not 404 as the permission check at the workspace level
         # comes before than the loading of the profile.
         # Since the user does not belong to the given workspace, it fails.
@@ -337,7 +380,9 @@ class TestProfileAPI(APITestCase):
             },
         )
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_profile_as_non_member_fails(self):
@@ -354,7 +399,9 @@ class TestProfileAPI(APITestCase):
         token = self.users["user_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_profile_as_member(self):
@@ -371,7 +418,9 @@ class TestProfileAPI(APITestCase):
         token = self.users["member_b"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             {"short_uuid": self.member_a_profile.short_uuid}.items()
@@ -392,7 +441,9 @@ class TestProfileAPI(APITestCase):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
             {"short_uuid": self.member_a_profile.short_uuid}.items()
@@ -401,7 +452,7 @@ class TestProfileAPI(APITestCase):
 
     def test_list_limited_to_current_workspace(self):
         """Listing of people is correctly filtered to requested workspace."""
-        new_workspace = Workspace.objects.create(title="test workspace")
+        new_workspace = Workspace.objects.create(name="test workspace")
         filtered_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=new_workspace.uuid,
@@ -420,7 +471,9 @@ class TestProfileAPI(APITestCase):
         token = self.users["admin_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         uuids = [p["uuid"] for p in response.data]
@@ -439,7 +492,7 @@ class TestDeletedProfileAPI(APITestCase):
                 username="member_a_deleted_profile"
             ),
         }
-        self.workspace = Workspace.objects.create(title="test workspace")
+        self.workspace = Workspace.objects.create(name="test workspace")
 
         # make the admin_a_deleted_profile user admin of the workspace
         self.admin_a_deleted_profile = UserProfile.objects.create(
@@ -471,7 +524,9 @@ class TestDeletedProfileAPI(APITestCase):
         token = self.users["member_a_deleted_profile"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_deleted_member_is_denied_access_to_profile(self):
@@ -488,7 +543,9 @@ class TestDeletedProfileAPI(APITestCase):
         token = self.users["member_a_deleted_profile"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_deleted_member_is_denied_access_to_edit_profile(self):
@@ -507,12 +564,18 @@ class TestDeletedProfileAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         with self.subTest("empty payload"):
-            response = self.client.patch(url, {}, format="json",)
+            response = self.client.patch(
+                url,
+                {},
+                format="json",
+            )
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         with self.subTest("job_title"):
             response = self.client.patch(
-                url, {"job_title": "A new title"}, format="json",
+                url,
+                {"job_title": "A new title"},
+                format="json",
             )
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -529,7 +592,9 @@ class TestDeletedProfileAPI(APITestCase):
         token = self.users["admin_a_deleted_profile"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_deleted_admin_is_denied_access_to_profile(self):
@@ -547,7 +612,9 @@ class TestDeletedProfileAPI(APITestCase):
         token = self.users["admin_a_deleted_profile"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(url,)
+        response = self.client.get(
+            url,
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_deleted_admin_is_denied_access_to_edit_profile(self):
@@ -566,12 +633,18 @@ class TestDeletedProfileAPI(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         with self.subTest("empty payload"):
-            response = self.client.patch(url, {}, format="json",)
+            response = self.client.patch(
+                url,
+                {},
+                format="json",
+            )
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         with self.subTest("job_title"):
             response = self.client.patch(
-                url, {"job_title": "A new title"}, format="json",
+                url,
+                {"job_title": "A new title"},
+                format="json",
             )
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -585,7 +658,7 @@ class TestRemovingProfile(APITestCase):
             "member_b": User.objects.create(username="member_b"),
             "user_a": User.objects.create(username="user_a"),
         }
-        self.workspace = Workspace.objects.create(title="test workspace")
+        self.workspace = Workspace.objects.create(name="test workspace")
 
         # make the admin_a user member of the workspace
         self.admin_a_profile = UserProfile.objects.create(
@@ -680,7 +753,7 @@ class TestRemovingProfile(APITestCase):
 
     def test_admin_cannot_remove_profiles_from_other_workspace(self):
         """Removing a profile is limited to workspaces an admin is member of."""
-        extra_workspace = Workspace.objects.create(title="extra test workspace")
+        extra_workspace = Workspace.objects.create(name="extra test workspace")
         extra_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=extra_workspace.uuid,
@@ -725,4 +798,3 @@ class TestRemovingProfile(APITestCase):
         self.assertIsNone(
             UserProfile.objects.filter(uuid=self.admin_a_profile.uuid).first().deleted
         )
-

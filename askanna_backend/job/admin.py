@@ -88,20 +88,40 @@ class JobArtifactAdmin(admin.ModelAdmin):
 
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):
+    def project(obj):
+        return obj.jobdef.project.get_name()
+
+    def jobname(obj):
+        return obj.jobdef.get_name()
+
+    def job_suuid(obj):
+        return obj.jobdef.short_uuid
+
+    def payload_suuid(obj):
+        if obj.payload:
+            return obj.payload.short_uuid
+        return ""
+
     list_display = [
-        "uuid",
-        "jobid",
-        "jobdef",
-        "payload",
+        "short_uuid",
+        project,
+        jobname,
+        job_suuid,
+        payload_suuid,
         "status",
         "created",
         "owner",
-        "member",
     ]
 
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
-    search_fields = ["uuid", "owner"]
+    search_fields = [
+        "short_uuid",
+        "owner",
+        "jobdef__short_uuid",
+        "jobdef__name",
+        "payload__short_uuid",
+    ]
 
 
 @admin.register(JobOutput)

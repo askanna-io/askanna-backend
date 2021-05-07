@@ -1,6 +1,11 @@
 from django.db import models
 
-from core.models import ActivatorModel, SlimBaseModel, DescriptionModel, AuthorModel
+from core.models import (
+    ActivatorModel,
+    AuthorModel,
+    SlimBaseModel,
+    NameDescriptionModel,
+)
 
 
 class ProjectQuerySet(models.QuerySet):
@@ -34,14 +39,12 @@ class ActiveProjectManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Project(AuthorModel, ActivatorModel, DescriptionModel, SlimBaseModel):
-    """A project resembles an organisation with code, jobs, runs artifacts
-    """
+class Project(AuthorModel, ActivatorModel, NameDescriptionModel, SlimBaseModel):
+    """A project resembles an organisation with code, jobs, runs artifacts"""
 
     objects = models.Manager()
     projects = ActiveProjectManager()
 
-    name = models.CharField(max_length=255)
     workspace = models.ForeignKey(
         "workspace.Workspace", on_delete=models.SET_NULL, blank=True, null=True
     )
@@ -68,4 +71,3 @@ class Project(AuthorModel, ActivatorModel, DescriptionModel, SlimBaseModel):
 
     class Meta:
         ordering = ["name"]
-
