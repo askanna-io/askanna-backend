@@ -214,8 +214,8 @@ class BaseJobTestDef:
         }
 
         # setup variables
-        cls.workspace = Workspace.objects.create(**{"title": "WorkspaceX"})
-        cls.workspace2 = Workspace.objects.create(**{"title": "WorkspaceY"})
+        cls.workspace = Workspace.objects.create(**{"name": "WorkspaceX"})
+        cls.workspace2 = Workspace.objects.create(**{"name": "WorkspaceY"})
         cls.project = Project.objects.create(
             **{"name": "TestProject", "workspace": cls.workspace}
         )
@@ -250,7 +250,7 @@ class BaseJobTestDef:
             original_filename="project-no-yml.zip",
             project=cls.project,
             size=1,
-            title="TestPackage",
+            name="TestPackage",
             created_by=cls.users["user"],
         )
         cls.package.write(
@@ -264,7 +264,7 @@ class BaseJobTestDef:
             original_filename="project-001.zip",
             project=cls.project2,
             size=1,
-            title="TestPackage2",
+            name="TestPackage2",
             created_by=cls.users["user"],
         )
         cls.package2.write(
@@ -278,7 +278,7 @@ class BaseJobTestDef:
             original_filename="project-no-yml.zip",
             project=cls.project2,
             size=1,
-            title="TestPackage3",
+            name="TestPackage3",
             created_by=cls.users["user"],
         )
         cls.package3.write(
@@ -302,6 +302,8 @@ class BaseJobTestDef:
         )
         cls.jobruns = {
             "run1": JobRun.objects.create(
+                name="run1",
+                description="test run1",
                 package=cls.package,
                 jobdef=cls.jobdef,
                 status="SUBMITTED",
@@ -309,6 +311,8 @@ class BaseJobTestDef:
                 member=cls.memberA_member,
             ),
             "run2": JobRun.objects.create(
+                name="run2",
+                description="test run2",
                 package=cls.package,
                 jobdef=cls.jobdef,
                 status="SUBMITTED",
@@ -316,6 +320,8 @@ class BaseJobTestDef:
                 member=cls.memberA_member,
             ),
             "run3": JobRun.objects.create(
+                name="run3",
+                description="test run3",
                 package=cls.package2,
                 jobdef=cls.jobdef3,
                 status="SUBMITTED",
@@ -323,6 +329,8 @@ class BaseJobTestDef:
                 member=cls.memberA_member2,
             ),
             "run4": JobRun.objects.create(
+                name="run4",
+                description="test run4",
                 package=cls.package2,
                 jobdef=cls.jobdef2,
                 status="SUBMITTED",

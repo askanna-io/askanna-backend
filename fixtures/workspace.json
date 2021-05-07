@@ -5,7 +5,7 @@
     "fields": {
       "created": "2020-04-01T09:44:11.853Z",
       "modified": "2020-04-01T09:44:11.853Z",
-      "title": "AskAnna",
+      "name": "AskAnna",
       "description": "",
       "status": 1,
       "activate_date": "2020-04-01T09:44:11.838Z",
@@ -20,7 +20,7 @@
     "fields": {
       "created": "2020-04-01T09:45:02.233Z",
       "modified": "2020-04-01T09:45:02.233Z",
-      "title": "Open",
+      "name": "Open",
       "description": "",
       "status": 1,
       "activate_date": "2020-04-01T09:45:02.220Z",
@@ -35,7 +35,7 @@
     "fields": {
       "created": "2020-04-01T09:46:19.708Z",
       "modified": "2020-04-01T09:46:19.708Z",
-      "title": "Demo",
+      "name": "Demo",
       "description": "",
       "status": 1,
       "activate_date": "2020-04-01T09:46:19.697Z",

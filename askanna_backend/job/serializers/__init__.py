@@ -21,7 +21,11 @@ from .runvariable import (  # noqa: F401
     RunVariableRowSerializer,
     RunVariablesSerializer,
 )
-from .run import JobRunSerializer, JobPayloadSerializer  # noqa: F401
+from .run import (  # noqa: F401
+    JobRunSerializer,
+    JobRunUpdateSerializer,
+    JobPayloadSerializer,
+)
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -51,10 +55,7 @@ class JobSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobDef
-        exclude = (
-            "title",
-            "deleted",
-        )
+        exclude = ("deleted",)
 
 
 class StartJobSerializer(serializers.ModelSerializer):

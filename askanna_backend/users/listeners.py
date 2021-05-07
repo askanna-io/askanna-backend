@@ -106,7 +106,7 @@ def create_workspace_after_signup(sender, user, request, workspace_name, **kwarg
     When workspace_name is not given, then do not create a workspace for the new user
     """
     if workspace_name:
-        workspace = Workspace.objects.create(title=workspace_name)
+        workspace = Workspace.objects.create(name=workspace_name)
 
         membership = Membership.objects.create(
             object_uuid=workspace.uuid,

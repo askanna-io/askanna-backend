@@ -145,13 +145,13 @@ urlpatterns = [
     re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
     path(
         r"v1/run/<shortuuid:short_uuid>/",
-        StartJobView.as_view({"post": "do_ingest_short"}, detail=True),
+        StartJobView.as_view({"post": "newrun"}, detail=True),
         kwargs={"uuid": None},
         name="run-job",
     ),
     path(
         r"v1/run/<shortuuid:short_uuid>",
-        StartJobView.as_view({"post": "do_ingest_short"}, detail=True),
+        StartJobView.as_view({"post": "newrun"}, detail=True),
         kwargs={"uuid": None},
         name="run-job-deprecated",
     ),

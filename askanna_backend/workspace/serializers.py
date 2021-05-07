@@ -5,7 +5,7 @@ from workspace.models import Workspace
 
 class WorkspaceSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
-        instance.title = validated_data.get("title", instance.title)
+        instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()
         instance.refresh_from_db()
@@ -13,4 +13,11 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workspace
-        fields = "__all__"
+        fields = (
+            "uuid",
+            "short_uuid",
+            "name",
+            "description",
+            "created",
+            "modified",
+        )

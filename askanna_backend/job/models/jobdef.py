@@ -7,14 +7,8 @@ from core.models import BaseModel
 class JobDef(BaseModel):
     """
     Consider this as the job registry storing the identity of the job itself.
-
-    FIXME:
-        - the job name cannot be unique, since this would be across our system,
-          different clients are very likely to use the same name, and this
-          should be fine. The uniqueness is based on the uuid.
     """
 
-    name = models.CharField(max_length=50)
     project = models.ForeignKey(
         "project.Project", on_delete=models.CASCADE, blank=True, null=True
     )

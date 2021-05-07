@@ -1,13 +1,7 @@
 import pytest
-from django.conf import settings
-from django.test import RequestFactory
+from django.conf import settings  # noqa: 401
 
 
 @pytest.fixture(autouse=True)
-def media_storage(settings, tmpdir):
+def media_storage(settings, tmpdir):  # noqa: F811
     settings.MEDIA_ROOT = tmpdir.strpath
-
-
-@pytest.fixture
-def request_factory() -> RequestFactory:
-    return RequestFactory()

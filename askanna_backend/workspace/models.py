@@ -2,12 +2,8 @@ from core.models import ActivatedModel
 
 
 class Workspace(ActivatedModel):
-    def __str__(self):
-        # FIXME: change title to name
-        return self.title
-
     def get_name(self):
-        return self.title
+        return self.name
 
     @property
     def relation_to_json(self):

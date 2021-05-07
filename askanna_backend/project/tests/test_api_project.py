@@ -30,12 +30,12 @@ class BaseProjectTest(APITestCase):
             "member_a": User.objects.create(username="member_a"),
             "user_a": User.objects.create(username="user_a"),
         }
-        self.workspace = Workspace.objects.create(title="test workspace")
+        self.workspace = Workspace.objects.create(name="test workspace")
         self.project = Project.objects.create(
             name="test project", workspace=self.workspace
         )
 
-        self.unused_workspace = Workspace.objects.create(title="unused workspace")
+        self.unused_workspace = Workspace.objects.create(name="unused workspace")
         self.unused_project = Project.objects.create(
             name="unused project", workspace=self.unused_workspace
         )
