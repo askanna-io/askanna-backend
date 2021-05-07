@@ -6,6 +6,7 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 
+from core.const import ALLOWED_API_AGENTS
 from job.models import (
     JobDef,
     JobPayload,
@@ -74,6 +75,17 @@ class StartJobView(viewsets.GenericViewSet):
 
         return job_pl
 
+    def get_trigger_source(self, request) -> str:
+        """
+        Determine the source of the API call by looking at the `askanna-agent` header.
+        If this one is not set, we handle a regular API call
+        """
+        source = request.headers.get("askanna-agent", "api").upper()
+        if source not in ALLOWED_API_AGENTS:
+            # We don't actually block other parties to start a run, but set the agent to API
+            return "API"
+        return source
+
     def newrun(self, request, **kwargs):
         """
         We accept any data that is sent in request.data
@@ -95,7 +107,7 @@ class StartJobView(viewsets.GenericViewSet):
             "jobdef": job,
             "payload": job_pl,
             "package": package,
-            "trigger": "API",
+            "trigger": self.get_trigger_source(request),
             "owner": request.user,
         }
         run = JobRun.objects.create(**runspec)

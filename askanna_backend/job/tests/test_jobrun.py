@@ -818,6 +818,44 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
         response = self.client.post(self.url, payload, HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_startjob_with_askanna_agents(self):
+        """
+        We can start a job as different askanna-agents
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        payload = {"example_payload": "startjob"}
+
+        for agent, trigger in {
+            "webui": "webui",
+            "cli": "cli",
+            "python-sdk": "python-sdk",
+            "worker": "worker",
+            "invalid": "api",
+            "029340892098340280": "api",
+        }.items():
+            response = self.client.post(
+                self.url,
+                payload,
+                format="json",
+                HTTP_HOST="testserver",
+                HTTP_ASKANNA_AGENT=agent,  # this variable is turned into `askanna-agent` as header
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data.get("status"), "queued")
+            self.assertEqual(response.data.get("message_type"), "status")
+            runinfo = self.client.get(
+                reverse(
+                    "runinfo-detail",
+                    kwargs={
+                        "version": "v1",
+                        "short_uuid": response.data.get("short_uuid"),
+                    },
+                )
+            )
+            self.assertEqual(runinfo.data.get("trigger"), trigger.upper())
+
 
 class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
 
