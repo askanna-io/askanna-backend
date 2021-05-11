@@ -8,7 +8,7 @@ celery==4.4.0  # pyup: < 5.0  # https://github.com/celery/celery
 django-celery-beat==2.1.0  # https://github.com/celery/django-celery-beat
 django-timezone-field==4.0.0 # for celery beat
 flower==0.9.3  # https://github.com/mher/flower
-sentry-sdk~=1.0.0  # https://github.com/getsentry/sentry-python
+sentry-sdk~=1.1.0  # https://github.com/getsentry/sentry-python
 
 # yaml support
 PyYAML~=5.4.1  # https://pypi.org/project/PyYAML/#description
