@@ -313,7 +313,7 @@ class PersonSerializer(serializers.Serializer):
 
     def send_invite(self, instance=None):
         """This function generates the token when the invitation is send.
-        A mail is sent to the email that is given as input when creating the invitation """
+        A mail is sent to the email that is given as input when creating the invitation"""
         instance = instance or self.instance
         token = self.generate_token(instance)
         workspace_uuid = instance.object_uuid
@@ -321,13 +321,13 @@ class PersonSerializer(serializers.Serializer):
 
         data = {
             "token": token,
-            "workspace_name": workspace,
+            "workspace_name": workspace.name,
             "workspace_short_uuid": workspace.short_uuid,
             "web_ui_url": instance.invitation.front_end_url.rstrip("/"),
             "people_short_uuid": instance.short_uuid,
         }
 
-        subject = f"You’re invited to join {workspace} on AskAnna"
+        subject = f"You’re invited to join {workspace.name} on AskAnna"
         from_email = settings.EMAIL_INVITATION_FROM_EMAIL
 
         text_version = render_to_string("emails/invitation_email.txt", data)

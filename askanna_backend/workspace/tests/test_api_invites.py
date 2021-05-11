@@ -779,7 +779,7 @@ class TestInviteAPI(APITestCase):
 
         self.assertEqual(
             mail.outbox[0].subject,
-            f"You’re invited to join {self.workspace} on AskAnna",
+            f"You’re invited to join {self.workspace.name} on AskAnna",
         )
 
     def test_modifying_invite_resends_invitation_email(self):
@@ -801,7 +801,7 @@ class TestInviteAPI(APITestCase):
 
         self.assertEqual(
             mail.outbox[0].subject,
-            f"You’re invited to join {self.workspace} on AskAnna",
+            f"You’re invited to join {self.workspace.name} on AskAnna",
         )
 
     def test_modify_membership_name(self):
