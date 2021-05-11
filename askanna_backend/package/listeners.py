@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
-from yaml import load
+import yaml
 
 try:
     from yaml import CLoader as Loader
@@ -20,7 +20,7 @@ from users.models import MSP_WORKSPACE
 
 
 @receiver(package_upload_finish)
-def handle_upload(sender, signal, postheaders, obj, **kwargs):
+def package_upload_101_extract_zip(sender, signal, postheaders, obj, **kwargs):
     # extract from package_root to blob_root under the package uuid
     # this is for the fileview
     target_location = settings.BLOB_ROOT
@@ -33,7 +33,9 @@ def handle_upload(sender, signal, postheaders, obj, **kwargs):
 
 
 @receiver(package_upload_finish)
-def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
+def package_upload_102_extract_jobs_from_askannayml(
+    sender, signal, postheaders, obj, **kwargs
+):
     """
     Extract jobs defined in the askanna.yml (if set)
 
@@ -55,7 +57,10 @@ def extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
 
         askanna_yml = zipObj.read(list(found_askanna_yml)[0])
 
-    config = load(askanna_yml, Loader=Loader)
+    try:
+        config = yaml.load(askanna_yml, Loader=Loader)
+    except yaml.scanner.ScannerError:
+        return
 
     # Within AskAnna, we have several variables reserved
     reserved_keys = (
