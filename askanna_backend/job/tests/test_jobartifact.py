@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 import config.urls
-from .base import BaseJobTestDef
+from .base import BaseJobTestDef, BaseUploadTestMixin
 
 pytestmark = pytest.mark.django_db
 
@@ -36,7 +36,10 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -47,7 +50,10 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -58,7 +64,10 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -66,7 +75,10 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT list artifacts as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -92,7 +104,10 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -103,7 +118,10 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -114,7 +132,10 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -122,7 +143,10 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT get artifacts as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -140,10 +164,12 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         The short-uuid is from a job-run where the artifact is generated from
         """
         self.url = reverse(
-            "shortcut-artifact", kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
+            "shortcut-artifact",
+            kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
         )
         self.url_no_artifact = reverse(
-            "shortcut-artifact", kwargs={"short_uuid": self.jobruns["run2"].short_uuid},
+            "shortcut-artifact",
+            kwargs={"short_uuid": self.jobruns["run2"].short_uuid},
         )
 
         self.setUpUrls()
@@ -191,7 +217,10 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
 
         self.check_artifact(response.url)
@@ -203,7 +232,10 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
 
         self.check_artifact(response.url)
@@ -215,14 +247,20 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_as_anonymous(self):
         """
         We can NOT get artifacts as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     # test for not found, run2 doesn't have an artifact
@@ -234,7 +272,10 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url_no_artifact, format="json",)
+        response = self.client.get(
+            self.url_no_artifact,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retrieve_as_member_not_found(self):
@@ -244,7 +285,10 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url_no_artifact, format="json",)
+        response = self.client.get(
+            self.url_no_artifact,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retrieve_as_nonmember_not_found(self):
@@ -254,12 +298,77 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url_no_artifact, format="json",)
+        response = self.client.get(
+            self.url_no_artifact,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_as_anonymous_not_found(self):
         """
         We can NOT get artifacts as anonymous
         """
-        response = self.client.get(self.url_no_artifact, format="json",)
+        response = self.client.get(
+            self.url_no_artifact,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase):
+    """
+    Test on creating artifacts and uploading chunks
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "jobrun-artifact-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
+            },
+        )
+        self.create_artifact_url = lambda artifact_object: reverse(
+            "artifact-artifactchunk-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_artifact__jobrun__short_uuid": self.jobruns[
+                    "run1"
+                ].short_uuid,
+                "parent_lookup_artifact__short_uuid": artifact_object.get("short_uuid"),
+            },
+        )
+        self.upload_artifact_url = lambda artifact_object, chunk_uuid: reverse(
+            "artifact-artifactchunk-chunk",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_artifact__jobrun__short_uuid": self.jobruns[
+                    "run1"
+                ].short_uuid,
+                "parent_lookup_artifact__short_uuid": artifact_object.get("short_uuid"),
+                "pk": chunk_uuid,
+            },
+        )
+        self.finish_upload_url = lambda artifact_object: reverse(
+            "jobrun-artifact-finish-upload",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
+                "short_uuid": artifact_object.get("short_uuid"),
+            },
+        )
+
+    def test_create_as_admin(self):
+        """
+        We can create artifacts as admin of a workspace
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        self.do_artifact_upload(
+            create_url=self.url,
+            create_artifact_url=self.create_artifact_url,
+            upload_artifact_url=self.upload_artifact_url,
+            finish_upload_url=self.finish_upload_url,
+            fileobjectname="test-artifact-admin.zip",
+        )

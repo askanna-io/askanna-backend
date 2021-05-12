@@ -1,3 +1,4 @@
+import django
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 
@@ -21,9 +22,7 @@ class BaseChunkedPartViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
-    """
-
-    """
+    """"""
 
     def check_existence(self, request, **kwargs):
         """
@@ -51,7 +50,9 @@ class BaseChunkedPartViewSet(
 
         if request.method == "GET":
             return self.check_existence(request, **kwargs)
-        chunk = request.FILES.get("file")
+        chunk: django.core.files.uploadedfile.InMemoryUploadedFile = request.FILES.get(
+            "file"
+        )
         storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
 
         r = ResumableFile(storage_location, request.POST)

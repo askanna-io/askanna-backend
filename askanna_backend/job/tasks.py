@@ -216,30 +216,25 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         "askanna-run-utils get-run-manifest --output /dev/stdout | bash",
     ]
 
-    runner_variables = {
+    worker_variables = {
         "AA_TOKEN": jr_token,
         "AA_REMOTE": aa_remote,
-        "JOBRUN_UUID": str(jr.uuid),
         "JOBRUN_SUUID": jr.short_uuid,
         "JOBRUN_JOBNAME": jd.name,
-        "PROJECT_UUID": str(pr.uuid),
         "PROJECT_SUUID": str(pr.short_uuid),
-        "PACKAGE_UUID": str(package.uuid),
         "PACKAGE_SUUID": str(package.short_uuid),
-        "RESULT_UUID": str(op.uuid),
         "RESULT_SUUID": str(op.short_uuid),
     }
     if pl:
         # we have a payload, so set the payload
-        runner_variables.update(
+        worker_variables.update(
             **{
-                "PAYLOAD_UUID": str(pl.uuid),
                 "PAYLOAD_SUUID": str(pl.short_uuid),
                 "PAYLOAD_PATH": "/input/payload.json",
             }
         )
 
-    for variable, value in runner_variables.items():
+    for variable, value in worker_variables.items():
         # log the worker variables
         labels = [{"name": "source", "value": "worker", "type": "string"}]
         RunVariableRow.objects.create(
@@ -299,7 +294,7 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     env_variables = {}
     env_variables.update(**project_variables)
     env_variables.update(**payload_variables)
-    env_variables.update(**runner_variables)
+    env_variables.update(**worker_variables)
 
     jr.to_inprogress()
 

@@ -166,17 +166,17 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
     # FIXME: implement permission class that checks for access to this chunk in workspace>project->job->joboutput.
     permission_classes = [IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
-        joboutput = JobOutput.objects.get(
-            short_uuid=self.kwargs.get("parent_lookup_joboutput__short_uuid")
-        )
-        data = request.data.copy()
-        data.update(**{"joboutput": str(joboutput.pk)})
-
-        serializer = ChunkedJobOutputPartSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+    def initial(self, request, *args, **kwargs):
+        """
+        Set and lookup external relation by default
+        """
+        super().initial(request, *args, **kwargs)
+        parents = self.get_parents_query_dict()
+        short_uuid = parents.get("joboutput__short_uuid")
+        request.data.update(
+            **{
+                "joboutput": JobOutput.objects.get(
+                    short_uuid=short_uuid,
+                ).pk
+            }
         )

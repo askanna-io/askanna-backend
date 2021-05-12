@@ -57,10 +57,8 @@ class PackageViewSet(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["created_by", "original_filename", "size"]
-        instance_obj.original_filename = resume_obj.filename
+        update_fields = ["created_by"]
         instance_obj.created_by = request.user
-        instance_obj.size = resume_obj.size
         instance_obj.save(update_fields=update_fields)
 
 
@@ -72,6 +70,23 @@ class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
     queryset = ChunkedPackagePart.objects.all()
     serializer_class = ChunkedPackagePartSerializer
     permission_classes = [IsAuthenticated]
+
+    def initial(self, request, *args, **kwargs):
+        """
+        Set and lookup external relation by default
+        """
+        super().initial(request, *args, **kwargs)
+        parents = self.get_parents_query_dict()
+        short_uuid = parents.get("package__short_uuid")
+        request.data.update(
+            **{
+                "package": str(
+                    Package.objects.get(
+                        short_uuid=short_uuid,
+                    ).pk
+                )
+            }
+        )
 
 
 class ProjectPackageViewSet(
