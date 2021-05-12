@@ -1,19 +1,54 @@
-import datetime
-from functools import reduce
-import os
-
-from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-from zipfile import ZipFile
 
 from core.serializers import BaseArchiveDetailSerializer
 from package.models import Package, ChunkedPackagePart
+from project.models import Project
+from users.models import MSP_WORKSPACE
 
 
 class PackageCreateSerializer(serializers.ModelSerializer):
+    filename = serializers.CharField(max_length=256)
+    project = serializers.CharField(max_length=19)
+
     class Meta:
         model = Package
+        # fields = ["filename", "project", "size", "description"]
         fields = "__all__"
+
+    def create(self, validated_data):
+        original_filename = validated_data.get("filename")
+        del validated_data["filename"]
+        validated_data.update(**{"original_filename": original_filename})
+        return super().create(validated_data)
+
+    def validate_project(self, value):
+        """
+        Validation of the project specified in the create request
+
+        """
+        try:
+            project = Project.objects.get(short_uuid=value)
+        except ObjectDoesNotExist:
+            raise serializers.ValidationError(
+                f"Project with SUUID={value} was not found"
+            )
+        else:
+            # check whether the user has access to this projet
+            request = self.context["request"]
+            member_of_workspaces = request.user.memberships.filter(
+                object_type=MSP_WORKSPACE
+            ).values_list("object_uuid", flat=True)
+
+            is_member = project.workspace.uuid in member_of_workspaces
+            if is_member:
+                return project
+            else:
+                raise serializers.ValidationError(
+                    f"User has no access to project with SUUID={value}"
+                )
+
+        return value
 
 
 class PackageSerializer(serializers.ModelSerializer):
@@ -78,4 +113,4 @@ class PackageSerializerDetail(BaseArchiveDetailSerializer):
 
     class Meta:
         model = Package
-        fields = "__all__"
+        exclude = ("original_filename", "deleted")

@@ -48,7 +48,7 @@ class MembershipAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.filter(user__isnull=False)
 
-    def has_add_permission(self, request, obj=None):
+    def has_add_permission(self, request, obj=None):  # pragma: no cover
         """ want to force users always to create memberships with user profile"""
         return False
 
@@ -134,6 +134,6 @@ class PasswordResetLogAdmin(admin.ModelAdmin):
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid", "email", "remote_ip"]
 
-    def has_add_permission(self, request, obj=None):
+    def has_add_permission(self, request, obj=None):  # pragma: no cover
         """ disable adding logs manually, since that doesn't make sense """
         return False

@@ -23,13 +23,13 @@ admin.site.register(ChunkedArtifactPart)
 
 @admin.register(ScheduledJob)
 class ScheduledJobAdmin(admin.ModelAdmin):
-    def jobname(obj):
+    def jobname(obj):  # pragma: no cover
         return obj.job.name
 
-    def project(obj):
+    def project(obj):  # pragma: no cover
         return obj.job.project.get_name()
 
-    def membername(obj):
+    def membername(obj):  # pragma: no cover
         return obj.member.get_name()
 
     list_display = [
@@ -88,16 +88,16 @@ class JobArtifactAdmin(admin.ModelAdmin):
 
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):
-    def project(obj):
+    def project(obj):  # pragma: no cover
         return obj.jobdef.project.get_name()
 
-    def jobname(obj):
+    def jobname(obj):  # pragma: no cover
         return obj.jobdef.get_name()
 
-    def job_suuid(obj):
+    def job_suuid(obj):  # pragma: no cover
         return obj.jobdef.short_uuid
 
-    def payload_suuid(obj):
+    def payload_suuid(obj):  # pragma: no cover
         if obj.payload:
             return obj.payload.short_uuid
         return ""

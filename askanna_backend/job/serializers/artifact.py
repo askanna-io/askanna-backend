@@ -46,4 +46,3 @@ class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChunkedJobOutputPart
         fields = "__all__"
-
