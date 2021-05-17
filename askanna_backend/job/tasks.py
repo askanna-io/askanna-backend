@@ -219,18 +219,19 @@ def start_jobrun_dockerized(self, jobrun_uuid):
     worker_variables = {
         "AA_TOKEN": jr_token,
         "AA_REMOTE": aa_remote,
-        "JOBRUN_SUUID": jr.short_uuid,
-        "JOBRUN_JOBNAME": jd.name,
-        "PROJECT_SUUID": str(pr.short_uuid),
-        "PACKAGE_SUUID": str(package.short_uuid),
-        "RESULT_SUUID": str(op.short_uuid),
+        "AA_RUN_SUUID": jr.short_uuid,
+        "AA_JOB_NAME": jd.name,
+        "AA_PROJECT_SUUID": str(pr.short_uuid),
+        "AA_PACKAGE_SUUID": str(package.short_uuid),
+        "AA_RESULT_SUUID": str(op.short_uuid),
     }
     if pl:
         # we have a payload, so set the payload
         worker_variables.update(
             **{
-                "PAYLOAD_SUUID": str(pl.short_uuid),
-                "PAYLOAD_PATH": "/input/payload.json",
+                "AA_PAYLOAD_SUUID": str(pl.short_uuid),
+                "AA_PAYLOAD_PATH": "/input/payload.json",
+                "PAYLOAD_PATH": "/input/payload.json",  # FIXME: deprecated after July 2021
             }
         )
 
