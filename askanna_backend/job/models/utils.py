@@ -4,6 +4,7 @@ import re
 from wsgiref.util import FileWrapper
 
 from django.http import StreamingHttpResponse, HttpResponse
+from rest_framework import status
 
 
 # Define a few enums that will represent options in the models.
@@ -74,7 +75,7 @@ def stream(request, path, content_type, size):
         length = last_byte - first_byte + 1
         resp = StreamingHttpResponse(
             RangeFileWrapper(open(path, "rb"), offset=first_byte, length=length),
-            status=206,
+            status=status.HTTP_206_PARTIAL_CONTENT,
             content_type=content_type,
         )
         resp["Content-Length"] = str(length)

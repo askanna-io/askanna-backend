@@ -5,11 +5,9 @@ from django.conf import settings
 from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from core.mixins import HybridUUIDMixin
 from core.views import (
     BaseChunkedPartViewSet,
     BaseUploadFinishMixin,
@@ -23,6 +21,10 @@ from package.serializers import (
     PackageCreateSerializer,
 )
 from package.signals import package_upload_finish
+from job.permissions import (
+    IsMemberOfProjectAttributePermission,
+    IsMemberOfPackageAttributePermission,
+)
 
 
 class PackageViewSet(
@@ -40,7 +42,7 @@ class PackageViewSet(
     queryset = Package.objects.all()
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfProjectAttributePermission]
 
     upload_target_location = settings.PACKAGES_ROOT
     upload_finished_signal = package_upload_finish
@@ -69,7 +71,7 @@ class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
 
     queryset = ChunkedPackagePart.objects.all()
     serializer_class = ChunkedPackagePartSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfPackageAttributePermission]
 
     def initial(self, request, *args, **kwargs):
         """
@@ -89,14 +91,12 @@ class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
         )
 
 
-class ProjectPackageViewSet(
-    HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
-):
+class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
     queryset = Package.objects.exclude(original_filename="")
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfProjectAttributePermission]
 
     def get_serializer_class(self):
         if self.action == "retrieve":

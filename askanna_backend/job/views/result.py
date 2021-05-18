@@ -61,12 +61,17 @@ class BaseRunResultView(
 
 class RunResultView(BaseRunResultView):
     def retrieve(self, request, short_uuid, *args, **kwargs):
-        jobrun = self.get_object()
+        run = self.get_object()
         # get the requested content-type header, if not set from database
-        content_type = request.headers.get("content-type", jobrun.output.mime_type)
-        size = jobrun.output.size
+        content_type = request.headers.get("content-type", run.output.mime_type)
+        size = run.output.size
+
+        if not os.path.exists(run.output.stored_path):
+            # the output file doesn't exist, return blank
+            return Response(None, status=status.HTTP_200_OK)
+
         return stream(
-            request, jobrun.output.stored_path, content_type=content_type, size=size
+            request, run.output.stored_path, content_type=content_type, size=size
         )
 
     def options(self, request, *args, **kwargs):
