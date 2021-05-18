@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-import io
-import typing
-import uuid
-import zipfile
-
 from django.conf import settings
 from django.db.models import signals
-from rest_framework import status
 
+
+from core.tests.base import BaseUploadTestMixin  # noqa
 from job.models import (
     JobDef,
     JobRun,
@@ -406,108 +402,3 @@ class BaseJobTestDef:
         cls.variable_masked.delete()
         cls.workspace.delete()  # this will cascade delete child items
         cls.workspace2.delete()
-
-
-class BaseUploadTestMixin:
-    def do_create_entry(self, create_url):
-
-        payload = {
-            "filename": "testartifact.zip",
-            "project": self.jobruns["run1"].jobdef.project.short_uuid,
-            "size": 5001,
-        }
-
-        response = self.client.post(
-            create_url,
-            payload,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        artifact_object = response.data.copy()
-        return artifact_object
-
-    def do_artifact_upload(
-        self,
-        create_url: str = None,
-        create_artifact_url: typing.Callable[[dict], str] = None,
-        upload_artifact_url: typing.Callable[[dict, str], str] = None,
-        finish_upload_url: typing.Callable[[dict], str] = None,
-        fileobjectname: str = "testartifact.zip",
-    ):
-        artifact_object = self.do_create_entry(create_url)
-
-        zip_buffer = io.BytesIO()
-        zip_buffer.name = fileobjectname
-        with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-            for file_name, data in [
-                ("1.txt", io.BytesIO(b"111")),
-                ("2.txt", io.BytesIO(b"222")),
-            ]:
-                zip_file.writestr(file_name, data.getvalue())
-        zip_size = len(zip_buffer.getvalue())
-        # reset pointer as it was never opened
-        zip_buffer.seek(0)
-        resumable_identifier = str(uuid.uuid4())
-
-        # register new chunks (1)
-        for chunk_nr in range(0, 1):
-            config = {
-                "filename": "",
-                "size": 0,
-                "file_no": 0,
-                "is_last": False,
-            }
-            config.update(
-                **{
-                    "filename": chunk_nr + 1,
-                    "size": zip_size,
-                    "file_no": chunk_nr + 1,
-                    "is_last": chunk_nr + 1 == 2,
-                }
-            )
-            req_chunk = self.client.post(
-                create_artifact_url(artifact_object),
-                config,
-                format="json",
-            )
-            self.assertEqual(req_chunk.status_code, status.HTTP_201_CREATED)
-            chunk_uuid = req_chunk.data.get("uuid")
-
-            chunkinfo = {
-                "resumableChunkSize": zip_size,
-                "resumableTotalSize": zip_size,
-                "resumableType": "application/zip",
-                "resumableIdentifier": resumable_identifier,
-                "resumableFilename": fileobjectname,
-                "resumableRelativePath": fileobjectname,
-                "resumableTotalChunks": 1,
-                "resumableChunkNumber": chunk_nr + 1,
-                "resumableCurrentChunkSize": 1,
-            }
-            chunkinfo.update(**{"file": zip_buffer})
-            chunk_upload_req = self.client.post(
-                upload_artifact_url(artifact_object, chunk_uuid),
-                chunkinfo,
-                format="multipart",
-            )
-            self.assertEqual(chunk_upload_req.status_code, status.HTTP_200_OK)
-            # self.assertTrue(False)
-
-        # finish uplaod
-        final_call_payload = {
-            "resumableChunkSize": zip_size,
-            "resumableTotalSize": zip_size,
-            "resumableType": "application/zip",
-            "resumableIdentifier": resumable_identifier,
-            "resumableFilename": fileobjectname,
-            "resumableRelativePath": fileobjectname,
-            "resumableTotalChunks": 1,
-            "resumableChunkNumber": 1,
-            "resumableCurrentChunkSize": 1,
-        }
-        final_upload_req = self.client.post(
-            finish_upload_url(artifact_object),
-            data=final_call_payload,
-        )
-        self.assertEqual(final_upload_req.status_code, status.HTTP_200_OK)

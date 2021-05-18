@@ -64,6 +64,26 @@ class IsMemberOfProjectAttributePermission(IsWorkspaceMemberBasePermission):
         return None
 
 
+class IsMemberOfPackageAttributePermission(IsWorkspaceMemberBasePermission):
+    """Grant access if the user is member of the Workspace of the package."""
+
+    def get_workspace_queryset(self, request, view, obj=None):
+        """Queryset for the workspace for the current package."""
+        if obj:
+            return Workspace.objects.filter(uuid=obj.package.project.workspace_id)
+
+        if hasattr(view, "get_parents_query_dict"):
+            package_suuid = view.get_parents_query_dict().get(
+                "package__short_uuid", None
+            )
+            if package_suuid is not None:
+                return Workspace.objects.filter(
+                    project__package__short_uuid=package_suuid
+                )
+
+        return None
+
+
 class IsMemberOfJobDefAttributePermission(IsWorkspaceMemberBasePermission):
     """Grant access if the user is member of the Workspace of the JobDef."""
 

@@ -328,7 +328,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
                 "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
             },
         )
-        self.create_artifact_url = lambda artifact_object: reverse(
+        self.create_chunk_url = lambda artifact_object: reverse(
             "artifact-artifactchunk-list",
             kwargs={
                 "version": "v1",
@@ -338,7 +338,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
                 "parent_lookup_artifact__short_uuid": artifact_object.get("short_uuid"),
             },
         )
-        self.upload_artifact_url = lambda artifact_object, chunk_uuid: reverse(
+        self.upload_chunk_url = lambda artifact_object, chunk_uuid: reverse(
             "artifact-artifactchunk-chunk",
             kwargs={
                 "version": "v1",
@@ -365,10 +365,10 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        self.do_artifact_upload(
+        self.do_file_upload(
             create_url=self.url,
-            create_artifact_url=self.create_artifact_url,
-            upload_artifact_url=self.upload_artifact_url,
+            create_chunk_url=self.create_chunk_url,
+            upload_chunk_url=self.upload_chunk_url,
             finish_upload_url=self.finish_upload_url,
             fileobjectname="test-artifact-admin.zip",
         )
