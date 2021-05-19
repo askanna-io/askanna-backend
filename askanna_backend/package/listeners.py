@@ -68,6 +68,9 @@ def package_upload_102_extract_jobs_from_askannayml(
         "environment",
         "push-target",
         "variables",
+        "worker",
+        "image",
+        "timezone",
     )
     project = obj.project
 
@@ -75,6 +78,11 @@ def package_upload_102_extract_jobs_from_askannayml(
 
     # create or find jobdef for each found jobs
     for job in jobs:
+        job_in_yaml = config.get(job)
+        if not isinstance(job_in_yaml, dict):
+            # no dict, so not a job definition
+            continue
+
         try:
             jd = JobDef.objects.get(name=job, project=project)
         except ObjectDoesNotExist:
@@ -95,7 +103,6 @@ def package_upload_102_extract_jobs_from_askannayml(
         old_rules.delete()
 
         # see wheter we need to add as scheduled job to it.
-        job_in_yaml = config.get(job)
         schedule = job_in_yaml.get("schedule")
         timezone = job_in_yaml.get("timezone")
         timezone = is_valid_timezone(timezone, settings.TIME_ZONE)

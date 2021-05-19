@@ -69,6 +69,10 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
         response = self.client.get(self.url, format="json", HTTP_RANGE="bytes=5-60")
         self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
 
+        # also try the range request for full file (larger than the file itself)
+        response = self.client.get(self.url, format="json", HTTP_RANGE="bytes=0-100000")
+        self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
+
         # no content check as the on the fly generated zipfile is always different
 
     def test_create_as_admin(self):
