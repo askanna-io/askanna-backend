@@ -122,8 +122,9 @@ class JobRunView(
             )
 
         askanna_config = get_config(config_file_path)
-        timezone = askanna_config.get("timezone", settings.TIME_ZONE)
-        timezone = is_valid_timezone(timezone)
+        global_timezone = is_valid_timezone(
+            askanna_config.get("timezone"), settings.TIME_ZONE
+        )
 
         # see whether we are on the right job
         yaml_config = askanna_config.get(jd.name)
@@ -140,8 +141,7 @@ class JobRunView(
             )
 
         job_commands = yaml_config.get("job")
-        job_timezone = yaml_config.get("timezone", settings.TIME_ZONE)
-        job_timezone = is_valid_timezone(job_timezone, timezone)
+        job_timezone = is_valid_timezone(yaml_config.get("timezone"), global_timezone)
         commands = []
         for command in job_commands:
             print_command = command.replace('"', '"')
