@@ -74,6 +74,8 @@ def package_upload_102_extract_jobs_from_askannayml(
     )
     project = obj.project
 
+    # the global timezone can be set, if not set we take the default set in our settings
+    global_timezone = is_valid_timezone(config.get("timezone"), settings.TIME_ZONE)
     jobs = list(set(config.keys()) - set(reserved_keys))
 
     # create or find jobdef for each found jobs
@@ -104,8 +106,9 @@ def package_upload_102_extract_jobs_from_askannayml(
 
         # see wheter we need to add as scheduled job to it.
         schedule = job_in_yaml.get("schedule")
-        timezone = job_in_yaml.get("timezone")
-        timezone = is_valid_timezone(timezone, settings.TIME_ZONE)
+        # the job timezone is determined by reading the timezone setting
+        # from the job, otherwise set it to the global timezone
+        job_timezone = is_valid_timezone(job_in_yaml.get("timezone"), global_timezone)
 
         if schedule:
             # parse the schedule
@@ -117,7 +120,7 @@ def package_upload_102_extract_jobs_from_askannayml(
                         "job": jd,
                         "raw_definition": schedule_line,
                         "cron_definition": cron_line,
-                        "cron_timezone": timezone,
+                        "cron_timezone": job_timezone,
                         "member": obj.member,
                     }
                     last_run = [
