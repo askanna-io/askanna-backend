@@ -193,8 +193,8 @@ def parse_cron_line(cron_line: str) -> str:
         if len(invalid_keys):
             return None
         cron_line = "{minute} {hour} {day} {month} {weekday}".format(
-            minute=cron_line.get("minute", "*"),
-            hour=cron_line.get("hour", "*"),
+            minute=cron_line.get("minute", "0"),
+            hour=cron_line.get("hour", "0"),
             day=cron_line.get("day", "*"),
             month=cron_line.get("month", "*"),
             weekday=cron_line.get("weekday", "*"),

@@ -50,7 +50,7 @@ You can then access the AskAnna Backend via: http://localhost:8000/admin
 
 It is possible to run the project on a remote Docker instance, while developing locally. [Mutagen](https://mutagen.io)
 is [integrated with docker-compose](https://mutagen.io/documentation/orchestration/compose) to allow you to use
-external hardware that can be in your network or in the cloud. File changes are propagated immediately. This method 
+external hardware that can be in your network or in the cloud. File changes are propagated immediately. This method
 also improves performance when running Docker in Mac OS.
 
 Read more on the [docker-compose.mutagen.yml](docker-compose.mutagen.yml) file.
