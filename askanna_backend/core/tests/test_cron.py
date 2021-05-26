@@ -41,6 +41,15 @@ class TestCron(unittest.TestCase):
         cron_line = {"minute": 1, "hour": "*", "month": 12, "weekday": 5}
         self.assertEqual(parse_cron_line(cron_line), "1 * * 12 5")
 
+        cron_line = {"weekday": 1}
+        self.assertEqual(parse_cron_line(cron_line), "0 0 * * 1")
+
+        cron_line = {"hour": "5", "month": 12, "weekday": "1-5"}
+        self.assertEqual(parse_cron_line(cron_line), "0 5 * 12 1-5")
+
+        cron_line = {"minute": "*", "day": 5, "month": 8}
+        self.assertEqual(parse_cron_line(cron_line), "* 0 5 8 *")
+
     def test_parse_cron_line_str_error(self):
         cron_line = "* 1 * 13 *"
         self.assertEqual(parse_cron_line(cron_line), None)
