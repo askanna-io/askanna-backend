@@ -64,13 +64,16 @@ def package_upload_102_extract_jobs_from_askannayml(
 
     # Within AskAnna, we have several variables reserved
     reserved_keys = (
+        "askanna",
         "cluster",
         "environment",
+        "image",
+        "job",
+        "project",
         "push-target",
+        "timezone",
         "variables",
         "worker",
-        "image",
-        "timezone",
     )
     project = obj.project
 
