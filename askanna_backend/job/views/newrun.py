@@ -50,6 +50,8 @@ class StartJobView(viewsets.GenericViewSet):
         try:
             assert isinstance(
                 request.data, dict
+            ) or isinstance(
+                request.data, list
             ), "JSON not valid, please check and try again"
         except AssertionError as e:
             raise ParseError(
