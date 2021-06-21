@@ -259,15 +259,12 @@ def start_jobrun_dockerized(self, jobrun_uuid):
         for k, v in pl.payload.items():
             if isinstance(v, (list, dict)):
                 # limit to 10.000 chars
-                payload_variables["PLV_" + k] = json.dumps(v)[:10000]  # deprecated
                 payload_variables[k] = json.dumps(v)[:10000]
             elif isinstance(v, (str)):
                 # limit to 10.000 chars
-                payload_variables["PLV_" + k] = v[:10000]  # deprecated
                 payload_variables[k] = v[:10000]
             else:
                 # we have a bool or number
-                payload_variables["PLV_" + k] = v  # deprecated
                 payload_variables[k] = v
 
     for variable, value in payload_variables.items():
