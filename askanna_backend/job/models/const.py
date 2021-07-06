@@ -10,6 +10,3 @@ JOB_STATUS = (
     ("FAILED", "FAILED"),
     ("SUCCESS", "SUCCESS"),
 )
-
-
-JOB_BACKENDS = (("job.celerybackend.CeleryJob", "Celery"),)

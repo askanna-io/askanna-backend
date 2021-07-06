@@ -1,34 +1,18 @@
 # -*- coding: utf-8 -*-
-import os
-import re
-
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from core.mixins import HybridUUIDMixin
-from core.utils import get_config, is_valid_timezone
 from core.views import PermissionByActionMixin, SerializerByActionMixin
 from job.filters import RunFilter
-from job.models import JobRun
+from job.models import JobRun, RedisLogQueue
 from job.permissions import IsMemberOfJobDefAttributePermission
 from job.serializers import JobRunSerializer, JobRunUpdateSerializer
 from users.models import MSP_WORKSPACE
-
-
-def string_expand_variables(strings: list, prefix: str = "PLV_") -> list:
-    var_matcher = re.compile(r"\{\{ (?P<MYVAR>[\w\-]+) \}\}")
-    for idx, line in enumerate(strings):
-        matches = var_matcher.findall(line)
-        for m in matches:
-            line = line.replace("{{ " + m + " }}", "${" + prefix + m.strip() + "}")
-        strings[idx] = line
-    return strings
 
 
 class JobRunView(
@@ -89,7 +73,7 @@ class JobRunView(
     @action(
         detail=True,
         methods=["get"],
-        name="JobRun Manifest",
+        name="Run Manifest",
     )
     def manifest(self, request, short_uuid, **kwargs):
         instance = self.get_object()
@@ -100,16 +84,9 @@ class JobRunView(
         pr = jd.project
         pl = jr.payload
 
-        # FIXME: when versioning is in, point to version in JobRun
         package = jr.package
-
-        # compose the path to the package in the project
-        # This points to the blob location where the package is
-        package_path = os.path.join(settings.BLOB_ROOT, str(package.uuid))
-
-        # read config from askanna.yml
-        config_file_path = os.path.join(package_path, "askanna.yml")
-        if not os.path.exists(config_file_path):
+        askanna_config = package.get_askanna_config()
+        if askanna_config is None:
             # askanna.yml not found
             return HttpResponse(
                 render_to_string(
@@ -121,14 +98,9 @@ class JobRunView(
                 )
             )
 
-        askanna_config = get_config(config_file_path)
-        global_timezone = is_valid_timezone(
-            askanna_config.get("timezone"), settings.TIME_ZONE
-        )
-
         # see whether we are on the right job
-        yaml_config = askanna_config.get(jd.name)
-        if not yaml_config:
+        job_config = askanna_config.get(jd.name)
+        if not job_config:
             # {jd.name} is not specified in this askanna.yml, cannot start job
             return HttpResponse(
                 render_to_string(
@@ -140,16 +112,10 @@ class JobRunView(
                 )
             )
 
-        job_commands = yaml_config.get("job")
-        job_timezone = is_valid_timezone(yaml_config.get("timezone"), global_timezone)
+        job_commands = job_config.get("job")
         commands = []
         for command in job_commands:
             print_command = command.replace('"', '"')
-            command = command.replace("{{ PAYLOAD_PATH }}", "$PAYLOAD_PATH")
-
-            # also substitute variables we get from the PAYLOAD
-            _command = string_expand_variables([command])
-            command = _command[0]
             commands.append(
                 {
                     "command": command,
@@ -165,7 +131,6 @@ class JobRunView(
                 "jd": jd,
                 "jr": jr,
                 "pl": pl,
-                "TZ": job_timezone,
             },
         )
 
@@ -174,11 +139,16 @@ class JobRunView(
     @action(
         detail=True,
         methods=["get"],
-        name="JobRun Log",
+        name="Run Log",
     )
     def log(self, request, short_uuid, **kwargs):
         instance = self.get_object()
-        stdout = instance.output.stdout
+        if instance.is_finished:
+            stdout = instance.output.stdout
+        else:
+            logqueue = RedisLogQueue(instance.short_uuid)
+            stdout = logqueue.get()
+
         limit = request.query_params.get("limit", 100)
         offset = request.query_params.get("offset", 0)
 
@@ -222,11 +192,12 @@ class JobRunView(
                     host=host,
                     path=path,
                 )
+            return Response(response_json, status=status.HTTP_206_PARTIAL_CONTENT)
 
         return Response(response_json)
 
 
-class JobJobRunView(HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class JobJobRunView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer

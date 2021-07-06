@@ -17,7 +17,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-list",
+            "runinfo-list",
             kwargs={"version": "v1"},
         )
 
@@ -220,15 +220,15 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-detail",
+            "runinfo-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
         self.url_run2 = reverse(
-            "jobrun-detail",
+            "runinfo-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid},
         )
         self.url_other_workspace = reverse(
-            "jobrun-detail",
+            "runinfo-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
         )
 
@@ -279,6 +279,10 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         self.assertTrue(
             response.data.get("short_uuid") == self.jobruns["run2"].short_uuid
         )
+        self.assertEqual(
+            response.data.get("result", {}).get("original_name"), "someresult.txt"
+        )
+        self.assertEqual(response.data.get("result", {}).get("extension"), "txt")
 
     def test_detail_as_member_changed_membername(self):
         """
@@ -414,7 +418,7 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-manifest",
+            "runinfo-manifest",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
 
@@ -478,7 +482,6 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("AskAnna could not find the file:", str(response.content))
 
@@ -490,7 +493,7 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         url = reverse(
-            "jobrun-manifest",
+            "runinfo-manifest",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
         )
 
@@ -498,7 +501,6 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
             url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("AskAnna could not start the job", str(response.content))
 
@@ -510,7 +512,7 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         url = reverse(
-            "jobrun-manifest",
+            "runinfo-manifest",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run4"].short_uuid},
         )
 
@@ -518,7 +520,6 @@ class TestJobRunManifestAPI(BaseJobTestDef, APITestCase):
             url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("python my_script.py", str(response.content))
 
@@ -531,7 +532,7 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-log",
+            "runinfo-log",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
 
@@ -607,7 +608,7 @@ class TestJobRunResultAPI(BaseJobTestDef, APITestCase):
     def setUp(self):
         self.url = reverse(
             "shortcut-jobrun-result",
-            kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
+            kwargs={"short_uuid": self.jobruns["run2"].short_uuid},
         )
 
     def test_retrieve_as_admin(self):
@@ -950,7 +951,7 @@ class TestJobRunPayloadAPI(TestJobPayloadAPI):
         )
         self.setUpPayload()
         self.url = reverse(
-            "jobrun-payload-list",
+            "run-payload-list",
             kwargs={
                 "version": "v1",
                 "parent_lookup_jobrun__short_uuid": self.jobruns[
@@ -1012,8 +1013,8 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         )
         # get the payload of this jobrun
 
-        jobrun_payload_list_url = reverse(
-            "jobrun-payload-list",
+        run_payload_list_url = reverse(
+            "run-payload-list",
             kwargs={
                 "version": "v1",
                 "parent_lookup_jobrun__short_uuid": self.jobruns[
@@ -1022,7 +1023,7 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
             },
         )
         response = self.client.get(
-            jobrun_payload_list_url, format="json", HTTP_HOST="testserver"
+            run_payload_list_url, format="json", HTTP_HOST="testserver"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.payload = JobPayload.objects.get(short_uuid=response.data[0]["short_uuid"])
@@ -1105,15 +1106,15 @@ class TestJobRunDetailUpdateAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-detail",
+            "runinfo-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
         self.url_run2 = reverse(
-            "jobrun-detail",
+            "runinfo-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid},
         )
         self.url_other_workspace = reverse(
-            "jobrun-detail",
+            "runinfo-detail",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
         )
 
@@ -1151,9 +1152,9 @@ class TestJobRunDetailUpdateAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.data.get("name"), "new name")
         self.assertEqual(response.data.get("description"), "new description")
-        # make sure that with this update of name and description we don't modify the
-        # modified datetime of the run.
-        self.assertEqual(
+        # the modified time of the run can be changed as changing name/description will update the
+        # modified field.
+        self.assertNotEqual(
             date_parse(response.data.get("modified")),
             self.jobruns["run1"].modified,
         )

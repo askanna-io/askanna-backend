@@ -2,3 +2,19 @@
 my-test-job:
   job:
     - python my_script.py
+
+my-second-test-job:
+  job:
+    - python my_script.py
+  environment:
+    image: python:3-slim
+  schedule:
+    - "0 12 * * *"
+    - hour: 5
+      day: 5
+      month: 5
+    - hour: 8
+      century: 2
+    - "some rubbish, no cron"
+
+a-non-job: "some random string"

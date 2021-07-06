@@ -13,6 +13,10 @@ from core.views import (
     BaseUploadFinishMixin,
     SerializerByActionMixin,
 )
+from job.permissions import (
+    IsMemberOfProjectAttributePermission,
+    IsMemberOfPackageAttributePermission,
+)
 from package.models import Package, ChunkedPackagePart
 from package.serializers import (
     PackageSerializer,
@@ -21,10 +25,7 @@ from package.serializers import (
     PackageCreateSerializer,
 )
 from package.signals import package_upload_finish
-from job.permissions import (
-    IsMemberOfProjectAttributePermission,
-    IsMemberOfPackageAttributePermission,
-)
+from users.models import MSP_WORKSPACE
 
 
 class PackageViewSet(
@@ -51,6 +52,25 @@ class PackageViewSet(
     serializer_classes_by_action = {
         "post": PackageCreateSerializer,
     }
+
+    def get_queryset(self):
+        """
+        Filter only the packages where the user has access to.
+        Meaning all packages within projects/workspaces the user has joined
+        Only for the list action, the limitation for other cases is covered with permissions
+        """
+        if self.action == "list":
+            user = self.request.user
+            member_of_workspaces = user.memberships.filter(
+                object_type=MSP_WORKSPACE
+            ).values_list("object_uuid")
+
+            return (
+                super()
+                .get_queryset()
+                .filter(project__workspace__pk__in=member_of_workspaces)
+            )
+        return super().get_queryset()
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return obj.filename

@@ -1,11 +1,12 @@
+# -*- coding: utf-8 -*-
 import hashlib
 import io
 import re
 
-import pytest
 from django.conf import settings
 from django.urls import reverse, re_path
 from django.views.static import serve
+import pytest
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -22,7 +23,7 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-artifact-list",
+            "run-artifact-list",
             kwargs={
                 "version": "v1",
                 "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
@@ -89,7 +90,7 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-artifact-detail",
+            "run-artifact-detail",
             kwargs={
                 "version": "v1",
                 "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
@@ -108,7 +109,7 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        print(response.content)
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_retrieve_as_member(self):
@@ -322,7 +323,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
 
     def setUp(self):
         self.url = reverse(
-            "jobrun-artifact-list",
+            "run-artifact-list",
             kwargs={
                 "version": "v1",
                 "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
@@ -350,7 +351,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
             },
         )
         self.finish_upload_url = lambda artifact_object: reverse(
-            "jobrun-artifact-finish-upload",
+            "run-artifact-finish-upload",
             kwargs={
                 "version": "v1",
                 "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,

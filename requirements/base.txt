@@ -49,5 +49,8 @@ django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted
 croniter~=1.0.12
 
 # detect fileformats
-python-magic~=0.4.22 # https://pypi.org/project/python-magic/
+python-magic==0.4.24 # https://pypi.org/project/python-magic/
 filetype~=1.0.7 # https://pypi.org/project/filetype/#history
+
+# parse templates non-django
+Jinja2~=3.0.0

@@ -17,14 +17,21 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
                 "short_uuid": self.jobruns["run1"].short_uuid,
             },
         )
+        self.register_upload_url = reverse(
+            "run-result-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_run__short_uuid": self.jobruns["run1"].short_uuid,
+            },
+        )
         self.create_chunk_url = lambda artifact_object: reverse(
             "result-resultchunk-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_joboutput__jobrun__short_uuid": self.jobruns[
+                "parent_lookup_runresult__run__short_uuid": self.jobruns[
                     "run1"
                 ].short_uuid,
-                "parent_lookup_joboutput__short_uuid": artifact_object.get(
+                "parent_lookup_runresult__short_uuid": artifact_object.get(
                     "short_uuid"
                 ),
             },
@@ -33,29 +40,23 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
             "result-resultchunk-chunk",
             kwargs={
                 "version": "v1",
-                "parent_lookup_joboutput__jobrun__short_uuid": self.jobruns[
+                "parent_lookup_runresult__run__short_uuid": self.jobruns[
                     "run1"
                 ].short_uuid,
-                "parent_lookup_joboutput__short_uuid": artifact_object.get(
+                "parent_lookup_runresult__short_uuid": artifact_object.get(
                     "short_uuid"
                 ),
                 "pk": chunk_uuid,
             },
         )
         self.finish_upload_url = lambda artifact_object: reverse(
-            "jobrun-result-finish-upload",
+            "run-result-finish-upload",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.jobruns["run1"].short_uuid,
+                "parent_lookup_run__short_uuid": self.jobruns["run1"].short_uuid,
                 "short_uuid": artifact_object.get("short_uuid"),
             },
         )
-
-    def do_create_entry(self, create_url, filename=None, filesize=None):
-        return {
-            "uuid": self.jobruns["run1"].output.uuid,
-            "short_uuid": self.jobruns["run1"].output.short_uuid,
-        }
 
     def check_retrieve_output(self):
 
@@ -83,7 +84,7 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         self.do_file_upload(
-            create_url=None,
+            create_url=self.register_upload_url,
             create_chunk_url=self.create_chunk_url,
             upload_chunk_url=self.upload_chunk_url,
             finish_upload_url=self.finish_upload_url,
@@ -92,12 +93,12 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
         self.check_retrieve_output()
 
 
-class TestResultDetaiAPI(BaseJobTestDef, APITestCase):
+class TestResultDetailAPI(BaseJobTestDef, APITestCase):
     def setUp(self):
         self.url = reverse(
             "shortcut-jobrun-result",
             kwargs={
-                "short_uuid": self.jobruns["run1"].short_uuid,
+                "short_uuid": self.jobruns["run2"].short_uuid,
             },
         )
 
@@ -126,7 +127,7 @@ class TestResultDetaiAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.content, b"")
+        self.assertEqual(b"".join(response.streaming_content), b"some result content")
 
     def test_retrieve_as_member(self):
         """
@@ -141,7 +142,7 @@ class TestResultDetaiAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.content, b"")
+        self.assertEqual(b"".join(response.streaming_content), b"some result content")
 
     def test_retrieve_as_nonmember(self):
         """

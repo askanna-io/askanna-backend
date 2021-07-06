@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
+import os
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from rest_framework import serializers
 
 from job.models import JobRun, JobPayload
@@ -16,14 +19,17 @@ class JobRunSerializer(serializers.ModelSerializer):
     package = serializers.SerializerMethodField("get_package")
     project = serializers.SerializerMethodField("get_project")
     owner = serializers.SerializerMethodField("get_user")
-    runner = serializers.SerializerMethodField("get_runner")
 
     payload = serializers.SerializerMethodField("get_payload")
+    result = serializers.SerializerMethodField("get_result")
 
     jobdef = serializers.SerializerMethodField("get_jobdef")
 
     metricsmeta = serializers.SerializerMethodField("get_metricsmeta")
     variablesmeta = serializers.SerializerMethodField("get_variablesmeta")
+
+    duration = serializers.SerializerMethodField("get_duration")
+    environment = serializers.SerializerMethodField("get_environment")
 
     def get_metricsmeta(self, instance):
         try:
@@ -65,25 +71,59 @@ class JobRunSerializer(serializers.ModelSerializer):
             "keys": instance.variable_keys,
         }
 
+    def get_duration(self, instance):
+        if not instance.duration or not instance.is_finished:
+            # calculate the duration because we are still running
+            if not instance.started:
+                return 0
+            return (timezone.now() - instance.started).seconds
+        return instance.duration
+
+    def get_environment(self, instance):
+        environment = {
+            "name": instance.environment_name,
+            "description": None,
+            "label": None,
+            "image": None,
+            "timezone": instance.timezone,
+        }
+        if instance.run_image:
+            environment["image"] = {
+                "name": instance.run_image.name,
+                "tag": instance.run_image.tag,
+                "digest": instance.run_image.digest,
+            }
+        return environment
+
     def get_payload(self, instance):
         payload = JobPayloadSerializer(instance.payload, many=False)
         return payload.data
 
+    def get_result(self, instance):
+        try:
+            result = instance.result
+        except ObjectDoesNotExist:
+            return None
+
+        extension = None
+        if result.name:
+            filename, extension = os.path.splitext(result.name)
+            if extension == "":
+                extension = filename
+            if extension.startswith("."):
+                extension = extension[1:]
+
+        return {
+            "size": result.size,
+            "lines": result.lines,
+            "original_name": result.name,
+            "extension": extension,
+            "mimetype": result.mime_type,
+        }
+
     def get_jobdef(self, instance):
         jobdef = instance.jobdef
         return jobdef.relation_to_json
-
-    def get_runner(self, instance):
-        # FIXME: replace with actual values
-        return {
-            "name": "Python 3.7",
-            "uuid": "",
-            "short_uuid": "1234-5678-9012-3456",
-            "cpu_time": (instance.modified - instance.created).seconds,
-            "cpu_cores": 1,
-            "memory_mib": 70,
-            "job_status": 0,
-        }
 
     def get_artifact(self, instance):
         try:
@@ -135,6 +175,10 @@ class JobRunSerializer(serializers.ModelSerializer):
             "metric_labels",
             "variable_keys",
             "variable_labels",
+            "deleted",
+            "environment_name",
+            "timezone",
+            "run_image",
         ]
 
 
@@ -145,6 +189,6 @@ class JobRunUpdateSerializer(JobRunSerializer):
         """
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
-        instance.save(update_fields=["name", "description"])
+        instance.save(update_fields=["name", "description", "modified"])
         instance.refresh_from_db()
         return instance

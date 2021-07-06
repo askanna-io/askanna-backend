@@ -49,9 +49,7 @@ class StartJobView(viewsets.GenericViewSet):
         # validate whether request.data is really a json structure
         try:
             assert isinstance(
-                request.data, dict
-            ) or isinstance(
-                request.data, list
+                request.data, (dict, list)
             ), "JSON not valid, please check and try again"
         except AssertionError as e:
             raise ParseError(
@@ -93,7 +91,7 @@ class StartJobView(viewsets.GenericViewSet):
         We accept any data that is sent in request.data
         """
         job = self.get_object()
-        job_pl = self.handle_payload(request=request, job=job)
+        payload = self.handle_payload(request=request, job=job)
 
         # TODO: Determine wheter we need the latest or pinned package
         # Fetch the latest package found in the job.project
@@ -107,7 +105,7 @@ class StartJobView(viewsets.GenericViewSet):
             "description": request.query_params.get("description"),
             "status": "PENDING",
             "jobdef": job,
-            "payload": job_pl,
+            "payload": payload,
             "package": package,
             "trigger": self.get_trigger_source(request),
             "owner": request.user,
@@ -125,6 +123,7 @@ class StartJobView(viewsets.GenericViewSet):
                 "created": run.created,
                 "updated": run.modified,
                 "finished": None,
+                "duration": 0,
                 "job": run.jobdef.relation_to_json,
                 "project": run.jobdef.project.relation_to_json,
                 "workspace": run.jobdef.project.workspace.relation_to_json,

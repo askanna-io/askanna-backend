@@ -1,5 +1,6 @@
-import pytest
+# -*- coding: utf-8 -*-
 from django.urls import reverse
+import pytest
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -14,7 +15,12 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("job-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "job-list",
+            kwargs={
+                "version": "v1",
+            },
+        )
 
     def test_list_as_admin(self):
         """
@@ -23,7 +29,10 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
@@ -34,9 +43,12 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        self.assertEqual(len(response.data), 5)
 
     def test_list_as_nonmember(self):
         """
@@ -45,7 +57,10 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
@@ -53,7 +68,10 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
         """
         We can list job as member of a workspace
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -78,7 +96,10 @@ class TestProjectJobListAPI(TestJobListAPI):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
@@ -89,7 +110,10 @@ class TestProjectJobListAPI(TestJobListAPI):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
@@ -112,7 +136,10 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
 
@@ -123,7 +150,10 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
 
@@ -134,14 +164,20 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_anonymous(self):
         """
         We can NOT get details of a jobrun as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -171,7 +207,10 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
     def setUp(self):
         self.url = reverse(
             "job-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={
+                "version": "v1",
+                "short_uuid": self.jobdef.short_uuid,
+            },
         )
 
     def test_change_as_admin(self):
@@ -186,7 +225,11 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             "description": "test",
         }
 
-        response = self.client.patch(self.url, change_job_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_job_payload,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
@@ -205,7 +248,11 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             "description": "test",
         }
 
-        response = self.client.patch(self.url, change_job_payload, format="json",)
+        response = self.client.patch(
+            self.url,
+            change_job_payload,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue("short_uuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
@@ -219,12 +266,18 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
         token = self.users["user_nonmember"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_change_as_anonymous(self):
         """
         We can NOT get changes of a jobrun as anonymous
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

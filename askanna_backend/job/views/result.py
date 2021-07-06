@@ -2,8 +2,9 @@
 import os
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from rest_framework import status, viewsets, mixins
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -12,18 +13,22 @@ from core.views import (
     BaseUploadFinishMixin,
 )
 from job.models import (
-    ChunkedJobOutputPart,
-    JobOutput,
     JobRun,
+    RunResult,
+    ChunkedRunResultPart,
 )
-from job.permissions import IsMemberOfJobDefAttributePermission
+from job.permissions import (
+    IsMemberOfJobDefAttributePermission,
+    IsMemberOfRunResultAttributePermission,
+    IsMemberOfRunAttributePermission,
+)
 from job.serializers import (
-    ChunkedJobOutputPartSerializer,
-    JobOutputSerializer,
     JobRunSerializer,
+    RunResultSerializer,
+    ChunkedRunResultPartSerializer,
 )
 from job.signals import result_upload_finish
-from job.models.utils import stream
+from job.utils import stream
 from users.models import MSP_WORKSPACE
 
 
@@ -62,30 +67,41 @@ class BaseRunResultView(
 class RunResultView(BaseRunResultView):
     def retrieve(self, request, short_uuid, *args, **kwargs):
         run = self.get_object()
-        # get the requested content-type header, if not set from database
-        content_type = request.headers.get("content-type", run.output.mime_type)
-        size = run.output.size
+        try:
+            run.result.uuid
+        except ObjectDoesNotExist:
+            return Response(None, status=status.HTTP_404_NOT_FOUND)
 
-        if not os.path.exists(run.output.stored_path):
+        # get the requested content-type header, if not set from database
+        content_type = request.headers.get("content-type", run.result.mime_type)
+        size = run.result.size
+
+        if not os.path.exists(run.result.stored_path):
             # the output file doesn't exist, return blank
-            return Response(None, status=status.HTTP_200_OK)
+            return Response(None, status=status.HTTP_404_NOT_FOUND)
 
         return stream(
-            request, run.output.stored_path, content_type=content_type, size=size
+            request, run.result.stored_path, content_type=content_type, size=size
         )
 
     def options(self, request, *args, **kwargs):
         """
         Handler method for HTTP 'OPTIONS' request.
         """
-        jobrun = self.get_object()
-        content_type = jobrun.output.mime_type
+        run = self.get_object()
+
+        try:
+            run.result.uuid
+        except ObjectDoesNotExist:
+            return Response(None, status=status.HTTP_404_NOT_FOUND)
+
+        content_type = run.result.mime_type
         resp = Response(
             "",
             status=status.HTTP_200_OK,
             content_type=content_type,
         )
-        resp["Content-Length"] = jobrun.output.size
+        resp["Content-Length"] = run.result.size
         resp["Accept-Ranges"] = "bytes"
         return resp
 
@@ -106,6 +122,7 @@ class RunStatusView(BaseRunResultView):
             "name": run.name,
             "created": run.created,
             "updated": run.modified,
+            "duration": run.started and (timezone.now() - run.started).seconds or 0,
             "job": run.jobdef.relation_to_json,
             "project": run.jobdef.project.relation_to_json,
             "workspace": run.jobdef.project.workspace.relation_to_json,
@@ -128,25 +145,49 @@ class RunStatusView(BaseRunResultView):
 
         if job_status == "finished":
             base_status["next_url"] = finished_next_url
-            base_status["finished"] = base_status["updated"]
+            base_status["finished"] = run.finished
+            base_status["duration"] = run.duration
 
         return Response(base_status)
 
 
-class RunOutputView(
+class RunResultCreateView(
     BaseUploadFinishMixin,
     NestedViewSetMixin,
+    mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = JobOutput.objects.all()
+    queryset = RunResult.objects.all()
     lookup_field = "short_uuid"
-    serializer_class = JobOutputSerializer
-    # FIXME: implement permission class that checks for access to this joboutput in workspace>project->job.
-    permission_classes = [IsAuthenticated]
+    serializer_class = RunResultSerializer
+    permission_classes = [IsMemberOfRunAttributePermission]
 
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = result_upload_finish
     upload_finished_message = "Job result uploaded"
+
+    # overwrite create row, we need to add the jobrun
+    def create(self, request, *args, **kwargs):
+        run = JobRun.objects.get(
+            short_uuid=self.kwargs.get("parent_lookup_run__short_uuid")
+        )
+
+        data = request.data.copy()
+        data.update(
+            **{
+                "name": data.get("filename"),
+                "job": str(run.jobdef.pk),
+                "run": str(run.pk),
+                "owner": str(request.user.uuid),
+            }
+        )
+        serializer = RunResultSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return "result_{}.output".format(obj.uuid.hex)
@@ -161,15 +202,14 @@ class RunOutputView(
         instance_obj.save(update_fields=update_fields)
 
 
-class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
+class ChunkedJobResultViewSet(BaseChunkedPartViewSet):
     """
     Allow chunked uploading of jobresult
     """
 
-    queryset = ChunkedJobOutputPart.objects.all()
-    serializer_class = ChunkedJobOutputPartSerializer
-    # FIXME: implement permission class that checks for access to this chunk in workspace>project->job->joboutput.
-    permission_classes = [IsAuthenticated]
+    queryset = ChunkedRunResultPart.objects.all()
+    serializer_class = ChunkedRunResultPartSerializer
+    permission_classes = [IsMemberOfRunResultAttributePermission]
 
     def initial(self, request, *args, **kwargs):
         """
@@ -177,10 +217,10 @@ class ChunkedJobOutputViewSet(BaseChunkedPartViewSet):
         """
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
-        short_uuid = parents.get("joboutput__short_uuid")
+        short_uuid = parents.get("runresult__short_uuid")
         request.data.update(
             **{
-                "joboutput": JobOutput.objects.get(
+                "runresult": RunResult.objects.get(
                     short_uuid=short_uuid,
                 ).pk
             }

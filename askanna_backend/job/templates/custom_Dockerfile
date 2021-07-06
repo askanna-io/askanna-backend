@@ -1,0 +1,17 @@
+ARG IMAGE=python:3-slim
+FROM $IMAGE
+LABEL maintainer="AskAnna"
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG DEBCONF_NONINTERACTIVE_SEEN=true
+
+RUN mkdir -p /build
+COPY . /build
+WORKDIR /build
+RUN /bin/sh custom_askannainstaller.sh
+
+# move workdir back to root
+WORKDIR /
+
+# remove /build directory
+RUN rm -rf /build
