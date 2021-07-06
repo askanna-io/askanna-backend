@@ -97,12 +97,12 @@ fi
 {% endfor %}
 # end userland
 
-echo "Saving result and artifact..."
+echo "Saving artifact and result..."
 
 # forcefull going back into code directory
 cd /code
-run_or_fail_systemcommand "askanna-run-utils push-result"
 run_or_fail_systemcommand "askanna-run-utils push-artifact"
+run_or_fail_systemcommand "askanna-run-utils push-result"
 run_or_fail_systemcommand "askanna-run-utils push-metrics --force"
 run_or_fail_systemcommand "askanna-run-utils push-variables --force"
 
