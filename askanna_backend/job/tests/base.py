@@ -1,15 +1,21 @@
 # -*- coding: utf-8 -*-
+import datetime
+import io
+
 from django.conf import settings
 from django.db.models import signals
 
 
 from core.tests.base import BaseUploadTestMixin  # noqa
 from job.models import (
+    JobArtifact,
     JobDef,
     JobRun,
+    JobOutput,
     JobVariable,
-    JobArtifact,
+    RunImage,
     RunMetrics,
+    RunResult,
     RunVariables,
 )
 from project.models import Project
@@ -303,33 +309,39 @@ class BaseJobTestDef:
             name="my-test-job3",
             project=cls.project2,
         )
+        cls.run_image = RunImage.objects.create(
+            name="TestImage", tag="latest", digest="unknown"
+        )
         cls.jobruns = {
             "run1": JobRun.objects.create(
                 name="run1",
                 description="test run1",
                 package=cls.package,
                 jobdef=cls.jobdef,
-                status="SUBMITTED",
+                status="COMPLETED",
                 owner=cls.users["user"],
                 member=cls.memberA_member,
+                run_image=cls.run_image,
             ),
             "run2": JobRun.objects.create(
                 name="run2",
                 description="test run2",
                 package=cls.package,
                 jobdef=cls.jobdef,
-                status="SUBMITTED",
+                status="COMPLETED",
                 owner=cls.users["user"],
                 member=cls.memberA_member,
+                run_image=cls.run_image,
             ),
             "run3": JobRun.objects.create(
                 name="run3",
                 description="test run3",
                 package=cls.package2,
                 jobdef=cls.jobdef3,
-                status="SUBMITTED",
+                status="IN_PROGRESS",
                 owner=cls.users["user"],
                 member=cls.memberA_member2,
+                run_image=cls.run_image,
             ),
             "run4": JobRun.objects.create(
                 name="run4",
@@ -339,6 +351,7 @@ class BaseJobTestDef:
                 status="SUBMITTED",
                 owner=cls.users["user"],
                 member=cls.memberA_member2,
+                run_image=cls.run_image,
             ),
         }
         cls.runmetrics = {
@@ -352,6 +365,50 @@ class BaseJobTestDef:
                 jobrun=cls.jobruns["run3"], metrics=metric_response_bad, count=2
             ),
         }
+        cls.runoutput = {
+            "run1": JobOutput.objects.get(jobrun=cls.jobruns.get("run1")),
+            "run2": JobOutput.objects.get(jobrun=cls.jobruns.get("run2")),
+            "run3": JobOutput.objects.get(jobrun=cls.jobruns.get("run3")),
+        }
+
+        cls.runoutput["run1"].stdout = [
+            [1, datetime.datetime.utcnow().isoformat(), "some test stdout 1"],
+            [2, datetime.datetime.utcnow().isoformat(), "some test stdout 2"],
+            [3, datetime.datetime.utcnow().isoformat(), "some test stdout 3"],
+            [3, datetime.datetime.utcnow().isoformat(), "some test stdout 4"],
+            [5, datetime.datetime.utcnow().isoformat(), "some test stdout 5"],
+            [6, datetime.datetime.utcnow().isoformat(), "some test stdout 6"],
+        ]
+        cls.runoutput["run2"].stdout = [
+            [1, datetime.datetime.utcnow().isoformat(), "some test stdout 1"],
+            [2, datetime.datetime.utcnow().isoformat(), "some test stdout 2"],
+            [3, datetime.datetime.utcnow().isoformat(), "some test stdout 3"],
+            [3, datetime.datetime.utcnow().isoformat(), "some test stdout 4"],
+            [5, datetime.datetime.utcnow().isoformat(), "some test stdout 5"],
+            [6, datetime.datetime.utcnow().isoformat(), "some test stdout 6"],
+        ]
+        cls.runoutput["run1"].save(update_fields=["stdout"])
+        cls.runoutput["run2"].save(update_fields=["stdout"])
+
+        cls.runoutput.get("run3").log(
+            "some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat()
+        )
+        cls.runoutput.get("run3").log("some test stdout 2")
+        cls.runoutput.get("run3").log("some test stdout 3")
+        cls.runoutput.get("run3").log("some test stdout 4", print_log=True)
+        cls.runoutput.get("run3").log("some test stdout 5", print_log=True)
+        cls.runoutput.get("run3").log("some test stdout 6", print_log=True)
+        cls.runoutput.get("run3").log("some test stdout 7", print_log=True)
+        cls.runoutput.get("run3").log("some test stdout 8", print_log=True)
+        cls.runoutput.get("run3").log("some test stdout 9", print_log=True)
+
+        cls.runresults = {
+            "run2": RunResult.objects.create(
+                name="someresult.txt",
+                run=cls.jobruns["run2"],
+            ),
+        }
+        cls.runresults["run2"].write(io.BytesIO(b"some result content"))
 
         cls.tracked_variables = {
             "run1": RunVariables.objects.get(jobrun=cls.jobruns["run1"]),

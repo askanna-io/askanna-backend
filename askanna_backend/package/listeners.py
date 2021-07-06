@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from zipfile import ZipFile
 
@@ -5,14 +6,8 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
-import yaml
 
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
-
-from core.utils import parse_cron_schedule, is_valid_timezone
+from core.config import AskAnnaConfig
 from job.models import JobDef, ScheduledJob
 from package.models import Package
 from package.signals import package_upload_finish
@@ -57,41 +52,24 @@ def package_upload_102_extract_jobs_from_askannayml(
 
         askanna_yml = zipObj.read(list(found_askanna_yml)[0])
 
-    try:
-        config = yaml.load(askanna_yml, Loader=Loader)
-    except yaml.scanner.ScannerError:
+    # parse the askannaconfig
+    configyml = AskAnnaConfig.from_stream(askanna_yml)
+    if configyml is None:
+        # FIXME: we could not parse the config, report somewhere
         return
-
-    # Within AskAnna, we have several variables reserved
-    reserved_keys = (
-        "askanna",
-        "cluster",
-        "environment",
-        "image",
-        "job",
-        "project",
-        "push-target",
-        "timezone",
-        "variables",
-        "worker",
-    )
     project = obj.project
 
-    # the global timezone can be set, if not set we take the default set in our settings
-    global_timezone = is_valid_timezone(config.get("timezone"), settings.TIME_ZONE)
-    jobs = list(set(config.keys()) - set(reserved_keys))
-
     # create or find jobdef for each found jobs
-    for job in jobs:
-        job_in_yaml = config.get(job)
-        if not isinstance(job_in_yaml, dict):
-            # no dict, so not a job definition
-            continue
-
+    for _, job in configyml.jobs.items():
         try:
-            jd = JobDef.objects.get(name=job, project=project)
+            jd = JobDef.objects.get(name=job.name, project=project)
         except ObjectDoesNotExist:
-            jd = JobDef.objects.create(name=job, project=project)
+            jd = JobDef.objects.create(name=job.name, project=project)
+
+        # update the jobdef.environment_image and timezone
+        jd.environment_image = job.environment.image
+        jd.timezone = job.timezone
+        jd.save(update_fields=["environment_image", "timezone"])
 
         # check what existing schedules where and store the last_run and raw_definition
         old_rules = ScheduledJob.objects.filter(job=jd)
@@ -107,34 +85,24 @@ def package_upload_102_extract_jobs_from_askannayml(
         # clear existing schedules
         old_rules.delete()
 
-        # see wheter we need to add as scheduled job to it.
-        schedule = job_in_yaml.get("schedule")
-        # the job timezone is determined by reading the timezone setting
-        # from the job, otherwise set it to the global timezone
-        job_timezone = is_valid_timezone(job_in_yaml.get("timezone"), global_timezone)
-
-        if schedule:
-            # parse the schedule
-            cron_format = parse_cron_schedule(schedule)
-            for schedule_line, cron_line in cron_format:
-                if cron_line is not None:
-                    # create scheduled job
-                    new_schedule_def = {
-                        "job": jd,
-                        "raw_definition": schedule_line,
-                        "cron_definition": cron_line,
-                        "cron_timezone": job_timezone,
-                        "member": obj.member,
-                    }
-                    last_run = [
-                        old.get("last_run")
-                        for old in old_schedules
-                        if old.get("raw_definition") == schedule_line
-                    ]
-                    if len(last_run) > 0:
-                        new_schedule_def["last_run"] = last_run[0]
-                    scheduled_job = ScheduledJob.objects.create(**new_schedule_def)
-                    scheduled_job.update_next()
+        for schedule in job.schedules:
+            # create scheduled job
+            new_schedule_def = {
+                "job": jd,
+                "raw_definition": schedule.raw_definition,
+                "cron_definition": schedule.cron_definition,
+                "cron_timezone": schedule.cron_timezone,
+                "member": obj.member,
+            }
+            last_run = [
+                old.get("last_run")
+                for old in old_schedules
+                if old.get("raw_definition") == schedule.raw_definition
+            ]
+            if len(last_run) > 0:
+                new_schedule_def["last_run"] = last_run[0]
+            scheduled_job = ScheduledJob.objects.create(**new_schedule_def)
+            scheduled_job.update_next()
 
 
 @receiver(pre_delete, sender=Package)

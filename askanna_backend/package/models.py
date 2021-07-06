@@ -1,10 +1,13 @@
 import os
 import uuid
 
-from core.models import AuthorModel, BaseModel
-from package.signals import package_upload_finish
 from django.conf import settings
 from django.db import models
+from jinja2 import Environment
+
+from core.models import AuthorModel, BaseModel
+from core.utils import get_config, get_config_from_string
+from package.signals import package_upload_finish
 
 
 class Package(AuthorModel, BaseModel):
@@ -34,7 +37,10 @@ class Package(AuthorModel, BaseModel):
 
     @property
     def storage_location(self):
-        return os.path.join(self.project.uuid.hex, self.uuid.hex,)
+        return os.path.join(
+            self.project.uuid.hex,
+            self.uuid.hex,
+        )
 
     @property
     def stored_path(self):
@@ -49,14 +55,14 @@ class Package(AuthorModel, BaseModel):
     @property
     def read(self):
         """
-            Read the package from filesytem
+        Read the package from filesytem
         """
         with open(self.stored_path, "rb") as f:
             return f.read()
 
     def write(self, stream):
         """
-            Write contents to the filesystem
+        Write contents to the filesystem
         """
         os.makedirs(
             os.path.join(settings.PACKAGES_ROOT, self.storage_location), exist_ok=True
@@ -66,14 +72,55 @@ class Package(AuthorModel, BaseModel):
 
         # unpack the package via signal
         package_upload_finish.send(
-            sender=self.__class__, postheaders={}, obj=self,
+            sender=self.__class__,
+            postheaders={},
+            obj=self,
         )
 
     def prune(self):
         """
         Delete the files and metadata linked to this instance
         """
-        os.remove(self.stored_path)
+        if os.path.exists(self.stored_path):
+            os.remove(self.stored_path)
+
+    def get_askanna_yml_path(self) -> str:
+        """
+        Read the askanna.yml from the package stored on the settings.BLOB_ROOT
+        If file doesn't exist, return None
+        """
+        package_path = os.path.join(settings.BLOB_ROOT, str(self.uuid))
+
+        # read config from askanna.yml
+        askanna_yml_path = os.path.join(package_path, "askanna.yml")
+        if not os.path.exists(askanna_yml_path):
+            return None
+        return askanna_yml_path
+
+    def get_askanna_config(self) -> dict:
+        """
+        Reads the askanna.yml as is and return as dictionary or None
+        """
+        askanna_yml = self.get_askanna_yml_path()
+        if not askanna_yml:
+            return None
+        return get_config(askanna_yml)
+
+    def get_parsed_askanna_config(self, variables={}) -> dict:
+
+        # setup Jinja
+        env = Environment(variable_start_string="${", variable_end_string="}")
+
+        askanna_yml = self.get_askanna_yml_path()
+        if not askanna_yml:
+            return None
+        askanna_config = ""
+        with open(askanna_yml, "r") as f:
+            askanna_config = f.read()
+
+        template = env.from_string(askanna_config)
+        rendered_yml = template.render(variables)
+        return get_config_from_string(rendered_yml)
 
     class Meta:
         ordering = ["-created"]

@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 """Define permissions class for Job related access control."""
 from rest_framework import permissions
-from uuid import UUID
 
 from project.models import Project
 from users.models import Membership
@@ -125,6 +125,24 @@ class IsMemberOfJobRunAttributePermission(IsWorkspaceMemberBasePermission):
         return None
 
 
+class IsMemberOfRunAttributePermission(IsWorkspaceMemberBasePermission):
+    """Grant access if the user is member of the Workspace of the JobRun."""
+
+    def get_workspace_queryset(self, request, view, obj=None):
+        """Queryset for the workspace for the current project."""
+        if obj:
+            return Workspace.objects.filter(uuid=obj.run.jobdef.project.workspace_id)
+
+        if hasattr(view, "get_parents_query_dict"):
+            run_suuid = view.get_parents_query_dict().get("run__short_uuid", None)
+            if run_suuid is not None:
+                return Workspace.objects.filter(
+                    project__jobdef__jobrun__short_uuid=run_suuid
+                )
+
+        return None
+
+
 class IsMemberOfArtifactAttributePermission(IsWorkspaceMemberBasePermission):
     """Grant access if the user is member of the Workspace of the Artifact."""
 
@@ -144,52 +162,24 @@ class IsMemberOfArtifactAttributePermission(IsWorkspaceMemberBasePermission):
                     project__jobdef__jobrun__artifact__short_uuid=jobrun_suuid
                 )
 
-        if view.action in ["create"]:
-
-            # The query fails if the value is not a valid UUID.
-            # Avoid query errors :D
-            try:
-                artifact_uuid = UUID(request.data.get("artifact"))
-            except ValueError:
-                pass
-            else:
-                return Workspace.objects.filter(
-                    project__jobdef__jobrun__artifact__uuid=artifact_uuid
-                )
-
         return None
 
 
-class IsMemberOfJobOutputAttributePermission(IsWorkspaceMemberBasePermission):
-    """Grant access if the user is member of the Workspace of the JobOutput."""
+class IsMemberOfRunResultAttributePermission(IsWorkspaceMemberBasePermission):
+    """Grant access if the user is member of the Workspace of the RunResult."""
 
     def get_workspace_queryset(self, request, view, obj=None):
         """Queryset for the workspace for the current project."""
         if obj:
             return Workspace.objects.filter(
-                uuid=obj.joboutput.jobrun.jobdef.project.workspace_id
+                uuid=obj.runresult.run.jobdef.project.workspace_id
             )
 
         if hasattr(view, "get_parents_query_dict"):
-            jobrun_suuid = view.get_parents_query_dict().get(
-                "joboutput__short_uuid", None
-            )
-            if jobrun_suuid is not None:
+            run_suuid = view.get_parents_query_dict().get("runresult__short_uuid", None)
+            if run_suuid is not None:
                 return Workspace.objects.filter(
-                    project__jobdef__jobrun__joboutput__short_uuid=jobrun_suuid
-                )
-
-        if view.action in ["create"]:
-
-            # The query fails if the value is not a valid UUID.
-            # Avoid query errors :D
-            try:
-                joboutput_uuid = UUID(request.data.get("joboutput"))
-            except ValueError:
-                pass
-            else:
-                return Workspace.objects.filter(
-                    project__jobdef__jobrun__joboutput__uuid=joboutput_uuid
+                    project__jobdef__jobrun__result__short_uuid=run_suuid
                 )
 
         return None

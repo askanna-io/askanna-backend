@@ -2,7 +2,6 @@
 from django.contrib import admin
 
 from job.models import (
-    ChunkedJobOutputPart,
     ChunkedArtifactPart,
     JobArtifact,
     JobDef,
@@ -13,11 +12,12 @@ from job.models import (
     ScheduledJob,
     RunMetrics,
     RunMetricsRow,
+    RunImage,
+    RunResult,
     RunVariables,
     RunVariableRow,
 )
 
-admin.site.register(ChunkedJobOutputPart)
 admin.site.register(ChunkedArtifactPart)
 
 
@@ -110,6 +110,8 @@ class JobRunAdmin(admin.ModelAdmin):
         payload_suuid,
         "status",
         "created",
+        "started",
+        "modified",
         "owner",
     ]
 
@@ -131,6 +133,24 @@ class JobOutputAdmin(admin.ModelAdmin):
     date_hierarchy = "created"
     list_filter = ("created", "exit_code")
     search_fields = ["uuid", "short_uuid", "owner"]
+
+
+@admin.register(RunImage)
+class RunImageAdmin(admin.ModelAdmin):
+    list_display = ["name", "tag", "digest", "cached_image", "created"]
+
+    date_hierarchy = "created"
+    list_filter = ("created",)
+    search_fields = ["name", "tag", "cached_image"]
+
+
+@admin.register(RunResult)
+class RunResultAdmin(admin.ModelAdmin):
+    list_display = ["uuid", "job", "run", "created"]
+
+    date_hierarchy = "created"
+    list_filter = ("created",)
+    search_fields = ["uuid", "short_uuid", "job"]
 
 
 @admin.register(JobVariable)

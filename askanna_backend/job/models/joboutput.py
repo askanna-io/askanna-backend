@@ -1,11 +1,44 @@
 # -*- coding: utf-8 -*-
+import datetime
+import json
 import os
 
+from config.settings.main import env
 from django.db import models
 from django.conf import settings
 
 from core.fields import JSONField
 from core.models import SlimBaseModel
+
+import redis
+
+
+class RedisLogQueue:
+    def __init__(self, suuid: str):
+        self.suuid = suuid
+        self.redis_url = env("REDIS_URL")
+        self.redis = redis.Redis.from_url(self.redis_url)
+
+    def append(self, log_object: list = None):
+        """
+        Add log object to queue
+        """
+        if not log_object:
+            return
+        return self.redis.rpush(self.suuid, json.dumps(log_object))
+
+    def get(self):
+        """
+        Return the full queue of logs
+        """
+        queued_log = self.redis.lrange(self.suuid, 0, -1)
+        return list(map(lambda x: json.loads(x), queued_log))
+
+    def remove(self):
+        """
+        Remove this log queue
+        """
+        return self.redis.delete(self.suuid)
 
 
 class JobOutput(SlimBaseModel):
@@ -36,6 +69,30 @@ class JobOutput(SlimBaseModel):
     )
 
     owner = models.CharField(max_length=100, blank=True, null=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.logqueue = RedisLogQueue(suuid=self.jobrun.short_uuid)
+        self.log_idx = 0
+
+    def log(self, message: str = None, timestamp: str = None, print_log: bool = False):
+        self.log_idx += 1
+        if not timestamp:
+            timestamp = datetime.datetime.utcnow().isoformat()
+        self.logqueue.append([self.log_idx, timestamp, message])
+        if print_log:
+            print([self.log_idx, timestamp, message], flush=True)
+
+    def save_stdout(self):
+        self.stdout = self.logqueue.get()
+        self.save(update_fields=["stdout"])
+
+        # remove the queue after saving
+        self.logqueue.remove()
+
+    def save_exitcode(self, exit_code=0):
+        self.exit_code = exit_code
+        self.save(update_fields=["exit_code"])
 
     @property
     def stored_path(self):

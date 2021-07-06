@@ -4,13 +4,13 @@ from django.urls import path, re_path
 
 from job.views import (
     ChunkedArtifactViewSet,
-    ChunkedJobOutputViewSet,
+    ChunkedJobResultViewSet,
     JobActionView,
     JobArtifactShortcutView,
     JobArtifactView,
     JobJobRunView,
     JobPayloadView,
-    RunOutputView,
+    RunResultCreateView,
     RunResultView,
     RunStatusView,
     JobRunView,
@@ -100,21 +100,17 @@ runinfo_route.register(
     parents_query_lookups=["jobrun__short_uuid"],
 )
 
-
-# older url schemes using jobrun
-
-jobrun_route = router.register(r"jobrun", JobRunView, basename="jobrun")
-jobrun_route.register(
+runinfo_route.register(
     r"payload",
     JobPayloadView,
-    basename="jobrun-payload",
+    basename="run-payload",
     parents_query_lookups=["jobrun__short_uuid"],
 )
 
-artifact_route = jobrun_route.register(
+artifact_route = runinfo_route.register(
     r"artifact",
     JobArtifactView,
-    basename="jobrun-artifact",
+    basename="run-artifact",
     parents_query_lookups=["jobrun__short_uuid"],
 )
 
@@ -125,18 +121,18 @@ artifact_route.register(
     parents_query_lookups=["artifact__jobrun__short_uuid", "artifact__short_uuid"],
 )
 
-jobresult_route = jobrun_route.register(
+runresult_route = runinfo_route.register(
     r"result",
-    RunOutputView,
-    basename="jobrun-result",
-    parents_query_lookups=["jobrun__short_uuid"],
+    RunResultCreateView,
+    basename="run-result",
+    parents_query_lookups=["run__short_uuid"],
 )
 
-jobresult_route.register(
+runresult_route.register(
     r"resultchunk",
-    ChunkedJobOutputViewSet,
+    ChunkedJobResultViewSet,
     basename="result-resultchunk",
-    parents_query_lookups=["joboutput__jobrun__short_uuid", "joboutput__short_uuid"],
+    parents_query_lookups=["runresult__run__short_uuid", "runresult__short_uuid"],
 )
 
 

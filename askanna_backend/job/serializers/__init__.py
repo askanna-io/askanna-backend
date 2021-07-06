@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from django.conf import settings
 from rest_framework import serializers
 
+from core.utils import get_setting_from_database
 from job.models import JobDef
 
 from .artifact import (  # noqa: F401
@@ -8,8 +10,8 @@ from .artifact import (  # noqa: F401
     JobArtifactSerializerDetail,
     JobArtifactSerializerForInsert,
     ChunkedArtifactPartSerializer,
-    JobOutputSerializer,
-    ChunkedJobOutputPartSerializer,
+    RunResultSerializer,
+    ChunkedRunResultPartSerializer,
 )
 from .metric import RunMetricsRowSerializer, RunMetricsSerializer  # noqa: F401
 from .variable import (  # noqa: F401
@@ -33,12 +35,17 @@ class JobSerializer(serializers.ModelSerializer):
     environment = serializers.SerializerMethodField("get_environment")
     schedules = serializers.SerializerMethodField("get_schedules")
 
+    def get_default_image(self, instance):
+        return get_setting_from_database(
+            name="RUNNER_DEFAULT_DOCKER_IMAGE",
+            default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
+        )
+
     def get_project(self, instance):
         return instance.project.relation_to_json
 
     def get_environment(self, instance):
-        # FIXME: this is for backwards compatibility, must be removed once workers are in place
-        return "python3.7"
+        return instance.environment_image or self.get_default_image(instance)
 
     def get_schedules(self, instance):
         schedules = instance.schedules.order_by("next_run")
@@ -55,7 +62,7 @@ class JobSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobDef
-        exclude = ("deleted",)
+        exclude = ("deleted", "environment_image")
 
 
 class StartJobSerializer(serializers.ModelSerializer):

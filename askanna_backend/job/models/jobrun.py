@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+from django.db.models.fields import DateTimeField
+from django.utils import timezone
 
 from core.fields import ArrayField
 from core.models import BaseModel
@@ -39,21 +41,63 @@ class JobRun(BaseModel):
         models.CharField(max_length=8192), blank=True, default=list
     )
 
+    # Register the start and end of a run
+    started = DateTimeField(null=True, editable=False)
+    finished = DateTimeField(null=True, editable=False)
+
+    environment_name = models.CharField(max_length=256, default="")
+    timezone = models.CharField(max_length=256, default="UTC")
+
+    # how long did the run take in seconds?
+    duration = models.PositiveIntegerField(null=True, blank=True, editable=False)
+
+    # the image where it was ran with
+    run_image = models.ForeignKey("job.RunImage", on_delete=models.SET_NULL, null=True)
+
+    @property
+    def is_finished(self):
+        """
+        We are finished in the following conditions:
+        - COMPLETED
+        - FAILED
+        """
+        return self.status in ["COMPLETED", "FAILED"]
+
     def set_status(self, status_code):
         self.status = status_code
         self.save(update_fields=["status", "modified"])
 
+    def set_finished(self):
+        self.finished = timezone.now()
+        self.duration = (self.finished - self.started).seconds
+        self.save(update_fields=["duration", "finished", "modified"])
+
     def to_pending(self):
         self.set_status("PENDING")
 
-    def to_failed(self):
+    def to_failed(self, exit_code=1):
+        self.output.save_stdout()
+        self.output.save_exitcode(exit_code=exit_code)
+        self.set_finished()
         self.set_status("FAILED")
 
     def to_completed(self):
+        self.output.save_stdout()
+        self.set_finished()
         self.set_status("COMPLETED")
 
     def to_inprogress(self):
+        self.started = timezone.now()
+        self.save(update_fields=["started"])
         self.set_status("IN_PROGRESS")
+
+    def set_run_image(self, run_image):
+        self.run_image = run_image
+        self.save(update_fields=["run_image"])
+
+    def set_timezone(self, run_timezone):
+        self.timezone = run_timezone
+        self.save(update_fields=["timezone"])
 
     def get_name(self):
         return ""

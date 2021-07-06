@@ -13,6 +13,14 @@ class JobDef(BaseModel):
         "project.Project", on_delete=models.CASCADE, blank=True, null=True
     )
 
+    environment_image = models.CharField(
+        max_length=2048,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    timezone = models.CharField(max_length=256, default="UTC")
+
     def get_name(self):
         return self.name
 

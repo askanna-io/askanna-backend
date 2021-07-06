@@ -7,6 +7,7 @@ import uuid
 
 import croniter
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.urls import register_converter
 import filetype
 import magic
@@ -17,7 +18,6 @@ try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
-
 
 # From https://pythonhosted.org/shorten/user/examples.html
 
@@ -148,10 +148,22 @@ class ShortUUIDConverter:
 register_converter(ShortUUIDConverter, "shortuuid")
 
 
-def get_config(filename: str) -> dict:
-    # FIXME: put this into a general askanna-utils to read askanna.yml
-    config = load(open(os.path.expanduser(filename), "r"), Loader=Loader)
+def get_config_from_string(config_yml: str) -> dict:
+    """
+    Given a yml string, load this into dict
+    """
+    try:
+        config = load(config_yml, Loader=Loader)
+    except:  # noqa
+        config = None
     return config
+
+
+def get_config(filename: str) -> dict:
+    """
+    Given a filepath, load it and return the intepretated yml
+    """
+    return get_config_from_string(open(os.path.expanduser(filename), "r"))
 
 
 def validate_cron_line(cron_line: str) -> bool:
@@ -279,3 +291,20 @@ def is_valid_timezone(timezone, default=settings.TIME_ZONE):
     if timezone not in pytz.all_timezones:
         return default
     return timezone
+
+
+# settings management
+def get_setting_from_database(name: str, default=None):
+    """
+    Retrieve configuration setting from database (if set)
+    Otherwise fall back to
+    """
+    # import model here because of circular import (models is also using .utils)
+    from core.models import Setting
+
+    try:
+        setting = Setting.objects.get(name=name)
+    except ObjectDoesNotExist:
+        return default
+    else:
+        return setting.value

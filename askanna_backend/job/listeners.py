@@ -14,12 +14,12 @@ from job.models import (
     JobOutput,
     JobPayload,
     JobRun,
+    RunResult,
     RunMetrics,
     RunVariables,
     RunVariableRow,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
-from job.tasks import start_jobrun_dockerized
 from users.models import MSP_WORKSPACE
 
 
@@ -68,6 +68,11 @@ def delete_jobpayload(sender, instance, **kwargs):
     instance.prune()
 
 
+@receiver(pre_delete, sender=RunResult)
+def delete_runresult(sender, instance, **kwargs):
+    instance.prune()
+
+
 @receiver(post_save, sender=JobRun)
 def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs):
     """
@@ -79,8 +84,7 @@ def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs)
                 jobrun=instance, jobdef=instance.jobdef.uuid, owner=instance.owner
             )
         except Exception as exc:
-            # FIXME: need custom exception for more context
-            raise Exception("CUSTOM job plumbing Exception: {}".format(exc))
+            raise Exception("Issue creating a JobOutput: {}".format(exc))
 
 
 @receiver(post_save, sender=JobRun)
@@ -89,7 +93,14 @@ def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
     Every time a new record is created, send the new job to celery
     """
     if created:
-        on_commit(lambda: start_jobrun_dockerized.delay(instance.uuid))
+        # on_commit(lambda: start_run.delay(instance.uuid))
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.start_run",
+                args=None,
+                kwargs={"run_uuid": instance.uuid},
+            )
+        )
 
 
 @receiver(post_save, sender=JobRun)

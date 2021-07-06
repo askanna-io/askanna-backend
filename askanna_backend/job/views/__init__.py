@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-import os
 
 from django.http import HttpResponse, JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,7 +10,6 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from core.mixins import HybridUUIDMixin
 from core.views import (
     PermissionByActionMixin,
     SerializerByActionMixin,
@@ -21,10 +19,10 @@ from job.models import (
     JobPayload,
     JobVariable,
 )
-from job.permissions import IsMemberOfProjectBasedOnPayload
 from job.permissions import (
     IsMemberOfJobDefAttributePermission,
     IsMemberOfProjectAttributePermission,
+    IsMemberOfProjectBasedOnPayload,
 )
 from job.serializers import (
     JobPayloadSerializer,
@@ -33,7 +31,6 @@ from job.serializers import (
     JobVariableCreateSerializer,
     JobVariableUpdateSerializer,
 )
-from job.signals import artifact_upload_finish
 from users.models import MSP_WORKSPACE
 
 from .artifact import (  # noqa: F401
@@ -46,8 +43,8 @@ from .newrun import StartJobView  # noqa: F401
 from .result import (  # noqa: F401
     RunStatusView,
     RunResultView,
-    RunOutputView,
-    ChunkedJobOutputViewSet,
+    RunResultCreateView,
+    ChunkedJobResultViewSet,
 )
 from .runs import JobRunView, JobJobRunView  # noqa: F401
 from .runvariables import RunVariableRowView, RunVariablesView  # noqa: F401
@@ -135,7 +132,8 @@ class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class ProjectJobViewSet(
-    HybridUUIDMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
+    NestedViewSetMixin,
+    viewsets.ReadOnlyModelViewSet,
 ):
     """
     This is a duplicated viewset like `JobActionView` but ReadOnly version

@@ -11,11 +11,8 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from resumable.files import ResumableFile
 
-from core.mixins import HybridUUIDMixin
-
 
 class BaseChunkedPartViewSet(
-    HybridUUIDMixin,
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,

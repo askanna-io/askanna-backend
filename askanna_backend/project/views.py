@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 from rest_framework import mixins, viewsets
-from rest_framework.permissions import IsAuthenticated
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from core.views import SerializerByActionMixin

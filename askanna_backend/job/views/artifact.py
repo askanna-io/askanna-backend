@@ -6,7 +6,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -20,6 +19,7 @@ from job.models import (
     JobRun,
 )
 from job.permissions import (
+    IsMemberOfArtifactAttributePermission,
     IsMemberOfJobDefAttributePermission,
     IsMemberOfJobRunAttributePermission,
 )
@@ -172,7 +172,7 @@ class ChunkedArtifactViewSet(BaseChunkedPartViewSet):
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedArtifactPartSerializer
     # FIXME: implement permission class that checks for access to this chunk in workspace>project->jobartifact.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsMemberOfArtifactAttributePermission]
 
     def initial(self, request, *args, **kwargs):
         """

@@ -2,7 +2,12 @@
 from rest_framework import serializers
 
 from core.serializers import BaseArchiveDetailSerializer
-from job.models import JobArtifact, JobOutput, ChunkedArtifactPart, ChunkedJobOutputPart
+from job.models import (
+    JobArtifact,
+    ChunkedArtifactPart,
+    RunResult,
+    ChunkedRunResultPart,
+)
 
 
 class JobArtifactSerializer(serializers.ModelSerializer):
@@ -36,13 +41,13 @@ class ChunkedArtifactPartSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class JobOutputSerializer(serializers.ModelSerializer):
+class RunResultSerializer(serializers.ModelSerializer):
     class Meta:
-        model = JobOutput
+        model = RunResult
         fields = "__all__"
 
 
-class ChunkedJobOutputPartSerializer(serializers.ModelSerializer):
+class ChunkedRunResultPartSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ChunkedJobOutputPart
+        model = ChunkedRunResultPart
         fields = "__all__"
