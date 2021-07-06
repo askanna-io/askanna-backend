@@ -256,7 +256,9 @@ def start_run(self, run_uuid):
 
         # build the new image
         # tag into askanna repo
-        repository_name = f"aa-{run_image.short_uuid}".lower()
+        repository_name = (
+            f"{settings.ASKANNA_ENVIRONMENT}-aa-{run_image.short_uuid}".lower()
+        )
         repository_tag = imagehelper.short_id_nosha
         askanna_repository_image_version_name = f"{repository_name}:{repository_tag}"
 
@@ -266,7 +268,7 @@ def start_run(self, run_uuid):
 
         try:
             image, buildlog = builder.build(
-                from_image=job_environment.get("image"),
+                from_image=f"{imagehelper.repository}@{imagehelper.image_sha}",
                 tag=askanna_repository_image_version_name,
                 template_path=str(settings.APPS_DIR.path("job/templates/")),
                 dockerfile="custom_Dockerfile",

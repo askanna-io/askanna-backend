@@ -181,8 +181,7 @@ class ContainerImageBuilder:
             **{
                 "path": template_path,
                 "dockerfile": dockerfile,
-                # Never pull, because we already pull in a previous step
-                "pull": False,
+                "pull": True,
                 "tag": tag,
                 "rm": True,
                 # Always remove intermediate containers, even after unsuccessful builds
