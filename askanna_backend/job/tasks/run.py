@@ -60,6 +60,21 @@ def start_run(self, run_uuid):
         askanna_config.get("timezone"), settings.TIME_ZONE
     )
     job_config = askanna_config.get(jd.name)
+    if not job_config:
+        op.log(
+            f"Job `{jd.name}` was not found in askanna.yml:", print_log=docker_debug_log
+        )
+        op.log(
+            "  If you renamed or removed the job, please make sure you update the askanna.yml as well.",
+            print_log=docker_debug_log,
+        )
+        op.log(
+            "  When you updated the askanna.yml, check if you pushed the latest code to AskAnna.",
+            print_log=docker_debug_log,
+        )
+        op.log("", print_log=docker_debug_log)
+        return jr.to_failed()
+
     job_timezone = is_valid_timezone(job_config.get("timezone"), global_timezone)
     jr.set_timezone(job_timezone)
 
