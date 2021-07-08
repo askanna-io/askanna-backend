@@ -112,11 +112,14 @@ class JobRunSerializer(serializers.ModelSerializer):
                 extension = filename
             if extension.startswith("."):
                 extension = extension[1:]
+        else:
+            # the result.name is not set, we deal with an older result
+            extension = "json"
 
         return {
             "size": result.size,
             "lines": result.lines,
-            "original_name": result.name,
+            "original_name": result.name or ".json",
             "extension": extension,
             "mimetype": result.mime_type,
         }
