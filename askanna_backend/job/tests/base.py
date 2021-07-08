@@ -322,6 +322,7 @@ class BaseJobTestDef:
                 owner=cls.users["user"],
                 member=cls.memberA_member,
                 run_image=cls.run_image,
+                duration=50646,  # fictive because we don't have access to the handlers here in tests
             ),
             "run2": JobRun.objects.create(
                 name="run2",

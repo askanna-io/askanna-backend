@@ -143,7 +143,7 @@ class RunStatusView(BaseRunResultView):
         job_status = status_trans.get(run.status, "unknown")
         base_status["status"] = job_status
 
-        if job_status == "finished":
+        if run.is_finished:
             base_status["next_url"] = finished_next_url
             base_status["finished"] = run.finished
             base_status["duration"] = run.duration

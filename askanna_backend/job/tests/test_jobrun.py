@@ -697,6 +697,20 @@ class TestJobRunStatusAPI(BaseJobTestDef, APITestCase):
         response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_retrieve_as_member_run_finished(self):
+        """
+        We can get the status for a jobrun as a member
+        The run is finished so we expect the duration to be fixed
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # this is the fictive number of duration we set in the test
+        # otherwise we would expect something else if it kept counting
+        self.assertEqual(response.data.get("duration"), 50646)
+
 
 class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
