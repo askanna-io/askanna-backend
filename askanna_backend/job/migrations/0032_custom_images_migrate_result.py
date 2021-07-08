@@ -23,9 +23,9 @@ def forwards_func_moveresult(apps, schema_editor):
         old_filename = "result_{}.output".format(run_output.uuid.hex)
 
         storage_location = os.path.join(
-            obj.jobrun.jobdef.project.uuid.hex,
-            obj.jobrun.jobdef.uuid.hex,
-            obj.jobrun.uuid.hex,
+            obj.run.jobdef.project.uuid.hex,
+            obj.run.jobdef.uuid.hex,
+            obj.run.uuid.hex,
         )
         stored_path = os.path.join(
             settings.ARTIFACTS_ROOT,
@@ -58,9 +58,9 @@ def reverse_func(apps, schema_editor):
         old_filename = "result_{}.output".format(run_output.uuid.hex)
 
         storage_location = os.path.join(
-            obj.jobrun.jobdef.project.uuid.hex,
-            obj.jobrun.jobdef.uuid.hex,
-            obj.jobrun.uuid.hex,
+            obj.run.jobdef.project.uuid.hex,
+            obj.run.jobdef.uuid.hex,
+            obj.run.uuid.hex,
         )
         stored_path = os.path.join(
             settings.ARTIFACTS_ROOT,
