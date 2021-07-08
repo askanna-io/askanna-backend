@@ -69,7 +69,8 @@ class JobRun(BaseModel):
 
     def set_finished(self):
         self.finished = timezone.now()
-        self.duration = (self.finished - self.started).seconds
+        if self.started:
+            self.duration = (self.finished - self.started).seconds
         self.save(update_fields=["duration", "finished", "modified"])
 
     def to_pending(self):
