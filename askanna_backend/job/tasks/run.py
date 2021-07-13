@@ -31,6 +31,14 @@ def start_run(self, run_uuid):
         name="RUNNER_DEFAULT_DOCKER_IMAGE",
         default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
     )
+    runner_image_user = get_setting_from_database(
+        name="RUNNER_DEFAULT_DOCKER_IMAGE_USER",
+        default=settings.ASKANNA_DOCKER_USER,
+    )
+    runner_image_pass = get_setting_from_database(
+        name="RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
+        default=settings.ASKANNA_DOCKER_PASS,
+    )
     docker_debug_log = get_setting_from_database(
         name="DOCKER_DEBUG_LOG",
         default=False,
@@ -211,8 +219,8 @@ def start_run(self, run_uuid):
         {
             "image": runner_image,
             "credentials": {
-                "username": settings.ASKANNA_DOCKER_USER,
-                "password": settings.ASKANNA_DOCKER_PASS,
+                "username": runner_image_user,
+                "password": runner_image_pass,
             },
         },
     )
