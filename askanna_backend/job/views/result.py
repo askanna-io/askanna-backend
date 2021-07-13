@@ -107,6 +107,22 @@ class RunResultView(BaseRunResultView):
 
 
 class RunStatusView(BaseRunResultView):
+    def get_environment(self, instance):
+        environment = {
+            "name": instance.environment_name,
+            "description": None,
+            "label": None,
+            "image": None,
+            "timezone": instance.timezone,
+        }
+        if instance.run_image:
+            environment["image"] = {
+                "name": instance.run_image.name,
+                "tag": instance.run_image.tag,
+                "digest": instance.run_image.digest,
+            }
+        return environment
+
     def retrieve(self, request, short_uuid, *args, **kwargs):
         run = self.get_object()
         next_url = "{}://{}/v1/status/{}/".format(
@@ -126,6 +142,7 @@ class RunStatusView(BaseRunResultView):
             "job": run.jobdef.relation_to_json,
             "project": run.jobdef.project.relation_to_json,
             "workspace": run.jobdef.project.workspace.relation_to_json,
+            "environment": self.get_environment(run),
             "next_url": next_url,
         }
 
