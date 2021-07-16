@@ -3,6 +3,7 @@ import os
 import uuid
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django_extensions.db.models import (
     ActivatorModel,
@@ -21,6 +22,10 @@ class DeletedModel(models.Model):
     deleted = models.DateTimeField(
         blank=True, auto_now_add=False, auto_now=False, null=True
     )
+
+    def to_deleted(self):
+        self.deleted = timezone.now()
+        self.save(update_fields=["deleted"])
 
     class Meta:
         abstract = True

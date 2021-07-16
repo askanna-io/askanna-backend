@@ -19,7 +19,7 @@ from users.models import MSP_WORKSPACE
 
 
 class StartJobView(viewsets.GenericViewSet):
-    queryset = JobDef.objects.all()
+    queryset = JobDef.jobs.active()
     lookup_field = "short_uuid"
     serializer_class = StartJobSerializer
     permission_classes = [IsMemberOfProjectAttributePermission]

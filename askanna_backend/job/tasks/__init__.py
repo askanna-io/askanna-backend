@@ -45,4 +45,24 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour="*"),
         "args": (),
     },
+    "delete_runs": {
+        "task": "job.tasks.delete_runs",
+        "schedule": crontab(minute="*/5"),
+        "args": (),
+    },
+    "delete_jobs": {
+        "task": "job.tasks.delete_jobs",
+        "schedule": crontab(minute="*/5"),
+        "args": (),
+    },
+    "delete_projects": {
+        "task": "project.tasks.delete_projects",
+        "schedule": crontab(minute="*/5"),
+        "args": (),
+    },
+    "delete_workspaces": {
+        "task": "workspace.tasks.delete_workspaces",
+        "schedule": crontab(minute="*/5"),
+        "args": (),
+    },
 }

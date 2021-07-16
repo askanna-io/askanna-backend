@@ -2,6 +2,7 @@
 from rest_framework import permissions
 
 from users.models import MSP_WORKSPACE, Membership
+from workspace.models import Workspace
 
 
 class IsWorkspaceMemberBasePermission(permissions.BasePermission):
@@ -15,7 +16,10 @@ class IsWorkspaceMemberBasePermission(permissions.BasePermission):
 
     def get_workspace_queryset(self, request, view, obj=None):
         """Return a queryset that returns a single workspace to check access with."""
-        raise NotImplementedError
+        if obj:
+            return Workspace.objects.filter(uuid=obj.uuid)
+
+        return None
 
     def _has_workspace_permission(self, request, view, obj=None):
         user = request.user

@@ -20,7 +20,10 @@ def fix_missed_scheduledjobs():
         second=0, microsecond=0
     )
     for job in ScheduledJob.objects.filter(
-        next_run__lt=now - datetime.timedelta(minutes=1)
+        next_run__lt=now - datetime.timedelta(minutes=1),
+        job__deleted__isnull=True,
+        job__project__deleted__isnull=True,
+        job__project__workspace__deleted__isnull=True,
     ):
         job.update_next()
 
@@ -30,6 +33,7 @@ def launch_scheduled_jobs():
     """
     We launch scheduled jobs every minute
     We select jobs for the current minute ()
+    We exclude jobs which are scheduled for deletion (or project/workspace)
     """
     now = datetime.datetime.now(tz=datetime.timezone.utc).replace(
         second=0, microsecond=0
@@ -37,6 +41,9 @@ def launch_scheduled_jobs():
     for job in ScheduledJob.objects.filter(
         next_run__gte=now,
         next_run__lt=now + datetime.timedelta(minutes=1),
+        job__deleted__isnull=True,
+        job__project__deleted__isnull=True,
+        job__project__workspace__deleted__isnull=True,
     ):
         jobdef = job.job
         package = (

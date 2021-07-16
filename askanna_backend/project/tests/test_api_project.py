@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 """Define tests for API of invitation workflow."""
-import json
 import pytest
 import re
 
@@ -365,33 +365,12 @@ class TestProjectDeleteAPI(BaseProjectTest):
         self.joboutput.stdout = []
         self.joboutput.save()
 
-        # TODO: setup code for the project
-
-        # TODO: setup a run that creates an artifact
-
         # reset credentials
         self.client.credentials()
-
-        # other urls to check
-        self.payload_json_url = str(self.jobpayload.stored_path).replace(
-            str(settings.STORAGE_ROOT),
-            "/files",
-        )
-        self.payload_exists()
 
     def tearDown(self):
         super().tearDown()
         config.urls.urlpatterns = self.original_urls
-
-    def payload_is_gone(self):
-        # now the payload should not be there anymore
-        response = self.client.get(self.payload_json_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def payload_exists(self):
-        response = self.client.get(self.payload_json_url)
-        self.assertEqual(json.loads(response.getvalue().decode("utf-8")), self.payload)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_as_admin(self):
         """
@@ -404,20 +383,20 @@ class TestProjectDeleteAPI(BaseProjectTest):
         response = self.client.delete(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        self.payload_is_gone()
+        # delete it again will result in not found, because we don't expose it anymore
+        response = self.client.delete(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_as_member(self):
         """
-        A member of a project can remove a project
+        A member of a project can not remove a project
         """
 
         token = self.users["member_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(self.url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
-        self.payload_is_gone()
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_as_nonmember(self):
         """
@@ -430,8 +409,6 @@ class TestProjectDeleteAPI(BaseProjectTest):
         response = self.client.delete(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        self.payload_exists()
-
     def test_delete_as_anonymous(self):
 
         """
@@ -439,8 +416,6 @@ class TestProjectDeleteAPI(BaseProjectTest):
         """
         response = self.client.delete(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-        self.payload_exists()
 
 
 class TestWorkspaceProjectListAPI(TestProjectListAPI):
@@ -462,42 +437,3 @@ class TestWorkspaceProjectListAPI(TestProjectListAPI):
 
         response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-
-class TestWorkspaceProjectCreateAPI(TestProjectCreateAPI):
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "workspace-project-list",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-            },
-        )
-
-
-class TestWorkspaceProjectUpdateAPI(TestProjectUpdateAPI):
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "workspace-project-detail",
-            kwargs={
-                "version": "v1",
-                "short_uuid": self.project.short_uuid,
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-            },
-        )
-
-
-class TestWorkspaceProjectDeleteAPI(TestProjectDeleteAPI):
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "workspace-project-detail",
-            kwargs={
-                "version": "v1",
-                "short_uuid": self.project.short_uuid,
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-            },
-        )
-        self.setUpDelete()
