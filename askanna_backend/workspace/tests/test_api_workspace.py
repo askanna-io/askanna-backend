@@ -4,31 +4,23 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from core.tests.base import BaseUserPopulation
 
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, User, UserProfile
+from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
 
 from ..models import Workspace
 
 pytestmark = pytest.mark.django_db
 
 
-class BaseWorkspace:
+class BaseWorkspace(BaseUserPopulation):
     def setUp(self):
-        self.users = {
-            "anna": User.objects.create(
-                username="anna",
-                is_staff=True,
-                is_superuser=True,
-                email="anna@askanna.dev",
-            ),
-            "admin": User.objects.create(username="admin"),
-            "member": User.objects.create(username="member"),
-            "non_member": User.objects.create(username="non_member"),
-        }
+        super().setUp()
+
         self.workspace_a = Workspace.objects.create(name="test workspace a")
         self.workspace_b = Workspace.objects.create(name="test workspace b")
-        self.workspace_c = Workspace.objects.create(name="test workspace b")
-        self.workspace_d = Workspace.objects.create(name="test workspace b")
+        self.workspace_c = Workspace.objects.create(name="test workspace c")
+        self.workspace_d = Workspace.objects.create(name="test workspace d")
 
         self.member_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
@@ -73,7 +65,7 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
 
     def test_list_as_anna(self):
         """
-        By default Anna shoudl not be able to list any workspaces.
+        By default Anna should not be able to list any workspaces.
         """
         token = self.users["anna"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
@@ -247,4 +239,63 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "workspace-detail",
+            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid},
+        )
+
+    def test_delete_as_anna(self):
+        """
+        By default no deletion possible by askanna users
+        """
+        token = self.users["anna"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_admin(self):
+        """
+        Workspace members can delete a workspace
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_as_member(self):
+        """
+        Delete a workspace by a member is not possible
+        """
+
+        token = self.users["member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_as_non_member(self):
+        """
+        Non members cannot delete a workspace, also we cannot find the workspace at all
+        """
+
+        token = self.users["non_member"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_anonymous(self):
+        """
+        Anonymous users cannot delete a workspace
+        """
+
+        response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

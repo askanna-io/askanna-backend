@@ -48,7 +48,7 @@ class JobArtifactShortcutView(
     In case we find 1+ artifact, we return the first created artifact (sorted by date)
     """
 
-    queryset = JobRun.objects.all()
+    queryset = JobRun.objects.filter(deleted__isnull=True)
     lookup_field = "short_uuid"
     # The serializer class is dummy here as this is not used
     serializer_class = JobArtifactSerializer

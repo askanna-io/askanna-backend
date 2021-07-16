@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -51,15 +51,26 @@ from .runvariables import RunVariableRowView, RunVariablesView  # noqa: F401
 
 
 class JobActionView(
+    PermissionByActionMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = JobDef.objects.all()
+    queryset = JobDef.jobs.active()
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
     permission_classes = [IsMemberOfProjectAttributePermission]
+
+    permission_classes_by_action = {
+        "create": [IsMemberOfProjectAttributePermission],
+        "destroy": [IsMemberOfProjectAttributePermission],
+        "update": [IsMemberOfProjectAttributePermission],
+        "partial_update": [
+            IsMemberOfProjectAttributePermission,
+        ],
+    }
 
     def get_queryset(self):
         """
@@ -74,9 +85,15 @@ class JobActionView(
         ).values_list("object_uuid", flat=True)
         return queryset.filter(project__workspace__in=member_of_workspaces)
 
+    def perform_destroy(self, instance):
+        """
+        We don't actually remove the model, we just mark it as deleted
+        """
+        instance.to_deleted()
+
 
 class JobPayloadView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = JobPayload.objects.all()
+    queryset = JobPayload.objects.filter(jobdef__deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = JobPayloadSerializer
     permission_classes = [IsMemberOfJobDefAttributePermission]
@@ -139,7 +156,7 @@ class ProjectJobViewSet(
     This is a duplicated viewset like `JobActionView` but ReadOnly version
     """
 
-    queryset = JobDef.objects.all()
+    queryset = JobDef.jobs.active()
     lookup_field = "short_uuid"
     serializer_class = JobSerializer
     permission_classes = [IsMemberOfProjectAttributePermission]
@@ -182,12 +199,12 @@ class JobVariableView(
     ]
 
     permission_classes_by_action = {
-        "list": [IsAuthenticated | IsAdminUser],
-        "create": [IsAuthenticated, IsMemberOfProjectBasedOnPayload | IsAdminUser],
-        "update": [IsAuthenticated, IsMemberOfProjectBasedOnPayload | IsAdminUser],
+        "list": [IsAuthenticated],
+        "create": [IsAuthenticated, IsMemberOfProjectBasedOnPayload],
+        "update": [IsAuthenticated, IsMemberOfProjectBasedOnPayload],
         "partial_update": [
             IsAuthenticated,
-            IsMemberOfProjectBasedOnPayload | IsAdminUser,
+            IsMemberOfProjectBasedOnPayload,
         ],
     }
 

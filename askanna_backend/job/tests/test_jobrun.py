@@ -1203,3 +1203,87 @@ class TestJobRunDetailUpdateAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestRunDeleteAPI(BaseJobTestDef, APITestCase):
+    """
+    Test on the deletion of a Run
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "runinfo-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
+        )
+
+    def is_deleted(self):
+        # is it deleted?
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_anna(self):
+        """
+        AskAnna user by default don't have the permission to delete a run
+        """
+        token = self.users["anna"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_admin(self):
+        """
+        We can remove a run as an workspace admin
+        """
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.is_deleted()
+
+    def test_delete_as_member(self):
+        """
+        we can remove a run as a member of an workspace
+        """
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.is_deleted()
+
+    def test_delete_as_nonmember(self):
+        """
+        we cannot remove a run when we are not a member of the workspace
+        """
+        token = self.users["user_nonmember"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_anonymous(self):
+        """
+        As anonoymous user we cannot remove anything
+        """
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

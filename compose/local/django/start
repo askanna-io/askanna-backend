@@ -29,4 +29,5 @@ fi
 
 python manage.py install_default_avatar
 python manage.py install_askanna_create_project
+python manage.py install_default_settings
 python manage.py runserver_plus 0.0.0.0:8000

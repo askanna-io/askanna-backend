@@ -9,6 +9,7 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "name",
         "description",
         "created",
+        "deleted",
     ]
     list_display_links = list_display
     date_hierarchy = "created"

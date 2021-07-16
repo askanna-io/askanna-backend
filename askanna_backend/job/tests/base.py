@@ -210,6 +210,12 @@ class BaseJobTestDef:
             install_demo_project_in_workspace, sender=Workspace
         )
         cls.users = {
+            "anna": User.objects.create(
+                username="anna",
+                is_staff=True,
+                is_superuser=True,
+                email="anna@askanna.dev",
+            ),
             "admin": User.objects.create(
                 username="admin",
                 is_staff=True,

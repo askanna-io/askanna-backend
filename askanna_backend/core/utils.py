@@ -8,7 +8,9 @@ import uuid
 import croniter
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.query import QuerySet
 from django.urls import register_converter
+from django.utils import timezone
 import filetype
 import magic
 import pytz
@@ -308,3 +310,23 @@ def get_setting_from_database(name: str, default=None):
         return default
     else:
         return setting.value
+
+
+# object removal
+def remove_objects(queryset, ttl_hours: int = 1):
+    """
+    queryset: Queryset containing all objects, also the ones not to delete
+    ttl_hours: we only delete objects older than `ttl_hours` old.
+    """
+    if not isinstance(queryset, QuerySet):
+        raise Exception("Given queryset is not a Django Queryset")
+
+    remove_ttl = get_setting_from_database(
+        name="OBJECT_REMOVAL_TTL_HOURS", default=ttl_hours
+    )
+    remove_ttl_mins = int(float(remove_ttl) * 60.0)
+
+    older_than = timezone.now() - datetime.timedelta(minutes=remove_ttl_mins)
+
+    for obj in queryset.filter(deleted__lte=older_than):
+        obj.delete()

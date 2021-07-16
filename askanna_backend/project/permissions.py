@@ -1,7 +1,10 @@
 """Define permissions class for Project related access control."""
 from typing import Optional
 
-from workspace.permissions import IsWorkspaceMemberBasePermission
+from workspace.permissions import (
+    IsWorkspaceMemberBasePermission,
+    IsWorkspaceAdminBasePermission,
+)
 from workspace.models import Workspace
 
 
@@ -25,3 +28,13 @@ class IsMemberOfProjectWorkspacePermission(IsWorkspaceMemberBasePermission):
             return Workspace.objects.filter(short_uuid=workspace_suuid)
 
         return None
+
+
+class IsAdminOfProjectWorkspacePermission(
+    IsWorkspaceAdminBasePermission, IsMemberOfProjectWorkspacePermission
+):
+    """
+    Implements whether the user is an admin of the workspace where the requested project is in
+    """
+
+    pass

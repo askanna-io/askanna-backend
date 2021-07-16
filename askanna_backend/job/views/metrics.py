@@ -5,7 +5,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -36,13 +35,13 @@ class RunMetricsRowView(
 
     filterset_class = MetricFilter
     permission_classes = [
-        IsMemberOfJobRunAttributePermission | IsAdminUser,
+        IsMemberOfJobRunAttributePermission,
     ]
 
     permission_classes_by_action = {
-        "list": [IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "list": [IsMemberOfJobRunAttributePermission],
+        "create": [IsMemberOfJobRunAttributePermission],
+        "update": [IsMemberOfJobRunAttributePermission],
     }
 
     def get_queryset(self):
@@ -80,11 +79,11 @@ class RunMetricsView(
     serializer_class = RunMetricsSerializer
 
     permission_classes = [
-        IsMemberOfJobRunAttributePermission | IsAdminUser,
+        IsMemberOfJobRunAttributePermission,
     ]
 
     permission_classes_by_action = {
-        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "update": [IsMemberOfJobRunAttributePermission],
     }
 
     @action(detail=True, methods=["get"])

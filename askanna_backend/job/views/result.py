@@ -35,7 +35,7 @@ from users.models import MSP_WORKSPACE
 class BaseRunResultView(
     NestedViewSetMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
-    queryset = JobRun.objects.all()
+    queryset = JobRun.objects.filter(deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsMemberOfJobDefAttributePermission]
@@ -174,7 +174,7 @@ class RunResultCreateView(
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = RunResult.objects.all()
+    queryset = RunResult.objects.filter(run__deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = RunResultSerializer
     permission_classes = [IsMemberOfRunAttributePermission]

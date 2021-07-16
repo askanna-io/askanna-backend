@@ -69,7 +69,8 @@ def package_upload_102_extract_jobs_from_askannayml(
         # update the jobdef.environment_image and timezone
         jd.environment_image = job.environment.image
         jd.timezone = job.timezone
-        jd.save(update_fields=["environment_image", "timezone"])
+        jd.deleted = None  # restore the deleted job if this was set
+        jd.save(update_fields=["environment_image", "timezone", "deleted", "modified"])
 
         # check what existing schedules where and store the last_run and raw_definition
         old_rules = ScheduledJob.objects.filter(job=jd)

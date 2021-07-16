@@ -105,7 +105,9 @@ class PersonViewSet(
             instance.delete()
 
     @action(
-        detail=True, methods=["patch", "delete"], name="Set user profileimage",
+        detail=True,
+        methods=["patch", "delete"],
+        name="Set user profileimage",
     )
     def avatar(self, request, **kwargs):
         instance = self.get_object()
@@ -115,7 +117,10 @@ class PersonViewSet(
             instance.delete_avatar()
             return Response("", status=204)
 
-        serializer = ProfileImageSerializer(instance=instance, data=request.data,)
+        serializer = ProfileImageSerializer(
+            instance=instance,
+            data=request.data,
+        )
         # will raise exeptions when needed
         serializer.is_valid(raise_exception=True)
 

@@ -2,7 +2,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -33,11 +32,11 @@ class RunVariablesView(
     serializer_class = RunVariablesSerializer
 
     permission_classes = [
-        IsMemberOfJobRunAttributePermission | IsAdminUser,
+        IsMemberOfJobRunAttributePermission,
     ]
 
     permission_classes_by_action = {
-        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "update": [IsMemberOfJobRunAttributePermission],
     }
 
     # Override because we don't return the full object, just the `variables` field
@@ -105,13 +104,13 @@ class RunVariableRowView(
     filterset_class = RunVariablesFilter
 
     permission_classes = [
-        IsMemberOfJobRunAttributePermission | IsAdminUser,
+        IsMemberOfJobRunAttributePermission,
     ]
 
     permission_classes_by_action = {
-        "list": [IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "create": [IsMemberOfJobRunAttributePermission | IsAdminUser],
-        "update": [IsMemberOfJobRunAttributePermission | IsAdminUser],
+        "list": [IsMemberOfJobRunAttributePermission],
+        "create": [IsMemberOfJobRunAttributePermission],
+        "update": [IsMemberOfJobRunAttributePermission],
     }
 
     def get_queryset(self):

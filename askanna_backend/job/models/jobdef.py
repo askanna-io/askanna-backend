@@ -4,10 +4,48 @@ from django.db import models
 from core.models import BaseModel
 
 
+class JobQuerySet(models.QuerySet):
+    def active_jobs(self):
+        return self.filter(
+            deleted__isnull=True,
+            project__deleted__isnull=True,
+            project__workspace__deleted__isnull=True,
+        )
+
+    def inactive_jobs(self):
+        return self.filter(deleted__isnull=False)
+
+    def active(self):
+        """
+        Only active jobs
+        """
+        return self.active_jobs()
+
+    def inactive(self):
+        """
+        Inactive jobs only
+        """
+        return self.inactive_jobs()
+
+
+class ActiveJobManager(models.Manager):
+    def get_queryset(self):
+        return JobQuerySet(self.model, using=self._db)
+
+    def active(self):
+        return self.get_queryset().active()
+
+    def inactive(self):
+        return self.get_queryset().inactive()
+
+
 class JobDef(BaseModel):
     """
     Consider this as the job registry storing the identity of the job itself.
     """
+
+    objects = models.Manager()
+    jobs = ActiveJobManager()
 
     project = models.ForeignKey(
         "project.Project", on_delete=models.CASCADE, blank=True, null=True

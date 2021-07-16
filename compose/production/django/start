@@ -29,5 +29,6 @@ fi
 
 python manage.py install_default_avatar
 python manage.py install_askanna_create_project
+python manage.py install_default_settings
 python manage.py collectstatic --noinput
 /usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app

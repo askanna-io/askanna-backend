@@ -281,3 +281,82 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
+    """
+    Test the deletion of the job
+    """
+
+    def setUp(self):
+        self.url = reverse(
+            "job-detail",
+            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+        )
+
+    def test_delete_as_anna(self):
+        """
+        By default, AskAnna user cannot delete jobs
+        """
+
+        token = self.users["anna"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_admin(self):
+        """
+        Delete a job as an workspace admin
+        """
+
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_as_member(self):
+        """
+        Delete a job as an workspace member
+        """
+
+        token = self.users["user"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_as_nonmember(self):
+        """
+        Non workspace members cannot delete jobs
+        """
+
+        token = self.users["user_nonmember"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_as_anonymous(self):
+        """
+        Anonymous users cannot delete
+        """
+
+        response = self.client.delete(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

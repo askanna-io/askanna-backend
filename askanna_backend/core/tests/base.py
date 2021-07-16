@@ -5,6 +5,22 @@ import uuid
 import zipfile
 
 from rest_framework import status
+from users.models import User
+
+
+class BaseUserPopulation:
+    def setUp(self):
+        self.users = {
+            "anna": User.objects.create(
+                username="anna",
+                is_staff=True,
+                is_superuser=True,
+                email="anna@askanna.dev",
+            ),
+            "admin": User.objects.create(username="admin"),
+            "member": User.objects.create(username="member"),
+            "non_member": User.objects.create(username="non_member"),
+        }
 
 
 class BaseUploadTestMixin:

@@ -6,7 +6,9 @@ from django.conf import settings
 import docker
 
 from config.celery_app import app as celery_app
-from core.utils import get_setting_from_database
+from core.utils import get_setting_from_database, remove_objects
+from job.models.jobdef import JobDef
+from job.models.jobrun import JobRun
 
 
 @celery_app.task(name="job.tasks.clean_dangling_images")
@@ -55,3 +57,34 @@ def clean_containers_after_run():
                 # remove the container
                 # the print makes this removal visible in the logs
                 print(container.remove(v=True))
+
+
+@celery_app.task(name="job.tasks.delete_jobs")
+def delete_jobs():
+    """
+    We delete jobs that are marked for deleted longer than 5 mins ago
+    We also check whether the Project (and higher in the hierarchy) is not scheduled for deletion
+    This will otherwise conflict with the delete operation of Job
+    """
+    remove_objects(
+        JobDef.objects.filter(
+            project__deleted__isnull=True,
+            project__workspace__deleted__isnull=True,
+        )
+    )
+
+
+@celery_app.task(name="job.tasks.delete_runs")
+def delete_runs():
+    """
+    We delete runs that are marked for deleted longer than 5 mins ago
+    We also check for the condition where the `jobdef` (and higher in the hierarchy) is also not deleted
+    Otherwise we would conflict the deletion operation
+    """
+    remove_objects(
+        JobRun.objects.filter(
+            jobdef__deleted__isnull=True,
+            jobdef__project__deleted__isnull=True,
+            jobdef__project__workspace__deleted__isnull=True,
+        )
+    )

@@ -3,7 +3,6 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -21,22 +20,23 @@ class JobRunView(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
     # we removed 'put' from the http_method_names as we don't support this in this view
-    # - post and delete
-    http_method_names = ["get", "patch", "head", "options", "trace"]
+    # - post ( no run creation on this endpoint )
+    http_method_names = ["get", "patch", "head", "options", "trace", "delete"]
 
-    queryset = JobRun.objects.all()
+    queryset = JobRun.objects.filter(deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
 
     permission_classes = [
-        IsMemberOfJobDefAttributePermission | IsAdminUser,
+        IsMemberOfJobDefAttributePermission,
     ]
 
     permission_classes_by_action = {
-        "update": [IsMemberOfJobDefAttributePermission | IsAdminUser],
+        "update": [IsMemberOfJobDefAttributePermission],
     }
 
     serializer_classes_by_action = {
@@ -69,6 +69,12 @@ class JobRunView(
             "member",
             "output",
         )
+
+    def perform_destroy(self, instance):
+        """
+        We don't actually remove the model, we just mark it as deleted
+        """
+        instance.to_deleted()
 
     @action(
         detail=True,
@@ -198,7 +204,7 @@ class JobRunView(
 
 
 class JobJobRunView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = JobRun.objects.all()
+    queryset = JobRun.objects.filter(deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
     permission_classes = [IsMemberOfJobDefAttributePermission]

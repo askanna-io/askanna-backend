@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.db import models
 
 from core.models import (
@@ -10,7 +11,10 @@ from core.models import (
 
 class ProjectQuerySet(models.QuerySet):
     def active_projects(self):
-        return self.filter(deleted__isnull=True)
+        return self.filter(
+            deleted__isnull=True,
+            workspace__deleted__isnull=True,
+        )
 
     def inactive_projects(self):
         return self.filter(deleted__isnull=False)
@@ -46,7 +50,7 @@ class Project(AuthorModel, ActivatorModel, NameDescriptionModel, SlimBaseModel):
     projects = ActiveProjectManager()
 
     workspace = models.ForeignKey(
-        "workspace.Workspace", on_delete=models.SET_NULL, blank=True, null=True
+        "workspace.Workspace", on_delete=models.CASCADE, blank=True, null=True
     )
 
     template = models.UUIDField(db_index=True, editable=False, null=True)
