@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from core.utils import get_setting_from_database
 from job.models import JobDef
+from package.models import Package
 
 from .artifact import (  # noqa: F401
     JobArtifactSerializer,
@@ -34,6 +35,29 @@ class JobSerializer(serializers.ModelSerializer):
     project = serializers.SerializerMethodField("get_project")
     environment = serializers.SerializerMethodField("get_environment")
     schedules = serializers.SerializerMethodField("get_schedules")
+
+    notifications = serializers.SerializerMethodField("get_notifications")
+
+    def get_notifications(self, instance):
+        """
+        If notifications are configured we return them here
+        """
+        package = (
+            Package.objects.filter(project=instance.project)
+            .order_by("-created")
+            .first()
+        )
+
+        configyml = package.get_askanna_config()
+        if configyml is None:
+            # we could not parse the config
+            return {}
+
+        job = configyml.jobs.get(instance.name)
+        if job and job.notifications:
+            return job.notifications
+
+        return {}
 
     def get_default_image(self, instance):
         return get_setting_from_database(

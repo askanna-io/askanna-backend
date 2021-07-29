@@ -7,7 +7,8 @@ import uuid
 
 import croniter
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.validators import validate_email
 from django.db.models.query import QuerySet
 from django.urls import register_converter
 from django.utils import timezone
@@ -312,6 +313,15 @@ def get_setting_from_database(name: str, default=None):
         return setting.value
 
 
+def is_valid_email(email):
+    try:
+        validate_email(email)
+    except ValidationError:
+        return False
+    else:
+        return True
+
+
 # object removal
 def remove_objects(queryset, ttl_hours: int = 1):
     """
@@ -330,3 +340,43 @@ def remove_objects(queryset, ttl_hours: int = 1):
 
     for obj in queryset.filter(deleted__lte=older_than):
         obj.delete()
+
+
+def pretty_time_delta(seconds: int) -> str:
+    """
+    Transforms an integer which represents duration into a human readable string
+    """
+    seconds = int(seconds)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+
+    def plurify(amount, single, plural):
+        if amount == 1:
+            return f"{amount} {single}"
+        return f"{amount} {plural}"
+
+    if days > 0:
+        return "%s, %s, %s and %s" % (
+            plurify(days, "day", "days"),
+            plurify(hours, "hour", "hours"),
+            plurify(minutes, "minute", "minutes"),
+            plurify(seconds, "second", "seconds"),
+        )
+    elif hours > 0:
+        return "%s, %s and %s" % (
+            plurify(hours, "hour", "hours"),
+            plurify(minutes, "minute", "minutes"),
+            plurify(seconds, "second", "seconds"),
+        )
+    elif minutes > 0:
+        return "%s and %s" % (
+            plurify(minutes, "minute", "minutes"),
+            plurify(seconds, "second", "seconds"),
+        )
+    else:
+        return "%s" % (plurify(seconds, "second", "seconds"),)
+
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]

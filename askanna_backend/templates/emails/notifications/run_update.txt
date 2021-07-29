@@ -1,0 +1,17 @@
+Run #{{ run.short_uuid|slice:":4" }} is updated
+
+Project:  {{run.jobdef.project.get_name}}
+Job:      {{run.jobdef.get_name}}
+Run:      {% if run.name %}{{ run.name }}{% else %}{{ run.short_uuid }}{% endif %} ({{ ui_url }}/{{ run.jobdef.project.workspace.short_uuid }}/project/{{ run.jobdef.project.short_uuid }}/jobs/{{ run.jobdef.short_uuid }}/runs/{{ run.short_uuid }}/overview)
+
+Duration: {{ duration_humanized }}
+
+By:       {{ run.member.get_name }}
+Trigger:  {{ trigger }}
+
+{% if result %}
+Result:   {{ result.name }} ({{ ui_url }}/{{ run.jobdef.project.workspace.short_uuid }}/project/{{ run.jobdef.project.short_uuid }}/jobs/{{ run.jobdef.short_uuid }}/runs/{{ run.short_uuid }}/result)
+{% endif %}
+---
+You're receiving this email because of a running project on {{ ui_url }}.
+If you don't want to receive these emails, please get in touch with your project team.

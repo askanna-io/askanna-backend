@@ -1,0 +1,16 @@
+notifications:
+  all:
+    email:
+      - anna@askanna.io
+      - robot@askanna.io
+
+job1:
+  job:
+    - echo "test"
+  notifications:
+    all:
+      email:
+        - user@askanna.io
+    error:
+      email:
+        - user+error@askanna.io

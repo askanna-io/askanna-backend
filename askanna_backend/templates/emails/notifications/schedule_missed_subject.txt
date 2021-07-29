@@ -1,0 +1,1 @@
+Error in scheduled job "{{ job.name }}" | "{{ project.get_name }}"

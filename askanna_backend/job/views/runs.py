@@ -105,7 +105,7 @@ class JobRunView(
             )
 
         # see whether we are on the right job
-        job_config = askanna_config.get(jd.name)
+        job_config = askanna_config.jobs.get(jd.name)
         if not job_config:
             # {jd.name} is not specified in this askanna.yml, cannot start job
             return HttpResponse(
@@ -118,9 +118,8 @@ class JobRunView(
                 )
             )
 
-        job_commands = job_config.get("job")
         commands = []
-        for command in job_commands:
+        for command in job_config.commands:
             print_command = command.replace('"', '"')
             commands.append(
                 {

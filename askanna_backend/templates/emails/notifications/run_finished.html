@@ -1,0 +1,191 @@
+{% extends "emails/notifications/base.html" %} {% block title %} Title for
+failed {% endblock title %} {% block content %}
+<table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="a0df340d-26c9-4554-86ff-793a33313c44">
+  <tbody>
+    <tr>
+      <td style="padding: 0px 0px 20px 0px" role="module-content" bgcolor=""></td>
+    </tr>
+  </tbody>
+</table>
+<table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="2112f606-fcd5-436b-9ccd-6ffd18f333a2" data-mc-module-version="2019-10-22">
+  <tbody>
+    <tr>
+      <td style="line-height: 23px; text-align: inherit" height="100%" valign="top" role="module-content">
+        <div>
+          <div style="
+              padding: 8px 0px 4px 0px;
+              background-color: #49b0ad;
+              font-family: inherit;
+              text-align: center;
+              border-top-left-radius: 5px;
+              border-top-right-radius: 5px;
+              border-bottom-right-radius: 5px;
+              border-bottom-left-radius: 5px;
+            ">
+            <span style="font-size: 24px; color: #ffffff">Run #{{ run.short_uuid|slice:":4" }} has finished</span>
+          </div>
+          <div></div>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+{{ block.super }} {% endblock %}
+{% block rundate %}
+<table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" role="module" data-type="columns"
+  style="padding: 0px 0px 0px 0px" bgcolor="#FFFFFF" data-distribution="1,3">
+  <tbody>
+    <tr role="module-content">
+      <td height="100%" valign="top">
+        <table width="95" style="
+            width: 95px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 10px 0px 0px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-0">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="36ef031b-319a-449e-8942-c1a807915583.1.1.1"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 5px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div style="font-family: inherit; text-align: inherit">
+                            <span style="font-size: 18px"><strong>Date:</strong></span>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table width="435" style="
+            width: 435px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 0px 0px 10px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-1">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="1d4de8cb-49ae-4310-9e47-8a97d29c1f5a.1.1.1"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 0px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div class="wrapper-value" style="font-family: inherit; text-align: inherit">
+                            <span style="font-size: 18px">
+                              {{ run_finished|date:"F d, Y, h:i:s a e" }}</span>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% endblock rundate %}
+
+{% block duratation %}
+<table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" role="module" data-type="columns"
+  style="padding: 0px 0px 0px 0px" bgcolor="#FFFFFF" data-distribution="1,3">
+  <tbody>
+    <tr role="module-content">
+      <td height="100%" valign="top">
+        <table width="95" style="
+            width: 95px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 10px 0px 0px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-0">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="36ef031b-319a-449e-8942-c1a807915583.1.1.1.1"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 5px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div style="font-family: inherit; text-align: inherit">
+                            <span style="font-size: 18px"><strong>Duration:</strong></span>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table width="435" style="
+            width: 435px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 0px 0px 10px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-1">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="1d4de8cb-49ae-4310-9e47-8a97d29c1f5a.1.1.1.1"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 0px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div style="font-family: inherit; text-align: inherit">
+                            <span style="font-size: 18px">{{ duration_humanized }}</span>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% endblock duratation %}

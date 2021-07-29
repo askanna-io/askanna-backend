@@ -1,0 +1,7 @@
+Started run
+{% if run.name %}
+ "{{ run.name }}"
+{% else %}
+ "{{ run.jobdef.name }}"
+{% endif %}
+ | {{ run.jobdef.project.get_name }}

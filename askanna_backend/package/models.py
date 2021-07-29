@@ -5,8 +5,9 @@ from django.conf import settings
 from django.db import models
 from jinja2 import Environment
 
+from core.config import AskAnnaConfig
 from core.models import AuthorModel, BaseModel
-from core.utils import get_config, get_config_from_string
+from core.utils import get_config_from_string
 from package.signals import package_upload_finish
 
 
@@ -104,7 +105,7 @@ class Package(AuthorModel, BaseModel):
         askanna_yml = self.get_askanna_yml_path()
         if not askanna_yml:
             return None
-        return get_config(askanna_yml)
+        return AskAnnaConfig.from_stream(open(askanna_yml, "r"))
 
     def get_parsed_askanna_config(self, variables={}) -> dict:
 

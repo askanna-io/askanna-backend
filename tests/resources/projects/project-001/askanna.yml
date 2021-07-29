@@ -2,6 +2,10 @@
 my-test-job:
   job:
     - python my_script.py
+  notifications:
+    all:
+      email:
+        - anna@askanna.io
 
 my-second-test-job:
   job:
