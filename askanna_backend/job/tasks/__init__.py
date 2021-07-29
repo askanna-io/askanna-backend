@@ -7,6 +7,7 @@ from config.celery_app import app as celery_app
 
 from .maintanance import clean_containers_after_run, clean_dangling_images  # noqa
 from .metrics import extract_metrics_labels, move_metrics_to_rows  # noqa
+from .notification import send_run_notification  # noqa
 from .run import start_run  # noqa
 from .schedules import fix_missed_scheduledjobs, launch_scheduled_jobs  # noqa
 from .variables import extract_variables_labels, move_variables_to_rows  # noqa

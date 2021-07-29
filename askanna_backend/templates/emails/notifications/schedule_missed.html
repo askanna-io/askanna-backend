@@ -1,0 +1,255 @@
+{% extends "emails/notifications/base.html" %}
+{% block title %}Error | Scheduled job {{ job.name }} of {{run.jobdef.project.get_name}} didn't start
+{% endblock title %}
+
+{% block content %}
+<table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="a0df340d-26c9-4554-86ff-793a33313c44">
+  <tbody>
+    <tr>
+      <td style="padding: 0px 0px 20px 0px" role="module-content" bgcolor=""></td>
+    </tr>
+  </tbody>
+</table>
+<table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="2112f606-fcd5-436b-9ccd-6ffd18f333a2" data-mc-module-version="2019-10-22">
+  <tbody>
+    <tr>
+      <td style="line-height: 23px; text-align: inherit" height="100%" valign="top" role="module-content">
+        <div>
+          <div style="
+              padding: 8px 0px 4px 0px;
+              background-color: #ff7872;
+              font-family: inherit;
+              text-align: center;
+              border-top-left-radius: 5px;
+              border-top-right-radius: 5px;
+              border-bottom-right-radius: 5px;
+              border-bottom-left-radius: 5px;
+            ">
+            <span style="font-size: 24px; color: #ffffff">Error | Scheduled job &quot;{{ job.name }}&quot; not
+              started</span>
+          </div>
+          <div></div>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+<table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="91f87931-590c-4935-b511-c4a0d58ea9c6">
+  <tbody>
+    <tr>
+      <td style="padding: 0px 0px 20px 0px" role="module-content" bgcolor=""></td>
+    </tr>
+  </tbody>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" role="module" data-type="columns"
+  style="padding: 0px 0px 0px 0px" bgcolor="#FFFFFF" data-distribution="1,3">
+  <tbody>
+    <tr role="module-content">
+      <td height="100%" valign="top">
+        <table width="95" style="
+            width: 95px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 10px 0px 0px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-0">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="36ef031b-319a-449e-8942-c1a807915583"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 5px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div style="font-family: inherit; text-align: inherit">
+                            <span style="font-size: 18px"><strong>Project:</strong></span>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table width="435" style="
+            width: 435px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 0px 0px 10px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-1">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="1d4de8cb-49ae-4310-9e47-8a97d29c1f5a"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 0px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div class="wrapper-value" style="font-family: inherit; text-align: inherit">
+                            <a href="{{ ui_url }}/{{ project.workspace.short_uuid }}/project/{{ project.short_uuid }}/"
+                              target="_blank"><span
+                                style="color: #5d3eb2; font-size: 18px">{{project.get_name}}</span></a>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" role="module" data-type="columns"
+  style="padding: 0px 0px 0px 0px" bgcolor="#FFFFFF" data-distribution="1,3">
+  <tbody>
+    <tr role="module-content">
+      <td height="100%" valign="top">
+        <table width="95" style="
+            width: 95px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 10px 0px 0px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-0">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="36ef031b-319a-449e-8942-c1a807915583.1"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 5px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div style="font-family: inherit; text-align: inherit">
+                            <span style="font-size: 18px"><strong>Job:</strong></span>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table width="435" style="
+            width: 435px;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0px 0px 0px 10px;
+          " cellpadding="0" cellspacing="0" align="left" border="0" bgcolor="" class="column column-1">
+          <tbody>
+            <tr>
+              <td style="padding: 0px; margin: 0px; border-spacing: 0">
+                <table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0"
+                  width="100%" style="table-layout: fixed" data-muid="1d4de8cb-49ae-4310-9e47-8a97d29c1f5a.1"
+                  data-mc-module-version="2019-10-22">
+                  <tbody>
+                    <tr>
+                      <td style="
+                          padding: 0px 0px 0px 0px;
+                          line-height: 22px;
+                          text-align: inherit;
+                        " height="100%" valign="top" bgcolor="" role="module-content">
+                        <div>
+                          <div class="wrapper-value" style="font-family: inherit; text-align: inherit">
+                            <a href="{{ ui_url }}/{{ project.workspace.short_uuid }}/project/{{ project.short_uuid }}/jobs/{{ jobdef.short_uuid }}/overview"
+                              target="_blank"><span style="color: #5d3eb2; font-size: 18px">{{job.name}}</span></a>
+                          </div>
+                          <div></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="2befe393-ef0e-4ca4-ba1d-367e6cf5f378">
+  <tbody>
+    <tr>
+      <td style="padding: 0px 0px 20px 0px" role="module-content" bgcolor=""></td>
+    </tr>
+  </tbody>
+</table>
+<table class="module" role="module" data-type="text" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="3ff8f61c-ac74-4d27-b6ec-f5159fc8ac50" data-mc-module-version="2019-10-22">
+  <tbody>
+    <tr>
+      <td style="
+          padding: 0px 0px 10px 0px;
+          line-height: 22px;
+          text-align: inherit;
+        " height="100%" valign="top" bgcolor="" role="module-content">
+        <div>
+          <div style="font-family: inherit; text-align: inherit">
+            <span style="font-size: 18px"><strong>Information</strong></span>:
+          </div>
+          <div></div>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<table class="module" role="module" data-type="code" border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="table-layout: fixed" data-muid="adedd3f4-769e-43de-8dff-e447249ce9dc">
+  <tbody>
+    <tr>
+      <td height="100%" valign="top" role="module-content">
+        <pre style="
+            font-weight: normal;
+            font-family: Menlo, Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-line;
+            background-color: #f4f5f6;
+            color: #3d4649;
+            border-radius: 4px;
+            word-wrap: break-word;
+            margin: 0px;
+            padding: 10px 15px;
+          ">
+We are sorry to inform you that your scheduled job &quot;{{ job.name }}&quot; of &quot;{{ project.get_name }}&quot; could not start because of some issues on our side.
+
+We will reschedule the job for the next scheduled run.
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}

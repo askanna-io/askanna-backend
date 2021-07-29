@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 
+from django.db.transaction import on_commit
+
 from config.celery_app import app as celery_app
 from job.models import (
     JobRun,
@@ -26,6 +28,14 @@ def fix_missed_scheduledjobs():
         job__project__workspace__deleted__isnull=True,
     ):
         job.update_next()
+
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.send_missed_schedule_notification",
+                args=None,
+                kwargs={"job_uuid": job.job.uuid},
+            )
+        )
 
 
 @celery_app.task(name="job.tasks.launch_scheduled_jobs")

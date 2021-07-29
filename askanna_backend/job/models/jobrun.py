@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models.fields import DateTimeField
+from django.db.transaction import on_commit
 from django.utils import timezone
 
+from config.celery_app import app as celery_app
 from core.fields import ArrayField
 from core.models import BaseModel
 from job.models.const import JOB_STATUS
@@ -73,8 +76,25 @@ class JobRun(BaseModel):
             self.duration = (self.finished - self.started).seconds
         self.save(update_fields=["duration", "finished", "modified"])
 
+        # fire off a Celery tasks to notify the user
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.send_run_notification",
+                args=None,
+                kwargs={"run_uuid": self.uuid},
+            )
+        )
+
     def to_pending(self):
         self.set_status("PENDING")
+
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.send_run_notification",
+                args=None,
+                kwargs={"run_uuid": self.uuid},
+            )
+        )
 
     def to_failed(self, exit_code=1):
         self.output.save_stdout()
@@ -100,8 +120,18 @@ class JobRun(BaseModel):
         self.timezone = run_timezone
         self.save(update_fields=["timezone"])
 
+    def get_result(self):
+        try:
+            result = self.result
+        except ObjectDoesNotExist:
+            return None
+        return result
+
     def get_name(self):
-        return ""
+        """
+        Return the name for short-serialisation
+        """
+        return None or self.name
 
     @property
     def relation_to_json(self):

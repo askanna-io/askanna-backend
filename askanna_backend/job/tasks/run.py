@@ -21,6 +21,52 @@ from job.models import (
 )
 
 
+def log_run_variables(
+    variable_name, variable_value, project, job, run, masked, labels=[]
+):
+    """
+    Log the variables used for the run
+    """
+    spec = {
+        "project_suuid": project.short_uuid,
+        "job_suuid": job.short_uuid,
+        "run_suuid": run.short_uuid,
+        "created": datetime.datetime.now(tz=datetime.timezone.utc),
+        "variable": {
+            "name": variable_name,
+            "value": variable_value,
+            "type": "string",
+        },
+        "label": labels,
+    }
+    if masked is not None:
+        spec["is_masked"] = masked
+    RunVariableRow.objects.create(**spec)
+
+
+def get_project_variables(project, job, run):
+    # Get variables for this project / run
+    project_variables = {}
+    for pv in JobVariable.objects.filter(project=project):
+        project_variables[pv.name] = pv.value
+
+        # log the project defined variables
+        labels = [{"name": "source", "value": "project", "type": "string"}]
+        is_masked = pv.is_masked
+        if is_masked:
+            labels.append({"name": "is_masked", "value": None, "type": "tag"})
+        log_run_variables(
+            pv.name,
+            pv.get_value(show_masked=False),
+            project,
+            job,
+            run,
+            is_masked,
+            labels,
+        )
+    return project_variables
+
+
 @celery_app.task(bind=True, name="job.tasks.start_run")
 def start_run(self, run_uuid):
     print(f"Received message to start jobrun {run_uuid}")
@@ -64,10 +110,8 @@ def start_run(self, run_uuid):
         op.log("Could not find askanna.yml", print_log=docker_debug_log)
         return jr.to_failed()
 
-    global_timezone = is_valid_timezone(
-        askanna_config.get("timezone"), settings.TIME_ZONE
-    )
-    job_config = askanna_config.get(jd.name)
+    global_timezone = is_valid_timezone(askanna_config.timezone, settings.TIME_ZONE)
+    job_config = askanna_config.jobs.get(jd.name)
     if not job_config:
         op.log(
             f"Job `{jd.name}` was not found in askanna.yml:", print_log=docker_debug_log
@@ -83,36 +127,12 @@ def start_run(self, run_uuid):
         op.log("", print_log=docker_debug_log)
         return jr.to_failed()
 
-    job_timezone = is_valid_timezone(job_config.get("timezone"), global_timezone)
+    job_timezone = is_valid_timezone(job_config.timezone, global_timezone)
     jr.set_timezone(job_timezone)
 
     # log the variables set in this run
     # Get variables for this project / run
-    _project_variables = JobVariable.objects.filter(project=pr)
-    project_variables = {}
-    for pv in _project_variables:
-        project_variables[pv.name] = pv.value
-
-        # log the project defined variables
-        labels = [{"name": "source", "value": "project", "type": "string"}]
-        is_masked = pv.is_masked
-        if is_masked:
-            labels.append({"name": "is_masked", "value": None, "type": "tag"})
-        RunVariableRow.objects.create(
-            **{
-                "project_suuid": pr.short_uuid,
-                "job_suuid": jd.short_uuid,
-                "run_suuid": jr.short_uuid,
-                "created": datetime.datetime.now(tz=datetime.timezone.utc),
-                "variable": {
-                    "name": pv.name,
-                    "value": pv.get_value(show_masked=False),
-                    "type": "string",
-                },
-                "is_masked": is_masked,
-                "label": labels,
-            }
-        )
+    project_variables = get_project_variables(project=pr, job=jd, run=jr)
 
     # configure hostname for this project docker container
     hostname = pr.short_uuid
@@ -152,20 +172,7 @@ def start_run(self, run_uuid):
     for variable, value in worker_variables.items():
         # log the worker variables
         labels = [{"name": "source", "value": "worker", "type": "string"}]
-        RunVariableRow.objects.create(
-            **{
-                "project_suuid": pr.short_uuid,
-                "job_suuid": jd.short_uuid,
-                "run_suuid": jr.short_uuid,
-                "created": datetime.datetime.now(tz=datetime.timezone.utc),
-                "variable": {
-                    "name": variable,
-                    "value": value,
-                    "type": "string",
-                },
-                "label": labels,
-            }
-        )
+        log_run_variables(variable, value, pr, jd, jr, masked=None, labels=labels)
 
     payload_variables = {}
     if pl and isinstance(pl.payload, dict):
@@ -184,20 +191,7 @@ def start_run(self, run_uuid):
     for variable, value in payload_variables.items():
         # log the payload variables
         labels = [{"name": "source", "value": "payload", "type": "string"}]
-        RunVariableRow.objects.create(
-            **{
-                "project_suuid": pr.short_uuid,
-                "job_suuid": jd.short_uuid,
-                "run_suuid": jr.short_uuid,
-                "created": datetime.datetime.now(tz=datetime.timezone.utc),
-                "variable": {
-                    "name": variable,
-                    "value": value,
-                    "type": "string",
-                },
-                "label": labels,
-            }
-        )
+        log_run_variables(variable, value, pr, jd, jr, masked=None, labels=labels)
 
     # update the meta of trackedvariables
     tv.update_meta()

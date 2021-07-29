@@ -3,10 +3,8 @@
 # Status of a job execution  # noqa
 JOB_STATUS = (
     ("SUBMITTED", "SUBMITTED"),
-    ("COMPLETED", "COMPLETED"),
     ("PENDING", "PENDING"),
-    ("PAUSED", "PAUSED"),
     ("IN_PROGRESS", "IN_PROGRESS"),
+    ("COMPLETED", "COMPLETED"),
     ("FAILED", "FAILED"),
-    ("SUCCESS", "SUCCESS"),
 )

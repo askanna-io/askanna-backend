@@ -344,7 +344,7 @@ class BaseJobTestDef:
                 name="run3",
                 description="test run3",
                 package=cls.package2,
-                jobdef=cls.jobdef3,
+                jobdef=cls.jobdef3,  # link faulty job on purpose to test on error not found in askanna.yml
                 status="IN_PROGRESS",
                 owner=cls.users["user"],
                 member=cls.memberA_member2,

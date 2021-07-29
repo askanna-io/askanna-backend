@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 from rest_framework import serializers
 
+from package.models import Package
 from project.models import Project
 from users.models import MSP_WORKSPACE
 from workspace.models import Workspace
@@ -40,6 +42,26 @@ class BaseProjectSerializer:
             "name": None,
         }
 
+    notifications = serializers.SerializerMethodField("get_notifications")
+
+    def get_notifications(self, instance):
+        """
+        If notifications are configured we return them here
+        """
+        package = Package.objects.filter(project=instance).order_by("-created").first()
+        if not package:
+            return {}
+
+        configyml = package.get_askanna_config()
+        if configyml is None:
+            # we could not parse the config
+            return {}
+
+        if configyml.notifications:
+            return configyml.notifications
+
+        return {}
+
     def to_representation(self, instance):
         request = self.context["request"]
         url = "{scheme}://{host}/{workspace}/project/{project}".format(
@@ -55,6 +77,7 @@ class BaseProjectSerializer:
             "description": instance.description,
             "workspace": self.get_workspace(instance),
             "package": self.get_package(instance),
+            "notifications": self.get_notifications(instance),
             "template": instance.template,
             "created_by": self.get_created_by(instance),
             "created": instance.created,
