@@ -17,7 +17,7 @@ variables.
 
 ### Install Docker
 
-Using Docker to run locally requires the least effort and when development for the askanna-backend is not your primary
+Using Docker to run locally requires the least effort and when development for the `askanna-backend` is not your primary
 goal, we advise you to do this setup.
 
 First make sure you have Docker installed on your system: https://docs.docker.com/engine/install/
@@ -46,15 +46,6 @@ docker-compose up
 
 You can then access the AskAnna Backend via: http://localhost:8000/admin
 
-### Run via Mutagen
-
-It is possible to run the project on a remote Docker instance, while developing locally. [Mutagen](https://mutagen.io)
-is [integrated with docker-compose](https://mutagen.io/documentation/orchestration/compose) to allow you to use
-external hardware that can be in your network or in the cloud. File changes are propagated immediately. This method
-also improves performance when running Docker in Mac OS.
-
-Read more on the [docker-compose.mutagen.yml](docker-compose.mutagen.yml) file.
-
 ### Running additional commands on Docker
 
 When running in a Docker Compose setup, one cannot directly excecute commands on the containers. E.g. you want to know
@@ -78,6 +69,17 @@ docker exec -it askanna-backend_django_1 /bin/sh
 python manage.py makemigrations
 python manage.py migrate
 ```
+
+### Removing docker-compose setup
+
+In case you don't want to develop or run `askanna-backend` locally anymore, or something happened which corrupted your
+installation. You can execute the following to remove `askanna-backend` from your system:
+
+```bash
+docker-compose rm --stop -v -f
+```
+
+This will remove all volumes which where created for `askanna-backend` to run.
 
 ## Basic commands
 
