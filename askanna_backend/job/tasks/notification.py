@@ -20,7 +20,7 @@ def send_run_notification(self, run_uuid):
         return
 
     job_config = configyml.jobs.get(run.jobdef.name)
-    if job_config.notifications:
+    if job_config and job_config.notifications:
         # only send notifications when notifications are configured
         # for this job and globally (infered in the job notifications)
         do_send_notification(run.status, run=run, job=job_config)
@@ -42,7 +42,7 @@ def send_missed_schedule_notification(self, job_uuid):
         return
 
     job_config = configyml.jobs.get(job.name)
-    if job_config.notifications:
+    if job_config and job_config.notifications:
         # only send notifications when notifications are configured
         # for this job and globally (infered in the job notifications)
         do_send_notification(
