@@ -90,6 +90,8 @@ class AskAnnaConfig:
         Return the envrioment that is set
         """
         environment = self.config.get("environment", {})
+        if not isinstance(environment, dict):
+            return {}
         return {
             "image": environment.get("image"),
             "credentials": {
