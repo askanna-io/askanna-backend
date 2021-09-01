@@ -1,10 +1,8 @@
 """Security related settings."""
-
-from .settings_decorator import configclass
-
-
 import ipaddress
 import logging
+
+from .settings_decorator import configclass
 
 
 class IpNetworks():
@@ -58,6 +56,8 @@ def settings(config, env):
     config.SECURE_HSTS_PRELOAD = bool(config.SECURE_HSTS_SECONDS)
 
     if env.bool("DJANGO_ENABLE_CORS_HANDLING", default=False):
+        from corsheaders.defaults import default_headers
+
         config.INSTALLED_APPS = [
             "corsheaders",
         ] + config.INSTALLED_APPS
@@ -66,6 +66,11 @@ def settings(config, env):
         config.MIDDLEWARE = [
             "corsheaders.middleware.CorsMiddleware",
         ] + config.MIDDLEWARE
+
+        config.CORS_ALLOW_HEADERS = list(default_headers) + [
+            "askanna-agent",
+            "askanna-agent-version"
+        ]
 
     if config.DEBUG:
         # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips

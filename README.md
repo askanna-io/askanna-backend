@@ -44,7 +44,16 @@ launch the AskAnna Backend by running the command:
 docker-compose up
 ```
 
-You can then access the AskAnna Backend via: http://localhost:8000/admin
+You can then access the AskAnna Backend via: [http://localhost:8000/admin/](http://localhost:8000/admin/)
+
+#### On MacOS
+
+If you run the AskAnna Backend using Docker Compose on MacOS, it could be that you have issues with running jobs.
+In the file [docker-compose.yml](docker-compose.yml), you can replace line 15 with the next line and it should work.
+
+```yaml
+      - /var/run/docker.sock.raw:/var/run/docker.sock:ro
+```
 
 ### Running additional commands on Docker
 
@@ -85,7 +94,7 @@ This will remove all volumes which where created for `askanna-backend` to run.
 
 ### Setting up your users
 
-To create an **superuser account**, use this command:
+To create a **superuser account**, use this command:
 
 ```python
 python manage.py createsuperuser
@@ -96,6 +105,13 @@ http://localhost:8000/admin/users/user/add/
 
 **Tip:** for convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox
 (or similar), so that you can see how the site behaves for both kinds of users.
+
+**Hint:** when you run the application via Docker Compose, you need to setup a terminal session to the Docker
+container:
+
+```bash
+docker exec -it askanna-backend_django_1 /bin/sh
+```
 
 ### Type checks
 
@@ -120,7 +136,6 @@ open htmlcov/index.html
 ```python
 pytest
 ```
-
 
 ### Celery
 
