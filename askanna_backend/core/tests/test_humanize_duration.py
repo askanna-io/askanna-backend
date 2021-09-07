@@ -5,7 +5,7 @@ from core.utils import pretty_time_delta
 
 
 class TestHumanizeDuration(unittest.TestCase):
-    def test_is_valid_timezone(self):
+    def test_pretty_time_delta(self):
         self.assertEqual(pretty_time_delta(0), "0 seconds")
         self.assertEqual(pretty_time_delta(1), "1 second")
 

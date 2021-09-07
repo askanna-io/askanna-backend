@@ -12,7 +12,11 @@ from core.container import (
     RegistryAuthenticationError,
     RegistryContainerPullError,
 )
-from core.utils import is_valid_timezone, get_setting_from_database
+from core.utils import (
+    is_valid_timezone,
+    get_setting_from_database,
+    parse_string,
+)
 from job.models import (
     JobRun,
     JobVariable,
@@ -73,18 +77,19 @@ def start_run(self, run_uuid):
 
     # get runner image
     # the default image can be set in core.models.Setting
-    runner_image = get_setting_from_database(
+    default_runner_image = get_setting_from_database(
         name="RUNNER_DEFAULT_DOCKER_IMAGE",
         default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
     )
-    runner_image_user = get_setting_from_database(
+    default_runner_image_user = get_setting_from_database(
         name="RUNNER_DEFAULT_DOCKER_IMAGE_USER",
         default=settings.ASKANNA_DOCKER_USER,
     )
-    runner_image_pass = get_setting_from_database(
+    default_runner_image_pass = get_setting_from_database(
         name="RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
         default=settings.ASKANNA_DOCKER_PASS,
     )
+
     docker_debug_log = get_setting_from_database(
         name="DOCKER_DEBUG_LOG",
         default=False,
@@ -104,8 +109,13 @@ def start_run(self, run_uuid):
     tv = jr.runvariables.get()
 
     package = jr.package
-    # read unparsed askanna config to get the timezone settings
-    askanna_config = package.get_askanna_config()
+    askanna_config = package.get_askanna_config(
+        defaults={
+            "RUNNER_DEFAULT_DOCKER_IMAGE": default_runner_image,
+            "RUNNER_DEFAULT_DOCKER_IMAGE_USER": default_runner_image_user,
+            "RUNNER_DEFAULT_DOCKER_IMAGE_PASS": default_runner_image_pass,
+        }
+    )
     if not askanna_config:
         op.log("Could not find askanna.yml", print_log=docker_debug_log)
         return jr.to_failed()
@@ -202,25 +212,6 @@ def start_run(self, run_uuid):
     env_variables.update(**payload_variables)
     env_variables.update(**worker_variables)
 
-    # read parsed askanna yml to get the environment settings
-    askanna_config = package.get_parsed_askanna_config(variables=env_variables)
-    if not askanna_config:
-        op.log("Could not find askanna.yml", print_log=docker_debug_log)
-        return jr.to_failed()
-
-    global_environment = askanna_config.get(
-        "environment",
-        {
-            "image": runner_image,
-            "credentials": {
-                "username": runner_image_user,
-                "password": runner_image_pass,
-            },
-        },
-    )
-    job_config = askanna_config.get(jd.name)
-    job_environment = job_config.get("environment", global_environment)
-
     # start the run
     jr.to_inprogress()
 
@@ -228,11 +219,18 @@ def start_run(self, run_uuid):
     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
 
     # get image information to determine whether we need to pull this one
+    job_image = parse_string(job_config.environment.image, env_variables)
+    job_image_username = parse_string(
+        job_config.environment.credentials.username or "", env_variables
+    )
+    job_image_password = parse_string(
+        job_config.environment.credentials.password or "", env_variables
+    )
     imagehelper = RegistryImageHelper(
         client,
-        job_environment.get("image"),
-        username=job_environment.get("credentials", {}).get("username"),
-        password=job_environment.get("credentials", {}).get("password"),
+        job_image,
+        username=job_image_username,
+        password=job_image_password,
         logger=lambda x: op.log(message=x, print_log=docker_debug_log),
     )
 
@@ -243,11 +241,6 @@ def start_run(self, run_uuid):
     except (RegistryAuthenticationError, RegistryContainerPullError):
         return jr.to_failed()
 
-    # rule:
-    # Can we find the image_short_id in db?
-    #   yes: set runner_image to prebuild_image name
-    #   no: pull and build
-
     op.log("Preparing run environment", print_log=docker_debug_log)
     op.log(f"Getting image {imagehelper.image_uri}", print_log=docker_debug_log)
     op.log(
@@ -255,6 +248,10 @@ def start_run(self, run_uuid):
         print_log=docker_debug_log,
     )
 
+    # rule:
+    # Can we find the image_short_id in db?
+    #   yes: set runner_image to prebuild_image name
+    #   no: pull and build
     run_image, _created = RunImage.objects.get_or_create(
         **{
             "name": imagehelper.repository,
@@ -292,7 +289,7 @@ def start_run(self, run_uuid):
             )
         except docker.errors.DockerException as e:
             op.log(
-                f"Run could not be started because of run errors in the image {job_environment.get('image')}",
+                f"Run could not be started because of run errors in the image {job_image}",
                 print_log=docker_debug_log,
             )
             op.log(e.msg, print_log=docker_debug_log)
@@ -317,7 +314,7 @@ def start_run(self, run_uuid):
     # register that we are using this run_image
     jr.set_run_image(run_image)
 
-    print("Starting image: ", job_environment.get("image"))
+    print("Starting image: ", job_image)
     try:
         container = client.containers.run(
             run_image.cached_image,
@@ -334,14 +331,12 @@ def start_run(self, run_uuid):
             stdout=True,
             stderr=True,
             detach=True,
-            # always false, otherwise we are not able to capture logs from very short runs
-            auto_remove=False,
-            # remove=True,  # remove container after run
+            auto_remove=False,  # always false, otherwise we are not able to capture logs from very short runs
         )
     except (docker.errors.APIError, docker.errors.DockerException) as e:
         print(e)
         op.log(
-            f"Run could not be started because of run errors in the image {job_environment.get('image')}",
+            f"Run could not be started because of run errors in the image {job_image}",
             print_log=docker_debug_log,
         )
         op.log(e.explanation, print_log=docker_debug_log)

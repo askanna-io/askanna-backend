@@ -4,7 +4,8 @@ import unittest
 import pytest
 from rest_framework.test import APITestCase
 
-from job.mailer import parsestring, fill_in_mail_variable, send_run_notification
+from job.mailer import fill_in_mail_variable, send_run_notification
+from core.utils import parse_string
 from job.tests.base import BaseJobTestDef
 
 pytestmark = pytest.mark.django_db
@@ -17,7 +18,7 @@ class TestJobMailerUtils(unittest.TestCase):
             "to": "be",
             "or": "not",
         }
-        self.assertEqual(parsestring(string, variables), "be be not be be")
+        self.assertEqual(parse_string(string, variables), "be be not be be")
 
     def test_mail_variable_deduplicated(self):
         string = "${project_variable_mail_notifications}"

@@ -12,7 +12,10 @@ try:
 except ImportError:
     from yaml import Loader
 
-from core.utils import is_valid_timezone, parse_cron_line
+from core.utils import (
+    is_valid_timezone,
+    parse_cron_line,
+)
 
 
 class AskAnnaConfig:
@@ -37,8 +40,9 @@ class AskAnnaConfig:
         "worker",
     )
 
-    def __init__(self, config: Dict = {}, *args, **kwargs):
+    def __init__(self, config: Dict = {}, defaults: Dict = {}, *args, **kwargs):
         self.config = config
+        self.defaults = defaults
         self.jobs = collections.OrderedDict()
         self.__extract_notifications()
         self.__extract_jobs()
@@ -68,13 +72,13 @@ class AskAnnaConfig:
         self.notifications = notifications
 
     @classmethod
-    def from_stream(cls, filename):
+    def from_stream(cls, filename, defaults: Dict = {}):
         try:
             config = yaml.load(filename, Loader=Loader)
         except yaml.scanner.ScannerError:
             return None
         else:
-            return cls(config=config)
+            return cls(config=config, defaults=defaults)
 
     @property
     def timezone(self):
@@ -87,11 +91,33 @@ class AskAnnaConfig:
     @property
     def environment(self):
         """
-        Return the envrioment that is set
+        Return the environment that is set
         """
+        # get runner image
+        # the default image can be set in core.models.Setting
+        default_runner_image = self.defaults.get(
+            "RUNNER_DEFAULT_DOCKER_IMAGE",
+        )
+        default_runner_image_user = self.defaults.get(
+            "RUNNER_DEFAULT_DOCKER_IMAGE_USER",
+        )
+        default_runner_image_pass = self.defaults.get(
+            "RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
+        )
+
         environment = self.config.get("environment", {})
-        if not isinstance(environment, dict):
-            return {}
+        if not isinstance(environment, dict) or not environment:
+            """
+            When the environment is not defined or just a string
+            we will return the default values configured.
+            """
+            return {
+                "image": default_runner_image,
+                "credentials": {
+                    "username": default_runner_image_user,
+                    "password": default_runner_image_pass,
+                },
+            }
         return {
             "image": environment.get("image"),
             "credentials": {
@@ -134,9 +160,10 @@ class Environment:
     def from_python(cls, environment: Dict = {}):
         spec = {"image": environment.get("image")}
         if environment.get("credentials"):
+            # Credentials are specified, we just assume at least the username is filled out.
             credentials = ImageCredentials(
                 **{
-                    "username": environment.get("credentials", {}).get("username"),
+                    "username": environment.get("credentials", {}).get("username", ""),
                     "password": environment.get("credentials", {}).get("password"),
                 }
             )

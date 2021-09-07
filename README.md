@@ -160,7 +160,7 @@ When you develop locally, you can open Flower via: http://localhost:5555
 ### Sentry
 
 Sentry is an error logging aggregator service. You can sign up for a free account at
-https://sentry.io/signup/?code=cookiecutter or download and host it yourself. The system is setup with reasonable
-defaults, including 404 logging and integration with the WSGI application.
+[https://sentry.io/signup/](https://sentry.io/signup/) or download and host it yourself. The system is setup with
+reasonable defaults, including 404 logging and integration with the WSGI application.
 
 To use Sentry you must set the Sentry DSN url in the environment file for Django.
