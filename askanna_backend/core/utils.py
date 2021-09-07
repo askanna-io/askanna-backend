@@ -13,6 +13,7 @@ from django.db.models.query import QuerySet
 from django.urls import register_converter
 from django.utils import timezone
 import filetype
+from jinja2 import Environment
 import magic
 import pytz
 from yaml import load
@@ -167,6 +168,13 @@ def get_config(filename: str) -> dict:
     Given a filepath, load it and return the intepretated yml
     """
     return get_config_from_string(open(os.path.expanduser(filename), "r"))
+
+
+def parse_string(string, variables):
+    env = Environment(variable_start_string="${", variable_end_string="}")
+    template = env.from_string(string)
+    rendered = template.render(variables)
+    return rendered
 
 
 def validate_cron_line(cron_line: str) -> bool:

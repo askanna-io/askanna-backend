@@ -2,7 +2,6 @@
 import json
 
 from django.conf import settings
-from jinja2 import Environment
 import pytz
 
 from core.config import Job
@@ -12,20 +11,14 @@ from core.utils import (
     is_valid_email,
     get_setting_from_database,
     pretty_time_delta,
+    parse_string
 )
 from job.models import JobRun, JobVariable
 from users.models import Membership
 
 
-def parsestring(string, variables):
-    env = Environment(variable_start_string="${", variable_end_string="}")
-    template = env.from_string(string)
-    rendered = template.render(variables)
-    return rendered
-
-
 def fill_in_mail_variable(string, variables):
-    receivers = parsestring(string, variables)
+    receivers = parse_string(string, variables)
     return sorted(list(set(receivers.split(","))))
 
 

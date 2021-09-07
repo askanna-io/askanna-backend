@@ -1,13 +1,12 @@
 import os
+from typing import Dict
 import uuid
 
 from django.conf import settings
 from django.db import models
-from jinja2 import Environment
 
 from core.config import AskAnnaConfig
 from core.models import AuthorModel, BaseModel
-from core.utils import get_config_from_string
 from package.signals import package_upload_finish
 
 
@@ -98,30 +97,14 @@ class Package(AuthorModel, BaseModel):
             return None
         return askanna_yml_path
 
-    def get_askanna_config(self) -> dict:
+    def get_askanna_config(self, defaults: Dict = {}) -> dict:
         """
         Reads the askanna.yml as is and return as dictionary or None
         """
         askanna_yml = self.get_askanna_yml_path()
         if not askanna_yml:
             return None
-        return AskAnnaConfig.from_stream(open(askanna_yml, "r"))
-
-    def get_parsed_askanna_config(self, variables={}) -> dict:
-
-        # setup Jinja
-        env = Environment(variable_start_string="${", variable_end_string="}")
-
-        askanna_yml = self.get_askanna_yml_path()
-        if not askanna_yml:
-            return None
-        askanna_config = ""
-        with open(askanna_yml, "r") as f:
-            askanna_config = f.read()
-
-        template = env.from_string(askanna_config)
-        rendered_yml = template.render(variables)
-        return get_config_from_string(rendered_yml)
+        return AskAnnaConfig.from_stream(open(askanna_yml, "r"), defaults=defaults)
 
     class Meta:
         ordering = ["-created"]

@@ -40,7 +40,7 @@ django-celery-results==1.1.2  # https://github.com/celery/django-celery-results
 django-extensions==2.2.5  # https://github.com/django-extensions/django-extensions
 
 # docker
-docker==4.1.0
+docker==5.0.0
 
 # django encryption fields
 django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted-model-fields
