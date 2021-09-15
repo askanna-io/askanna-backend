@@ -111,20 +111,23 @@ class AskAnnaConfig:
             When the environment is not defined or just a string
             we will return the default values configured.
             """
-            return {
-                "image": default_runner_image,
-                "credentials": {
+            image_spec = {"image": default_runner_image}
+            if default_runner_image_user:
+                image_spec["credentials"] = {
                     "username": default_runner_image_user,
                     "password": default_runner_image_pass,
+                }
+
+            return Environment.from_python(image_spec)
+        return Environment.from_python(
+            {
+                "image": environment.get("image"),
+                "credentials": {
+                    "username": environment.get("credentials", {}).get("username"),
+                    "password": environment.get("credentials", {}).get("password"),
                 },
             }
-        return {
-            "image": environment.get("image"),
-            "credentials": {
-                "username": environment.get("credentials", {}).get("username"),
-                "password": environment.get("credentials", {}).get("password"),
-            },
-        }
+        )
 
 
 @dataclasses.dataclass
@@ -156,10 +159,29 @@ class Environment:
     image: str
     credentials: Optional[ImageCredentials] = None
 
+    def has_credentials(self) -> bool:
+        """
+        Helper function to tell the outside world whether we have credentials set for the environment
+        """
+        return self.credentials is not None
+
+    def to_dict(self):
+        spec = {
+            "image": self.image,
+        }
+        if self.has_credentials():
+            spec["credentials"] = {
+                "username": self.credentials.username,
+                "password": self.credentials.password,
+            }
+        return spec
+
     @classmethod
     def from_python(cls, environment: Dict = {}):
         spec = {"image": environment.get("image")}
-        if environment.get("credentials"):
+        if environment.get("credentials") and environment.get("credentials", {}).get(
+            "username"
+        ):
             # Credentials are specified, we just assume at least the username is filled out.
             credentials = ImageCredentials(
                 **{
@@ -214,7 +236,7 @@ class Job:
                 schedules.append(s)
 
         # extract the environment
-        job_environment = job_config.get("environment", global_environment)
+        job_environment = job_config.get("environment", global_environment.to_dict())
         environment = Environment.from_python(job_environment)
 
         # extract the commands
