@@ -220,11 +220,19 @@ def start_run(self, run_uuid):
 
     # get image information to determine whether we need to pull this one
     job_image = parse_string(job_config.environment.image, env_variables)
-    job_image_username = parse_string(
-        job_config.environment.credentials.username or "", env_variables
+    job_image_username = (
+        job_config.environment.has_credentials()
+        and parse_string(
+            job_config.environment.credentials.username or "", env_variables
+        )
+        or None
     )
-    job_image_password = parse_string(
-        job_config.environment.credentials.password or "", env_variables
+    job_image_password = (
+        job_config.environment.has_credentials()
+        and parse_string(
+            job_config.environment.credentials.password or "", env_variables
+        )
+        or None
     )
     imagehelper = RegistryImageHelper(
         client,
