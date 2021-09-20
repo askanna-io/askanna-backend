@@ -40,7 +40,7 @@ class PackageViewSet(
     List all packages and allow to finish upload action
     """
 
-    queryset = Package.objects.all()
+    queryset = Package.objects.all().select_related("project", "project__workspace")
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [IsMemberOfProjectAttributePermission]
@@ -79,7 +79,9 @@ class PackageViewSet(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["created_by"]
+        # we specify the "member" also in the update_fields
+        # because this will be updated later in a listener
+        update_fields = ["created_by", "member"]
         instance_obj.created_by = request.user
         instance_obj.save(update_fields=update_fields)
 

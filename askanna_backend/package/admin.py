@@ -10,7 +10,10 @@ admin.site.register(ChunkedPackagePart)
 class PackageAdmin(admin.ModelAdmin):
     list_display = [
         "original_filename",
+        "size",
         "uuid",
+        "created_by",
+        "member",
         "short_uuid",
         "project",
         "created",
