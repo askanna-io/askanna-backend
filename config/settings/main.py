@@ -109,6 +109,16 @@ INSTALLED_APPS = [
     "django_celery_results",
     "drf_yasg",
     "encrypted_model_fields",
+    # Django Health check
+    "health_check",  # required
+    "health_check.db",  # stock Django health checkers
+    "health_check.cache",
+    "health_check.storage",
+    "health_check.contrib.migrations",
+    "health_check.contrib.celery",  # requires celery
+    "health_check.contrib.celery_ping",  # requires celery
+    "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
+    "health_check.contrib.redis",  # requires Redis broker
     # Django apps
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -202,6 +212,7 @@ TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
 if env("REDIS_URL", default=None):
+    REDIS_URL = env("REDIS_URL")
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",

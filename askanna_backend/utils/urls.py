@@ -46,4 +46,5 @@ urlpatterns = [
         ),
     ),
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
+    re_path(r"^ht/", include("health_check.urls")),
 ]
