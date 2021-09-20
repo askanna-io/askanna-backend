@@ -13,6 +13,8 @@ def forwards_func(apps, schema_editor):
     for package in Package.objects.all():
 
         if not package.member:
+            if not package.project:
+                continue
             # first lookup which member this could be based on workspace
             in_workspace = package.project.workspace
             if not package.created_by:
