@@ -17,6 +17,7 @@ class PackageCreateSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def create(self, validated_data):
+        validated_data["created_by"] = self.context.get("request").user
         original_filename = validated_data.get("filename")
         del validated_data["filename"]
         validated_data.update(**{"original_filename": original_filename})
