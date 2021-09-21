@@ -81,8 +81,7 @@ class PackageViewSet(
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         # we specify the "member" also in the update_fields
         # because this will be updated later in a listener
-        update_fields = ["created_by", "member"]
-        instance_obj.created_by = request.user
+        update_fields = ["member"]
         instance_obj.save(update_fields=update_fields)
 
 
