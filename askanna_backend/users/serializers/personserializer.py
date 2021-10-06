@@ -182,7 +182,6 @@ class PersonSerializer(serializers.Serializer):
         self.invalidate_invite(instance)
         userprofile = UserProfile()
         userprofile.membership_ptr = instance
-        print(instance.created, instance.modified)
         instance.object_type = MSP_WORKSPACE
         userprofile.save_base(raw=True)
         instance.user = self._context["request"].user
@@ -205,8 +204,38 @@ class PersonSerializer(serializers.Serializer):
         self.validate_token_usage(data)
         self.validate_email_is_unique(data)
         self.validate_user_in_membership(data)
+        self.validate_member_invite_admin(data)
 
         return data
+
+    def validate_member_invite_admin(self, data):
+        """
+        Raises ValidationError when a member tries to invite an admin to the workspace
+        Only workspace admins are allowed to invite admins
+        """
+        role_for_new_member = data.get("role")
+
+        if not role_for_new_member:
+            return
+
+        if not role_for_new_member == "WA":
+            return
+
+        # when this is handling PATCH workspace uuid is in self.initial_data
+        workspace_uuid = data.get("object_uuid") or self.initial_data.get("object_uuid")
+        current_user = self.context.get("request").user
+        current_user_role = Membership.objects.get(
+            object_type=MSP_WORKSPACE,
+            object_uuid=workspace_uuid,
+            user=current_user,
+            deleted__isnull=True,
+        )
+        if not current_user_role.role == "WA":
+            # normal members cannot set invite roles to admin.
+            # only existing WA can to this
+            raise serializers.ValidationError(
+                {"role": ["You are not allowed to set an invite role to admin."]}
+            )
 
     def validate_token_usage(self, data):
         """
