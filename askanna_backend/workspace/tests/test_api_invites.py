@@ -415,6 +415,44 @@ class TestInviteAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_create_invite_as_admin_admin_invite(self):
+        url = reverse(
+            "workspace-people-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+            },
+        )
+
+        token = self.users["admin"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.post(
+            url,
+            {"email": "anna_test@askanna.dev", 'role': 'WA'},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_invite_as_member_not_admin_invite(self):
+        url = reverse(
+            "workspace-people-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+            },
+        )
+
+        token = self.users["member_a"].auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        response = self.client.post(
+            url,
+            {"email": "anna_test@askanna.dev", 'role': 'WA'},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_accept_invite(self):
         """After accepting an invite, a new Profile exists."""
         url = reverse(
