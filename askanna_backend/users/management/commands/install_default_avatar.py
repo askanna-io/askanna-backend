@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from users.models import UserProfile
+from users.models import UserProfile, User
 
 
 class Command(BaseCommand):
@@ -11,6 +11,11 @@ class Command(BaseCommand):
         for userprofile in UserProfile.objects.all():
             try:
                 userprofile.read
-            except FileNotFoundError as e:
-                print(e)
+            except FileNotFoundError:
+                userprofile.install_default_avatar()
+
+        for userprofile in User.objects.all():
+            try:
+                userprofile.read
+            except FileNotFoundError:
                 userprofile.install_default_avatar()

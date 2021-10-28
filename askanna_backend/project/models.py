@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 
 from core.models import (
     ActivatorModel,
@@ -54,6 +55,10 @@ class Project(AuthorModel, ActivatorModel, NameDescriptionModel, SlimBaseModel):
     )
 
     template = models.UUIDField(db_index=True, editable=False, null=True)
+
+    visibility = models.CharField(
+        _("Visibility"), max_length=255, default="PRIVATE", db_index=True
+    )
 
     def __str__(self):
         return " - ".join([self.name, str(self.uuid)])

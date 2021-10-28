@@ -158,9 +158,9 @@ class JobRunSerializer(serializers.ModelSerializer):
         return project.relation_to_json
 
     def get_user(self, instance):
+        if instance.member:
+            return instance.member.relation_to_json_with_avatar
         if instance.owner:
-            if instance.member:
-                return instance.member.relation_to_json_with_avatar
             return instance.owner.relation_to_json
         return {
             "relation": "user",

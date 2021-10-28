@@ -9,7 +9,6 @@ class RunInfoRouter:
         """
         Attempts to read auth and contenttypes models go to auth_db.
         """
-        # print("r", model.__name__)
         if model.__name__.lower() in self.route_model_labels:
             return "runinfo"
         return "default"
@@ -18,7 +17,6 @@ class RunInfoRouter:
         """
         Attempts to write auth and contenttypes models go to auth_db.
         """
-        # print("w", model.__name__)
         if model.__name__.lower() in self.route_model_labels:
             return "runinfo"
         return "default"

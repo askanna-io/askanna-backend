@@ -40,7 +40,5 @@ class TestSendNotification(BaseJobTestDef, APITestCase):
 
         package = run.package
         configyml = package.get_askanna_config()
-        print(configyml)
         job_config = configyml.jobs.get(run.jobdef.name)
-        print(job_config)
         send_run_notification("IN_PROGRESS", run, job_config)

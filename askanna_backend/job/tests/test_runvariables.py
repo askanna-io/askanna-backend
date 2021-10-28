@@ -15,13 +15,12 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-variables-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run_suuid": self.tracked_variables.get(
-                    "run1"
-                ).short_uuid,
+                "parent_lookup_run_suuid": self.tracked_variables.get("run1").short_uuid,
             },
         )
 
@@ -29,8 +28,7 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
         """
         We can list trackedvariables as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -43,8 +41,7 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
         """
         We can list trackedvariables as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -55,11 +52,22 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
 
     def test_list_as_nonmember(self):
         """
-        We can list trackedvariables as nonmember of a workspace, but response will be empty because of not having access to this workspace.
+        We can list trackedvariables as nonmember of a workspace,
+        but response will be empty because of not having access to this workspace.
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_as_anonymous(self):
+        """
+        Anonymous user can list run variables from public projects only
+        Not from this run (private project)
+        """
         response = self.client.get(
             self.url,
             format="json",
@@ -67,23 +75,12 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
-    def test_list_as_anonymous(self):
-        """
-        We can list trackedvariables as member of a workspace
-        """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
     def test_list_as_member_order_by_variablename(self):
         """
         We get detail trackedvariables as member of a workspace,
         but request the trackedvariables to be returned in reversed sort on name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url + "?ordering=-variable.name",
@@ -103,8 +100,7 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
         """
         We test the filter by variable name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"variable_name": "Accuracy"}
 
@@ -120,8 +116,7 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
         """
         We test the filter by label name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"label_name": "product"}
 
@@ -134,19 +129,56 @@ class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(len(response.data), 4)
 
 
+class TestTrackedVariablesPublicProjectListAPI(BaseJobTestDef, APITestCase):
+    """
+    Test to list the Tracked Variables from a job in a public project
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "run-variables-list",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_run_suuid": self.tracked_variables.get("run6").short_uuid,
+            },
+        )
+
+    def test_list_as_nonmember(self):
+        """
+        Public project jobrun variables are listable by anyone
+        """
+        self.activate_user("non_member")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_as_anonymous(self):
+        """
+        Public project jobrun variables are listable by anyone
+        """
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
 class TestVariablesMetaAPI(BaseJobTestDef, APITestCase):
     """
     Test to get meta on specific variables for a jobrun
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-variables-meta",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.tracked_variables.get(
-                    "run1"
-                ).short_uuid,
+                "parent_lookup_jobrun__short_uuid": self.tracked_variables.get("run1").short_uuid,
                 "jobrun__short_uuid": self.tracked_variables.get("run1").short_uuid,
             },
         )
@@ -155,8 +187,7 @@ class TestVariablesMetaAPI(BaseJobTestDef, APITestCase):
         """
         Retrieve the meta information about the metrics
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -172,13 +203,12 @@ class TestVariablesUpdateAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-variables-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.tracked_variables.get(
-                    "run1"
-                ).short_uuid,
+                "parent_lookup_jobrun__short_uuid": self.tracked_variables.get("run1").short_uuid,
                 "jobrun__short_uuid": self.tracked_variables.get("run1").short_uuid,
             },
         )
@@ -187,8 +217,7 @@ class TestVariablesUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We update variables as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.patch(
             self.url,
@@ -202,8 +231,7 @@ class TestVariablesUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We update variables as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.patch(
             self.url,
@@ -217,15 +245,14 @@ class TestVariablesUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We cannot update variables as nonmember of a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.patch(
             self.url,
             {"variables": variable_response_good_small},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_anonymous(self):
         """
@@ -235,4 +262,4 @@ class TestVariablesUpdateAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

@@ -15,6 +15,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-metric-list",
             kwargs={
@@ -27,9 +28,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         """
         We can list metrics as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-
+        self.activate_user("admin")
         response = self.client.get(
             self.url,
             format="json",
@@ -41,9 +40,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         """
         We can list metrics as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-
+        self.activate_user("member")
         response = self.client.get(
             self.url,
             format="json",
@@ -53,11 +50,21 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
 
     def test_list_as_nonmember(self):
         """
-        We can list metrics as member of a workspace
+        Non members cannot list metrics from a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_as_anonymous(self):
+        """
+        Anonymous user can list metrics, but only public ones
+        So we expect here an empty list as result
+        """
         response = self.client.get(
             self.url,
             format="json",
@@ -65,22 +72,11 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
-    def test_list_as_anonymous(self):
-        """
-        We can list metrics as member of a workspace
-        """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
     def test_list_as_member_order_by_metricname(self):
         """
         We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url + "?ordering=-metric.name",
@@ -100,8 +96,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         """
         We test the filter by metric name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"metric_name": "Accuracy"}
 
@@ -117,8 +112,7 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         """
         We test the filter by label name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"label_name": "product"}
 
@@ -137,23 +131,21 @@ class TestMetricsMetaAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-metric-meta",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.runmetrics.get(
-                    "run1"
-                ).short_uuid,
+                "parent_lookup_jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
                 "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
             },
         )
 
-    def test_meta_as_member(self):
+    def test_meta_as_admin(self):
         """
         Retrieve the meta information about the metrics
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -163,6 +155,86 @@ class TestMetricsMetaAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 4)
 
+    def test_meta_as_member(self):
+        """
+        Retrieve the meta information about the metrics
+        """
+        self.activate_user("member")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+            HTTP_HOST="testserver",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 4)
+
+    def test_meta_as_nonmember(self):
+        """
+        Retrieve the meta information about the metrics
+        """
+        self.activate_user("non_member")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+            HTTP_HOST="testserver",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_meta_as_anonymous(self):
+        """
+        Retrieve the meta information about the metrics
+        """
+        response = self.client.get(
+            self.url,
+            format="json",
+            HTTP_HOST="testserver",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestMetricsPublicProjectMetaAPI(TestMetricsMetaAPI):
+    """
+    Test to get meta on specific metrics for a jobrun within a public project
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "run-metric-meta",
+            kwargs={
+                "version": "v1",
+                "parent_lookup_jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
+                "jobrun__short_uuid": self.runmetrics.get("run6").short_uuid,
+            },
+        )
+
+    def test_meta_as_nonmember(self):
+        """
+        Retrieve the meta information about the metrics
+        """
+        self.activate_user("non_member")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+            HTTP_HOST="testserver",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_meta_as_anonymous(self):
+        """
+        Retrieve the meta information about the metrics
+        """
+        response = self.client.get(
+            self.url,
+            format="json",
+            HTTP_HOST="testserver",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
 
 class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
     """
@@ -170,13 +242,12 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-metric-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.runmetrics.get(
-                    "run1"
-                ).short_uuid,
+                "parent_lookup_jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
                 "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
             },
         )
@@ -185,8 +256,7 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We update metrics as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.put(
             self.url,
@@ -200,8 +270,7 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We update metrics as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.put(
             self.url,
@@ -215,8 +284,7 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
         """
         We cannot update metrics as nonmember of a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.put(
             self.url,
@@ -238,6 +306,7 @@ class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):
 
 class JobTestMetricsListAPI(TestMetricsListAPI):
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "job-metric-list",
             kwargs={
@@ -250,8 +319,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         """
         We can list metrics as member of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -264,8 +332,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         """
         We can list metrics as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -274,12 +341,36 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
 
+    def test_list_as_nonmember(self):
+        """
+        Non members cannot list metrics from a workspace
+        """
+        self.activate_user("non_member")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_as_anonymous(self):
+        """
+        Anonymous user can only list metrics from a public project
+        Here we expect an empty list as this run was in a private project
+        """
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
     def test_list_as_member_order_by_metricname(self):
         """
-        We get detail metrics as member of a workspace, but request the metrics to be returned in reversed sort on name
+        We get detail metrics as member of a workspace,
+          but request the metrics to be returned in reversed sort on name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url + "?ordering=-metric.name",
@@ -299,8 +390,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         """
         We test the filter by metric name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"metric_name": "Accuracy", "job": self.jobdef.short_uuid}
 
@@ -316,8 +406,7 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         """
         We test the filter by label name
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"label_name": "product"}
 

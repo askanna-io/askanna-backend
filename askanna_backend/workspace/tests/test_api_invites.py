@@ -47,6 +47,7 @@ class TestInviteAPI(APITestCase):
             object_uuid=self.workspace.uuid,
             object_type=MSP_WORKSPACE,
             email="invited@example.com",
+            use_global_profile=False,
         )
 
         # make the admin user member of the workspace
@@ -55,6 +56,7 @@ class TestInviteAPI(APITestCase):
             object_uuid=self.workspace.uuid,
             user=self.users["admin"],
             role=WS_ADMIN,
+            use_global_profile=False,
         )
         # make the member_a user member of the workspace
         self.member_profile = UserProfile.objects.create(
@@ -62,6 +64,7 @@ class TestInviteAPI(APITestCase):
             object_uuid=self.workspace.uuid,
             user=self.users["member_a"],
             role=WS_MEMBER,
+            use_global_profile=False,
         )
         # make the member_a user member of the workspace2
         self.member_profile2 = UserProfile.objects.create(
@@ -70,6 +73,7 @@ class TestInviteAPI(APITestCase):
             user=self.users["member_a"],
             role=WS_MEMBER,
             name="name2",
+            use_global_profile=False,
         )
 
     def test_retrieve_invite_as_anonymous(self):

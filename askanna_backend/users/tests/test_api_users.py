@@ -15,7 +15,10 @@ class TestUserListAPI(BaseUsers, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("user-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "user-list",
+            kwargs={"version": "v1"},
+        )
 
     def test_list_users_as_admin(self):
         """
@@ -24,7 +27,10 @@ class TestUserListAPI(BaseUsers, APITestCase):
         token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_users_as_normaluser(self):
@@ -34,14 +40,20 @@ class TestUserListAPI(BaseUsers, APITestCase):
         token = self.users["userB"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_list_users_anonymous(self):
         """
         We cannot list users as anonymous user
         """
-        response = self.client.get(self.url, format="json",)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -51,7 +63,10 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("user-list", kwargs={"version": "v1"},)
+        self.url = reverse(
+            "user-list",
+            kwargs={"version": "v1"},
+        )
 
     def test_create_user_as_admin(self):
         """
@@ -166,9 +181,9 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
             format="json",
         )
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
-        print(response2.data)
         self.assertIn(
-            "This email is already used.", response2.data.get("email"),
+            "This email is already used.",
+            response2.data.get("email"),
         )
 
         # cleanup via internal functions
@@ -307,7 +322,11 @@ class TestUserUpdateAPI(BaseUsers, APITestCase):
         token = self.users["user"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.patch(self.url, {"email": ""}, format="json",)
+        response = self.client.patch(
+            self.url,
+            {"email": ""},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("Enter a valid email address.", str(response.content))
 

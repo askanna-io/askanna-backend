@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db.models import signals
 
 
-from core.tests.base import BaseUploadTestMixin  # noqa
+from core.tests.base import BaseUploadTestMixin, BaseUserPopulation  # noqa
 from job.models import (
     JobArtifact,
     JobDef,
@@ -20,7 +20,6 @@ from job.models import (
 )
 from project.models import Project
 from package.models import Package
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership, User
 from workspace.models import Workspace
 from workspace.listeners import install_demo_project_in_workspace
 
@@ -197,188 +196,181 @@ metric_response_bad = [
 ]
 
 
-class BaseJobTestDef:
+class BaseJobTestDef(BaseUserPopulation):
     databases = {"default", "runinfo"}
 
     def file_to_bytes(self, fp):
         with fp:
             return fp.read()
 
-    @classmethod
-    def setup_class(cls):
-        signals.post_save.disconnect(
-            install_demo_project_in_workspace, sender=Workspace
-        )
-        cls.users = {
-            "anna": User.objects.create(
-                username="anna",
-                is_staff=True,
-                is_superuser=True,
-                email="anna@askanna.dev",
-            ),
-            "admin": User.objects.create(
-                username="admin",
-                is_staff=True,
-                is_superuser=True,
-                email="admin@askanna.dev",
-            ),
-            "user": User.objects.create(username="user", email="user@askanna.dev"),
-            "user_nonmember": User.objects.create(
-                username="user_nonmember", email="user_nonmember@askanna.dev"
-            ),
-        }
-
-        # setup variables
-        cls.workspace = Workspace.objects.create(**{"name": "WorkspaceX"})
-        cls.workspace2 = Workspace.objects.create(**{"name": "WorkspaceY"})
-        cls.project = Project.objects.create(
-            **{"name": "TestProject", "workspace": cls.workspace}
-        )
-        cls.project2 = Project.objects.create(
-            **{"name": "TestProject2", "workspace": cls.workspace2}
-        )
-        # make the admin user member of the workspace
-        cls.admin_member = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace.uuid,
-            user=cls.users["admin"],
-            role=WS_ADMIN,
-        )
-        # make the memberA user member of the workspace
-        cls.memberA_member = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace.uuid,
-            user=cls.users["user"],
-            role=WS_MEMBER,
-            name="membername",
-        )
-        # make the memberA user member of the workspace2
-        cls.memberA_member2 = Membership.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=cls.workspace2.uuid,
-            user=cls.users["user"],
-            role=WS_MEMBER,
-            name="membername2",
-        )
-
-        cls.package = Package.objects.create(
+    def setUp(self):
+        super().setUp()
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
+        self.project = Project.objects.create(**{"name": "TestProject", "workspace": self.workspace_a})
+        self.project2 = Project.objects.create(**{"name": "TestProject2", "workspace": self.workspace_b})
+        self.project3 = Project.objects.create(
+            **{
+                "name": "TestProject3",
+                "workspace": self.workspace_c,
+                "visibility": "PUBLIC",
+            }
+        )  # the workspace is public
+        self.package = Package.objects.create(
             original_filename="project-no-yml.zip",
-            project=cls.project,
+            project=self.project,
             size=1,
             name="TestPackage",
-            created_by=cls.users["user"],
+            created_by=self.users.get("member"),
         )
-        cls.package.write(
+        self.package.write(
             open(
                 settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
                 "rb",
             )
         )
 
-        cls.package2 = Package.objects.create(
+        self.package2 = Package.objects.create(
             original_filename="project-001.zip",
-            project=cls.project2,
+            project=self.project2,
             size=1,
             name="TestPackage2",
-            created_by=cls.users["user"],
+            created_by=self.users.get("member"),
         )
-        cls.package2.write(
+        self.package2.write(
             open(
                 settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"),
                 "rb",
             )
         )
 
-        cls.package3 = Package.objects.create(
+        self.package3 = Package.objects.create(
             original_filename="project-no-yml.zip",
-            project=cls.project2,
+            project=self.project2,
             size=1,
             name="TestPackage3",
-            created_by=cls.users["user"],
+            created_by=self.users.get("member"),
         )
-        cls.package3.write(
+        self.package3.write(
             open(
                 settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
                 "rb",
             )
         )
 
-        cls.jobdef = JobDef.objects.create(
+        self.package4 = Package.objects.create(
+            original_filename="project-no-yml.zip",
+            project=self.project3,
+            size=1,
+            name="TestPackage4",
+            created_by=self.users.get("member"),
+        )
+        self.package4.write(
+            open(
+                settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
+                "rb",
+            )
+        )
+
+        self.jobdef = JobDef.objects.create(
             name="TestJobDef",
-            project=cls.project,
+            project=self.project,
         )
-        cls.jobdef2 = JobDef.objects.create(
+        self.jobdef2 = JobDef.objects.create(
             name="my-test-job",
-            project=cls.project2,
+            project=self.project2,
         )
-        cls.jobdef3 = JobDef.objects.create(
+        self.jobdef3 = JobDef.objects.create(
             name="my-test-job3",
-            project=cls.project2,
+            project=self.project2,
         )
-        cls.run_image = RunImage.objects.create(
-            name="TestImage", tag="latest", digest="unknown"
+        self.jobdef_public = JobDef.objects.create(
+            name="my-test-job3",
+            project=self.project3,
         )
-        cls.jobruns = {
+        self.run_image = RunImage.objects.create(name="TestImage", tag="latest", digest="unknown")
+        self.jobruns = {
             "run1": JobRun.objects.create(
                 name="run1",
                 description="test run1",
-                package=cls.package,
-                jobdef=cls.jobdef,
+                package=self.package,
+                jobdef=self.jobdef,
                 status="COMPLETED",
-                owner=cls.users["user"],
-                member=cls.memberA_member,
-                run_image=cls.run_image,
+                owner=self.users.get("member"),
+                member=self.members.get("member"),
+                run_image=self.run_image,
                 duration=50646,  # fictive because we don't have access to the handlers here in tests
             ),
             "run2": JobRun.objects.create(
                 name="run2",
                 description="test run2",
-                package=cls.package,
-                jobdef=cls.jobdef,
+                package=self.package,
+                jobdef=self.jobdef,
                 status="COMPLETED",
-                owner=cls.users["user"],
-                member=cls.memberA_member,
-                run_image=cls.run_image,
+                owner=self.users.get("member"),
+                member=self.members.get("member"),
+                run_image=self.run_image,
             ),
             "run3": JobRun.objects.create(
                 name="run3",
                 description="test run3",
-                package=cls.package2,
-                jobdef=cls.jobdef3,  # link faulty job on purpose to test on error not found in askanna.yml
+                package=self.package2,
+                jobdef=self.jobdef3,  # link faulty job on purpose to test on error not found in askanna.yml
                 status="IN_PROGRESS",
-                owner=cls.users["user"],
-                member=cls.memberA_member2,
-                run_image=cls.run_image,
+                owner=self.users.get("member"),
+                member=self.members_workspace2.get("member"),
+                run_image=self.run_image,
             ),
             "run4": JobRun.objects.create(
                 name="run4",
                 description="test run4",
-                package=cls.package2,
-                jobdef=cls.jobdef2,
+                package=self.package2,
+                jobdef=self.jobdef2,
                 status="SUBMITTED",
-                owner=cls.users["user"],
-                member=cls.memberA_member2,
-                run_image=cls.run_image,
+                owner=self.users.get("member"),
+                member=self.members_workspace2.get("member"),
+                run_image=self.run_image,
             ),
-        }
-        cls.runmetrics = {
-            "run1": RunMetrics.objects.create(
-                jobrun=cls.jobruns["run1"], metrics=metric_response_good, count=4
+            "run5": JobRun.objects.create(
+                name="run5",
+                description="test run5",
+                package=self.package,
+                jobdef=self.jobdef,
+                status="IN_PROGRESS",
+                owner=self.users.get("member"),
+                member=self.members_workspace2.get("member"),
+                run_image=self.run_image,
             ),
-            "run2": RunMetrics.objects.create(
-                jobrun=cls.jobruns["run2"], metrics=metric_response_bad, count=2
+            "run6": JobRun.objects.create(
+                name="run6",
+                description="test run6",
+                package=self.package,
+                jobdef=self.jobdef_public,
+                status="IN_PROGRESS",
+                owner=self.users.get("member"),
+                member=self.members_workspace2.get("member"),
+                run_image=self.run_image,
             ),
-            "run3": RunMetrics.objects.create(
-                jobrun=cls.jobruns["run3"], metrics=metric_response_bad, count=2
-            ),
-        }
-        cls.runoutput = {
-            "run1": JobOutput.objects.get(jobrun=cls.jobruns.get("run1")),
-            "run2": JobOutput.objects.get(jobrun=cls.jobruns.get("run2")),
-            "run3": JobOutput.objects.get(jobrun=cls.jobruns.get("run3")),
         }
 
-        cls.runoutput["run1"].stdout = [
+        self.runmetrics = {
+            "run1": RunMetrics.objects.create(jobrun=self.jobruns["run1"], metrics=metric_response_good, count=4),
+            "run2": RunMetrics.objects.create(jobrun=self.jobruns["run2"], metrics=metric_response_bad, count=2),
+            "run3": RunMetrics.objects.create(jobrun=self.jobruns["run3"], metrics=metric_response_bad, count=2),
+            "run6": RunMetrics.objects.create(jobrun=self.jobruns["run6"], metrics=metric_response_good, count=4),
+        }
+        self.runmetrics["run1"].metrics = metric_response_good
+        self.runmetrics["run2"].metrics = metric_response_bad
+        self.runmetrics["run3"].metrics = metric_response_bad
+        self.runmetrics["run6"].metrics = metric_response_good
+
+        self.runoutput = {
+            "run1": JobOutput.objects.get(jobrun=self.jobruns.get("run1")),
+            "run2": JobOutput.objects.get(jobrun=self.jobruns.get("run2")),
+            "run3": JobOutput.objects.get(jobrun=self.jobruns.get("run3")),
+            "run5": JobOutput.objects.get(jobrun=self.jobruns.get("run5")),
+        }
+
+        self.runoutput["run1"].stdout = [
             [1, datetime.datetime.utcnow().isoformat(), "some test stdout 1"],
             [2, datetime.datetime.utcnow().isoformat(), "some test stdout 2"],
             [3, datetime.datetime.utcnow().isoformat(), "some test stdout 3"],
@@ -386,7 +378,7 @@ class BaseJobTestDef:
             [5, datetime.datetime.utcnow().isoformat(), "some test stdout 5"],
             [6, datetime.datetime.utcnow().isoformat(), "some test stdout 6"],
         ]
-        cls.runoutput["run2"].stdout = [
+        self.runoutput["run2"].stdout = [
             [1, datetime.datetime.utcnow().isoformat(), "some test stdout 1"],
             [2, datetime.datetime.utcnow().isoformat(), "some test stdout 2"],
             [3, datetime.datetime.utcnow().isoformat(), "some test stdout 3"],
@@ -394,75 +386,78 @@ class BaseJobTestDef:
             [5, datetime.datetime.utcnow().isoformat(), "some test stdout 5"],
             [6, datetime.datetime.utcnow().isoformat(), "some test stdout 6"],
         ]
-        cls.runoutput["run1"].save(update_fields=["stdout"])
-        cls.runoutput["run2"].save(update_fields=["stdout"])
+        self.runoutput["run1"].save(update_fields=["stdout"])
+        self.runoutput["run2"].save(update_fields=["stdout"])
 
-        cls.runoutput.get("run3").log(
-            "some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat()
-        )
-        cls.runoutput.get("run3").log("some test stdout 2")
-        cls.runoutput.get("run3").log("some test stdout 3")
-        cls.runoutput.get("run3").log("some test stdout 4", print_log=True)
-        cls.runoutput.get("run3").log("some test stdout 5", print_log=True)
-        cls.runoutput.get("run3").log("some test stdout 6", print_log=True)
-        cls.runoutput.get("run3").log("some test stdout 7", print_log=True)
-        cls.runoutput.get("run3").log("some test stdout 8", print_log=True)
-        cls.runoutput.get("run3").log("some test stdout 9", print_log=True)
+        self.runoutput.get("run3").log("some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat())
+        self.runoutput.get("run3").log("some test stdout 2")
+        self.runoutput.get("run3").log("some test stdout 3")
+        self.runoutput.get("run3").log("some test stdout 4", print_log=True)
+        self.runoutput.get("run3").log("some test stdout 5", print_log=True)
+        self.runoutput.get("run3").log("some test stdout 6", print_log=True)
+        self.runoutput.get("run3").log("some test stdout 7", print_log=True)
+        self.runoutput.get("run3").log("some test stdout 8", print_log=True)
+        self.runoutput.get("run3").log("some test stdout 9", print_log=True)
 
-        cls.runresults = {
+        self.runoutput.get("run5").log("some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat())
+        self.runoutput.get("run5").log("some test stdout 2")
+        self.runoutput.get("run5").log("some test stdout 3")
+        self.runoutput.get("run5").log("some test stdout 4", print_log=True)
+        self.runoutput.get("run5").log("some test stdout 5", print_log=True)
+        self.runoutput.get("run5").log("some test stdout 6", print_log=True)
+        self.runoutput.get("run5").log("some test stdout 7", print_log=True)
+        self.runoutput.get("run5").log("some test stdout 8", print_log=True)
+        self.runoutput.get("run5").log("some test stdout 9", print_log=True)
+
+        self.runresults = {
             "run2": RunResult.objects.create(
                 name="someresult.txt",
-                run=cls.jobruns["run2"],
+                run=self.jobruns["run2"],
             ),
         }
-        cls.runresults["run2"].write(io.BytesIO(b"some result content"))
+        self.runresults["run2"].write(io.BytesIO(b"some result content"))
 
-        cls.tracked_variables = {
-            "run1": RunVariables.objects.get(jobrun=cls.jobruns["run1"]),
-            "run2": RunVariables.objects.get(jobrun=cls.jobruns["run2"]),
-            "run3": RunVariables.objects.get(jobrun=cls.jobruns["run3"]),
+        self.tracked_variables = {
+            "run1": RunVariables.objects.get(jobrun=self.jobruns["run1"]),
+            "run2": RunVariables.objects.get(jobrun=self.jobruns["run2"]),
+            "run3": RunVariables.objects.get(jobrun=self.jobruns["run3"]),
+            "run6": RunVariables.objects.get(jobrun=self.jobruns["run6"]),
         }
-        cls.tracked_variables["run1"].variables = tracked_variables_response_good
-        cls.tracked_variables["run2"].variables = tracked_variables_response_good
-        cls.tracked_variables["run3"].variables = tracked_variables_response_good
-        cls.tracked_variables["run1"].save()
-        cls.tracked_variables["run2"].save()
-        cls.tracked_variables["run3"].save()
+        self.tracked_variables["run1"].variables = tracked_variables_response_good
+        self.tracked_variables["run2"].variables = tracked_variables_response_good
+        self.tracked_variables["run3"].variables = tracked_variables_response_good
+        self.tracked_variables["run6"].variables = tracked_variables_response_good
+        self.tracked_variables["run1"].save()
+        self.tracked_variables["run2"].save()
+        self.tracked_variables["run3"].save()
+        self.tracked_variables["run6"].save()
 
-        cls.artifact = JobArtifact.objects.create(
-            **{"jobrun": cls.jobruns["run1"], "size": 500}
-        )
-        with open(
-            settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip"), "rb"
-        ) as f:
-            cls.artifact.write(f)
+        self.artifact = JobArtifact.objects.create(**{"jobrun": self.jobruns["run1"], "size": 500})
+        with open(settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip"), "rb") as f:
+            self.artifact.write(f)
 
-        cls.variable = JobVariable.objects.create(
+        self.variable = JobVariable.objects.create(
             **{
                 "name": "TestVariable",
                 "value": "TestValue",
                 "is_masked": False,
-                "project": cls.project,
+                "project": self.project,
             }
         )
 
-        cls.variable_masked = JobVariable.objects.create(
+        self.variable_masked = JobVariable.objects.create(
             **{
                 "name": "TestVariableMasked",
                 "value": "TestValue",
                 "is_masked": True,
-                "project": cls.project,
+                "project": self.project,
             }
         )
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Remove all the user instances we had setup for the test
         """
-        for _, user in cls.users.items():
-            user.delete()
-        cls.variable.delete()
-        cls.variable_masked.delete()
-        cls.workspace.delete()  # this will cascade delete child items
-        cls.workspace2.delete()
+        super().tearDown()
+        self.variable.delete()
+        self.variable_masked.delete()

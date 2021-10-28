@@ -153,7 +153,7 @@ MIDDLEWARE = [
 
 if DEBUG:
     print("Turn on dbconnection middleware")
-    MIDDLEWARE.append("core.middleware.DebugDBConnectionMiddelware")
+    MIDDLEWARE.append("core.middleware.DebugDBConnectionMiddleware")
 
 
 # TEMPLATES

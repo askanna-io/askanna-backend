@@ -56,7 +56,9 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         Request a reset for an existing account
         """
         response = self.client.post(
-            self.url, {"email": self.users["user"].email}, format="json",
+            self.url,
+            {"email": self.users["user"].email},
+            format="json",
         )
 
         self.assertTrue(len(mail.outbox) == 1)
@@ -123,7 +125,9 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         Expect a bad request
         """
         response = self.client.post(
-            self.url, {"front_end_domain": "http://front.end/"}, format="json",
+            self.url,
+            {"front_end_domain": "http://front.end/"},
+            format="json",
         )
 
         self.assertTrue(len(mail.outbox) == 0)
@@ -193,8 +197,10 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
-        response = self.client.get(self.status_url, {"token": token, "uid": uid},)
-        print(response.content)
+        response = self.client.get(
+            self.status_url,
+            {"token": token, "uid": uid},
+        )
 
         self.assertTrue(response.data.get("status") == "valid")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -228,7 +234,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
 
         msg = invite_email.body
         invite_link = re.search(
-            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",
+            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",  # noqa
             msg,
             re.I | re.M,
         )
@@ -239,7 +245,10 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
-        response = self.client.get(self.status_url, {"token": "", "uid": uid},)
+        response = self.client.get(
+            self.status_url,
+            {"token": "", "uid": uid},
+        )
 
         self.assertTrue(response.data.get("token") == ["This field may not be blank."])
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -273,7 +282,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
 
         msg = invite_email.body
         invite_link = re.search(
-            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",
+            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",  # noqa
             msg,
             re.I | re.M,
         )
@@ -284,7 +293,10 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertEqual(invite_link.group("scheme"), "http")
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
-        response = self.client.get(self.status_url, {"token": token, "uid": ""},)
+        response = self.client.get(
+            self.status_url,
+            {"token": token, "uid": ""},
+        )
 
         self.assertTrue(response.data.get("uid") == ["This field may not be blank."])
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -318,7 +330,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
 
         msg = invite_email.body
         invite_link = re.search(
-            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",
+            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",  # noqa
             msg,
             re.I | re.M,
         )
@@ -330,7 +342,8 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
         response = self.client.get(
-            self.status_url, {"token": "someinvalidtoken", "uid": uid},
+            self.status_url,
+            {"token": "someinvalidtoken", "uid": uid},
         )
 
         self.assertTrue(response.data.get("status") == ["invalid"])
@@ -366,7 +379,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
 
         msg = invite_email.body
         invite_link = re.search(
-            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",
+            r"(?P<scheme>http|https):\/\/(?P<domain>[\w\.\-]+)\/account\/reset-password\?token=(?P<token>[\w\-]+)&uid=(?P<uid>[\w\d]+)",  # noqa
             msg,
             re.I | re.M,
         )
@@ -378,7 +391,8 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
 
         response = self.client.get(
-            self.status_url, {"token": token, "uid": "someinvaliduid"},
+            self.status_url,
+            {"token": token, "uid": "someinvaliduid"},
         )
 
         self.assertTrue(response.data.get("status") == ["invalid"])

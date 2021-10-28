@@ -12,7 +12,8 @@
       "role": "WM",
       "job_title": "Open member",
       "user": 1,
-      "name": "Anna open"
+      "name": "Anna open",
+      "use_global_profile": true
     }
   },
   {
@@ -28,7 +29,8 @@
       "role": "WM",
       "job_title": "AskAnna Member",
       "user": 1,
-      "name": "Anna"
+      "name": "Anna",
+      "use_global_profile": true
     }
   },
   {
@@ -44,7 +46,8 @@
       "role": "WA",
       "job_title": "Open admin",
       "user": 2,
-      "name": "Anthony open"
+      "name": "Anthony open",
+      "use_global_profile": true
     }
   },
   {
@@ -60,7 +63,8 @@
       "role": "WM",
       "job_title": "Demo member",
       "user": 2,
-      "name": "Anthony demo"
+      "name": "Anthony demo",
+      "use_global_profile": true
     }
   },
   {
@@ -76,7 +80,8 @@
       "role": "WA",
       "job_title": "AskAnna Admin",
       "user": 2,
-      "name": "Anthony"
+      "name": "Anthony",
+      "use_global_profile": true
     }
   },
   {

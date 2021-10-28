@@ -11,7 +11,8 @@
       "activate_date": "2020-04-01T09:44:11.838Z",
       "deactivate_date": null,
       "deleted": null,
-      "short_uuid": "3Cpy-QMzd-MVko-1rDQ"
+      "short_uuid": "3Cpy-QMzd-MVko-1rDQ",
+      "visibility": "PRIVATE"
     }
   },
   {
@@ -26,7 +27,8 @@
       "activate_date": "2020-04-01T09:45:02.220Z",
       "deactivate_date": null,
       "deleted": null,
-      "short_uuid": "Y6FB-Vbzj-5q56-5d1I"
+      "short_uuid": "Y6FB-Vbzj-5q56-5d1I",
+      "visibility": "PUBLIC"
     }
   },
   {
@@ -41,7 +43,8 @@
       "activate_date": "2020-04-01T09:46:19.697Z",
       "deactivate_date": null,
       "deleted": null,
-      "short_uuid": "6swz-ujcr-jQQw-SAdZ"
+      "short_uuid": "6swz-ujcr-jQQw-SAdZ",
+      "visibility": "PUBLIC"
     }
   }
 ]

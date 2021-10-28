@@ -17,6 +17,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "variable-list",
             kwargs={"version": "v1"},
@@ -24,6 +25,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
         self.tmp_variable = None
 
     def tearDown(self):
+        super().tearDown()
         if self.tmp_variable:
             JobVariable.objects.get(short_uuid=self.tmp_variable).delete()
 
@@ -31,8 +33,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
         """
         We can create variables as an admin user
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         new_token = {
             "name": "TestVariable",
@@ -55,8 +56,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
         """
         A normal user can create variable where he/she has access to as member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         new_token = {
             "name": "TestVariable",
@@ -81,8 +81,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
         Testcase: empty value
         Expecting to raise a Validation error
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         new_token = {
             "name": "TestVariable",
@@ -106,8 +105,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
         Testcase: blank value
         Expecting to pass
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         new_token = {
             "name": "TestVariable",
@@ -131,8 +129,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
         A normal user can not create variable as a nonmember of a workspace
         We expect a 403
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         new_token = {
             "name": "TestVariable",
@@ -150,7 +147,7 @@ class TestVariableCreateAPI(BaseJobTestDef, APITestCase):
 
     def test_create_as_anonymous(self):
         """
-        We cannot list variables as anonymous user
+        We cannot create variables as anonymous user
         """
         new_token = {
             "name": "TestVariable",
@@ -173,6 +170,7 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "variable-list",
             kwargs={"version": "v1"},
@@ -182,8 +180,7 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         """
         We can list variables as an admin user
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -196,8 +193,7 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         """
         A normal user can list variables where he/she has access to
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -211,8 +207,7 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
         A non member should not have access to the workspace and thus variables
         So an empty list should be returned
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -229,7 +224,8 @@ class TestVariableListAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
 
 
 class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
@@ -238,6 +234,7 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.urlformaskedvar = reverse(
             "variable-detail",
             kwargs={"version": "v1", "short_uuid": self.variable_masked.short_uuid},
@@ -251,8 +248,7 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can list variables as an admin user
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -265,10 +261,9 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
 
     def test_detail_as_admin_maskedvariable(self):
         """
-        A normal user can list variables where he/she has access to as member
+        A normal user can list variables where he/she has access to as member (admin is also a member)
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.urlformaskedvar,
@@ -283,8 +278,7 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         """
         A normal user can list variables where he/she has access to as member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -299,8 +293,7 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         """
         A normal user can list variables where he/she has access to as member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.urlformaskedvar,
@@ -316,8 +309,7 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
         A normal user can not list variables as a nonmember doesn't own
         We expect a 404 as this variable cannot be found by a non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -327,13 +319,13 @@ class TestVariableDetailAPI(BaseJobTestDef, APITestCase):
 
     def test_detail_as_anonymous(self):
         """
-        We cannot list variables as anonymous user
+        We cannot get detail from variables as anonymous user
         """
         response = self.client.get(
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
@@ -342,6 +334,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "variable-detail",
             kwargs={"version": "v1", "short_uuid": self.variable.short_uuid},
@@ -351,8 +344,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
         """
         We can list variables as an admin user
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         change_var_payload = {
             "name": "newname",
@@ -375,8 +367,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
         """
         A normal user can change variables where he/she has access to as member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         change_var_payload = {
             "name": "newname",
@@ -400,8 +391,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
         A normal user can change variables where he/she has access to as member
         Also the value can be "blank", meaning, contain space only (non visible chars)
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         change_var_payload = {
             "name": "newname",
@@ -427,8 +417,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
         Testcase: blank values cannot be empty
         Expecting to fail validation
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         change_var_payload = {
             "name": "newname",
@@ -450,8 +439,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
         A normal user can not change variables as a nonmember doesn't own
         We expect a 404 as this variable cannot be found by a non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         change_var_payload = {
             "name": "newname",
@@ -481,7 +469,7 @@ class TestVariableChangeAPI(BaseJobTestDef, APITestCase):
             change_var_payload,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
@@ -490,6 +478,7 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "variable-detail",
             kwargs={"version": "v1", "short_uuid": self.variable.short_uuid},
@@ -499,8 +488,7 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
         """
         We can list variables as an admin user
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.delete(
             self.url,
@@ -512,8 +500,7 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
         """
         A normal user can list variables where he/she has access to as member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.delete(
             self.url,
@@ -526,8 +513,7 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
         A normal user can not list variables as a nonmember doesn't own
         We expect a 404 as this variable cannot be found by a non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.delete(
             self.url,
@@ -543,7 +529,7 @@ class TestVariableDeleteAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 # The same tests but on /v1/project/{{ short_uuid}}/variables/ level
@@ -555,6 +541,7 @@ class TestProjectVariableCreateAPI(TestVariableCreateAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-variable-list",
             kwargs={
@@ -571,6 +558,7 @@ class TestProjectVariableListAPI(TestVariableListAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-variable-list",
             kwargs={
@@ -584,8 +572,7 @@ class TestProjectVariableListAPI(TestVariableListAPI):
         A non member should not have access to the workspace and thus variables
         We expect a 404 as this variable cannot be found by a non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -600,6 +587,7 @@ class TestProjectVariableChangeAPI(TestVariableChangeAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-variable-detail",
             kwargs={
@@ -616,6 +604,7 @@ class TestProjectVariableDetailAPI(TestVariableDetailAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-variable-detail",
             kwargs={
@@ -640,6 +629,7 @@ class TestProjectVariableDeleteAPI(TestVariableDeleteAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-variable-detail",
             kwargs={
@@ -651,6 +641,10 @@ class TestProjectVariableDeleteAPI(TestVariableDeleteAPI):
 
 
 class TestVariableModel(TestCase):
+    """
+    Unit test for the JobVariable model
+    """
+
     def test_masked(self):
         jv = JobVariable(**{"name": "test", "value": "secret", "is_masked": True})
 

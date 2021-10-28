@@ -1,15 +1,29 @@
 # -*- coding: utf-8 -*-
+import datetime
 import io
 import typing
 import uuid
 import zipfile
 
 from rest_framework import status
-from users.models import User
+from users.models import (
+    User,
+    UserProfile,
+    MSP_WORKSPACE,
+    WS_ADMIN,
+    WS_MEMBER,
+    WS_VIEWER,
+)
+from workspace.models import Workspace
 
 
 class BaseUserPopulation:
     def setUp(self):
+        super().setUp()
+        self.workspace_a = Workspace.objects.create(name="test workspace_a")
+        self.workspace_b = Workspace.objects.create(name="test workspace_b")
+        self.workspace_c = Workspace.objects.create(name="test workspace_c", visibility="PUBLIC")
+
         self.users = {
             "anna": User.objects.create(
                 username="anna",
@@ -17,10 +31,169 @@ class BaseUserPopulation:
                 is_superuser=True,
                 email="anna@askanna.dev",
             ),
-            "admin": User.objects.create(username="admin"),
-            "member": User.objects.create(username="member"),
-            "non_member": User.objects.create(username="non_member"),
+            "admin": User.objects.create(
+                username="admin",
+                email="admin@askanna.dev",
+                password="password-admin",
+            ),
+            "member": User.objects.create(
+                username="member",
+                email="member@askanna.dev",
+                password="password-member",
+            ),
+            "non_member": User.objects.create(
+                username="non_member",
+                email="non_member@askanna.dev",
+                password="password-non_member",
+            ),
+            # the following users take a different role in testing and are not needed for primairy tests
+            "admin2": User.objects.create(
+                username="admin2",
+                email="admin2@askanna.dev",
+                password="password-admin2",
+            ),
+            "member2": User.objects.create(
+                username="member2",
+                email="member2@askanna.dev",
+                password="password-member2",
+            ),
+            "member_wv": User.objects.create(
+                username="member_wv",
+                email="member_wv@askanna.dev",
+                password="password-member_wv",
+            ),
+            "admin_inactive": User.objects.create(
+                username="admin_inactive",
+                email="admin_inactive@askanna.dev",
+                password="password-admin_inactive",
+            ),
+            "member_inactive": User.objects.create(
+                username="member_inactive",
+                email="member_inactive@askanna.dev",
+                password="password-member_inactive",
+            ),
         }
+        self.members = {
+            # anna user never has a profile to simulate askanna admin without
+            # an explicit access to workspaces and projects
+            "anna": None,
+            "admin": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["admin"],
+                role=WS_ADMIN,
+                name="name of admin in membership",
+                job_title="job_title of admin in membership",
+                use_global_profile=False,
+            ),
+            "member": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["member"],
+                role=WS_MEMBER,
+                name="name of member in membership",
+                job_title="job_title of member in membership",
+                use_global_profile=False,
+            ),
+            "non_member": None,
+            "admin2": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["admin2"],
+                role=WS_ADMIN,
+                name="name of admin2 in membership",
+                job_title="job_title of admin2 in membership",
+                use_global_profile=False,
+            ),
+            "member2": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["member2"],
+                role=WS_MEMBER,
+                name="name of member2 in membership",
+                job_title="job_title of member2 in membership",
+                use_global_profile=False,
+            ),
+            "member_wv": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["member_wv"],
+                role=WS_VIEWER,
+                name="name of member_wv in membership",
+                job_title="job_title of member_wv in membership",
+                use_global_profile=True,
+            ),
+            "admin_inactive": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["admin_inactive"],
+                role=WS_ADMIN,
+                name="name of admin_inactive in membership",
+                job_title="job_title of admin_inactive in membership",
+                use_global_profile=False,
+                deleted=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+            ),
+            "member_inactive": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_a.uuid,
+                user=self.users["member_inactive"],
+                role=WS_MEMBER,
+                name="name of member_inactive in membership",
+                job_title="job_title of member_inactive in membership",
+                use_global_profile=False,
+                deleted=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+            ),
+        }
+        self.members_workspace2 = {
+            # anna user never has a profile to simulate askanna admin without
+            # an explicit access to workspaces and projects
+            "anna": None,
+            "admin": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_b.uuid,
+                user=self.users["admin"],
+                role=WS_ADMIN,
+                name="name of admin in membership",
+                job_title="job_title of admin in membership",
+            ),
+            "member": None,
+            "non_member": None,
+            "admin2": None,
+            "member2": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_b.uuid,
+                user=self.users["member2"],
+                role=WS_MEMBER,
+                name="name of member2 in membership",
+                job_title="job_title of member2 in membership",
+            ),
+            "member3": None,
+            "member_inactive": UserProfile.objects.create(
+                object_type=MSP_WORKSPACE,
+                object_uuid=self.workspace_b.uuid,
+                user=self.users["member_inactive"],
+                role=WS_MEMBER,
+                name="name of member_inactive in membership",
+                job_title="job_title of member_inactive in membership",
+                use_global_profile=False,
+                deleted=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+            ),
+        }
+
+    def activate_user(self, username):
+        if username not in self.users.keys():
+            raise ValueError(f"{username} is not part of the test population")
+
+        token = self.users.get(username).auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+    def tearDown(self):
+        """
+        Remove all the user instances we had setup for the test
+        """
+        super().tearDown()
+        for _, user in self.users.items():
+            user.delete()
 
 
 class BaseUploadTestMixin:
@@ -28,7 +201,7 @@ class BaseUploadTestMixin:
 
         payload = {
             "filename": filename,
-            "project": self.jobruns["run1"].jobdef.project.short_uuid,
+            "project": self.jobruns["run1"].jobdef.project.short_uuid,  # project is only needed in package upload
             "size": filesize,
         }
 
@@ -68,9 +241,7 @@ class BaseUploadTestMixin:
         fileobjectname: str = "testartifact.zip",
     ):
         file_buffer, file_size = self.create_file_object(filename=fileobjectname)
-        parent_object = self.do_create_entry(
-            create_url, filename=fileobjectname, filesize=file_size
-        )
+        parent_object = self.do_create_entry(create_url, filename=fileobjectname, filesize=file_size)
         resumable_identifier = str(uuid.uuid4())
 
         # register new chunks (1)
@@ -115,7 +286,6 @@ class BaseUploadTestMixin:
                 chunkinfo,
                 format="multipart",
             )
-            print(chunk_upload_req.content, chunk_upload_req.status_code)
             try:
                 self.assertEqual(chunk_upload_req.status_code, status.HTTP_200_OK)
             except AssertionError as e:

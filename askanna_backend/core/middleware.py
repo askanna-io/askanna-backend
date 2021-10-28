@@ -1,9 +1,11 @@
 from functools import reduce
 from django.db import connections
 
+# from users.models import User
 
-class DebugDBConnectionMiddelware:
-    def __init__(self, get_response):
+
+class DebugDBConnectionMiddleware:
+    def __init__(self, get_response=None):
         self.get_response = get_response
 
     def __call__(self, request):
@@ -14,20 +16,15 @@ class DebugDBConnectionMiddelware:
 
         # post response code
         view = request.path
+        method = request.method.upper()
         print(
+            method,
             view,
-            str(
-                reduce(
-                    lambda n, name: n + len(connections[name].queries), connections, 0
-                )
-            ),
+            str(reduce(lambda n, name: n + len(connections[name].queries), connections, 0)),
             "queries",
             str(
                 reduce(
-                    lambda n, name: n
-                    + reduce(
-                        lambda n, y: float(y["time"]), connections[name].queries, 0.0
-                    ),
+                    lambda n, name: n + reduce(lambda n, y: float(y["time"]), connections[name].queries, 0.0),
                     connections,
                     0.0,
                 )
@@ -35,8 +32,8 @@ class DebugDBConnectionMiddelware:
             ),
             "ms",
         )
-        # for con in connections:
-        #     for q in connections[con].queries:
-        #         print(q)
+        for con in connections:
+            for q in connections[con].queries:
+                print(q)
 
         return response
