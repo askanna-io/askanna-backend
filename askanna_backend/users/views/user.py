@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 
 from rest_framework.decorators import action
 from rest_framework import mixins, viewsets
@@ -98,8 +98,10 @@ class PersonViewSet(
             instance.invitation
         except Invitation.DoesNotExist:
             # This is no invitation, is a profile. Soft delete it.
-            instance.deleted = timezone.now()
-            instance.save()
+
+            # setting the membership to deleted will automaticly read `use_global_profile`
+            # to copy over some info from User object
+            instance.to_deleted()
         else:
             # This is an invitation, Hard delete it.
             instance.delete()

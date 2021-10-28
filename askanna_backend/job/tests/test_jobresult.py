@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -11,6 +12,7 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "shortcut-jobrun-result",
             kwargs={
@@ -80,8 +82,7 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
         """
         We can create result as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         self.do_file_upload(
             create_url=self.register_upload_url,
@@ -92,9 +93,69 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
         )
         self.check_retrieve_output()
 
+    def test_create_as_member(self):
+        """
+        We can create result as member of a workspace
+        """
+        self.activate_user("member")
+
+        self.do_file_upload(
+            create_url=self.register_upload_url,
+            create_chunk_url=self.create_chunk_url,
+            upload_chunk_url=self.upload_chunk_url,
+            finish_upload_url=self.finish_upload_url,
+            fileobjectname="test-result-admin.zip",
+        )
+        self.check_retrieve_output()
+
+    def test_create_as_workspace_viewer(self):
+        """
+        Workspace viewers cannot create result (cannot start run)
+        """
+        self.activate_user("member_wv")
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.register_upload_url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-result-admin.zip",
+            )
+            self.check_retrieve_output()
+
+    def test_create_as_nonmember(self):
+        """
+        Non members cannot create results
+        """
+        self.activate_user("non_member")
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.register_upload_url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-result-admin.zip",
+            )
+            self.check_retrieve_output()
+
+    def test_create_as_anonymous(self):
+        """
+        Anonymous cannot create results
+        """
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.register_upload_url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-result-admin.zip",
+            )
+            self.check_retrieve_output()
+
 
 class TestResultDetailAPI(BaseJobTestDef, APITestCase):
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "shortcut-jobrun-result",
             kwargs={
@@ -106,9 +167,7 @@ class TestResultDetailAPI(BaseJobTestDef, APITestCase):
         """
         Test wether we can get an options request
         """
-
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.options(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -118,9 +177,7 @@ class TestResultDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can retrieve the result as an admin of a workspace
         """
-
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -133,9 +190,20 @@ class TestResultDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can retrieve the result as a member of a workspace
         """
+        self.activate_user("member")
 
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(b"".join(response.streaming_content), b"some result content")
+
+    def test_retrieve_as_workspaceviewer(self):
+        """
+        We can retrieve the result as a member of a workspace as workspace viewer
+        """
+        self.activate_user("member_wv")
 
         response = self.client.get(
             self.url,
@@ -148,9 +216,7 @@ class TestResultDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT retrieve the result when not beeing a member of the workspace
         """
-
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -166,4 +232,4 @@ class TestResultDetailAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

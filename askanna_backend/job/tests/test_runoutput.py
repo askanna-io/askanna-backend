@@ -14,6 +14,7 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "runinfo-log",
             kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
@@ -24,15 +25,14 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         )
         self.url3 = reverse(
             "runinfo-log",
-            kwargs={"version": "v1", "short_uuid": self.jobruns["run3"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run5"].short_uuid},
         )
 
     def test_log_as_admin(self):
         """
         We can get the log for a jobrun as an admin
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -44,8 +44,7 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         """
         We can get the log for a jobrun as a member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -57,8 +56,7 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT get the log for a jobrun as a non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -68,20 +66,19 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
 
     def test_log_as_anonymous(self):
         """
-        We can NOT get the log of a jborun as anonymous
+        We can NOT get the log of a run as anonymous user
         """
         response = self.client.get(
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_log_as_member_partial(self):
         """
         We can get the log for a jobrun as a member but partial log
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"offset": 1, "limit": 2}
 
@@ -98,8 +95,7 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
         """
         We can get the log for a jobrun as a member but partial full
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"offset": 0, "limit": 1000}
 
@@ -114,10 +110,9 @@ class TestJobRunLogAPI(BaseJobTestDef, APITestCase):
 
     def test_log_as_member_while_running(self):
         """
-        We can get the log for a jobrun as a member while running
+        We can get the log for a run as a member while running
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         query_params = {"offset": 5, "limit": 5}
 
@@ -139,6 +134,7 @@ class TestJobRunLogShortCutAPI(TestJobRunLogAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "shortcut-jobrun-log",
             kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
@@ -151,5 +147,5 @@ class TestJobRunLogShortCutAPI(TestJobRunLogAPI):
 
         self.url3 = reverse(
             "shortcut-jobrun-log",
-            kwargs={"short_uuid": self.jobruns["run3"].short_uuid},
+            kwargs={"short_uuid": self.jobruns["run5"].short_uuid},
         )

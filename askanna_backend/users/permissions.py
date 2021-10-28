@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import rest_framework
 from rest_framework import permissions
 

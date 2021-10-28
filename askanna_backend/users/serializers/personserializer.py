@@ -10,8 +10,6 @@ from rest_framework import serializers
 from users.models import (
     MEMBERSHIPS,
     MSP_WORKSPACE,
-    ROLES,
-    WS_MEMBER,
     Invitation,
     Membership,
     UserProfile,
@@ -53,8 +51,10 @@ class PersonSerializer(serializers.Serializer):
     object_uuid = serializers.UUIDField()
     object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default=MSP_WORKSPACE)
     workspace = serializers.SerializerMethodField("get_workspace")
-    role = serializers.ChoiceField(choices=ROLES, default=WS_MEMBER)
-    job_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    role = ReadWriteSerializerMethodField(
+        "get_role", required=False
+    )  # the role will be set later
+    job_title = ReadWriteSerializerMethodField("get_job_title", required=False)
     user = serializers.SerializerMethodField("get_user")
     avatar = serializers.SerializerMethodField("get_avatar")
     token = serializers.CharField(write_only=True)
@@ -70,6 +70,18 @@ class PersonSerializer(serializers.Serializer):
         """
         instance = instance or self.instance
         return self.token_signer.sign(instance.uuid)
+
+    def get_role(self, instance):
+        """
+        These roles include actual members only, so WG (Guest) is not included here as
+        it makes no sense to have a "guest" as member
+        """
+        role_mapping = {
+            "WA": {"name": "Workspace admin", "code": "WA"},
+            "WM": {"name": "Workspace member", "code": "WM"},
+            "WV": {"name": "Workspace viewer", "code": "WV"},
+        }
+        return role_mapping.get(instance.role)
 
     def get_workspace(self, instance):
         """
@@ -98,15 +110,26 @@ class PersonSerializer(serializers.Serializer):
         Return avatar only for this membership
         """
         membership_rel = instance.relation_to_json_with_avatar
+        if instance.use_global_profile and instance.user:
+            user_rel = instance.user.relation_to_json_with_avatar
+            return user_rel["avatar"]
         return membership_rel["avatar"]
 
     def get_name(self, instance):
         """
         This function gets the name from the user.
         """
-        if not instance.name and instance.user:
-            return instance.user.get_name()
+        if instance.use_global_profile and instance.user:
+            return instance.user.name
         return instance.name
+
+    def get_job_title(self, instance):
+        """
+        Get the job_title of the user
+        """
+        if instance.use_global_profile and instance.user:
+            return instance.user.job_title
+        return instance.job_title
 
     def get_email(self, instance):
         """
@@ -317,7 +340,6 @@ class PersonSerializer(serializers.Serializer):
             self.send_invite()
 
         for field, value in validated_data.items():
-            print(field, value)
             setattr(instance, field, value)
 
         instance.save()

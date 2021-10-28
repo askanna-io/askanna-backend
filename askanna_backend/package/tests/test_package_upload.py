@@ -11,6 +11,7 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
     """
 
     def setUp(self):
+        super().setUp()
 
         self.create_url = reverse(
             "package-list",
@@ -41,12 +42,26 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
             },
         )
 
+    def test_create_as_anna(self):
+        """
+        Anna cannot upload because of non-membership
+        """
+        self.activate_user("anna")
+
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.create_url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-package-admin.zip",
+            )
+
     def test_create_as_admin(self):
         """
         We can create packages as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         self.do_file_upload(
             create_url=self.create_url,
@@ -60,8 +75,7 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
         """
         We can create packages as a regular user of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         self.do_file_upload(
             create_url=self.create_url,
@@ -75,8 +89,7 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
         """
         We can create packages as non nember of a workspace, failing the test
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         with self.assertRaises(AssertionError):
             self.do_file_upload(
@@ -91,7 +104,6 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
         """
         Anonymous user just get the error
         """
-
         with self.assertRaises(AssertionError):
             self.do_file_upload(
                 create_url=self.create_url,

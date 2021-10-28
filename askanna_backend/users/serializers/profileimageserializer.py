@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 import base64
-import datetime
-import io
 import binascii
+import io
 from PIL import Image
 
 from rest_framework import serializers
@@ -26,8 +26,8 @@ class ProfileImageSerializer(serializers.ModelSerializer):
 
     def validate_avatar(self, value):
         """
-            Validate the content of the avatar, as this is a base64 encoded value, we need to validate
-            whether this is an image or not
+        Validate the content of the avatar, as this is a base64 encoded value, we need to validate
+        whether this is an image or not
         """
         datatype, image = value.split(";base64,")
         try:

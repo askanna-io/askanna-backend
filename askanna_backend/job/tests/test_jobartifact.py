@@ -22,6 +22,7 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-artifact-list",
             kwargs={
@@ -34,43 +35,39 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
         """
         We can list artifacts as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_as_member(self):
         """
         We can list artifacts as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_as_nonmember(self):
         """
         We can NOT list artifacts as non-member of a workspace
+        Will get an empty list
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
             format="json",
         )
-        print(response.content)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
 
     def test_list_as_anonymous(self):
         """
@@ -80,7 +77,7 @@ class TestArtifactListAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
@@ -89,6 +86,7 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-artifact-detail",
             kwargs={
@@ -102,8 +100,7 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can get artifacts as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -116,28 +113,24 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can get artifacts as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_retrieve_as_nonmember(self):
         """
         We can NOT get artifacts as non-member of a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
             format="json",
         )
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retrieve_as_anonymous(self):
@@ -148,7 +141,7 @@ class TestArtifactDetailAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
@@ -164,6 +157,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         The short-uuid is from a job-run where the artifact is generated from
         """
+        super().setUp()
         self.url = reverse(
             "shortcut-artifact",
             kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
@@ -215,8 +209,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         We can get artifacts as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -230,8 +223,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         We can get artifacts as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -245,14 +237,13 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT get artifacts as non-member of a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retrieve_as_anonymous(self):
         """
@@ -262,7 +253,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     # test for not found, run2 doesn't have an artifact
 
@@ -270,8 +261,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         We can get artifacts as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url_no_artifact,
@@ -283,8 +273,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         We can get artifacts as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url_no_artifact,
@@ -296,14 +285,13 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT get artifacts as non-member of a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url_no_artifact,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retrieve_as_anonymous_not_found(self):
         """
@@ -313,7 +301,7 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
             self.url_no_artifact,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase):
@@ -322,6 +310,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "run-artifact-list",
             kwargs={
@@ -333,9 +322,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
             "artifact-artifactchunk-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_artifact__jobrun__short_uuid": self.jobruns[
-                    "run1"
-                ].short_uuid,
+                "parent_lookup_artifact__jobrun__short_uuid": self.jobruns["run1"].short_uuid,
                 "parent_lookup_artifact__short_uuid": artifact_object.get("short_uuid"),
             },
         )
@@ -343,9 +330,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
             "artifact-artifactchunk-chunk",
             kwargs={
                 "version": "v1",
-                "parent_lookup_artifact__jobrun__short_uuid": self.jobruns[
-                    "run1"
-                ].short_uuid,
+                "parent_lookup_artifact__jobrun__short_uuid": self.jobruns["run1"].short_uuid,
                 "parent_lookup_artifact__short_uuid": artifact_object.get("short_uuid"),
                 "pk": chunk_uuid,
             },
@@ -363,8 +348,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
         """
         We can create artifacts as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         self.do_file_upload(
             create_url=self.url,
@@ -373,3 +357,60 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCa
             finish_upload_url=self.finish_upload_url,
             fileobjectname="test-artifact-admin.zip",
         )
+
+    def test_create_as_member(self):
+        """
+        We can create artifacts as admin of a workspace
+        """
+        self.activate_user("member")
+
+        self.do_file_upload(
+            create_url=self.url,
+            create_chunk_url=self.create_chunk_url,
+            upload_chunk_url=self.upload_chunk_url,
+            finish_upload_url=self.finish_upload_url,
+            fileobjectname="test-artifact-admin.zip",
+        )
+
+    def test_create_as_workspace_viewer(self):
+        """
+        Workspace viewers cannot create artifacts
+        """
+        self.activate_user("member_wv")
+
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-artifact-admin.zip",
+            )
+
+    def test_create_as_nonmember(self):
+        """
+        Non members cannot create artifacts
+        """
+        self.activate_user("non_member")
+
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-artifact-admin.zip",
+            )
+
+    def test_create_as_anonymous(self):
+        """
+        Anonymous users cannot create artifacts
+        """
+        with self.assertRaises(AssertionError):
+            self.do_file_upload(
+                create_url=self.url,
+                create_chunk_url=self.create_chunk_url,
+                upload_chunk_url=self.upload_chunk_url,
+                finish_upload_url=self.finish_upload_url,
+                fileobjectname="test-artifact-admin.zip",
+            )

@@ -1,21 +1,74 @@
 # -*- coding: utf-8 -*-
-from django.http import HttpResponse
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from core.views import PermissionByActionMixin, SerializerByActionMixin
+from core.views import SerializerByActionMixin
+from core.views import workspace_to_project_role
+from core.views import ObjectRoleMixin
+from core.permissions import ProjectNoMember, ProjectMember, RoleBasedPermission
 from job.filters import RunFilter
 from job.models import JobRun, RedisLogQueue
-from job.permissions import IsMemberOfJobDefAttributePermission
+from job.models.jobdef import JobDef
 from job.serializers import JobRunSerializer, JobRunUpdateSerializer
-from users.models import MSP_WORKSPACE
+
+from project.models import Project
+from users.models import MSP_WORKSPACE, Membership
+
+
+class RunObjectRoleMixin:
+    def get_object_project(self):
+        return self.current_object.jobdef.project
+
+    def get_object_workspace(self):
+        return self.current_object.jobdef.project.workspace
+
+    def get_list_role(self, request, *args, **kwargs):
+        # always return ProjectMember for logged in users since the listing always shows objects based on membership
+        if request.user.is_anonymous:
+            return ProjectNoMember, None
+        return ProjectMember, None
+
+    def get_create_role(self, request, *args, **kwargs):
+        # The role for creating a Project is based on the payload
+        # we read the 'workspace' short_uuid from the payload and determine the user role based on that
+        project_suuid = None
+        parents = self.get_parents_query_dict()
+        project_suuid = parents.get("project__short_uuid") or request.data.get(
+            "project"
+        )
+        try:
+            project = Project.objects.get(short_uuid=project_suuid)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        workspace_role, request.membership = Membership.get_workspace_role(
+            request.user, project.workspace
+        )
+        request.user_roles.append(workspace_role)
+        request.object_role = workspace_role
+
+        # try setting a project role based on workspace role
+        if workspace_to_project_role(workspace_role) is not None:
+            inherited_role = workspace_to_project_role(workspace_role)
+            request.user_roles.append(inherited_role)
+
+        return Membership.get_project_role(request.user, project)
+
+    def get_workspace_role(self, user, *args, **kwargs):
+        return Membership.get_workspace_role(
+            user, self.current_object.jobdef.project.workspace
+        )
 
 
 class JobRunView(
-    PermissionByActionMixin,
+    RunObjectRoleMixin,
+    ObjectRoleMixin,
     SerializerByActionMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -31,12 +84,16 @@ class JobRunView(
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
 
-    permission_classes = [
-        IsMemberOfJobDefAttributePermission,
-    ]
-
-    permission_classes_by_action = {
-        "update": [IsMemberOfJobDefAttributePermission],
+    permission_classes = [RoleBasedPermission]
+    RBAC_BY_ACTION = {
+        "list": ["project.run.list"],
+        "retrieve": ["project.run.list"],
+        "log": ["project.run.list"],
+        "manifest": ["project.run.list"],
+        "create": ["project.run.create"],
+        "destroy": ["project.run.remove"],
+        "update": ["project.run.edit"],
+        "partial_update": ["project.run.edit"],
     }
 
     serializer_classes_by_action = {
@@ -51,23 +108,55 @@ class JobRunView(
         where the current user had access to
         meaning also beeing part of a certain workspace
         """
-        queryset = super().get_queryset()
         user = self.request.user
+        if user.is_anonymous:
+            return (
+                super()
+                .get_queryset()
+                .filter(
+                    Q(jobdef__project__workspace__visibility="PUBLIC")
+                    & Q(jobdef__project__visibility="PUBLIC")
+                )
+                .select_related(
+                    "jobdef",
+                    "jobdef__project",
+                    "jobdef__project__workspace",
+                    "payload",
+                    "payload__jobdef",
+                    "payload__jobdef__project",
+                    "package",
+                    "owner",
+                    "member",
+                    "output",
+                )
+            )
+
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return queryset.filter(
-            jobdef__project__workspace__in=member_of_workspaces
-        ).select_related(
-            "jobdef",
-            "jobdef__project",
-            "payload",
-            "payload__jobdef",
-            "payload__jobdef__project",
-            "package",
-            "owner",
-            "member",
-            "output",
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Q(jobdef__project__workspace__in=member_of_workspaces)
+                | (
+                    Q(jobdef__project__workspace__visibility="PUBLIC")
+                    & Q(jobdef__project__visibility="PUBLIC")
+                )
+            )
+            .select_related(
+                "jobdef",
+                "jobdef__project",
+                "jobdef__project__workspace",
+                "payload",
+                "payload__jobdef",
+                "payload__jobdef__project",
+                "package",
+                "owner",
+                "member",
+                "output",
+            )
         )
 
     def perform_destroy(self, instance):
@@ -202,11 +291,20 @@ class JobRunView(
         return Response(response_json)
 
 
-class JobJobRunView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class JobJobRunView(
+    RunObjectRoleMixin,
+    ObjectRoleMixin,
+    NestedViewSetMixin,
+    viewsets.ReadOnlyModelViewSet,
+):
     queryset = JobRun.objects.filter(deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    permission_classes = [RoleBasedPermission]
+    RBAC_BY_ACTION = {
+        "list": ["project.run.list"],
+        "retrieve": ["project.run.list"],
+    }
 
     def get_queryset(self):
         """
@@ -214,9 +312,42 @@ class JobJobRunView(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
         where the current user had access to
         meaning also beeing part of a certain workspace
         """
-        queryset = super().get_queryset()
         user = self.request.user
+        if user.is_anonymous:
+            return (
+                super()
+                .get_queryset()
+                .filter(
+                    Q(jobdef__project__workspace__visibility="PUBLIC")
+                    & Q(jobdef__project__visibility="PUBLIC")
+                )
+            )
+
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return queryset.filter(jobdef__project__workspace__in=member_of_workspaces)
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Q(jobdef__project__workspace__in=member_of_workspaces)
+                | (
+                    Q(jobdef__project__workspace__visibility="PUBLIC")
+                    & Q(jobdef__project__visibility="PUBLIC")
+                )
+            )
+        )
+
+    def get_list_role(self, request, *args, **kwargs):
+        # always return ProjectMember for logged in users since the listing always shows objects based on membership
+        job_suuid = kwargs.get("parent_lookup_jobdef__short_uuid")
+        try:
+            job = JobDef.objects.get(short_uuid=job_suuid)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        request.user_roles += Membership.get_roles_for_project(
+            request.user, job.project
+        )
+        return Membership.get_project_role(request.user, job.project)

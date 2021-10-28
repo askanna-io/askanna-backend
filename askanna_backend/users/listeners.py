@@ -2,7 +2,7 @@
 import socket
 
 from django.conf import settings
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from PIL import Image
@@ -15,6 +15,7 @@ from users.models import (
     WS_ADMIN,
     UserProfile,
     Invitation,
+    User,
 )
 from users.signals import (
     password_reset_signal,
@@ -200,11 +201,6 @@ def convert_avatars(sender, instance, **kwargs):
             im.save(filename, "png")
 
 
-@receiver(pre_delete, sender=Membership)
-def remove_membership(sender, instance, **kwargs):
-    instance.prune()
-
-
 @receiver(post_save, sender=UserProfile)
 def install_avatar_after_new_membership(sender, instance, created, **kwargs):
     """
@@ -217,6 +213,16 @@ def install_avatar_after_new_membership(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Invitation)
 def install_avatar_after_new_invite(sender, instance, created, **kwargs):
+    """
+    Install a default avatar for the user when he was invited
+    """
+    if created:
+        instance.refresh_from_db()
+        instance.install_default_avatar()
+
+
+@receiver(post_save, sender=User)
+def install_avatar_after_new_user(sender, instance, created, **kwargs):
     """
     Install a default avatar for the user when he was invited
     """

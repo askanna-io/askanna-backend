@@ -16,6 +16,7 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "job-detail",
             kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
@@ -35,8 +36,7 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
             scheduled_job.update_next(current_dt=current_dt)
 
     def test_empty_schedules_in_jobresponse(self):
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         self.add_schedules_to_job(self.jobdef, definitions=[])
 
@@ -49,8 +49,7 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
         self.assertTrue(response.data.get("schedules") == [])
 
     def test_some_schedules_in_jobresponse(self):
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         self.add_schedules_to_job(
             self.jobdef,
@@ -59,13 +58,13 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
                     "raw_definition": "*/10 * * * *",
                     "cron_definition": "*/10 * * * *",
                     "cron_timezone": "Europe/Amsterdam",
-                    "member": self.memberA_member,
+                    "member": self.members.get("member"),
                 },
                 {
                     "raw_definition": "@midnight",
                     "cron_definition": "0 0 * * *",
                     "cron_timezone": "Asia/Hong_Kong",
-                    "member": self.memberA_member,
+                    "member": self.members.get("member"),
                 },
             ],
             current_dt=datetime.datetime(

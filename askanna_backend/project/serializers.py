@@ -1,13 +1,43 @@
 # -*- coding: utf-8 -*-
+from typing import Dict
 from rest_framework import serializers
 
 from package.models import Package
 from project.models import Project
-from users.models import MSP_WORKSPACE
+from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
 
 
 class BaseProjectSerializer:
+    is_member = serializers.SerializerMethodField("get_is_member")
+
+    def get_is_member(self, instance):
+        return instance.is_member
+
+    permission = serializers.SerializerMethodField("get_permission")
+
+    def _get_true_permissions(self, permissions: Dict) -> Dict:
+        return dict(filter(lambda x: x[1] is True, permissions.items()))
+
+    def get_permission(self, instance):
+        permissions = []
+        role = self.context["request"].role
+        object_roles = Membership.get_roles_for_project(self.context["request"].user, instance)
+        if not role and not object_roles:
+            return []
+        permissions = role.full_permissions(role)
+        true_permissions = self._get_true_permissions(permissions)
+
+        for role in object_roles:
+            # filter out `false` permissions, we don't want to override permissions already given as True
+            role_permissions = role.full_permissions(role)
+            role_true_permissions = self._get_true_permissions(role_permissions)
+            true_permissions.update(**role_true_permissions)
+            permissions.update(**role_permissions)
+            permissions.update(**true_permissions)
+
+        return permissions
+
     def get_workspace(self, instance):
         return instance.workspace.relation_to_json
 
@@ -78,8 +108,11 @@ class BaseProjectSerializer:
             "workspace": self.get_workspace(instance),
             "package": self.get_package(instance),
             "notifications": self.get_notifications(instance),
+            "permission": self.get_permission(instance),  # this is relative to the user requesting this
             "template": instance.template,
+            "is_member": self.get_is_member(instance),
             "created_by": self.get_created_by(instance),
+            "visibility": instance.visibility,
             "created": instance.created,
             "modified": instance.modified,
             "url": url,
@@ -103,21 +136,32 @@ class ProjectSerializer(BaseProjectSerializer, serializers.ModelSerializer):
 class ProjectUpdateSerializer(BaseProjectSerializer, serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ["name", "description"]
+        fields = ["name", "description", "visibility"]
+
+    def validate_visibility(self, value):
+        if not value.upper() in ["PRIVATE", "PUBLIC"]:
+            raise serializers.ValidationError(f"`visibility` can only be PUBLIC or PRIVATE, not {value}")
+        return value.upper()
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
+        instance.visibility = validated_data.get("visibility", instance.visibility)
         instance.save()
+        instance.refresh_from_db()
         return instance
 
 
 class ProjectCreateSerializer(BaseProjectSerializer, serializers.ModelSerializer):
     workspace = serializers.CharField(max_length=19)
 
+    def get_is_member(self, instance):
+        # always true since we where able to create the project
+        return True
+
     class Meta:
         model = Project
-        fields = ["name", "workspace", "description"]
+        fields = ["name", "workspace", "description", "visibility"]
 
     def create(self, validated_data):
         validated_data.update(**{"created_by": self.context["request"].user})
@@ -137,27 +181,25 @@ class ProjectCreateSerializer(BaseProjectSerializer, serializers.ModelSerializer
         """
         try:
             workspace = Workspace.objects.get(short_uuid=value)
-        except Exception as e:
-            print(e)
-            raise serializers.ValidationError(
-                "Workspace with SUUID={} was not found".format(value)
-            )
+        except Exception:
+            raise serializers.ValidationError("Workspace with SUUID={} was not found".format(value))
         else:
             # check whether the user has access to this workspace
 
             is_member = (
                 self.context["request"]
-                .user.memberships.filter(
-                    object_type=MSP_WORKSPACE, object_uuid=workspace.uuid
-                )
+                .user.memberships.filter(object_type=MSP_WORKSPACE, object_uuid=workspace.uuid)
                 .count()
                 > 0
             )
             if is_member:
                 return workspace
             else:
-                raise serializers.ValidationError(
-                    "User is not member of workspace {}".format(value)
-                )
+                raise serializers.ValidationError("User is not member of workspace {}".format(value))
 
         return value
+
+    def validate_visibility(self, value):
+        if not value.upper() in ["PRIVATE", "PUBLIC"]:
+            raise serializers.ValidationError(f"`visibility` can only be PUBLIC or PRIVATE, not {value}")
+        return value.upper()

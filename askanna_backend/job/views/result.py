@@ -3,6 +3,8 @@ import os
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+from django.http import Http404
 from django.utils import timezone
 from rest_framework import status, viewsets, mixins
 from rest_framework.response import Response
@@ -11,16 +13,14 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from core.views import (
     BaseChunkedPartViewSet,
     BaseUploadFinishMixin,
+    ObjectRoleMixin,
+    workspace_to_project_role,
 )
+from core.permissions import RoleBasedPermission
 from job.models import (
     JobRun,
     RunResult,
     ChunkedRunResultPart,
-)
-from job.permissions import (
-    IsMemberOfJobDefAttributePermission,
-    IsMemberOfRunResultAttributePermission,
-    IsMemberOfRunAttributePermission,
 )
 from job.serializers import (
     JobRunSerializer,
@@ -29,16 +29,41 @@ from job.serializers import (
 )
 from job.signals import result_upload_finish
 from job.utils import stream
-from users.models import MSP_WORKSPACE
+from users.models import MSP_WORKSPACE, Membership
 
 
 class BaseRunResultView(
-    NestedViewSetMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+    ObjectRoleMixin,
+    NestedViewSetMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
 ):
-    queryset = JobRun.objects.filter(deleted__isnull=True)
+    queryset = JobRun.objects.filter(deleted__isnull=True).select_related(
+        "package",
+        "payload",
+        "payload__jobdef__project",
+        "jobdef",
+        "jobdef__project",
+        "jobdef__project__workspace",
+        "owner",
+        "member",
+    )
     lookup_field = "short_uuid"
     serializer_class = JobRunSerializer
-    permission_classes = [IsMemberOfJobDefAttributePermission]
+    permission_classes = [RoleBasedPermission]
+
+    RBAC_BY_ACTION = {
+        "list": ["project.run.list"],
+        "retrieve": ["project.run.list"],
+        "create": ["project.run.create"],
+        "metadata": ["project.run.list"],  # options request
+    }
+
+    def get_object_project(self):
+        return self.current_object.jobdef.project
+
+    def get_object_workspace(self):
+        return self.current_object.jobdef.project.workspace
 
     def get_queryset(self):
         """
@@ -46,21 +71,31 @@ class BaseRunResultView(
         where the current user had access to
         meaning also beeing part of a certain workspace
         """
-        queryset = super().get_queryset()
         user = self.request.user
+        if user.is_anonymous:
+            return (
+                super()
+                .get_queryset()
+                .filter(
+                    Q(jobdef__project__workspace__visibility="PUBLIC")
+                    & Q(jobdef__project__visibility="PUBLIC")
+                )
+            )
+
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return queryset.filter(
-            jobdef__project__workspace__in=member_of_workspaces
-        ).select_related(
-            "package",
-            "payload",
-            "payload__jobdef__project",
-            "jobdef",
-            "jobdef__project",
-            "owner",
-            "member",
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Q(jobdef__project__workspace__in=member_of_workspaces)
+                | (
+                    Q(jobdef__project__workspace__visibility="PUBLIC")
+                    & Q(jobdef__project__visibility="PUBLIC")
+                )
+            )
         )
 
 
@@ -168,16 +203,55 @@ class RunStatusView(BaseRunResultView):
         return Response(base_status)
 
 
-class RunResultCreateView(
-    BaseUploadFinishMixin,
+class BaseRunResultCreateView(
+    ObjectRoleMixin,
     NestedViewSetMixin,
+):
+    permission_classes = [RoleBasedPermission]
+
+    RBAC_BY_ACTION = {
+        "list": ["project.run.list"],
+        "retrieve": ["project.run.list"],
+        "create": ["project.run.create"],
+    }
+
+    def get_object_project(self):
+        return self.current_object.run.jobdef.project
+
+    def get_object_workspace(self):
+        return self.current_object.run.jobdef.project.workspace
+
+    def get_create_role(self, request, *args, **kwargs):
+        parents = self.get_parents_query_dict()
+        try:
+            run = JobRun.objects.get(short_uuid=parents.get("run__short_uuid"))
+            project = run.jobdef.project
+        except ObjectDoesNotExist:
+            raise Http404
+
+        workspace_role, request.membership = Membership.get_workspace_role(
+            request.user, project.workspace
+        )
+        request.user_roles.append(workspace_role)
+        request.object_role = workspace_role
+
+        # try setting a project role based on workspace role
+        if workspace_to_project_role(workspace_role) is not None:
+            inherited_role = workspace_to_project_role(workspace_role)
+            request.user_roles.append(inherited_role)
+
+        return Membership.get_project_role(request.user, project)
+
+
+class RunResultCreateView(
+    BaseRunResultCreateView,
+    BaseUploadFinishMixin,
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = RunResult.objects.filter(run__deleted__isnull=True)
     lookup_field = "short_uuid"
     serializer_class = RunResultSerializer
-    permission_classes = [IsMemberOfRunAttributePermission]
 
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = result_upload_finish
@@ -219,14 +293,24 @@ class RunResultCreateView(
         instance_obj.save(update_fields=update_fields)
 
 
-class ChunkedJobResultViewSet(BaseChunkedPartViewSet):
+class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     """
     Allow chunked uploading of jobresult
     """
 
-    queryset = ChunkedRunResultPart.objects.all()
+    queryset = ChunkedRunResultPart.objects.all().select_related(
+        "runresult__run__jobdef__project",
+        "runresult__run__jobdef__project__workspace",
+    )
     serializer_class = ChunkedRunResultPartSerializer
-    permission_classes = [IsMemberOfRunResultAttributePermission]
+    permission_classes = [RoleBasedPermission]
+
+    RBAC_BY_ACTION = {
+        "list": ["project.run.list"],
+        "retrieve": ["project.run.list"],
+        "create": ["project.run.create"],
+        "chunk": ["project.run.create"],
+    }
 
     def initial(self, request, *args, **kwargs):
         """
@@ -242,3 +326,33 @@ class ChunkedJobResultViewSet(BaseChunkedPartViewSet):
                 ).pk
             }
         )
+
+    def get_object_project(self):
+        return self.current_object.runresult.run.jobdef.project
+
+    def get_object_workspace(self):
+        return self.current_object.runresult.run.jobdef.project.workspace
+
+    def get_create_role(self, request, *args, **kwargs):
+        # The role for creating an artifact is based on the url it is accesing
+        parents = self.get_parents_query_dict()
+        try:
+            runresult = RunResult.objects.get(
+                short_uuid=parents.get("runresult__short_uuid")
+            )
+            project = runresult.run.jobdef.project
+        except ObjectDoesNotExist:
+            raise Http404
+
+        workspace_role, request.membership = Membership.get_workspace_role(
+            request.user, project.workspace
+        )
+        request.user_roles.append(workspace_role)
+        request.object_role = workspace_role
+
+        # try setting a project role based on workspace role
+        if workspace_to_project_role(workspace_role) is not None:
+            inherited_role = workspace_to_project_role(workspace_role)
+            request.user_roles.append(inherited_role)
+
+        return Membership.get_project_role(request.user, project)

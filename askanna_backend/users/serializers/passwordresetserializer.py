@@ -76,8 +76,6 @@ class PasswordResetStatusSerializer(serializers.Serializer):
             self.user = User._default_manager.get(pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             raise ValidationError({"uid": ["Invalid value"], "status": "invalid"})
-        else:
-            print("survived the uid check")
 
         if not default_token_generator.check_token(self.user, attrs["token"]):
             raise ValidationError({"token": ["Invalid value"], "status": "invalid"})

@@ -15,6 +15,7 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "job-list",
             kwargs={
@@ -26,8 +27,33 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
         """
         We can list job as admin of a workspace
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 6)
+
+    def test_list_as_member(self):
+        """
+        We can list job as member of a workspace
+        """
+        self.activate_user("member")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_list_as_nonmember(self):
+        """
+        We can list job as member of a workspace
+        """
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -36,43 +62,16 @@ class TestJobListAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
-    def test_list_as_member(self):
-        """
-        We can list job as member of a workspace
-        """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 5)
-
-    def test_list_as_nonmember(self):
-        """
-        We can list job as member of a workspace
-        """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
     def test_list_as_anonymous(self):
         """
-        We can list job as member of a workspace
+        Anonymous user can only list public projects
         """
         response = self.client.get(
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
 
 
 class TestProjectJobListAPI(TestJobListAPI):
@@ -81,6 +80,7 @@ class TestProjectJobListAPI(TestJobListAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-job-list",
             kwargs={
@@ -89,12 +89,24 @@ class TestProjectJobListAPI(TestJobListAPI):
             },
         )
 
+    def test_list_as_admin(self):
+        """
+        We can list job as admin of a workspace
+        """
+        self.activate_user("admin")
+
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
     def test_list_as_member(self):
         """
         We can list job as member of a workspace
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -107,14 +119,24 @@ class TestProjectJobListAPI(TestJobListAPI):
         """
         We can list job as member of a workspace
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_as_anonymous(self):
+        """
+        Anonymous users cannot list from private project
+        """
+        response = self.client.get(
+            self.url,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
 
 
 class TestJobDetailAPI(BaseJobTestDef, APITestCase):
@@ -124,6 +146,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "job-detail",
             kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
@@ -133,8 +156,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can get details of a jobdef as an admin
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.get(
             self.url,
@@ -147,8 +169,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can get details of a jobdef as a member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.get(
             self.url,
@@ -161,8 +182,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT get details of a jobdef as non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -178,7 +198,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestProjectJobDetailAPI(TestJobDetailAPI):
@@ -188,6 +208,7 @@ class TestProjectJobDetailAPI(TestJobDetailAPI):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "project-job-detail",
             kwargs={
@@ -205,6 +226,7 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "job-detail",
             kwargs={
@@ -217,8 +239,7 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
         """
         We can get changes of a jobdef as an admin
         """
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         change_job_payload = {
             "name": "newname",
@@ -240,8 +261,7 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
         """
         We can get changes of a jobdef as a member
         """
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         change_job_payload = {
             "name": "newname",
@@ -263,8 +283,7 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
         """
         We can NOT get changes of a jobdef as non-member
         """
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.get(
             self.url,
@@ -280,7 +299,7 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
@@ -289,6 +308,7 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.url = reverse(
             "job-detail",
             kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
@@ -296,11 +316,9 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
 
     def test_delete_as_anna(self):
         """
-        By default, AskAnna user cannot delete jobs
+        By default, AskAnna user cannot delete jobs (not a member)
         """
-
-        token = self.users["anna"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("anna")
 
         response = self.client.delete(
             self.url,
@@ -312,9 +330,7 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
         """
         Delete a job as an workspace admin
         """
-
-        token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("admin")
 
         response = self.client.delete(
             self.url,
@@ -326,9 +342,7 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
         """
         Delete a job as an workspace member
         """
-
-        token = self.users["user"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("member")
 
         response = self.client.delete(
             self.url,
@@ -340,9 +354,7 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
         """
         Non workspace members cannot delete jobs
         """
-
-        token = self.users["user_nonmember"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.activate_user("non_member")
 
         response = self.client.delete(
             self.url,
@@ -359,4 +371,4 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

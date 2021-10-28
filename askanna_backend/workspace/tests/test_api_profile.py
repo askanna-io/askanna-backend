@@ -5,52 +5,17 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, User, UserProfile
+from core.tests.base import BaseUserPopulation
+from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
 
 from ..models import Workspace
 
 pytestmark = pytest.mark.django_db
 
 
-class TestProfileAPI(APITestCase):
+class TestProfileAPI(BaseUserPopulation, APITestCase):
     def setUp(self):
-        self.users = {
-            "admin_a": User.objects.create(username="admin_a"),
-            "admin_b": User.objects.create(username="admin_b"),
-            "member_a": User.objects.create(username="member_a"),
-            "member_b": User.objects.create(username="member_b"),
-            "user_a": User.objects.create(username="user_a"),
-        }
-        self.workspace = Workspace.objects.create(name="test workspace")
-
-        # make the admin_a user member of the workspace
-        self.admin_a_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["admin_a"],
-            role=WS_ADMIN,
-        )
-        # make the admin_b user member of the workspace
-        self.admin_b_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["admin_b"],
-            role=WS_ADMIN,
-        )
-        # make the member_a user member of the workspace
-        self.member_a_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["member_a"],
-            role=WS_MEMBER,
-        )
-        # make the member_b user member of the workspace
-        self.member_b_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["member_b"],
-            role=WS_MEMBER,
-        )
+        super().setUp()
 
     def test_member_can_not_change_other_member_profile(self):
         """A profile can not be changed by a non owner."""
@@ -58,12 +23,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_b_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member2").short_uuid,
             },
         )
 
-        token = self.users["member_a"].auth_token
+        token = self.users.get("member").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -78,7 +43,7 @@ class TestProfileAPI(APITestCase):
         new_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=new_workspace.uuid,
-            user=self.users["admin_b"],
+            user=self.users["admin2"],
             role=WS_ADMIN,
         )
 
@@ -91,7 +56,7 @@ class TestProfileAPI(APITestCase):
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -107,7 +72,7 @@ class TestProfileAPI(APITestCase):
         new_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=new_workspace.uuid,
-            user=self.users["member_b"],
+            user=self.users["member2"],
             role=WS_MEMBER,
         )
 
@@ -120,7 +85,7 @@ class TestProfileAPI(APITestCase):
             },
         )
 
-        token = self.users["member_a"].auth_token
+        token = self.users["member"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -134,12 +99,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_b_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member2").short_uuid,
             },
         )
 
-        token = self.users["member_a"].auth_token
+        token = self.users["member"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -155,12 +120,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["member_a"].auth_token
+        token = self.users["member"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -177,12 +142,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["member_a"].auth_token
+        token = self.users["member"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -199,12 +164,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -221,12 +186,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -243,12 +208,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -258,7 +223,7 @@ class TestProfileAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            UserProfile.objects.get(pk=self.member_a_profile.pk).role, WS_ADMIN
+            UserProfile.objects.get(pk=self.members.get("member").pk).role, WS_ADMIN
         )
 
     def test_change_role_as_member_fails(self):
@@ -267,12 +232,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["member_b"].auth_token
+        token = self.users["member2"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -288,12 +253,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_b_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin2").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users["admin"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -303,7 +268,7 @@ class TestProfileAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            UserProfile.objects.get(pk=self.member_b_profile.pk).role, WS_MEMBER
+            UserProfile.objects.get(pk=self.members.get("admin2").pk).role, WS_MEMBER
         )
 
     def test_change_admin_role_by_self_fails(self):
@@ -312,12 +277,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users.get("admin").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -333,12 +298,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin").short_uuid,
             },
         )
 
-        token = self.users["member_b"].auth_token
+        token = self.users.get("member2").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.patch(
@@ -357,7 +322,7 @@ class TestProfileAPI(APITestCase):
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__short_uuid": workspace_to_fail.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
@@ -375,8 +340,8 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
@@ -391,12 +356,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["user_a"].auth_token
+        token = self.users.get("non_member").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -410,12 +375,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["member_b"].auth_token
+        token = self.users.get("member2").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -423,7 +388,7 @@ class TestProfileAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
-            {"short_uuid": self.member_a_profile.short_uuid}.items()
+            {"short_uuid": self.members.get("member").short_uuid}.items()
             <= dict(response.data).items()
         )
 
@@ -433,12 +398,12 @@ class TestProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users.get("admin").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -446,7 +411,7 @@ class TestProfileAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
-            {"short_uuid": self.member_a_profile.short_uuid}.items()
+            {"short_uuid": self.members.get("member").short_uuid}.items()
             <= dict(response.data).items()
         )
 
@@ -456,7 +421,7 @@ class TestProfileAPI(APITestCase):
         filtered_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=new_workspace.uuid,
-            user=self.users["member_a"],
+            user=self.users.get("member"),
             role=WS_ADMIN,
         )
 
@@ -464,11 +429,11 @@ class TestProfileAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users.get("admin").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -477,39 +442,14 @@ class TestProfileAPI(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         uuids = [p["uuid"] for p in response.data]
-        self.assertEqual(len(uuids), 4)
+        self.assertEqual(len(uuids), 5)
         self.assertNotIn(str(filtered_profile.pk), uuids)
-        self.assertIn(str(self.member_b_profile.pk), uuids)
+        self.assertIn(str(self.members.get("member2").pk), uuids)
 
 
-class TestDeletedProfileAPI(APITestCase):
+class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
     def setUp(self):
-        self.users = {
-            "admin_a_deleted_profile": User.objects.create(
-                username="admin_a_deleted_profile"
-            ),
-            "member_a_deleted_profile": User.objects.create(
-                username="member_a_deleted_profile"
-            ),
-        }
-        self.workspace = Workspace.objects.create(name="test workspace")
-
-        # make the admin_a_deleted_profile user admin of the workspace
-        self.admin_a_deleted_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["admin_a_deleted_profile"],
-            role=WS_ADMIN,
-            deleted=timezone.now(),
-        )
-        # make the member_a_deleted_profile user member of the workspace
-        self.member_a_deleted_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["member_a_deleted_profile"],
-            role=WS_MEMBER,
-            deleted=timezone.now(),
-        )
+        super().setUp()
 
     def test_deleted_member_is_denied_access_to_list(self):
         """A soft-deleted Profile has no access to the profiles of a workspace."""
@@ -517,11 +457,11 @@ class TestDeletedProfileAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
             },
         )
 
-        token = self.users["member_a_deleted_profile"].auth_token
+        token = self.users.get("member_inactive").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -535,12 +475,12 @@ class TestDeletedProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_deleted_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member_inactive").short_uuid,
             },
         )
 
-        token = self.users["member_a_deleted_profile"].auth_token
+        token = self.users.get("member_inactive").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -555,12 +495,12 @@ class TestDeletedProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_deleted_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member_inactive").short_uuid,
             },
         )
 
-        token = self.users["member_a_deleted_profile"].auth_token
+        token = self.users.get("member_inactive").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         with self.subTest("empty payload"):
@@ -585,11 +525,11 @@ class TestDeletedProfileAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
             },
         )
 
-        token = self.users["admin_a_deleted_profile"].auth_token
+        token = self.users.get("admin_inactive").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -604,12 +544,12 @@ class TestDeletedProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_a_deleted_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin_inactive").short_uuid,
             },
         )
 
-        token = self.users["admin_a_deleted_profile"].auth_token
+        token = self.users.get("admin_inactive").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.get(
@@ -624,12 +564,12 @@ class TestDeletedProfileAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_a_deleted_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin_inactive").short_uuid,
             },
         )
 
-        token = self.users["admin_a_deleted_profile"].auth_token
+        token = self.users.get("admin_inactive").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         with self.subTest("empty payload"):
@@ -649,45 +589,9 @@ class TestDeletedProfileAPI(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class TestRemovingProfile(APITestCase):
+class TestRemovingProfile(BaseUserPopulation, APITestCase):
     def setUp(self):
-        self.users = {
-            "admin_a": User.objects.create(username="admin_a"),
-            "admin_b": User.objects.create(username="admin_b"),
-            "member_a": User.objects.create(username="member_a"),
-            "member_b": User.objects.create(username="member_b"),
-            "user_a": User.objects.create(username="user_a"),
-        }
-        self.workspace = Workspace.objects.create(name="test workspace")
-
-        # make the admin_a user member of the workspace
-        self.admin_a_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["admin_a"],
-            role=WS_ADMIN,
-        )
-        # make the admin_a user member of the workspace
-        self.admin_b_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["admin_b"],
-            role=WS_ADMIN,
-        )
-        # make the member_a user member of the workspace
-        self.member_a_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["member_a"],
-            role=WS_MEMBER,
-        )
-        # make the member_b user member of the workspace
-        self.member_b_profile = UserProfile.objects.create(
-            object_type=MSP_WORKSPACE,
-            object_uuid=self.workspace.uuid,
-            user=self.users["member_b"],
-            role=WS_MEMBER,
-        )
+        super().setUp()
 
     def test_admin_can_remove_profile(self):
         """Admins of a workspace can remove a member from it."""
@@ -695,19 +599,21 @@ class TestRemovingProfile(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_b_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin2").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users.get("admin").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         before_delete = timezone.now()
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertGreater(
-            UserProfile.objects.filter(uuid=self.admin_b_profile.uuid).first().deleted,
+            UserProfile.objects.filter(uuid=self.members.get("admin2").uuid)
+            .first()
+            .deleted,
             before_delete,
         )
 
@@ -717,18 +623,20 @@ class TestRemovingProfile(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["member_b"].auth_token
+        token = self.users.get("member2").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIsNone(
-            UserProfile.objects.filter(uuid=self.member_a_profile.uuid).first().deleted
+            UserProfile.objects.filter(uuid=self.members.get("member").uuid)
+            .first()
+            .deleted
         )
 
     def test_non_member_cannot_remove_profile(self):
@@ -737,18 +645,20 @@ class TestRemovingProfile(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("member").short_uuid,
             },
         )
 
-        token = self.users["user_a"].auth_token
+        token = self.users.get("non_member").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIsNone(
-            UserProfile.objects.filter(uuid=self.member_a_profile.uuid).first().deleted
+            UserProfile.objects.filter(uuid=self.members.get("member").uuid)
+            .first()
+            .deleted
         )
 
     def test_admin_cannot_remove_profiles_from_other_workspace(self):
@@ -757,7 +667,7 @@ class TestRemovingProfile(APITestCase):
         extra_profile = UserProfile.objects.create(
             object_type=MSP_WORKSPACE,
             object_uuid=extra_workspace.uuid,
-            user=self.users["user_a"],
+            user=self.users.get("member3"),
             role=WS_MEMBER,
         )
 
@@ -770,7 +680,7 @@ class TestRemovingProfile(APITestCase):
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users.get("admin").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(url)
@@ -785,16 +695,18 @@ class TestRemovingProfile(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.admin_a_profile.short_uuid,
+                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "short_uuid": self.members.get("admin").short_uuid,
             },
         )
 
-        token = self.users["admin_a"].auth_token
+        token = self.users.get("admin").auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIsNone(
-            UserProfile.objects.filter(uuid=self.admin_a_profile.uuid).first().deleted
+            UserProfile.objects.filter(uuid=self.members.get("admin").uuid)
+            .first()
+            .deleted
         )

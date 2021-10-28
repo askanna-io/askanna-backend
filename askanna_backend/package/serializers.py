@@ -58,11 +58,12 @@ class PackageSerializer(serializers.ModelSerializer):
     def get_created_by(self, instance):
         user = instance.created_by
         member = instance.member
+        if member:
+            return member.relation_to_json
         if user:
-            if member:
-                return member.relation_to_json
             return user.relation_to_json
 
+        # if not of the user or member is filled, return default empty
         return {
             "name": "",
             "uuid": "",

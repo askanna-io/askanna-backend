@@ -8,6 +8,9 @@ class WorkspaceAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "description",
+        "short_uuid",
+        "status",
+        "visibility",
         "created",
         "deleted",
     ]
@@ -17,6 +20,8 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "created",
         "modified",
         "deleted",
+        "status",
+        "visibility",
     )
     search_fields = [
         "uuid",

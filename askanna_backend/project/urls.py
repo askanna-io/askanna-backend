@@ -1,7 +1,11 @@
-from django.conf.urls import include, re_path
+from django.conf.urls import include
+
+from django.urls import path, re_path
 
 from utils.urls import router
 from project.views import ProjectView, ProjectReadOnlyView
+
+from users.views import ProjectMeViewSet
 from workspace.urls import workspace_route
 
 project_route = router.register(r"project", ProjectView, basename="project")
@@ -14,5 +18,11 @@ workspace_route.register(
 )
 
 urlpatterns = [
+    path(
+        r"v1/project/<shortuuid:short_uuid>/me/",
+        ProjectMeViewSet.as_view(),
+        kwargs={"object_type": "PR"},
+        name="project-me",
+    ),
     re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
 ]

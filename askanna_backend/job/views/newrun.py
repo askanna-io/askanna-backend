@@ -2,27 +2,39 @@
 import json
 import io
 
+from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 
 from core.const import ALLOWED_API_AGENTS
+from core.permissions import RoleBasedPermission
+from core.views import ObjectRoleMixin
 from job.models import (
     JobDef,
     JobPayload,
     JobRun,
 )
-from job.permissions import IsMemberOfProjectAttributePermission
 from job.serializers import StartJobSerializer
 from package.models import Package
 from users.models import MSP_WORKSPACE
 
 
-class StartJobView(viewsets.GenericViewSet):
+class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
     queryset = JobDef.jobs.active()
     lookup_field = "short_uuid"
     serializer_class = StartJobSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
+    permission_classes = [RoleBasedPermission]
+
+    RBAC_BY_ACTION = {
+        "newrun": ["project.run.create"],
+    }
+
+    def get_object_project(self):
+        return self.current_object.project
+
+    def get_object_workspace(self):
+        return self.current_object.project.workspace
 
     def get_queryset(self):
         """
@@ -30,12 +42,30 @@ class StartJobView(viewsets.GenericViewSet):
         where the current user had access to
         meaning also beeing part of a certain workspace
         """
-        queryset = super().get_queryset()
         user = self.request.user
+        if user.is_anonymous:
+            # we don't allow anonymous users to start any jobs
+            return super().get_queryset().none()
+
         member_of_workspaces = user.memberships.filter(
             object_type=MSP_WORKSPACE
         ).values_list("object_uuid", flat=True)
-        return queryset.filter(project__workspace__in=member_of_workspaces)
+
+        # with the following query, when a project is set to PUBLIC,
+        # or by workspace=PUBLIC
+        # anyone can start a job except for people not logged in and
+        # this is crusial as we need to register the "owner" of a run
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Q(project__workspace__in=member_of_workspaces)
+                | (
+                    Q(project__workspace__visibility="PUBLIC")
+                    & Q(project__visibility="PUBLIC")
+                )
+            )
+        )
 
     def handle_payload(self, request, job, **kwargs):
         """

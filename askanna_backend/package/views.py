@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+from django.http import Http404
 
 from rest_framework import mixins
 from rest_framework import viewsets
@@ -12,10 +15,13 @@ from core.views import (
     BaseChunkedPartViewSet,
     BaseUploadFinishMixin,
     SerializerByActionMixin,
+    ObjectRoleMixin,
+    workspace_to_project_role,
 )
-from job.permissions import (
-    IsMemberOfProjectAttributePermission,
-    IsMemberOfPackageAttributePermission,
+from core.permissions import (
+    ProjectMember,
+    ProjectNoMember,
+    RoleBasedPermission,
 )
 from package.models import Package, ChunkedPackagePart
 from package.serializers import (
@@ -25,10 +31,82 @@ from package.serializers import (
     PackageCreateSerializer,
 )
 from package.signals import package_upload_finish
-from users.models import MSP_WORKSPACE
+from project.models import Project
+from users.models import MSP_WORKSPACE, Membership
+
+
+class PackageObjectRoleMixin:
+    def get_object_project(self):
+        return self.current_object.project
+
+    def get_object_workspace(self):
+        return self.current_object.project.workspace
+
+    def get_list_role(self, request, *args, **kwargs):
+        # always return ProjectMember for logged in users since the listing always shows objects based on membership
+        if request.user.is_anonymous:
+            return ProjectNoMember, None
+        return ProjectMember, None
+
+    def get_create_role(self, request, *args, **kwargs):
+        project_suuid = request.data.get("project")
+        try:
+            project = Project.objects.get(short_uuid=project_suuid)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        workspace_role, request.membership = Membership.get_workspace_role(
+            request.user, project.workspace
+        )
+        request.user_roles.append(workspace_role)
+        request.object_role = workspace_role
+
+        # try setting a project role based on workspace role
+        if workspace_to_project_role(workspace_role) is not None:
+            inherited_role = workspace_to_project_role(workspace_role)
+            request.user_roles.append(inherited_role)
+
+        return Membership.get_project_role(request.user, project)
+
+    def get_queryset(self):
+
+        """
+        Filter only the packages where the user has access to.
+        Meaning all packages within projects/workspaces the user has joined
+        Only for the list action, the limitation for other cases is covered with permissions
+        """
+        user = self.request.user
+        if user.is_anonymous:
+            return (
+                super()
+                .get_queryset()
+                .filter(
+                    Q(project__workspace__visibility="PUBLIC")
+                    & Q(project__visibility="PUBLIC")
+                )
+                .order_by("name")
+            )
+
+        member_of_workspaces = user.memberships.filter(
+            object_type=MSP_WORKSPACE
+        ).values_list("object_uuid")
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Q(project__workspace__pk__in=member_of_workspaces)
+                | (
+                    Q(project__workspace__visibility="PUBLIC")
+                    & Q(project__visibility="PUBLIC")
+                )
+            )
+        )
 
 
 class PackageViewSet(
+    PackageObjectRoleMixin,
+    ObjectRoleMixin,
     SerializerByActionMixin,
     BaseUploadFinishMixin,
     mixins.CreateModelMixin,
@@ -40,10 +118,10 @@ class PackageViewSet(
     List all packages and allow to finish upload action
     """
 
-    queryset = Package.objects.all().select_related("project", "project__workspace")
+    queryset = Package.objects.select_related("project", "project__workspace").all()
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
+    permission_classes = [RoleBasedPermission]
 
     upload_target_location = settings.PACKAGES_ROOT
     upload_finished_signal = package_upload_finish
@@ -53,24 +131,12 @@ class PackageViewSet(
         "post": PackageCreateSerializer,
     }
 
-    def get_queryset(self):
-        """
-        Filter only the packages where the user has access to.
-        Meaning all packages within projects/workspaces the user has joined
-        Only for the list action, the limitation for other cases is covered with permissions
-        """
-        if self.action == "list":
-            user = self.request.user
-            member_of_workspaces = user.memberships.filter(
-                object_type=MSP_WORKSPACE
-            ).values_list("object_uuid")
-
-            return (
-                super()
-                .get_queryset()
-                .filter(project__workspace__pk__in=member_of_workspaces)
-            )
-        return super().get_queryset()
+    RBAC_BY_ACTION = {
+        "list": ["project.code.list"],
+        "retrieve": ["project.code.list"],
+        "create": ["project.code.create"],
+        "finish_upload": ["project.code.create"],
+    }
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return obj.filename
@@ -85,14 +151,51 @@ class PackageViewSet(
         instance_obj.save(update_fields=update_fields)
 
 
-class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
+class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     """
     Allow chunked uploading of packages
     """
 
-    queryset = ChunkedPackagePart.objects.all()
+    queryset = ChunkedPackagePart.objects.all().select_related(
+        "package__project",
+        "package__project__workspace",
+    )
     serializer_class = ChunkedPackagePartSerializer
-    permission_classes = [IsMemberOfPackageAttributePermission]
+    permission_classes = [RoleBasedPermission]
+
+    RBAC_BY_ACTION = {
+        "list": ["project.code.list"],
+        "retrieve": ["project.code.list"],
+        "create": ["project.code.create"],
+        "chunk": ["project.code.create"],
+    }
+
+    def get_object_project(self):
+        return self.current_object.package.project
+
+    def get_object_workspace(self):
+        return self.current_object.package.project.workspace
+
+    def get_create_role(self, request, *args, **kwargs):
+        parents = self.get_parents_query_dict()
+        try:
+            package = Package.objects.get(short_uuid=parents.get("package__short_uuid"))
+            project = package.project
+        except ObjectDoesNotExist:
+            raise Http404
+
+        workspace_role, request.membership = Membership.get_workspace_role(
+            request.user, project.workspace
+        )
+        request.user_roles.append(workspace_role)
+        request.object_role = workspace_role
+
+        # try setting a project role based on workspace role
+        if workspace_to_project_role(workspace_role) is not None:
+            inherited_role = workspace_to_project_role(workspace_role)
+            request.user_roles.append(inherited_role)
+
+        return Membership.get_project_role(request.user, project)
 
     def initial(self, request, *args, **kwargs):
         """
@@ -112,12 +215,35 @@ class ChunkedPackagePartViewSet(BaseChunkedPartViewSet):
         )
 
 
-class ProjectPackageViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
-
-    queryset = Package.objects.exclude(original_filename="")
+class ProjectPackageViewSet(
+    PackageObjectRoleMixin,
+    ObjectRoleMixin,
+    NestedViewSetMixin,
+    viewsets.ReadOnlyModelViewSet,
+):
+    queryset = Package.objects.select_related(
+        "project",
+        "project__workspace",
+    ).exclude(original_filename="")
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
-    permission_classes = [IsMemberOfProjectAttributePermission]
+    permission_classes = [RoleBasedPermission]
+
+    RBAC_BY_ACTION = {
+        "list": ["project.code.list"],
+        "retrieve": ["project.code.list"],
+        "download": ["project.code.list"],
+    }
+
+    def get_list_role(self, request, *args, **kwargs):
+        # always return ProjectMember for logged in users since the listing always shows objects based on membership
+        parents = self.get_parents_query_dict()
+        project = Project.objects.get(short_uuid=parents.get("project__short_uuid"))
+        request.user_roles += Membership.get_roles_for_project(request.user, project)
+
+        if request.user.is_anonymous:
+            return ProjectNoMember, None
+        return ProjectMember, None
 
     def get_serializer_class(self):
         if self.action == "retrieve":

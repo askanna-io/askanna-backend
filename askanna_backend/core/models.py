@@ -129,9 +129,6 @@ class ArtifactModelMixin:
     def storage_location(self):
         return self.get_storage_location()
 
-    def __str__(self):
-        return str(self.uuid)
-
     def get_storage_location(self):
         raise NotImplementedError(
             f"Please implement 'get_storage_location' for {self.__class__.__name__}"
