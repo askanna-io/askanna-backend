@@ -55,9 +55,7 @@ class PackageObjectRoleMixin:
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(
-            request.user, project.workspace
-        )
+        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
         request.user_roles.append(workspace_role)
         request.object_role = workspace_role
 
@@ -80,26 +78,18 @@ class PackageObjectRoleMixin:
             return (
                 super()
                 .get_queryset()
-                .filter(
-                    Q(project__workspace__visibility="PUBLIC")
-                    & Q(project__visibility="PUBLIC")
-                )
+                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
                 .order_by("name")
             )
 
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid")
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid")
 
         return (
             super()
             .get_queryset()
             .filter(
                 Q(project__workspace__pk__in=member_of_workspaces)
-                | (
-                    Q(project__workspace__visibility="PUBLIC")
-                    & Q(project__visibility="PUBLIC")
-                )
+                | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
 
@@ -118,7 +108,7 @@ class PackageViewSet(
     List all packages and allow to finish upload action
     """
 
-    queryset = Package.objects.select_related("project", "project__workspace").all()
+    queryset = Package.objects.all().select_related("project", "project__workspace")
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [RoleBasedPermission]
@@ -184,9 +174,7 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(
-            request.user, project.workspace
-        )
+        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
         request.user_roles.append(workspace_role)
         request.object_role = workspace_role
 
