@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+import datetime
 import time
 import typing
+
 import docker
+import redis
+
+from config.settings.main import env
 
 
 class RegistryAuthenticationError(Exception):
@@ -159,10 +164,18 @@ class ContainerImageBuilder:
     ) -> None:
         self.client = client
         self.logger = logger
+        self.redis_url = env("REDIS_URL")
+        self.redis = redis.Redis.from_url(self.redis_url)
 
-    def set_building(self, run_image):
+    def get_build_lock(self, run_image):
+        return self.redis.get(run_image.short_uuid)
 
-        return
+    def set_build_lock(self, run_image):
+        self.redis.set(run_image.short_uuid, datetime.datetime.utcnow().isoformat())
+        return self.get_build_lock(run_image)
+
+    def remove_build_lock(self, run_image):
+        return self.redis.delete(run_image.short_uuid)
 
     def get_image(
         self,
@@ -192,14 +205,13 @@ class ContainerImageBuilder:
 
         if not _created and not run_image.cached_image:
             # the image was created in another run, wait for it
-            time.sleep(10.0)
-            # call this function again to get the image
-            return self.get_image(
-                repository, tag, digest, imagehelper,
-                model, docker_debug_log, image_prefix, image_template_path,
-            )
+            while self.get_build_lock(run_image) is not None:
+                time.sleep(5.0)
+            # retrieve newest information from the database
+            run_image.refresh_from_db()
 
         if _created or not run_image.cached_image:
+            self.set_build_lock(run_image)
             # this is a new image
             # pull image first
             # might raise `RegistryContainerPullError`
@@ -228,6 +240,7 @@ class ContainerImageBuilder:
             run_image.save(update_fields=["cached_image"])
             # we just created the image with the following short_id:
             print(image.short_id)
+            self.remove_build_lock(run_image)
 
             if docker_debug_log:
                 # log the build steps into the log, only in DEBUG mode
