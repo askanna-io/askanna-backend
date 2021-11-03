@@ -76,25 +76,17 @@ class BaseRunResultView(
             return (
                 super()
                 .get_queryset()
-                .filter(
-                    Q(jobdef__project__workspace__visibility="PUBLIC")
-                    & Q(jobdef__project__visibility="PUBLIC")
-                )
+                .filter(Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()
             .get_queryset()
             .filter(
                 Q(jobdef__project__workspace__in=member_of_workspaces)
-                | (
-                    Q(jobdef__project__workspace__visibility="PUBLIC")
-                    & Q(jobdef__project__visibility="PUBLIC")
-                )
+                | (Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
             )
         )
 
@@ -115,9 +107,7 @@ class RunResultView(BaseRunResultView):
             # the output file doesn't exist, return blank
             return Response(None, status=status.HTTP_404_NOT_FOUND)
 
-        return stream(
-            request, run.result.stored_path, content_type=content_type, size=size
-        )
+        return stream(request, run.result.stored_path, content_type=content_type, size=size)
 
     def options(self, request, *args, **kwargs):
         """
@@ -160,12 +150,8 @@ class RunStatusView(BaseRunResultView):
 
     def retrieve(self, request, short_uuid, *args, **kwargs):
         run = self.get_object()
-        next_url = "{}://{}/v1/status/{}/".format(
-            request.scheme, request.META["HTTP_HOST"], run.short_uuid
-        )
-        finished_next_url = "{}://{}/v1/result/{}/".format(
-            request.scheme, request.META["HTTP_HOST"], run.short_uuid
-        )
+        next_url = "{}://{}/v1/status/{}/".format(request.scheme, request.META["HTTP_HOST"], run.short_uuid)
+        finished_next_url = "{}://{}/v1/result/{}/".format(request.scheme, request.META["HTTP_HOST"], run.short_uuid)
         base_status = {
             "message_type": "status",
             "uuid": run.uuid,
@@ -229,9 +215,7 @@ class BaseRunResultCreateView(
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(
-            request.user, project.workspace
-        )
+        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
         request.user_roles.append(workspace_role)
         request.object_role = workspace_role
 
@@ -257,11 +241,16 @@ class RunResultCreateView(
     upload_finished_signal = result_upload_finish
     upload_finished_message = "Job result uploaded"
 
+    def get_upload_dir(self, obj):
+        # directory structure is containing the run-suuid
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.short_uuid)
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+        return directory
+
     # overwrite create row, we need to add the jobrun
     def create(self, request, *args, **kwargs):
-        run = JobRun.objects.get(
-            short_uuid=self.kwargs.get("parent_lookup_run__short_uuid")
-        )
+        run = JobRun.objects.get(short_uuid=self.kwargs.get("parent_lookup_run__short_uuid"))
 
         data = request.data.copy()
         data.update(
@@ -276,9 +265,7 @@ class RunResultCreateView(
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return "result_{}.output".format(obj.uuid.hex)
@@ -327,6 +314,13 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
             }
         )
 
+    def get_upload_dir(self, chunkpart):
+        # directory structure is containing the run-suuid
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.runresult.run.short_uuid)
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+        return directory
+
     def get_object_project(self):
         return self.current_object.runresult.run.jobdef.project
 
@@ -337,16 +331,12 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         # The role for creating an artifact is based on the url it is accesing
         parents = self.get_parents_query_dict()
         try:
-            runresult = RunResult.objects.get(
-                short_uuid=parents.get("runresult__short_uuid")
-            )
+            runresult = RunResult.objects.get(short_uuid=parents.get("runresult__short_uuid"))
             project = runresult.run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(
-            request.user, project.workspace
-        )
+        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
         request.user_roles.append(workspace_role)
         request.object_role = workspace_role
 

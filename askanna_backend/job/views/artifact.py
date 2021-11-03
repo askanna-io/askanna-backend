@@ -139,6 +139,13 @@ class JobArtifactView(
         "download": ["project.run.list"],
     }
 
+    def get_upload_dir(self, obj):
+        # directory structure is containing the run-suuid
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.jobrun.short_uuid)
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+        return directory
+
     def get_object_project(self):
         return self.current_object.jobrun.jobdef.project
 
@@ -265,6 +272,13 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         "retrieve": ["project.run.list"],
         "chunk": ["project.run.create"],
     }
+
+    def get_upload_dir(self, chunkpart):
+        # directory structure is containing the run-suuid
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.artifact.jobrun.short_uuid)
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+        return directory
 
     def get_object_project(self):
         return self.current_object.artifact.jobrun.jobdef.project

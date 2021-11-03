@@ -46,13 +46,16 @@ class BaseChunkedPartViewSet(
 ):
     """"""
 
-    def check_existence(self, request, **kwargs):
+    def get_upload_dir(self, chunkpart):
+        return settings.UPLOAD_ROOT
+
+    def check_existence(self, request, chunkpart, **kwargs):
         """
         We check the existence of a potential chunk to be uploaded.
         This prevents a new POST action from the client and we don't
         have to process this (saves time)
         """
-        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
+        storage_location = FileSystemStorage(location=self.get_upload_dir(chunkpart))
 
         r = ResumableFile(storage_location, request.GET)
         # default response
@@ -71,9 +74,9 @@ class BaseChunkedPartViewSet(
         chunkpart = self.get_object()
 
         if request.method == "GET":
-            return self.check_existence(request, **kwargs)
+            return self.check_existence(request, chunkpart, **kwargs)
         chunk: django.core.files.uploadedfile.InMemoryUploadedFile = request.FILES.get("file")
-        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
+        storage_location = FileSystemStorage(location=self.get_upload_dir(chunkpart))
 
         r = ResumableFile(storage_location, request.POST)
         if r.chunk_exists:
@@ -95,6 +98,9 @@ class BaseUploadFinishMixin:
     upload_finished_signal = None
     upload_finished_message = "upload completed"
 
+    def get_upload_dir(self, obj):
+        return settings.UPLOAD_ROOT
+
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         pass
 
@@ -108,7 +114,7 @@ class BaseUploadFinishMixin:
     def finish_upload(self, request, **kwargs):
         obj = self.get_object()
 
-        storage_location = FileSystemStorage(location=settings.UPLOAD_ROOT)
+        storage_location = FileSystemStorage(location=self.get_upload_dir(obj))
         target_location = FileSystemStorage(location=self.get_upload_target_location(request=request, obj=obj))
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:

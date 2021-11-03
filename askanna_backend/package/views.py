@@ -128,6 +128,13 @@ class PackageViewSet(
         "finish_upload": ["project.code.create"],
     }
 
+    def get_upload_dir(self, obj):
+        # directory structure is containing the project-suuid
+        directory = os.path.join(settings.UPLOAD_ROOT, "project", obj.project.short_uuid)
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+        return directory
+
     def store_as_filename(self, resumable_filename: str, obj) -> str:
         return obj.filename
 
@@ -159,6 +166,13 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         "create": ["project.code.create"],
         "chunk": ["project.code.create"],
     }
+
+    def get_upload_dir(self, chunkpart):
+        # directory structure is containing the project-suuid
+        directory = os.path.join(settings.UPLOAD_ROOT, "project", chunkpart.package.project.short_uuid)
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+        return directory
 
     def get_object_project(self):
         return self.current_object.package.project
