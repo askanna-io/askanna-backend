@@ -266,66 +266,6 @@ def start_run(self, run_uuid):
     except (RegistryContainerPullError, docker.errors.DockerException):
         return jr.to_failed()
 
-    # rule:
-    # Can we find the image_short_id in db?
-    #   yes: set runner_image to prebuild_image name
-    #   no: pull and build
-    # run_image, _created = RunImage.objects.get_or_create(
-    #     **{
-    #         "name": imagehelper.repository,
-    #         "tag": imagehelper.image_tag,
-    #         "digest": imagehelper.image_sha,
-    #     }
-    # )
-
-    # if _created or not run_image.cached_image:
-    #     # this is a new image
-    #     # pull image first
-    #     try:
-    #         imagehelper.pull(log=docker_debug_log)
-    #     except RegistryContainerPullError:
-    #         return jr.to_failed()
-
-    #     # build the new image
-    #     # tag into askanna repo
-    #     repository_name = (
-    #         f"{settings.ASKANNA_ENVIRONMENT}-aa-{run_image.short_uuid}".lower()
-    #     )
-    #     repository_tag = imagehelper.short_id_nosha
-    #     askanna_repository_image_version_name = f"{repository_name}:{repository_tag}"
-
-    #     builder = ContainerImageBuilder(
-    #         client=client,
-    #     )
-
-    #     try:
-    #         image, buildlog = builder.build(
-    #             from_image=f"{imagehelper.repository}@{imagehelper.image_sha}",
-    #             tag=askanna_repository_image_version_name,
-    #             template_path=str(settings.APPS_DIR.path("job/templates/")),
-    #             dockerfile="custom_Dockerfile",
-    #         )
-    #     except docker.errors.DockerException as e:
-    #         op.log(
-    #             f"Run could not be started because of run errors in the image {job_image}",
-    #             print_log=docker_debug_log,
-    #         )
-    #         op.log(e.msg, print_log=docker_debug_log)
-    #         op.log(
-    #             "Please follow the instructions on https://docs.askanna.io/ to build your own image.",
-    #             print_log=docker_debug_log,
-    #         )
-    #         return jr.to_failed()
-
-    #     run_image.cached_image = askanna_repository_image_version_name
-    #     run_image.save(update_fields=["cached_image"])
-    #     # we just created the image with the following short_id:
-    #     print(image.short_id)
-
-    #     if docker_debug_log:
-    #         # log the build steps into the log, only in DEBUG mode
-    #         map(lambda x: op.log(x.get("stream"), print_log=True), buildlog)
-
     op.log("All AskAnna requirements are available", print_log=docker_debug_log)
     op.log("", print_log=docker_debug_log)  # left blank intentionally
 
