@@ -55,3 +55,16 @@ def move_metrics_to_rows(self, metrics_uuid):
         # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
         metric["run_suuid"] = runmetrics.jobrun.short_uuid
         RunMetricsRow.objects.create(**metric)
+
+
+@shared_task(bind=True, name="job.tasks.post_run_deduplicate_metrics")
+def post_run_deduplicate_metrics(self, run_suuid):
+    """
+    Remove double metrics if any
+    """
+    metrics = RunMetricsRow.objects.filter(run_suuid=run_suuid).order_by("created", "name", "value")
+    last_metric = None
+    for metric in metrics:
+        if metric == last_metric:
+            metric.delete()
+        last_metric = metric

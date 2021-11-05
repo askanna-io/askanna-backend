@@ -80,9 +80,7 @@ def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs)
     """
     if created:
         try:
-            JobOutput.objects.create(
-                jobrun=instance, jobdef=instance.jobdef.uuid, owner=instance.owner
-            )
+            JobOutput.objects.create(jobrun=instance, jobdef=instance.jobdef.uuid, owner=instance.owner)
         except Exception as exc:
             raise Exception("Issue creating a JobOutput: {}".format(exc))
 
@@ -97,6 +95,21 @@ def create_job_for_celery(sender, instance, created, **kwargs):  # noqa
         on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.start_run",
+                args=None,
+                kwargs={"run_uuid": instance.uuid},
+            )
+        )
+
+
+@receiver(post_save, sender=JobRun)
+def post_run_deduplicate_metrics(sender, instance, created, **kwargs):  # noqa
+    """
+    Fix metrics after job is finished
+    """
+    if instance.is_finished:
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.post_run_deduplicate_metrics",
                 args=None,
                 kwargs={"run_uuid": instance.uuid},
             )
@@ -259,13 +272,9 @@ def mask_secret_variables(sender, instance, **kwargs):
             instance.variable["value"] = "***masked***"
             instance.is_masked = True
             # add the tag is_masked, but first check whether this is already in the instance.label
-            has_is_masked = "is_masked" in [
-                label.get("name") for label in instance.label
-            ]
+            has_is_masked = "is_masked" in [label.get("name") for label in instance.label]
             if not has_is_masked:
-                instance.label.append(
-                    {"name": "is_masked", "value": None, "type": "tag"}
-                )
+                instance.label.append({"name": "is_masked", "value": None, "type": "tag"})
 
 
 @receiver(pre_delete, sender=RunVariables)
