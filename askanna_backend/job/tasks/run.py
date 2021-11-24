@@ -146,8 +146,6 @@ def start_run(self, run_uuid):
     # jr_token is the token of the user who started the run
     jr_token = jr.owner.auth_token.key
 
-    aa_remote = "{base_url}/v1/".format(base_url=settings.ASKANNA_API_URL)
-
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
         "/bin/sh",
@@ -157,7 +155,7 @@ def start_run(self, run_uuid):
 
     worker_variables = {
         "AA_TOKEN": jr_token,
-        "AA_REMOTE": aa_remote,
+        "AA_REMOTE": settings.ASKANNA_API_URL,
         "AA_RUN_SUUID": jr.short_uuid,
         "AA_JOB_NAME": jd.name,
         "AA_PROJECT_SUUID": str(pr.short_uuid),
