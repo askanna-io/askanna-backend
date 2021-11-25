@@ -290,6 +290,12 @@ def start_run(self, run_uuid):
             stderr=True,
             detach=True,
             auto_remove=False,  # always false, otherwise we are not able to capture logs from very short runs
+            mem_limit="20g",  # memory overall limit for the container
+            mem_reservation="20g",  # memory reservation based on actual free memory on the system
+            mem_swappiness=0,  # no swap
+            memswap_limit="20g",  # Maximum amount of memory + swap a container is allowed to consume.
+            cpu_period=10000,  # The length of a CPU period in microseconds.
+            cpu_quota=40000,  # Microseconds of CPU time that the container can get in a CPU period.
         )
     except (docker.errors.APIError, docker.errors.DockerException) as e:
         print(e)
