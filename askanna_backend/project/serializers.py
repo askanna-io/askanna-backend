@@ -78,7 +78,12 @@ class BaseProjectSerializer:
         """
         If notifications are configured we return them here
         """
-        package = Package.objects.filter(project=instance).order_by("-created").first()
+        package = (
+            Package.objects.filter(finished__isnull=False)
+            .filter(project=instance)
+            .order_by("-created")
+            .first()
+        )
         if not package:
             return {}
 

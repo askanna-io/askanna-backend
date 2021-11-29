@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import tempfile
 import uuid
@@ -5,6 +6,7 @@ from zipfile import ZipFile
 
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.utils import timezone
 
 from job.models import JobDef
 from package.models import Package
@@ -86,5 +88,6 @@ class Command(BaseCommand):
             original_filename="askanna_core.zip",
             project=project,
             size=os.stat(package_archive).st_size,
+            finished=timezone.now(),
         )
         pkg.write(open(package_archive, "rb"))

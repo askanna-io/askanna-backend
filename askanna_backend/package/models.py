@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 import os
 from typing import Dict
 import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 
 from core.config import AskAnnaConfig
 from core.models import AuthorModel, BaseModel
@@ -25,6 +27,17 @@ class Package(AuthorModel, BaseModel):
     size = models.IntegerField(help_text="Size of this package in bytes")
 
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
+
+    # Store when it was finished uploading
+    finished = models.DateTimeField(
+        _("Finished upload"),
+        blank=True,
+        auto_now_add=False,
+        auto_now=False,
+        null=True,
+        help_text="Time when upload of this package was finished",
+        db_index=True,
+    )
 
     @property
     def relation_to_json(self):

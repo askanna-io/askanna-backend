@@ -52,7 +52,7 @@ def install_demo_project_in_workspace(sender, instance, **kwargs):
     # # FIXME: Determine wheter we need the latest or pinned package
     # # Fetch the latest package found in the jobdef.project
     # package = (
-    #     Package.objects.filter(project=jobdef.project).order_by("-created").first()
+    #     Package.objects.filter(finished__isnull=False).filter(project=jobdef.project).order_by("-created").first()
     # )
 
     # # create new Jobrun

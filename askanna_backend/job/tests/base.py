@@ -4,6 +4,7 @@ import io
 
 from django.conf import settings
 from django.db.models import signals
+from django.utils import timezone
 
 
 from core.tests.base import BaseUploadTestMixin, BaseUserPopulation  # noqa
@@ -221,6 +222,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage",
             created_by=self.users.get("member"),
+            finished=timezone.now(),
         )
         self.package.write(
             open(
@@ -235,6 +237,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage2",
             created_by=self.users.get("member"),
+            finished=timezone.now(),
         )
         self.package2.write(
             open(
@@ -249,6 +252,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage3",
             created_by=self.users.get("member"),
+            finished=timezone.now(),
         )
         self.package3.write(
             open(
@@ -257,12 +261,14 @@ class BaseJobTestDef(BaseUserPopulation):
             )
         )
 
+        # this package is visible to everyone
         self.package4 = Package.objects.create(
             original_filename="project-no-yml.zip",
             project=self.project3,
             size=1,
             name="TestPackage4",
             created_by=self.users.get("member"),
+            finished=timezone.now(),
         )
         self.package4.write(
             open(
