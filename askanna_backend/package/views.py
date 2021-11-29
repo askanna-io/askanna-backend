@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
-
+from django.utils import timezone
 from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -108,7 +108,7 @@ class PackageViewSet(
     List all packages and allow to finish upload action
     """
 
-    queryset = Package.objects.all().select_related("project", "project__workspace")
+    queryset = Package.objects.exclude(original_filename="").select_related("project", "project__workspace")
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [RoleBasedPermission]
@@ -144,7 +144,8 @@ class PackageViewSet(
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         # we specify the "member" also in the update_fields
         # because this will be updated later in a listener
-        update_fields = ["member"]
+        instance_obj.finished = timezone.now()
+        update_fields = ["member", "finished"]
         instance_obj.save(update_fields=update_fields)
 
 
@@ -218,15 +219,14 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
 
 
 class ProjectPackageViewSet(
-    PackageObjectRoleMixin,
-    ObjectRoleMixin,
-    NestedViewSetMixin,
-    viewsets.ReadOnlyModelViewSet,
+    NestedViewSetMixin, PackageObjectRoleMixin, ObjectRoleMixin, viewsets.ReadOnlyModelViewSet
 ):
-    queryset = Package.objects.select_related(
-        "project",
-        "project__workspace",
-    ).exclude(original_filename="")
+
+    queryset = (
+        Package.objects.exclude(original_filename="")
+        .filter(finished__isnull=False)
+        .select_related("project", "project__workspace")
+    )
     lookup_field = "short_uuid"
     serializer_class = PackageSerializer
     permission_classes = [RoleBasedPermission]

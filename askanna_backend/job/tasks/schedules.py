@@ -57,7 +57,10 @@ def launch_scheduled_jobs():
     ):
         jobdef = job.job
         package = (
-            Package.objects.filter(project=jobdef.project).order_by("-created").first()
+            Package.objects.filter(finished__isnull=False)
+            .filter(project=jobdef.project)
+            .order_by("-created")
+            .first()
         )
 
         # create new Jobrun and this will automaticly scheduled

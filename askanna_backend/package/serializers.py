@@ -26,7 +26,6 @@ class PackageCreateSerializer(serializers.ModelSerializer):
     def validate_project(self, value):
         """
         Validation of the project specified in the create request
-
         """
         try:
             project = Project.objects.get(short_uuid=value)
@@ -38,7 +37,8 @@ class PackageCreateSerializer(serializers.ModelSerializer):
             # check whether the user has access to this projet
             request = self.context["request"]
             member_of_workspaces = request.user.memberships.filter(
-                object_type=MSP_WORKSPACE
+                object_type=MSP_WORKSPACE,
+                deleted__isnull=True,
             ).values_list("object_uuid", flat=True)
 
             is_member = project.workspace.uuid in member_of_workspaces
@@ -115,4 +115,4 @@ class PackageSerializerDetail(BaseArchiveDetailSerializer):
 
     class Meta:
         model = Package
-        exclude = ("original_filename", "deleted")
+        exclude = ("original_filename", "deleted", "finished")

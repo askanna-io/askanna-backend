@@ -126,7 +126,11 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
         # TODO: Determine wheter we need the latest or pinned package
         # Fetch the latest package found in the job.project
         package = (
-            Package.objects.filter(project=job.project).order_by("-created").first()
+            Package.objects.exclude(original_filename="")
+            .filter(finished__isnull=False)
+            .filter(project=job.project)
+            .order_by("-created")
+            .first()
         )
 
         # create new Jobrun
