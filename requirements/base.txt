@@ -18,7 +18,7 @@ django-resumable~=0.2.0
 
 # Django
 # ------------------------------------------------------------------------------
-django~=2.2.8  # pyup: < 3.0  # https://www.djangoproject.com/
+django~=2.2.0  # pyup: < 3.0  # https://www.djangoproject.com/
 django-environ==0.4.5  # https://github.com/joke2k/django-environ
 django-model-utils==3.2.0  # https://github.com/jazzband/django-model-utils
 django-allauth==0.40.0  # https://github.com/pennersr/django-allauth
@@ -42,8 +42,11 @@ django-extensions==2.2.5  # https://github.com/django-extensions/django-extensio
 # docker
 docker==5.0.0
 
-# django encryption fields
+# django encryption fields #deprecated, remove after migration to new system
 django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted-model-fields
+
+# new encryption for django fields
+django-cryptography==1.0 # https://pypi.org/project/django-cryptography/
 
 # crontab library for scheduled jobs
 croniter~=1.0.12

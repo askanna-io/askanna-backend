@@ -9,7 +9,7 @@ from django_extensions.db.models import (
     ActivatorModel,
     TimeStampedModel,
 )
-from encrypted_model_fields.fields import EncryptedTextField
+from django_cryptography.fields import encrypt
 
 from .utils import GoogleTokenGenerator
 
@@ -177,4 +177,4 @@ class ArtifactModelMixin:
 
 class Setting(SlimBaseModel):
     name = models.CharField(max_length=32, blank=True, unique=True)
-    value = EncryptedTextField(max_length=4096, blank=True, null=True)
+    value = encrypt(models.TextField(default=None, blank=True, null=True))
