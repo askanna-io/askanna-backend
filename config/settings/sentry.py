@@ -26,7 +26,7 @@ def settings(config, env):
         )
         sentry_sdk.init(
             dsn=config.SENTRY_DSN,
-            traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", 0.1),
+            traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", 0.05),
             server_name=config.ASKANNA_API_URL,
             integrations=[
                 sentry_logging,
