@@ -15,9 +15,7 @@ from . import (
     sentry,
 )
 
-ROOT_DIR = (
-    environ.Path(__file__) - 3
-)  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
+ROOT_DIR = environ.Path(__file__) - 3  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
 APPS_DIR = ROOT_DIR.path("askanna_backend")
 RESOURCES_DIR = ROOT_DIR.path("resources")
 TESTS_DIR = ROOT_DIR.path("tests")
@@ -147,6 +145,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.TokenAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -198,9 +197,7 @@ ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
 
 
 # Encrypted field settings
-FIELD_ENCRYPTION_KEY = env.str(
-    "FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc="
-)
+FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")
 
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
@@ -246,10 +243,7 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {
-            "format": "%(levelname)s %(asctime)s %(module)s "
-            "%(process)d %(thread)d %(message)s"
-        }
+        "verbose": {"format": "%(levelname)s %(asctime)s %(module)s " "%(process)d %(thread)d %(message)s"}
     },
     "handlers": {
         "console": {
