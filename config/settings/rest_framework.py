@@ -8,9 +8,7 @@ def settings(config, _env):
     """Configure Django Rest Framework related settings."""
     config.REST_FRAMEWORK = {
         "DEFAULT_AUTHENTICATION_CLASSES": [
-            "rest_framework.authentication.BasicAuthentication",
-            "rest_framework.authentication.SessionAuthentication",
-            "rest_framework.authentication.TokenAuthentication",
+            "core.auth.PassthroughAuthentication",
         ],
         "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
         "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
