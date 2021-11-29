@@ -27,7 +27,7 @@ def forwards_func(apps, schema_editor):
         except OSError:
             pass
         else:
-            package.finished = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+            package.finished = datetime.datetime.fromtimestamp(timestamp, tz=pytz.UTC)
             package.save(update_fields=["finished"])
 
 
