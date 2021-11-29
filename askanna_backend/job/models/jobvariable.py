@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from encrypted_model_fields.fields import EncryptedTextField
+from django_cryptography.fields import encrypt
 
 from core.models import SlimBaseModel
 
@@ -18,7 +18,7 @@ class JobVariable(SlimBaseModel):
     )
 
     name = models.CharField(max_length=128)
-    value = EncryptedTextField(max_length=4096, blank=True)
+    value = encrypt(models.TextField(default=None, blank=True, null=True))
     is_masked = models.BooleanField(default=False)
 
     def get_value(self, show_masked=False):
