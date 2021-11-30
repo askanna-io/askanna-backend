@@ -111,7 +111,7 @@ def post_run_deduplicate_metrics(sender, instance, created, **kwargs):  # noqa
             lambda: celery_app.send_task(
                 "job.tasks.post_run_deduplicate_metrics",
                 args=None,
-                kwargs={"run_uuid": instance.uuid},
+                kwargs={"run_suuid": instance.short_uuid},
             )
         )
 
