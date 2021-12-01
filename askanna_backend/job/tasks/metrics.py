@@ -62,7 +62,7 @@ def post_run_deduplicate_metrics(self, run_suuid):
     """
     Remove double metrics if any
     """
-    metrics = RunMetricsRow.objects.filter(run_suuid=run_suuid).order_by("created", "name", "value")
+    metrics = RunMetricsRow.objects.filter(run_suuid=run_suuid).order_by("created")
     last_metric = None
     for metric in metrics:
         if metric == last_metric:
