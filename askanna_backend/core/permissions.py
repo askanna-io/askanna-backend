@@ -209,6 +209,7 @@ workspace_permissions = {
         # PublicViewer, # disabled because of people names with e-mail in name
     ],  # only used for API consumers
     "workspace.people.invite.create": [WorkspaceAdmin, WorkspaceMember],
+    "workspace.people.invite.remove": [WorkspaceAdmin, WorkspaceMember],
     "workspace.people.invite.resend": [WorkspaceAdmin, WorkspaceMember],
     "workspace.people.edit": [WorkspaceAdmin],
     "workspace.people.remove": [WorkspaceAdmin],
