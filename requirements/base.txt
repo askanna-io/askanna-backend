@@ -42,9 +42,6 @@ django-extensions==2.2.5  # https://github.com/django-extensions/django-extensio
 # docker
 docker==5.0.0
 
-# django encryption fields #deprecated, remove after migration to new system
-django-encrypted-model-fields==0.5.8 # https://pypi.org/project/django-encrypted-model-fields
-
 # new encryption for django fields
 django-cryptography==1.0 # https://pypi.org/project/django-cryptography/
 

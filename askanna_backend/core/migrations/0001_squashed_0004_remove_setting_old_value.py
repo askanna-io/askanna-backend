@@ -7,14 +7,6 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
-    replaces = [
-        ("core", "0001_initial"),
-        ("core", "0002_auto_20210707_1449"),
-        ("core", "0003_setting_value"),
-        ("core", "0004_remove_setting_old_value"),
-    ]
-
     initial = True
 
     dependencies = []

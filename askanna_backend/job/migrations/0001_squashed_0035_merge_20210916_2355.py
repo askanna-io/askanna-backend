@@ -13,48 +13,6 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
-    replaces = [
-        ("job", "0001_initial"),
-        ("job", "0002_auto_20200402_0652"),
-        ("job", "0003_auto_20200402_0801"),
-        ("job", "0004_auto_20200402_1203"),
-        ("job", "0005_remove_jobpayload_storage_location"),
-        ("job", "0006_jobdef_default_payload"),
-        ("job", "0007_auto_20200409_0441"),
-        ("job", "0008_auto_20200511_0844"),
-        ("job", "0009_auto_20200519_1013"),
-        ("job", "0010_auto_20200519_1018"),
-        ("job", "0011_chunkedartifactpart"),
-        ("job", "0012_remove_jobartifact_jobdef"),
-        ("job", "0013_jobvariable"),
-        ("job", "0014_jobrun_package"),
-        ("job", "0015_remove_joboutput_return_payload"),
-        ("job", "0016_chunkedjoboutputpart"),
-        ("job", "0017_auto_20200803_1316"),
-        ("job", "0018_auto_20201028_2111"),
-        ("job", "0019_jobvariable_is_masked"),
-        ("job", "0020_auto_20201119_1029"),
-        ("job", "0021_auto_20201201_1545"),
-        ("job", "0022_auto_20210105_0922"),
-        ("job", "0023_auto_20210211_1505"),
-        ("job", "0024_auto_20210216_0904"),
-        ("job", "0025_auto_20210303_1621"),
-        ("job", "0026_auto_20210326_1454"),
-        ("job", "0027_auto_20210408_0703"),
-        ("job", "0028_auto_20210411_2025"),
-        ("job", "0029_auto_20210414_0758"),
-        ("job", "0030_auto_20210414_0951"),
-        ("job", "0031_custom_images"),
-        ("job", "0032_auto_20210707_1428"),
-        ("job", "0033_jobvariable_value"),
-        ("job", "0034_remove_jobvariable_old_value"),
-        ("job", "0032_custom_images_migrate_result"),
-        ("job", "0033_auto_20210726_1205"),
-        ("job", "0034_fix_default_askanna_image"),
-        ("job", "0035_merge_20210916_2355"),
-    ]
-
     initial = True
 
     dependencies = [
