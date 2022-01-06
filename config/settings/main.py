@@ -106,7 +106,6 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "django_celery_results",
     "drf_yasg",
-    "encrypted_model_fields",
     # Django Health check
     "health_check",  # required
     "health_check.db",  # stock Django health checkers
