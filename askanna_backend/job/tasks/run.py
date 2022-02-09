@@ -334,4 +334,15 @@ def start_run(self, run_uuid):
             )
             return jr.to_failed()
 
-    jr.to_completed()
+    if logline[-1] == "Run succeeded":
+        return jr.to_completed()
+
+    op.log(
+        "",
+        print_log=docker_debug_log,
+    )
+    op.log(
+        "Run failed",
+        print_log=docker_debug_log,
+    )
+    jr.to_failed()
