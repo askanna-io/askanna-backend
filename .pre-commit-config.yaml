@@ -2,7 +2,7 @@ exclude: "docs|node_modules|migrations|.git|.tox"
 default_stages: [commit]
 fail_fast: true
 default_language_version:
-  python: python3.9
+  python: python3.8
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

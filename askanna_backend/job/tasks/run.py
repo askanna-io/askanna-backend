@@ -116,6 +116,8 @@ def start_run(self, run_uuid):
     )
     if not askanna_config:
         op.log("Could not find askanna.yml", print_log=docker_debug_log)
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
         return jr.to_failed()
 
     global_timezone = is_valid_timezone(askanna_config.timezone, settings.TIME_ZONE)
@@ -131,6 +133,7 @@ def start_run(self, run_uuid):
             print_log=docker_debug_log,
         )
         op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
         return jr.to_failed()
 
     job_timezone = is_valid_timezone(job_config.timezone, global_timezone)
@@ -237,6 +240,8 @@ def start_run(self, run_uuid):
         # get information about the image
         imagehelper.info()
     except (RegistryAuthenticationError, RegistryContainerPullError):
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
         return jr.to_failed()
 
     op.log("Preparing run environment", print_log=docker_debug_log)
@@ -262,6 +267,8 @@ def start_run(self, run_uuid):
             image_template_path=str(settings.APPS_DIR.path("job/templates/")),
         )
     except (RegistryContainerPullError, docker.errors.DockerException):
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
         return jr.to_failed()
 
     op.log("All AskAnna requirements are available", print_log=docker_debug_log)
@@ -306,6 +313,8 @@ def start_run(self, run_uuid):
             "Please follow the instructions on https://docs.askanna.io/ to build your own image.",
             print_log=docker_debug_log,
         )
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
         return jr.to_failed()
 
     # celery_app.send_task(
@@ -321,6 +330,8 @@ def start_run(self, run_uuid):
         op.log(message=logline[2], timestamp=logline[1], print_log=docker_debug_log)
 
         if logline[-1].startswith("AskAnna exit_code="):
+            op.log("", print_log=docker_debug_log)
+            op.log("Run failed", print_log=docker_debug_log)
             return jr.to_failed(exit_code=int(logline[-1].replace("AskAnna exit_code=", "")))
 
         if "askanna-run-utils: command not found" in logline[-1]:
@@ -332,17 +343,13 @@ def start_run(self, run_uuid):
                 "Please follow the instructions on https://docs.askanna.io/ to build your own image.",
                 print_log=docker_debug_log,
             )
+            op.log("", print_log=docker_debug_log)
+            op.log("Run failed", print_log=docker_debug_log)
             return jr.to_failed()
 
     if logline[-1] == "Run succeeded":
         return jr.to_completed()
 
-    op.log(
-        "",
-        print_log=docker_debug_log,
-    )
-    op.log(
-        "Run failed",
-        print_log=docker_debug_log,
-    )
+    op.log("", print_log=docker_debug_log)
+    op.log("Run failed", print_log=docker_debug_log)
     jr.to_failed()
