@@ -1,17 +1,22 @@
 version: '3'
 
-x-services:
-  base-build:
-    &base-build
+x-templates:
+  restart-policy:
+    &restart-policy
+    restart: on-failure
+
+  base-build-django:
+    &base-build-django
     context: .
     dockerfile: ./compose/local/django/Dockerfile
 
   base-django:
     &base-django
     build:
-      <<: *base-build
-    restart: on-failure
+      <<: *base-build-django
+    <<: *restart-policy
     volumes:
+      - .:/app
       - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file:
       - .env.django
@@ -22,31 +27,47 @@ services:
   # Third party images    #
   #                       #
   postgres:
-    build:
-      context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
+    image: postgres:12-alpine
+    <<: *restart-policy
     volumes:
-      - local_postgres_data:/var/lib/postgresql/data
-      - local_postgres_data_backups:/backups
+      - db_volume:/var/lib/postgresql/data
     env_file:
       - .env.postgres
 
   redis:
     image: redis:5.0
+    <<: *restart-policy
+    volumes:
+      - redis_volume:/data
 
   #                       #
-  # Custom images         #
+  # AskAnna images        #
+  #                       #
+  backup_helper:
+    image: askanna/backup-helper
+    <<: *restart-policy
+    volumes:
+      - backup_volume:/backups
+      - storage_volume:/data
+    env_file:
+      - .env.django
+      - .env.postgres
+
+  #                       #
+  # Project images        #
   #                       #
   django:
     <<: *base-django
     build:
-      <<: *base-build
+      <<: *base-build-django
       target: django
     depends_on:
       - postgres
     command: /start
     stdin_open: true
     tty: true
+    ports:
+      - "8000:8000"
 
   celeryworker:
     <<: *base-django
@@ -65,12 +86,16 @@ services:
   flower:
     <<: *base-django
     build:
-      <<: *base-build
+      <<: *base-build-django
       target: flower
     depends_on:
       - postgres
     command: /start-flower
+    ports:
+      - "5555:5555"
 
 volumes:
-  local_postgres_data:
-  local_postgres_data_backups:
+  storage_volume:
+  db_volume:
+  redis_volume:
+  backup_volume:

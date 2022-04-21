@@ -42,38 +42,28 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # DATABASES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
-try:
-    DATABASES = {
-        "default": env.db("DATABASE_URL"),
-        "runinfo": env.db("RUNINFO_DATABASE_URL"),
-    }
-except environ.ImproperlyConfigured:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": env.str("POSTGRES_DB"),
-            "USER": env.str("POSTGRES_USER"),
-            "PASSWORD": env.str("POSTGRES_PASSWORD"),
-            "HOST": env.str("POSTGRES_HOST"),
-            "PORT": env.str("POSTGRES_PORT"),
-            "TEST": {"DEPENDENCIES": []},
-        },
-        "runinfo": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "runinfo",
-            "USER": env.str("POSTGRES_USER"),
-            "PASSWORD": env.str("POSTGRES_PASSWORD"),
-            "HOST": env.str("POSTGRES_HOST"),
-            "PORT": env.str("POSTGRES_PORT"),
-            "TEST": {"DEPENDENCIES": ["default"]},
-        },
-    }
-
-DATABASES["default"]["ATOMIC_REQUESTS"] = True
-DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env.str("POSTGRES_DB"),
+        "USER": env.str("POSTGRES_USER"),
+        "PASSWORD": env.str("POSTGRES_PASSWORD"),
+        "HOST": env.str("POSTGRES_HOST"),
+        "PORT": env.str("POSTGRES_PORT"),
+        "ATOMIC_REQUESTS": True,
+        "CONN_MAX_AGE": env.int("CONN_MAX_AGE", default=60),
+    },
+    "runinfo": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env.str("POSTGRES_DB_RUNINFO"),
+        "USER": env.str("POSTGRES_USER"),
+        "PASSWORD": env.str("POSTGRES_PASSWORD"),
+        "HOST": env.str("POSTGRES_HOST"),
+        "PORT": env.str("POSTGRES_PORT"),
+    },
+}
 
 DATABASE_ROUTERS = ["core.dbrouter.RunInfoRouter"]
-
 
 # URLS
 # ------------------------------------------------------------------------------

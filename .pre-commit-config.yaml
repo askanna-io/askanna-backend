@@ -6,7 +6,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: master
+    rev: v4.2.0
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
@@ -15,7 +15,8 @@ repos:
       - id: trailing-whitespace
         files: (^|/)a/.+\.(py|html|sh|css|js)$
 
-  - repo: local
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 4.0.1
     hooks:
       - id: flake8
         args:
@@ -24,7 +25,3 @@ repos:
             "--ignore=W391,W503,E203",
             "--max-line-length=119",
           ]
-        name: flake8
-        entry: flake8
-        language: python
-        types: [python]

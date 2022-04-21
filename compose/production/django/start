@@ -4,8 +4,8 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-python manage.py migrate
-python manage.py migrate --database=runinfo
+python manage.py migrate --noinput --database=default
+python manage.py migrate --noinput --database=runinfo
 
 if [[ "${DJANGO_DEBUG}" == "1" ]]; then
     echo "***************************************************"
@@ -30,5 +30,8 @@ fi
 python manage.py install_default_avatar
 python manage.py install_askanna_create_project
 python manage.py install_default_settings
+
 python manage.py collectstatic --noinput
-/usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app
+
+echo "Starting Django server"
+/usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app --workers=5
