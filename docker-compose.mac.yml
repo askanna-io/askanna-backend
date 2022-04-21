@@ -1,0 +1,25 @@
+# This file could be used as override for default config to let the local setup work on a Mac.
+# https://docs.docker.com/compose/extends/
+#   $ ln -s docker-compose.mac.yml docker-compose.override.yml
+
+version: '3'
+
+x-template:
+  base-django:
+    &base-django
+    volumes:
+      - .:/app
+      - /var/run/docker.sock.raw:/var/run/docker.sock:ro
+
+services:
+  django:
+    <<: *base-django
+
+  celeryworker:
+    <<: *base-django
+
+  celerybeat:
+    <<: *base-django
+
+  flower:
+    <<: *base-django

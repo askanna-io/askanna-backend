@@ -1,43 +1,43 @@
-variables:
-  DATABASE_URL: postgresql://anna:pass@postgres/askanna_backend
-  RUNINFO_DATABASE_URL: postgresql://anna:pass@postgres/runinfo
-  REDIS_URL: redis://redis:6379/0
-  CELERY_BROKER_URL: redis://redis:6379/0
-  POSTGRES_HOST: postgres
-  POSTGRES_PORT: 5432
-  POSTGRES_DB: askanna_backend
-  POSTGRES_USER: anna
-  POSTGRES_PASSWORD: pass
-
-  DOCKER_REPO: $CI_REGISTRY_IMAGE
+stages:
+  - build-base
+  - build-deploy
+  - test
+  - deploy
+  - cleanup
 
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-stages:
-  - build_baseimage
-  - test
-  - build
-  - deploy
-  - cleanup
-
-test:
+.test-base:
   stage: test
-  image: ${DOCKER_REPO}/base:master
-  services:
-    - name: postgres:12
-      alias: postgres
-    - name: redis:5
-      alias: redis
+  image: $CI_REGISTRY_IMAGE/base:master
+  needs:
+    - job: build_master_base
+      optional: true
   tags:
     - kubernetes
   variables:
     DJANGO_SECRET_KEY: $CI_COMMIT_SHA
     DJANGO_ALLOWED_HOSTS: "*"
-    DJANGO_EMAIL_BACKEND: "django.core.mail.backends.locmem.EmailBackend"
+    DJANGO_EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
     DJANGO_SECURE_SSL_REDIRECT: "False"
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: $REDIS_URL
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: 5432
+    POSTGRES_USER: anna
+    POSTGRES_PASSWORD: pass
+    POSTGRES_DB: askanna_backend
+    POSTGRES_DB_RUNINFO: askanna_runinfo
+  services:
+    - name: postgres:12
+      alias: postgres
+    - name: redis:5
+      alias: redis
+
+pytest:
+  extends: .test-base
   before_script:
-    - pip install -U pip
     - pip install -r requirements/local.txt
   script:
     - pytest --cov=askanna_backend --cov-report=xml --junitxml=report.junit.xml
@@ -54,13 +54,20 @@ test:
       cobertura: report.coverage.xml
       junit: report.junit.xml
 
+migrations:
+  extends: .test-base
+  before_script:
+    - pip install -r requirements/base.txt
+  script:
+    - python manage.py makemigrations --dry-run --check --no-input
+
 code_quality:
   stage: test
   tags:
     - docker
 
-.build_baseimage: &build_baseimage
-  stage: build_baseimage
+.build_base:
+  stage: build-base
   tags:
     - kubernetes
   image:
@@ -68,10 +75,10 @@ code_quality:
     entrypoint: [""]
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/Dockerfile-base --destination ${DOCKER_REPO}/base:$CI_COMMIT_REF_NAME
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/Dockerfile-base --destination ${CI_REGISTRY_IMAGE}/base:$CI_COMMIT_REF_NAME
 
 build_master_base:
-  <<: *build_baseimage
+  extends: .build_base
   only:
     refs:
       - master
@@ -81,11 +88,11 @@ build_master_base:
       - requirements/production.txt
 
 build_branches_base:
-  <<: *build_baseimage
+  extends: .build_base
   when: manual
 
-build_production:
-  stage: build
+build_deploy:
+  stage: build-deploy
   tags:
     - kubernetes
   image:
@@ -93,38 +100,25 @@ build_production:
     entrypoint: [""]
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/production/django/Dockerfile --destination ${DOCKER_REPO}:$CI_COMMIT_REF_SLUG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/production/django/Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
-stop_review:
+.deploy-variables:
   variables:
     GIT_STRATEGY: none
-  stage: cleanup
-  image: curlimages/curl
-  environment:
-    name: $CI_COMMIT_REF_NAME
-    action: stop
-  when: manual
-  allow_failure: true
-  tags:
-    - kubernetes
-  script:
-    - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
-  except:
-    - master
-    - beta
+    ASKANNA_DEPLOY_BRANCH: master
+    ASKANNA_DEPLOY_PRODUCT: askanna-backend
 
-.deploy: &deploy
-  variables:
-    GIT_STRATEGY: none
-  image: curlimages/curl
+.deploy:
   stage: deploy
+  image: curlimages/curl
+  extends: .deploy-variables
   tags:
     - kubernetes
   script:
-    - curl -X POST -F token=${DEPLOY_TOKEN} -F ref=master -F variables[product]=backend -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${TRIGGER_URL}
+    - curl -X POST -F token=${CI_JOB_TOKEN} -F ref=${ASKANNA_DEPLOY_BRANCH} -F variables[product]=${ASKANNA_DEPLOY_PRODUCT} -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${ASKANNA_DEPLOY_TRIGGER}
 
 deploy_branch:
-  <<: *deploy
+  extends: .deploy
   environment:
     name: $CI_COMMIT_REF_NAME
     url: https://${CI_ENVIRONMENT_SLUG}-api.askanna.eu/v1/docs/swagger
@@ -134,10 +128,27 @@ deploy_branch:
       - master
 
 deploy_master:
-  <<: *deploy
+  extends: .deploy
   environment:
     name: master
     url: https://api.askanna.eu/v1/docs/swagger
   only:
     refs:
       - master
+
+stop_review:
+  stage: cleanup
+  image: curlimages/curl
+  extends: .deploy-variables
+  environment:
+    name: $CI_COMMIT_REF_NAME
+    action: stop
+  when: manual
+  allow_failure: true
+  tags:
+    - kubernetes
+  script:
+    - curl -X POST -F token=${CI_JOB_TOKEN} -F ref=${ASKANNA_DEPLOY_BRANCH} -F variables[product]=${ASKANNA_DEPLOY_PRODUCT} -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${ASKANNA_DEPLOY_TRIGGER}
+  except:
+    - master
+    - beta
