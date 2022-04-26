@@ -2,16 +2,14 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from core.models import ActivatedModel
+from core.models import AuthorModel, ActivatedModel
 
 
-class Workspace(ActivatedModel):
+class Workspace(AuthorModel, ActivatedModel):
     def get_name(self):
         return self.name
 
-    visibility = models.CharField(
-        _("Visibility"), max_length=255, default="PRIVATE", db_index=True
-    )
+    visibility = models.CharField(_("Visibility"), max_length=255, default="PRIVATE", db_index=True)
 
     @property
     def relation_to_json(self):

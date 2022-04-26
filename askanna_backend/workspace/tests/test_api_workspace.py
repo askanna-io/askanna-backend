@@ -38,7 +38,7 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
 
-        uuids = [r["uuid"] for r in response.data]
+        uuids = [r["uuid"] for r in response.json()]
         self.assertIn(str(self.workspace_a.uuid), uuids)
         self.assertIn(str(self.workspace_b.uuid), uuids)
 
@@ -50,7 +50,7 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
-        uuids = [r["uuid"] for r in response.data]
+        uuids = [r["uuid"] for r in response.json()]
         self.assertIn(str(self.workspace_a.uuid), uuids)
 
         for r in response.data:

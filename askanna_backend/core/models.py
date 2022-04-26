@@ -19,9 +19,7 @@ class DeletedModel(models.Model):
     Defines an additional field to registere when the model is deleted
     """
 
-    deleted = models.DateTimeField(
-        blank=True, auto_now_add=False, auto_now=False, null=True
-    )
+    deleted = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
 
     def to_deleted(self):
         self.deleted = timezone.now()
@@ -64,9 +62,7 @@ class NameDescriptionModel(NameModel, DescriptionModel):
 
 class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
-    uuid = models.UUIDField(
-        primary_key=True, db_index=True, editable=False, default=uuid.uuid4
-    )
+    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
     short_uuid = models.CharField(max_length=32, blank=True, unique=True)
 
     def save(self, *args, **kwargs):
@@ -107,9 +103,20 @@ class AuthorModel(models.Model):
     Adding created_by to the model to register who created this instance
     """
 
-    created_by = models.ForeignKey(
-        "users.User", on_delete=models.SET_NULL, blank=True, null=True
-    )
+    created_by = models.ForeignKey("users.User", on_delete=models.SET_NULL, blank=True, null=True)
+
+    def get_created_by(self):
+        if self.created_by is not None:
+            return {
+                "uuid": self.created_by.uuid,
+                "short_uuid": self.created_by.short_uuid,
+                "name": self.created_by.get_name(),
+            }
+        return {
+            "uuid": None,
+            "short_uuid": None,
+            "name": None,
+        }
 
     class Meta:
         abstract = True
@@ -130,19 +137,13 @@ class ArtifactModelMixin:
         return self.get_storage_location()
 
     def get_storage_location(self):
-        raise NotImplementedError(
-            f"Please implement 'get_storage_location' for {self.__class__.__name__}"
-        )
+        raise NotImplementedError(f"Please implement 'get_storage_location' for {self.__class__.__name__}")
 
     def get_base_path(self):
-        raise NotImplementedError(
-            f"Please implement 'get_full_path' for {self.__class__.__name__}"
-        )
+        raise NotImplementedError(f"Please implement 'get_full_path' for {self.__class__.__name__}")
 
     def get_full_path(self):
-        raise NotImplementedError(
-            f"Please implement 'get_base_path' for {self.__class__.__name__}"
-        )
+        raise NotImplementedError(f"Please implement 'get_base_path' for {self.__class__.__name__}")
 
     @property
     def stored_path(self):

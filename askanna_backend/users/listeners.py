@@ -10,9 +10,6 @@ from PIL import Image
 from core.mail import send_email
 from users.models import (
     PasswordResetLog,
-    Membership,
-    MSP_WORKSPACE,
-    WS_ADMIN,
     UserProfile,
     Invitation,
     User,
@@ -81,26 +78,11 @@ def create_workspace_after_signup(sender, user, request, workspace_name, **kwarg
     When workspace_name is not given, then do not create a workspace for the new user
     """
     if workspace_name:
-        workspace = Workspace.objects.create(name=workspace_name)
-
-        membership = Membership.objects.create(
-            object_uuid=workspace.uuid,
-            object_type=MSP_WORKSPACE,
-            role=WS_ADMIN,
-            job_title="",
-            user=user,
-        )
-
-        # also create a UserProfile for this membership
-        userprofile = UserProfile()
-        userprofile.membership_ptr = membership
-        userprofile.save_base(raw=True)
+        Workspace.objects.create(name=workspace_name, created_by=user)
 
 
 @receiver(user_created_signal)
-def send_welcome_email_after_registration(
-    sender, user, request, workspace_name, **kwargs
-):
+def send_welcome_email_after_registration(sender, user, request, workspace_name, **kwargs):
     """
     After an user account is created, we send a welcome e-mail
     """
@@ -117,9 +99,7 @@ def send_welcome_email_after_registration(
     # add the attachments
     terms_of_use_dir = settings.RESOURCES_DIR.path("terms_and_conditions")
     attachments = [
-        terms_of_use_dir.path(
-            "European Model Form for Withdrawal - AskAnna - 20201202.pdf"
-        ),
+        terms_of_use_dir.path("European Model Form for Withdrawal - AskAnna - 20201202.pdf"),
         terms_of_use_dir.path("Terms of Use - AskAnna - 20201202.pdf"),
         terms_of_use_dir.path("Data Processing Agreement - AskAnna - 20201214.pdf"),
     ]

@@ -222,9 +222,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            UserProfile.objects.get(pk=self.members.get("member").pk).role, WS_ADMIN
-        )
+        self.assertEqual(UserProfile.objects.get(pk=self.members.get("member").pk).role, WS_ADMIN)
 
     def test_change_role_as_member_fails(self):
         """A member can not change the profile of a member to admin."""
@@ -267,9 +265,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            UserProfile.objects.get(pk=self.members.get("admin2").pk).role, WS_MEMBER
-        )
+        self.assertEqual(UserProfile.objects.get(pk=self.members.get("admin2").pk).role, WS_MEMBER)
 
     def test_change_admin_role_by_self_fails(self):
         """An admin can not itself change its role."""
@@ -387,10 +383,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            {"short_uuid": self.members.get("member").short_uuid}.items()
-            <= dict(response.data).items()
-        )
+        self.assertTrue({"short_uuid": self.members.get("member").short_uuid}.items() <= dict(response.data).items())
 
     def test_retrieve_profile_as_admin(self):
         """An admin can see existing profiles from a workspace."""
@@ -410,10 +403,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            {"short_uuid": self.members.get("member").short_uuid}.items()
-            <= dict(response.data).items()
-        )
+        self.assertTrue({"short_uuid": self.members.get("member").short_uuid}.items() <= dict(response.data).items())
 
     def test_list_limited_to_current_workspace(self):
         """Listing of people is correctly filtered to requested workspace."""
@@ -442,7 +432,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         uuids = [p["uuid"] for p in response.data]
-        self.assertEqual(len(uuids), 5)
+        self.assertEqual(len(uuids), 6)
         self.assertNotIn(str(filtered_profile.pk), uuids)
         self.assertIn(str(self.members.get("member2").pk), uuids)
 
@@ -611,9 +601,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertGreater(
-            UserProfile.objects.filter(uuid=self.members.get("admin2").uuid)
-            .first()
-            .deleted,
+            UserProfile.objects.filter(uuid=self.members.get("admin2").uuid).first().deleted,
             before_delete,
         )
 
@@ -633,11 +621,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(
-            UserProfile.objects.filter(uuid=self.members.get("member").uuid)
-            .first()
-            .deleted
-        )
+        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("member").uuid).first().deleted)
 
     def test_non_member_cannot_remove_profile(self):
         """Non members of a workspace cannot remove profiles from it."""
@@ -655,11 +639,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(
-            UserProfile.objects.filter(uuid=self.members.get("member").uuid)
-            .first()
-            .deleted
-        )
+        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("member").uuid).first().deleted)
 
     def test_admin_cannot_remove_profiles_from_other_workspace(self):
         """Removing a profile is limited to workspaces an admin is member of."""
@@ -685,9 +665,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(
-            UserProfile.objects.filter(uuid=extra_profile.uuid).first().deleted
-        )
+        self.assertIsNone(UserProfile.objects.filter(uuid=extra_profile.uuid).first().deleted)
 
     def test_admin_cannot_remove_self_profile(self):
         """An admin an not remove its own profile from a workspace."""
@@ -705,8 +683,4 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(
-            UserProfile.objects.filter(uuid=self.members.get("admin").uuid)
-            .first()
-            .deleted
-        )
+        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("admin").uuid).first().deleted)
