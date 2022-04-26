@@ -75,9 +75,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         If not, a ValidationError is raised"""
 
         if len(value) < 10:
-            raise serializers.ValidationError(
-                "The password should be longer than 10 characters."
-            )
+            raise serializers.ValidationError("The password should be longer than 10 characters.")
 
         validate_password(value, user=self.instance)
         return value
@@ -109,7 +107,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         # after save, trigger signals to send e-mail or notifications
         if validated_data.get("password"):
             password_changed_signal.send(
-                sender=self.__class__, request=request, user=instance,
+                sender=self.__class__,
+                request=request,
+                user=instance,
             )
         if email_changed:
             email_changed_signal.send(
@@ -140,9 +140,7 @@ class UserCreateSerializer(serializers.Serializer):
     terms_of_use = serializers.BooleanField(write_only=True, required=True)
     short_uuid = serializers.CharField(required=False, read_only=True)
 
-    front_end_domain = serializers.CharField(
-        required=False, default=settings.ASKANNA_UI_URL
-    )
+    front_end_domain = serializers.CharField(required=False, default=settings.ASKANNA_UI_URL)
 
     class Meta:
         model = User
@@ -198,9 +196,7 @@ class UserCreateSerializer(serializers.Serializer):
         If not, a ValidationError is raised"""
 
         if len(value) < 10:
-            raise serializers.ValidationError(
-                "The password should be longer than 10 characters."
-            )
+            raise serializers.ValidationError("The password should be longer than 10 characters.")
         return value
 
     def validate_password_not_similar_username(self, data):
@@ -209,9 +205,7 @@ class UserCreateSerializer(serializers.Serializer):
 
         if data.get("username") and data.get("password"):
             if data.get("username") in data.get("password"):
-                raise serializers.ValidationError(
-                    "The password should not be similar to the username"
-                )
+                raise serializers.ValidationError("The password should not be similar to the username")
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

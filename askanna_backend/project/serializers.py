@@ -135,6 +135,7 @@ class ProjectSerializer(BaseProjectSerializer, serializers.ModelSerializer):
             "deleted",
             "activate_date",
             "deactivate_date",
+            "status",
         ]
 
 

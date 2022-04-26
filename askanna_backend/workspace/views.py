@@ -7,9 +7,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets
 
 from core.permissions import RoleBasedPermission
+from core.views import SerializerByActionMixin
 from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
-from workspace.serializers import WorkspaceSerializer
+from workspace.serializers import WorkspaceCreateSerializer, WorkspaceSerializer
 
 User = get_user_model()
 
@@ -37,6 +38,8 @@ class FilterByMembershipFilterSet(django_filters.FilterSet):
 
 
 class WorkspaceViewSet(
+    SerializerByActionMixin,
+    mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
@@ -47,6 +50,10 @@ class WorkspaceViewSet(
     serializer_class = WorkspaceSerializer
     lookup_field = "short_uuid"
     permission_classes = [RoleBasedPermission]
+
+    serializer_classes_by_action = {
+        "post": WorkspaceCreateSerializer,
+    }
 
     # Override default, remove OrderingFilter because we use the DjangoFilterBackend version
     filter_backends = (DjangoFilterBackend,)

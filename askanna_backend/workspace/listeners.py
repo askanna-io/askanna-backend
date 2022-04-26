@@ -14,6 +14,9 @@ from workspace.models import Workspace
 from users.models import (
     # User,
     Membership,
+    UserProfile,
+    MSP_WORKSPACE,
+    WS_ADMIN,
 )
 
 
@@ -22,9 +25,7 @@ def remove_memberships_after_workspace_removal(sender, instance, **kwargs):
     """
     Memberships don't have a hard link, so remove manually
     """
-    members_in_workspace = Membership.objects.filter(
-        object_type="WS", object_uuid=instance.uuid
-    )
+    members_in_workspace = Membership.objects.filter(object_type="WS", object_uuid=instance.uuid)
     for member in members_in_workspace:
         member.delete()
 
@@ -59,3 +60,21 @@ def install_demo_project_in_workspace(sender, instance, **kwargs):
     # jobrun = JobRun.objects.create(
     #     status="PENDING", jobdef=jobdef, payload=job_pl, package=package, owner=anna,
     # )
+
+
+@receiver(post_save, sender=Workspace)
+def set_memberships_for_workspace_creator(sender, instance, created, **kwargs):
+    if created:
+        workspace = instance
+
+        membership = Membership.objects.create(
+            object_uuid=workspace.uuid,
+            object_type=MSP_WORKSPACE,
+            role=WS_ADMIN,
+            user=workspace.created_by,
+        )
+
+        # Create a UserProfile for this Membership
+        userprofile = UserProfile()
+        userprofile.membership_ptr = membership
+        userprofile.save_base(raw=True)

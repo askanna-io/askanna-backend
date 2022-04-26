@@ -27,19 +27,13 @@ pytestmark = pytest.mark.django_db
 class TestInviteAPI(APITestCase):
     @classmethod
     def setup_class(cls):
-        signals.post_save.disconnect(
-            install_demo_project_in_workspace, sender=Workspace
-        )
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
 
     def setUp(self):
         self.users = {
             "admin": User.objects.create(username="admin", email="admin@example.com"),
-            "member_a": User.objects.create(
-                username="member_a", email="member_a@example.com"
-            ),
-            "user_a": User.objects.create(
-                username="user_a", email="user_a@example.com"
-            ),
+            "member_a": User.objects.create(username="member_a", email="member_a@example.com"),
+            "user_a": User.objects.create(username="user_a", email="user_a@example.com"),
         }
         self.workspace = Workspace.objects.create(name="test workspace")
         self.workspace2 = Workspace.objects.create(name="test workspace2")
@@ -87,14 +81,9 @@ class TestInviteAPI(APITestCase):
             },
         )
 
-        response = self.client.get(
-            url, {"token": PersonSerializer(self.invitation).generate_token()}
-        )
+        response = self.client.get(url, {"token": PersonSerializer(self.invitation).generate_token()})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            {"short_uuid": self.invitation.short_uuid}.items()
-            <= dict(response.data).items()
-        )
+        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
 
     def test_retrieve_invite_as_anonymous_no_token(self):
         """With no token, invites are not available to anonymous users."""
@@ -126,14 +115,9 @@ class TestInviteAPI(APITestCase):
         token = self.users["user_a"].auth_token
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
-        response = self.client.get(
-            url, {"token": PersonSerializer(self.invitation).generate_token()}
-        )
+        response = self.client.get(url, {"token": PersonSerializer(self.invitation).generate_token()})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            {"short_uuid": self.invitation.short_uuid}.items()
-            <= dict(response.data).items()
-        )
+        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
 
     def test_retrieve_invite_with_no_token_fails(self):
         """Authenticated need a token to retrieve an invite."""
@@ -172,10 +156,7 @@ class TestInviteAPI(APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            {"short_uuid": self.invitation.short_uuid}.items()
-            <= dict(response.data).items()
-        )
+        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
 
     def test_retrieve_invite_as_admin(self):
         """An admin can see existing invitations from a workspace."""
@@ -195,10 +176,7 @@ class TestInviteAPI(APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            {"short_uuid": self.invitation.short_uuid}.items()
-            <= dict(response.data).items()
-        )
+        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
 
     def test_create_invite(self):
         url = reverse(
@@ -218,9 +196,7 @@ class TestInviteAPI(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(
-            {"email": "anna_test@askanna.dev"}.items() <= dict(response.data).items()
-        )
+        self.assertTrue({"email": "anna_test@askanna.dev"}.items() <= dict(response.data).items())
 
     def test_create_double_invite_not_possible(self):
         url = reverse(
@@ -433,7 +409,7 @@ class TestInviteAPI(APITestCase):
 
         response = self.client.post(
             url,
-            {"email": "anna_test@askanna.dev", 'role': 'WA'},
+            {"email": "anna_test@askanna.dev", "role": "WA"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -452,7 +428,7 @@ class TestInviteAPI(APITestCase):
 
         response = self.client.post(
             url,
-            {"email": "anna_test@askanna.dev", 'role': 'WA'},
+            {"email": "anna_test@askanna.dev", "role": "WA"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -512,9 +488,7 @@ class TestInviteAPI(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertIn("user", response.data)
-        self.assertEqual(
-            response.data["user"][0], "User is already part of this workspace"
-        )
+        self.assertEqual(response.data["user"][0], "User is already part of this workspace")
 
     def test_accept_invite_wrong_status(self):
         """
@@ -640,9 +614,7 @@ class TestInviteAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("token", response.data)
-        self.assertEqual(
-            response.data["token"][0], "Token is required when accepting invitation"
-        )
+        self.assertEqual(response.data["token"][0], "Token is required when accepting invitation")
 
     def test_accept_invite_fails_on_profile(self):
         """Accepting an already accepted invitation (a Profile) fails."""
@@ -753,7 +725,7 @@ class TestInviteAPI(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         uuids = [p["uuid"] for p in response.data]
-        self.assertEqual(len(uuids), 3)
+        self.assertEqual(len(uuids), 4)
         self.assertNotIn(str(filtered_invitation.pk), uuids)
         self.assertIn(str(self.invitation.pk), uuids)
         self.assertIn(str(self.member_profile.pk), uuids)
