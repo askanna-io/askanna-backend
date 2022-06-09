@@ -25,50 +25,56 @@ class JobRunSerializer(serializers.ModelSerializer):
 
     jobdef = serializers.SerializerMethodField("get_jobdef")
 
-    metricsmeta = serializers.SerializerMethodField("get_metricsmeta")
-    variablesmeta = serializers.SerializerMethodField("get_variablesmeta")
+    metrics_meta = serializers.SerializerMethodField("get_metrics_meta")
+    variables_meta = serializers.SerializerMethodField("get_variables_meta")
 
     duration = serializers.SerializerMethodField("get_duration")
     environment = serializers.SerializerMethodField("get_environment")
 
-    def get_metricsmeta(self, instance):
+    def get_metrics_meta(self, instance):
         try:
             metrics = instance.metrics.get()
         except ObjectDoesNotExist:
             return {
                 "count": 0,
                 "size": 0,
-                "labels": [],
-                "keys": [],
+                "metric_names": [],
+                "label_names": [],
             }
         return {
             "count": metrics.count,
             "size": metrics.size,
-            "labels": instance.metric_labels,
-            "keys": instance.metric_keys,
+            "metric_names": metrics.metric_names or [],
+            "label_names": metrics.label_names or [],
         }
 
-    def get_variablesmeta(self, instance):
+    def get_variables_meta(self, instance):
         try:
             runvariables = instance.runvariables.get()
         except ObjectDoesNotExist:
             return {
                 "count": 0,
                 "size": 0,
-                "labels": [
-                    "source",
-                ],
-                "keys": [],
+                "variable_names": [],
+                "label_names": [],
             }
-        special_labels = ["source"]
-        if "is_masked" in instance.variable_labels:
-            special_labels.append("is_masked")
+
+        # For the frontend we make sure that if labels 'source' and/or 'is_masked' are in the label_names dictionary,
+        # that we add them as the first label in the list.
+        label_names = []
+        if runvariables.label_names:
+            label_names = list(filter(lambda x: x["name"] != "is_masked", runvariables.label_names))
+            if len(label_names) != len(runvariables.label_names):
+                label_names = [{"name": "is_masked", "type": "tag"}] + label_names
+            label_names = list(filter(lambda x: x["name"] != "source", label_names))
+            if len(label_names) != len(runvariables.label_names):
+                label_names = [{"name": "source", "type": "string"}] + label_names
+
         return {
             "count": runvariables.count,
             "size": runvariables.size,
-            "labels": special_labels
-            + list(set(instance.variable_labels) - set(special_labels)),
-            "keys": instance.variable_keys,
+            "variable_names": runvariables.variable_names or [],
+            "label_names": label_names,
         }
 
     def get_duration(self, instance):
@@ -174,10 +180,6 @@ class JobRunSerializer(serializers.ModelSerializer):
         exclude = [
             "jobid",
             "member",
-            "metric_keys",
-            "metric_labels",
-            "variable_keys",
-            "variable_labels",
             "deleted",
             "environment_name",
             "timezone",

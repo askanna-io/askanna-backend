@@ -7,6 +7,43 @@ from rest_framework.test import APITestCase
 from .base import BaseJobTestDef
 
 
+class TestJobRunModel(BaseJobTestDef, APITestCase):
+    """
+    Test JobRun model functions
+    """
+
+    def test_jobrun_function__str__run_with_name(self):
+        self.assertEqual(str(self.jobruns["run1"]), f"run1 ({self.jobruns['run1'].short_uuid})")
+
+    def test_jobrun_function__str__run_with_no_name(self):
+        self.assertEqual(str(self.jobruns["run7"]), str(self.jobruns["run7"].short_uuid))
+
+    def test_jobrun_function_set_status(self):
+        self.assertEqual(self.jobruns["run7"].status, "FAILED")
+        modified_before = self.jobruns["run7"].modified
+
+        self.jobruns["run7"].set_status("COMPLETED")
+        self.assertEqual(self.jobruns["run7"].status, "COMPLETED")
+        self.assertGreater(self.jobruns["run7"].modified, modified_before)
+
+        # Set status of run7 ack to failed
+        self.jobruns["run7"].set_status("FAILED")
+
+    def test_jobrun_function_set_finished(self):
+        self.assertIsNone(self.jobruns["run6"].finished)
+        self.assertIsNone(self.jobruns["run6"].duration)
+        modified_before = self.jobruns["run6"].modified
+
+        self.jobruns["run6"].set_finished()
+        self.assertIsNotNone(self.jobruns["run6"].finished)
+        self.assertIsNotNone(self.jobruns["run6"].duration)
+        self.assertGreater(self.jobruns["run6"].finished, self.jobruns["run6"].started)
+        self.assertGreater(self.jobruns["run6"].modified, modified_before)
+
+        duration = (self.jobruns["run6"].finished - self.jobruns["run6"].started).seconds
+        self.assertEqual(self.jobruns["run6"].duration, duration)
+
+
 class TestJobRunListAPI(BaseJobTestDef, APITestCase):
     """
     Test to list the Jobruns
@@ -30,7 +67,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 6)
+        self.assertEqual(len(response.data), 7)
 
     def test_list_as_member(self):
         """
@@ -43,7 +80,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        self.assertEqual(len(response.data), 5)
 
     def test_list_as_nonmember(self):
         """
@@ -84,7 +121,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_member_filter_by_jobs(self):
         """
@@ -99,7 +136,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_member_filter_by_project(self):
         """
@@ -112,7 +149,7 @@ class TestJobRunListAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        self.assertEqual(len(response.data), 5)
 
 
 class TestJobJobRunListAPI(TestJobRunListAPI):
@@ -141,7 +178,7 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_member(self):
         """
@@ -154,7 +191,7 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_nonmember(self):
         """
@@ -192,7 +229,7 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_member_filter_by_jobs(self):
         """
@@ -207,7 +244,7 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
     def test_list_as_member_filter_by_project(self):
         """
@@ -220,7 +257,7 @@ class TestJobJobRunListAPI(TestJobRunListAPI):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
 
 class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):

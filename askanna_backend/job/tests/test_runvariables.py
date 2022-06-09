@@ -3,10 +3,65 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import (
-    BaseJobTestDef,
-    variable_response_good_small,
-)
+from .base import BaseJobTestDef, variable_response_good_small, tracked_variables_response_good
+
+
+class TestRunVariablesModel(BaseJobTestDef, APITestCase):
+    """
+    Test RunVariables model functions
+    """
+
+    def test_runvariables_function_load_from_file(self):
+        self.assertEqual(self.tracked_variables["run1"].load_from_file(), tracked_variables_response_good)
+
+    def test_runvariables_function_update_meta_no_metrics_and_no_labels(self):
+        modified_before = self.tracked_variables["run7"].modified
+        self.tracked_variables["run7"].update_meta()
+        self.assertEqual(self.tracked_variables["run7"].modified, modified_before)
+
+        self.assertEqual(self.tracked_variables["run7"].count, 0)
+        self.assertEqual(self.tracked_variables["run7"].size, 0)
+        self.assertIsNone(self.tracked_variables["run7"].variable_names)
+        self.assertIsNone(self.tracked_variables["run7"].label_names)
+
+    def test_runvariables_function_update_meta(self):
+        modified_before_1 = self.tracked_variables["run7"].modified
+        self.tracked_variables["run7"].update_meta()
+        self.assertEqual(self.tracked_variables["run7"].modified, modified_before_1)
+
+        self.assertEqual(self.tracked_variables["run7"].count, 0)
+        self.assertEqual(self.tracked_variables["run7"].size, 0)
+        self.assertIsNone(self.tracked_variables["run7"].variable_names)
+        self.assertIsNone(self.tracked_variables["run7"].label_names)
+
+        self.tracked_variables["run7"].variables = tracked_variables_response_good
+        self.tracked_variables["run7"].save()
+
+        modified_before_2 = self.tracked_variables["run7"].modified
+        self.tracked_variables["run7"].update_meta()
+        self.assertEqual(self.tracked_variables["run7"].modified, modified_before_2)
+
+        self.assertEqual(self.tracked_variables["run7"].count, 4)
+        self.assertEqual(self.tracked_variables["run7"].size, 1198)
+        self.assertEqual(
+            self.tracked_variables["run7"].variable_names,
+            [{"name": "Accuracy", "type": "integer", "count": 2}, {"name": "Quality", "type": "string", "count": 2}],
+        )
+        self.assertEqual(
+            self.tracked_variables["run7"].label_names,
+            [
+                {"name": "city", "type": "string"},
+                {"name": "product", "type": "string"},
+                {"name": "Missing data", "type": "boolean"},
+            ],
+        )
+
+    def test_runvariables_function_update_meta_no_labels(self):
+        self.tracked_variables["run6"].update_meta()
+        self.assertEqual(self.tracked_variables["run6"].count, 2)
+        self.assertEqual(self.tracked_variables["run6"].size, 338)
+        self.assertIsNotNone(self.tracked_variables["run6"].variable_names)
+        self.assertIsNone(self.tracked_variables["run6"].label_names)
 
 
 class TestTrackedVariablesListAPI(BaseJobTestDef, APITestCase):
@@ -163,36 +218,6 @@ class TestTrackedVariablesPublicProjectListAPI(BaseJobTestDef, APITestCase):
         response = self.client.get(
             self.url,
             format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-
-class TestVariablesMetaAPI(BaseJobTestDef, APITestCase):
-    """
-    Test to get meta on specific variables for a jobrun
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "run-variables-meta",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.tracked_variables.get("run1").short_uuid,
-                "jobrun__short_uuid": self.tracked_variables.get("run1").short_uuid,
-            },
-        )
-
-    def test_meta_as_member(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        self.activate_user("member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

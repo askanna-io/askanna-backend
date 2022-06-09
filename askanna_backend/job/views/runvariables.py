@@ -3,7 +3,6 @@ from django.db.models import Q
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -20,7 +19,6 @@ class RunVariableObjectMixin:
     permission_classes = [RoleBasedPermission]
     RBAC_BY_ACTION = {
         "list": ["project.run.list"],
-        "meta": ["project.run.list"],
         "retrieve": ["project.run.list"],
         "create": ["project.run.create"],
         "destroy": ["project.run.remove"],
@@ -41,14 +39,10 @@ class RunVariableObjectMixin:
             run = JobRun.objects.get(short_uuid=kwargs.get("parent_lookup_run_suuid"))
             project = run.jobdef.project
         elif kwargs.get("parent_lookup_jobrun__short_uuid"):
-            run = JobRun.objects.get(
-                short_uuid=kwargs.get("parent_lookup_jobrun__short_uuid")
-            )
+            run = JobRun.objects.get(short_uuid=kwargs.get("parent_lookup_jobrun__short_uuid"))
             project = run.jobdef.project
         if project:
-            request.user_roles += Membership.get_roles_for_project(
-                request.user, project
-            )
+            request.user_roles += Membership.get_roles_for_project(request.user, project)
         else:
             raise Http404
 
@@ -88,9 +82,7 @@ class RunVariablesView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()
@@ -118,29 +110,6 @@ class RunVariablesView(
 
         instance.refresh_from_db()
         return Response(instance.variables)
-
-    @action(detail=True, methods=["get"])
-    def meta(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        special_labels = ["source"]
-        if "is_masked" in instance.jobrun.variable_labels:
-            special_labels.append("is_masked")
-
-        response = {
-            "suuid": instance.short_uuid,
-            "project": instance.jobrun.jobdef.project.relation_to_json,
-            "workspace": instance.jobrun.jobdef.project.workspace.relation_to_json,
-            "job": instance.jobrun.jobdef.relation_to_json,
-            "run": instance.jobrun.relation_to_json,
-            "size": instance.size,
-            "count": instance.count,
-            "labels": special_labels
-            + list(set(instance.jobrun.variable_labels) - set(special_labels)),
-            "created": instance.created,
-            "modified": instance.modified,
-        }
-        return Response(response)
 
 
 class RunVariableRowView(
@@ -181,27 +150,17 @@ class RunVariableRowView(
         run = JobRun.objects.get(short_uuid=self.kwargs.get("parent_lookup_run_suuid"))
 
         if user.is_anonymous and (
-            (
-                run.jobdef.project.visibility == "PUBLIC"
-                and run.jobdef.project.workspace.visibility == "PUBLIC"
-            )
+            (run.jobdef.project.visibility == "PUBLIC" and run.jobdef.project.workspace.visibility == "PUBLIC")
         ):
-            return (
-                super()
-                .get_queryset()
-                .filter(run_suuid=self.kwargs.get("parent_lookup_run_suuid"))
-            )
+            return super().get_queryset().filter(run_suuid=self.kwargs.get("parent_lookup_run_suuid"))
         elif user.is_anonymous:
             # return empty query_set because the anonymous user doesn't have access
             return super().get_queryset().none()
 
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
         member_of_projects = (
             Project.objects.filter(
-                Q(workspace_id__in=member_of_workspaces)
-                | (Q(workspace__visibility="PUBLIC") & Q(visibility="PUBLIC"))
+                Q(workspace_id__in=member_of_workspaces) | (Q(workspace__visibility="PUBLIC") & Q(visibility="PUBLIC"))
             ).values_list("short_uuid", flat=True)
         )[
             ::-1

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets
-from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
@@ -22,7 +20,6 @@ class RunMetricsObjectMixin:
     permission_classes = [RoleBasedPermission]
     RBAC_BY_ACTION = {
         "list": ["project.run.list"],
-        "meta": ["project.run.list"],
         "retrieve": ["project.run.list"],
         "create": ["project.run.create"],
         "destroy": ["project.run.remove"],
@@ -127,28 +124,6 @@ class RunMetricsView(
     lookup_field = "jobrun__short_uuid"
     serializer_class = RunMetricsSerializer
 
-    @action(detail=True, methods=["get"])
-    def meta(self, request, *args, **kwargs):
-        try:
-            instance = self.get_queryset().get(jobrun__short_uuid=kwargs.get("jobrun__short_uuid"))
-        except ObjectDoesNotExist:
-            raise Http404
-
-        return Response(
-            {
-                "suuid": instance.short_uuid,
-                "project": instance.jobrun.jobdef.project.relation_to_json,
-                "workspace": instance.jobrun.jobdef.project.workspace.relation_to_json,
-                "job": instance.jobrun.jobdef.relation_to_json,
-                "run": instance.jobrun.relation_to_json,
-                "size": instance.size,
-                "count": instance.count,
-                "labels": instance.jobrun.metric_labels,
-                "created": instance.created,
-                "modified": instance.modified,
-            }
-        )
-
     # Override because we don't return the full object, just the `metrics` field
     def update(self, request, *args, **kwargs):
         _ = kwargs.pop("partial", False)
@@ -192,8 +167,6 @@ class RunMetricsView(
         # First try to see the parent exist
         self.get_parent_instance()
 
-        # May raise a permission denied on parent object
-        # self.check_object_permissions(self.request, parent)
         return self.new_object()
 
     def get_parent_instance(self):
@@ -204,10 +177,8 @@ class RunMetricsView(
     def new_object(self):
         """Return a new RunMetrics instance or raise 404 if Run does not exists."""
         parent = self.get_parent_instance()
-        # Generate the new instance.
         run_metrics = RunMetrics.objects.create(jobrun=parent, metrics=[])
         run_metrics.metrics = []  # save initial data
         run_metrics.save()
-        # May raise a permission denied
-        # self.check_object_permissions(self.request, run_metrics)
+
         return run_metrics

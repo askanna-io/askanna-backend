@@ -1,2 +1,7 @@
+[tool.pytest.ini_options]
+norecursedirs = [".*", ".env", "storage_root"]
+python_files = ["test_*.py", "*_tests.py"]
+DJANGO_SETTINGS_MODULE = "config.settings.main"
+
 [tool.black]
 line-length = 119

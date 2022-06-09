@@ -117,6 +117,21 @@ def post_run_deduplicate_metrics(sender, instance, created, **kwargs):  # noqa
 
 
 @receiver(post_save, sender=JobRun)
+def post_run_deduplicate_variables(sender, instance, created, **kwargs):  # noqa
+    """
+    Fix variables after job is finished
+    """
+    if instance.is_finished:
+        on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.post_run_deduplicate_variables",
+                args=None,
+                kwargs={"run_suuid": instance.short_uuid},
+            )
+        )
+
+
+@receiver(post_save, sender=JobRun)
 def create_runvariables(sender, instance, created, **kwargs):
     """
     Create intermediate model to store variables for a run
@@ -128,9 +143,8 @@ def create_runvariables(sender, instance, created, **kwargs):
 @receiver(pre_save, sender=JobRun)
 def add_member_to_jobrun(sender, instance, **kwargs):
     """
-    On creation of the jobrun, add the member to it who created this.
-    We already thave the user, but we lookup the membership for it
-    (we know this by job->project->workspace)
+    On creation of the jobrun, add the member to it who created this. We already have the user, but we lookup the
+    membership for it. We know this by job->project->workspace.
     """
     if not instance.member:
         # first lookup which member this could be based on workspace
@@ -148,22 +162,18 @@ def add_member_to_jobrun(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=RunMetrics)
-def extract_labels_from_metrics_to_jobrun(sender, instance, created, **kwargs):
+def extract_meta_from_metrics(sender, instance, created, **kwargs):
     """
-    After saving metrics, we want to update the linked
-    JobRun.labels to put the static labels in there
-    We don't do this in a django instance, we delegate this
-    to a celery task.
+    After saving metrics, we want to update the metrics meta information in RunInfo.
     """
     update_fields = kwargs.get("update_fields")
     if update_fields:
-        # we don't do anything if this was an update on specific fields
+        # We don't do anything if this was an update on specific fields
         return
 
-    # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
     on_commit(
         lambda: celery_app.send_task(
-            "job.tasks.extract_metrics_labels",
+            "job.tasks.extract_metrics_meta",
             args=None,
             kwargs={"metrics_uuid": instance.uuid},
         )
@@ -186,7 +196,6 @@ def move_metrics_to_rows(sender, instance, created, **kwargs):
 
         move_metrics_to_rows(**{"metrics_uuid": instance.uuid})
     else:
-        # on_commit(lambda: extract_metrics_labels.delay(instance.uuid))
         on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.move_metrics_to_rows",
@@ -202,21 +211,18 @@ def delete_runmetrics(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=RunVariables)
-def extract_labels_from_variables_to_jobrun(sender, instance, created, **kwargs):
+def extract_meta_from_variables(sender, instance, created, **kwargs):
     """
-    After saving trackedvariables, we want to update the linked
-    JobRun.labels to put the static labels in there
-    We don't do this in a django instance, we delegate this
-    to a celery task.
+    After saving tracked variables, we want to update the variables meta information in runinfo.
     """
     update_fields = kwargs.get("update_fields")
     if update_fields or created:
-        # we don't do anything if this was an update on specific fields
+        # We don't do anything if this was an update on specific fields
         return
 
     on_commit(
         lambda: celery_app.send_task(
-            "job.tasks.extract_variables_labels",
+            "job.tasks.extract_variables_meta",
             args=None,
             kwargs={"variables_uuid": instance.uuid},
         )

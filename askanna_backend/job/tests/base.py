@@ -80,6 +80,22 @@ variable_response_good_small = [
         "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
+
+variable_response_good_small_no_label = [
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
+        "label": [],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
+        "label": [],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+]
+
 metric_response_good = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -120,46 +136,6 @@ metric_response_good = [
         "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
-metric_response_good_reversed = [
-    {
-        "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": {"name": "Quality", "value": "Ok", "type": "string"},
-        "label": [
-            {"name": "city", "value": "Amsterdam", "type": "string"},
-            {"name": "product", "value": "TV", "type": "string"},
-            {"name": "Missing data", "type": "boolean"},
-        ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
-    },
-    {
-        "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": {"name": "Quality", "value": "Good", "type": "string"},
-        "label": [
-            {"name": "city", "value": "Rotterdam", "type": "string"},
-            {"name": "product", "value": "TV", "type": "string"},
-        ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
-    },
-    {
-        "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
-        "label": [
-            {"name": "city", "value": "Rotterdam", "type": "string"},
-            {"name": "product", "value": "TV", "type": "string"},
-        ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
-    },
-    {
-        "run_suuid": "aaaa-cccc-eeee-zzzz",
-        "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
-        "label": [
-            {"name": "city", "value": "Amsterdam", "type": "string"},
-            {"name": "product", "value": "TV", "type": "string"},
-            {"name": "Missing data", "type": "boolean"},
-        ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
-    },
-]
 metric_response_good_small = [
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -171,6 +147,20 @@ metric_response_good_small = [
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+]
+metric_response_good_small_no_label = [
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
+        "label": [],
+        "created": "2021-02-14T12:00:01.123456+00:00",
+    },
+    {
+        "run_suuid": "aaaa-cccc-eeee-zzzz",
+        "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
+        "label": [],
         "created": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
@@ -355,6 +345,17 @@ class BaseJobTestDef(BaseUserPopulation):
                 owner=self.users.get("member"),
                 member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
+                started=timezone.now(),
+            ),
+            "run7": JobRun.objects.create(
+                name="",
+                description="",
+                package=self.package,
+                jobdef=self.jobdef,
+                status="FAILED",
+                owner=self.users.get("member"),
+                member=self.members_workspace2.get("member"),
+                run_image=self.run_image,
             ),
         }
 
@@ -362,12 +363,11 @@ class BaseJobTestDef(BaseUserPopulation):
             "run1": RunMetrics.objects.create(jobrun=self.jobruns["run1"], metrics=metric_response_good, count=4),
             "run2": RunMetrics.objects.create(jobrun=self.jobruns["run2"], metrics=metric_response_bad, count=2),
             "run3": RunMetrics.objects.create(jobrun=self.jobruns["run3"], metrics=metric_response_bad, count=2),
-            "run6": RunMetrics.objects.create(jobrun=self.jobruns["run6"], metrics=metric_response_good, count=4),
+            "run6": RunMetrics.objects.create(
+                jobrun=self.jobruns["run6"], metrics=metric_response_good_small_no_label, count=4
+            ),
+            "run7": RunMetrics.objects.create(jobrun=self.jobruns["run7"], metrics=[]),
         }
-        self.runmetrics["run1"].metrics = metric_response_good
-        self.runmetrics["run2"].metrics = metric_response_bad
-        self.runmetrics["run3"].metrics = metric_response_bad
-        self.runmetrics["run6"].metrics = metric_response_good
 
         self.runoutput = {
             "run1": JobOutput.objects.get(jobrun=self.jobruns.get("run1")),
@@ -428,11 +428,12 @@ class BaseJobTestDef(BaseUserPopulation):
             "run2": RunVariables.objects.get(jobrun=self.jobruns["run2"]),
             "run3": RunVariables.objects.get(jobrun=self.jobruns["run3"]),
             "run6": RunVariables.objects.get(jobrun=self.jobruns["run6"]),
+            "run7": RunVariables.objects.get(jobrun=self.jobruns["run7"]),
         }
         self.tracked_variables["run1"].variables = tracked_variables_response_good
         self.tracked_variables["run2"].variables = tracked_variables_response_good
         self.tracked_variables["run3"].variables = tracked_variables_response_good
-        self.tracked_variables["run6"].variables = tracked_variables_response_good
+        self.tracked_variables["run6"].variables = variable_response_good_small_no_label
         self.tracked_variables["run1"].save()
         self.tracked_variables["run2"].save()
         self.tracked_variables["run3"].save()

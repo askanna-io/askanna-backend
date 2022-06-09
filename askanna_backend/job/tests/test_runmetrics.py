@@ -3,10 +3,65 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import (
-    BaseJobTestDef,
-    metric_response_good_small,
-)
+from .base import BaseJobTestDef, metric_response_good, metric_response_good_small
+
+
+class TestRunMetricsModel(BaseJobTestDef, APITestCase):
+    """
+    Test RunMetrics model functions
+    """
+
+    def test_runmetrics_function_load_from_file(self):
+        self.assertEqual(self.runmetrics["run1"].load_from_file(), metric_response_good)
+
+    def test_runmetrics_function_update_meta_no_metrics_and_no_labels(self):
+        modified_before = self.runmetrics["run7"].modified
+        self.runmetrics["run7"].update_meta()
+        self.assertEqual(self.runmetrics["run7"].modified, modified_before)
+
+        self.assertEqual(self.runmetrics["run7"].count, 0)
+        self.assertEqual(self.runmetrics["run7"].size, 0)
+        self.assertIsNone(self.runmetrics["run7"].metric_names)
+        self.assertIsNone(self.runmetrics["run7"].label_names)
+
+    def test_runmetrics_function_update_meta(self):
+        modified_before_1 = self.runmetrics["run7"].modified
+        self.runmetrics["run7"].update_meta()
+        self.assertEqual(self.runmetrics["run7"].modified, modified_before_1)
+
+        self.assertEqual(self.runmetrics["run7"].count, 0)
+        self.assertEqual(self.runmetrics["run7"].size, 0)
+        self.assertIsNone(self.runmetrics["run7"].metric_names)
+        self.assertIsNone(self.runmetrics["run7"].label_names)
+
+        self.runmetrics["run7"].metrics = metric_response_good
+        self.runmetrics["run7"].save()
+
+        modified_before_2 = self.runmetrics["run7"].modified
+        self.runmetrics["run7"].update_meta()
+        self.assertEqual(self.runmetrics["run7"].modified, modified_before_2)
+
+        self.assertEqual(self.runmetrics["run7"].count, 4)
+        self.assertEqual(self.runmetrics["run7"].size, 1190)
+        self.assertEqual(
+            self.runmetrics["run7"].metric_names,
+            [{"name": "Accuracy", "type": "integer", "count": 2}, {"name": "Quality", "type": "string", "count": 2}],
+        )
+        self.assertEqual(
+            self.runmetrics["run7"].label_names,
+            [
+                {"name": "city", "type": "string"},
+                {"name": "product", "type": "string"},
+                {"name": "Missing data", "type": "boolean"},
+            ],
+        )
+
+    def test_runmetrics_function_update_meta_no_labels(self):
+        self.runmetrics["run6"].update_meta()
+        self.assertEqual(self.runmetrics["run6"].count, 2)
+        self.assertEqual(self.runmetrics["run6"].size, 334)
+        self.assertIsNotNone(self.runmetrics["run6"].metric_names)
+        self.assertIsNone(self.runmetrics["run6"].label_names)
 
 
 class TestMetricsListAPI(BaseJobTestDef, APITestCase):
@@ -123,117 +178,6 @@ class TestMetricsListAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
-
-
-class TestMetricsMetaAPI(BaseJobTestDef, APITestCase):
-    """
-    Test to get meta on specific metrics for a jobrun
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "run-metric-meta",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-                "jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-            },
-        )
-
-    def test_meta_as_admin(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("count"), 4)
-
-    def test_meta_as_member(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        self.activate_user("member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("count"), 4)
-
-    def test_meta_as_nonmember(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_meta_as_anonymous(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-
-class TestMetricsPublicProjectMetaAPI(TestMetricsMetaAPI):
-    """
-    Test to get meta on specific metrics for a jobrun within a public project
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "run-metric-meta",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.runmetrics.get("run1").short_uuid,
-                "jobrun__short_uuid": self.runmetrics.get("run6").short_uuid,
-            },
-        )
-
-    def test_meta_as_nonmember(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_meta_as_anonymous(self):
-        """
-        Retrieve the meta information about the metrics
-        """
-        response = self.client.get(
-            self.url,
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class TestMetricsUpdateAPI(BaseJobTestDef, APITestCase):

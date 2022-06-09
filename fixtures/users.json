@@ -25,30 +25,6 @@
   },
   {
     "model": "users.user",
-    "pk": 2,
-    "fields": {
-      "password": "argon2$argon2i$v=19$m=512,t=2,p=2$VFpiNFpoNlFhY3NC$1JHLFw9pc2Qx7TVFslN6aA",
-      "last_login": null,
-      "is_superuser": true,
-      "username": "anthony@askanna.io",
-      "first_name": "",
-      "last_name": "",
-      "email": "anthony@askanna.io",
-      "is_staff": true,
-      "is_active": true,
-      "date_joined": "2020-02-20T13:44:13.411Z",
-      "created": "2020-04-09T06:14:49.221Z",
-      "modified": "2020-04-09T06:14:49.221Z",
-      "deleted": null,
-      "short_uuid": "2xqj-UCx3-tKv8-WDMu",
-      "uuid": "616e74-686f-6e79-4061-736b616e6e6121",
-      "name": "",
-      "groups": [],
-      "user_permissions": []
-    }
-  },
-  {
-    "model": "users.user",
     "pk": 3,
     "fields": {
       "password": "argon2$argon2i$v=19$m=512,t=2,p=2$dWdOYjZjczlSbkp4$VPWu10jZVBvHX99dp/6v0Q",
