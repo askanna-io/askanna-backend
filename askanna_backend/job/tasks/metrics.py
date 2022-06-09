@@ -1,44 +1,21 @@
 # -*- coding: utf-8 -*-
 import datetime
-import json
 
 from celery import shared_task
+
 from job.models import (
     RunMetrics,
     RunMetricsRow,
 )
 
 
-@shared_task(bind=True, name="job.tasks.extract_metrics_labels")
-def extract_metrics_labels(self, metrics_uuid):
+@shared_task(bind=True, name="job.tasks.extract_metrics_meta")
+def extract_metrics_meta(self, metrics_uuid):
     """
-    Extract labels in .metrics and store the list of labels in .jobrun.labels
+    Extract meta information from metrics and store the meta information in runmetrics object
     """
     runmetrics = RunMetrics.objects.get(pk=metrics_uuid)
-    jobrun = runmetrics.jobrun
-    if not runmetrics.metrics:
-        # we don't have metrics stored, as this is None (by default on creation)
-        return
-    alllabels = []
-    allkeys = []
-    count = 0
-    for metric in runmetrics.metrics[::]:
-        labels = metric.get("label", [])
-        for label_obj in labels:
-            alllabels.append(label_obj.get("name"))
-
-        # count number of metrics
-        metrics = metric.get("metric", {})
-        allkeys.append(metrics.get("name"))
-        count += 1
-
-    jobrun.metric_keys = list(set(allkeys) - set([None]))
-    jobrun.metric_labels = list(set(alllabels) - set([None]))
-    jobrun.save(update_fields=["metric_labels", "metric_keys"])
-
-    runmetrics.count = count
-    runmetrics.size = len(json.dumps(runmetrics.metrics))
-    runmetrics.save(update_fields=["count", "size"])
+    runmetrics.update_meta()
 
 
 @shared_task(bind=True, name="job.tasks.move_metrics_to_rows")
@@ -54,13 +31,16 @@ def move_metrics_to_rows(self, metrics_uuid):
         metric["job_suuid"] = runmetrics.jobrun.jobdef.short_uuid
         # overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
         metric["run_suuid"] = runmetrics.jobrun.short_uuid
+
         RunMetricsRow.objects.create(**metric)
+
+    runmetrics.update_meta()
 
 
 @shared_task(bind=True, name="job.tasks.post_run_deduplicate_metrics")
 def post_run_deduplicate_metrics(self, run_suuid):
     """
-    Remove double metrics if any
+    Remove double run metrics if any
     """
     metrics = RunMetricsRow.objects.filter(run_suuid=run_suuid).order_by("created")
     last_metric = None
@@ -68,3 +48,6 @@ def post_run_deduplicate_metrics(self, run_suuid):
         if metric == last_metric:
             metric.delete()
         last_metric = metric
+
+    runmetrics = RunMetrics.objects.get(jobrun__short_uuid=run_suuid)
+    runmetrics.update_meta()

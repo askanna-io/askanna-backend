@@ -9,6 +9,7 @@ def settings(config, _env):
     config.REST_FRAMEWORK = {
         "DEFAULT_AUTHENTICATION_CLASSES": [
             "core.auth.PassthroughAuthentication",
+            "rest_framework.authentication.SessionAuthentication",
         ],
         "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
         "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",

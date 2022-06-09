@@ -183,10 +183,6 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         super().tearDown()
         config.urls.urlpatterns = self.original_urls
 
-    def file_to_bytes(self, fp):
-        with fp:
-            return fp.read()
-
     def check_artifact(self, url):
         fileresponse = self.client.get(url)
         self.assertEqual(fileresponse.status_code, status.HTTP_200_OK)

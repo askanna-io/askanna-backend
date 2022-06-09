@@ -119,7 +119,6 @@ class JobRunAdmin(admin.ModelAdmin):
     list_filter = ("created", "modified", "deleted")
     search_fields = [
         "short_uuid",
-        "owner",
         "jobdef__short_uuid",
         "jobdef__name",
         "payload__short_uuid",
@@ -175,80 +174,122 @@ class JobVariableAdmin(admin.ModelAdmin):
 
 @admin.register(RunMetrics)
 class RunMetricsAdmin(admin.ModelAdmin):
-    list_display = [
+    fields = (
         "jobrun",
+        "count",
+        "size",
+        "metric_names",
+        "label_names",
+        "modified",
+        "created",
+        "deleted",
+    )
+    list_display = [
         "short_uuid",
         "count",
         "size",
+        "created",
     ]
-    list_display_links = (
-        "jobrun",
-        "short_uuid",
-    )
-
+    list_display_links = ("short_uuid",)
+    readonly_fields = [
+        "count",
+        "size",
+        "metric_names",
+        "label_names",
+        "modified",
+        "created",
+    ]
     raw_id_fields = ["jobrun"]
+    list_filter = ("created",)
     search_fields = ["jobrun__short_uuid"]
 
 
 @admin.register(RunMetricsRow)
 class RunMetricsRowAdmin(admin.ModelAdmin):
-    list_display = [
-        "project_suuid",
-        "job_suuid",
+    fields = (
         "run_suuid",
-        "short_uuid",
         "metric",
         "label",
-    ]
-    list_display_links = (
-        "project_suuid",
-        "job_suuid",
-        "run_suuid",
+        "modified",
+        "created",
+        "deleted",
     )
-
-    search_fields = [
-        "project_suuid",
-        "job_suuid",
+    list_display = [
         "run_suuid",
+        "metric",
+        "label",
+        "created",
     ]
+    list_display_links = ("run_suuid",)
+    readonly_fields = [
+        "run_suuid",
+        "metric",
+        "label",
+        "modified",
+        "created",
+    ]
+    list_filter = ("created",)
+    search_fields = ["run_suuid"]
 
 
 @admin.register(RunVariables)
 class RunVariablesAdmin(admin.ModelAdmin):
-    list_display = [
+    fields = (
         "jobrun",
+        "count",
+        "size",
+        "variable_names",
+        "label_names",
+        "modified",
+        "created",
+        "deleted",
+    )
+    list_display = [
         "short_uuid",
         "count",
         "size",
+        "created",
     ]
-    list_display_links = (
-        "jobrun",
-        "short_uuid",
-    )
-
+    list_display_links = ("short_uuid",)
+    readonly_fields = [
+        "count",
+        "size",
+        "variable_names",
+        "label_names",
+        "modified",
+        "created",
+    ]
     raw_id_fields = ["jobrun"]
+    list_filter = ("created",)
     search_fields = ["jobrun__short_uuid"]
 
 
 @admin.register(RunVariableRow)
 class RunVariableRowAdmin(admin.ModelAdmin):
-    list_display = [
-        "project_suuid",
-        "job_suuid",
+    fields = (
         "run_suuid",
-        "short_uuid",
         "variable",
         "is_masked",
         "label",
-    ]
-    list_display_links = (
-        "project_suuid",
-        "job_suuid",
-        "run_suuid",
+        "modified",
+        "created",
+        "deleted",
     )
-
-    search_fields = [
-        "project_suuid",
-        "job_suuid",
+    list_display = [
         "run_suuid",
+        "variable",
+        "is_masked",
+        "label",
+        "created",
     ]
+    list_display_links = ("run_suuid",)
+    readonly_fields = [
+        "run_suuid",
+        "variable",
+        "is_masked",
+        "label",
+        "modified",
+        "created",
+    ]
+    list_filter = ("created",)
+    search_fields = ["run_suuid"]

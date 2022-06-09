@@ -11,16 +11,6 @@
   },
   {
     "model": "account.emailaddress",
-    "pk": 2,
-    "fields": {
-      "user": 2,
-      "email": "anthony@askanna.io",
-      "verified": true,
-      "primary": true
-    }
-  },
-  {
-    "model": "account.emailaddress",
     "pk": 3,
     "fields": {
       "user": 3,

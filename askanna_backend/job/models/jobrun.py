@@ -6,7 +6,6 @@ from django.db.transaction import on_commit
 from django.utils import timezone
 
 from config.celery_app import app as celery_app
-from core.fields import ArrayField
 from core.models import BaseModel
 from job.models.const import JOB_STATUS
 
@@ -25,24 +24,6 @@ class JobRun(BaseModel):
 
     owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
-
-    # The labels field stores what is generated from the metrics
-    metric_labels = ArrayField(
-        models.CharField(max_length=4096), blank=True, default=list
-    )
-    # The keys field stores what is generated from the metrics
-    metric_keys = ArrayField(
-        models.CharField(max_length=8192), blank=True, default=list
-    )
-
-    # The labels field stores what is generated from the tracked_variables
-    variable_labels = ArrayField(
-        models.CharField(max_length=4096), blank=True, default=list
-    )
-    # The keys field stores what is generated from the tracked_variables
-    variable_keys = ArrayField(
-        models.CharField(max_length=8192), blank=True, default=list
-    )
 
     # Register the start and end of a run
     started = DateTimeField(null=True, editable=False)
@@ -132,6 +113,11 @@ class JobRun(BaseModel):
         Return the name for short-serialisation
         """
         return None or self.name
+
+    def __str__(self):
+        if self.name:
+            return f"{self.name} ({self.short_uuid})"
+        return self.short_uuid
 
     @property
     def relation_to_json(self):

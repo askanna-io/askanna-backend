@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import datetime
-import json
 
 from celery import shared_task
 
@@ -10,50 +9,13 @@ from job.models import (
 )
 
 
-@shared_task(bind=True, name="job.tasks.extract_variables_labels")
-def extract_variables_labels(self, variables_uuid):
+@shared_task(bind=True, name="job.tasks.extract_variables_meta")
+def extract_variables_meta(self, variables_uuid):
     """
     Extract labels in .variables and store the list of labels in .jobrun.labels
     """
     runvariables = RunVariables.objects.get(pk=variables_uuid)
-    jobrun = runvariables.jobrun
-    if not runvariables.variables:
-        # we don't have variables stored, as this is None (by default on creation)
-        return
-    alllabels = []
-    allkeys = []
-    count = 0
-    for variable in runvariables.variables[::]:
-        labels = variable.get("label", [])
-        for label_obj in labels:
-            alllabels.append(label_obj.get("name"))
-
-        # count number of variable
-        variables = variable.get("variable", {})
-        allkeys.append(variables.get("name"))
-        count += 1
-
-    # also count the ones in the databaase
-    dbvariables = RunVariableRow.objects.filter(
-        run_suuid=runvariables.short_uuid
-    ).exclude(label__contains=[{"name": "source", "value": "run", "type": "string"}])
-    for variable in dbvariables:
-        labels = variable.label
-        for label_obj in labels:
-            alllabels.append(label_obj.get("name"))
-
-        # count number of variable
-        variables = variable.variable
-        allkeys.append(variables.get("name"))
-        count += 1
-
-    jobrun.variable_keys = list(set(allkeys) - set([None]))
-    jobrun.variable_labels = list(set(alllabels) - set([None]))
-    jobrun.save(update_fields=["variable_labels", "variable_keys"])
-
-    runvariables.count = count
-    runvariables.size = len(json.dumps(runvariables.variables))
-    runvariables.save(update_fields=["count", "size"])
+    runvariables.update_meta()
 
 
 @shared_task(bind=True, name="job.tasks.move_variables_to_rows")
@@ -73,3 +35,21 @@ def move_variables_to_rows(self, variables_uuid):
         variable["run_suuid"] = runvariables.jobrun.short_uuid
 
         RunVariableRow.objects.create(**variable)
+
+    runvariables.update_meta()
+
+
+@shared_task(bind=True, name="job.tasks.post_run_deduplicate_variables")
+def post_run_deduplicate_variables(self, run_suuid):
+    """
+    Remove double run variables if any
+    """
+    variables = RunVariableRow.objects.filter(run_suuid=run_suuid).order_by("created")
+    last_variable = None
+    for variable in variables:
+        if variable == last_variable:
+            variable.delete()
+        last_variable = variable
+
+    runvariables = RunVariables.objects.get(jobrun__short_uuid=run_suuid)
+    runvariables.update_meta()

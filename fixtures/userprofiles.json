@@ -11,17 +11,7 @@
   },
   {
     "model": "users.userprofile",
-    "pk": "c7d66470-a248-4aa3-a09b-7c4c9df02b07",
-    "fields": {}
-  },
-  {
-    "model": "users.userprofile",
     "pk": "540ef772-8ab1-48a2-9a39-5411b6d829a5",
-    "fields": {}
-  },
-  {
-    "model": "users.userprofile",
-    "pk": "2859cf25-32c0-4fff-8f3c-2fc95b4a0010",
     "fields": {}
   },
   {
@@ -42,11 +32,6 @@
   {
     "model": "users.userprofile",
     "pk": "a675aabb-f35f-42dc-8a8f-4d48559361f0",
-    "fields": {}
-  },
-  {
-    "model": "users.userprofile",
-    "pk": "7be54580-c374-41e6-a555-6e8104637e1a",
     "fields": {}
   },
   {

@@ -35,57 +35,6 @@
   },
   {
     "model": "users.membership",
-    "pk": "c7d66470-a248-4aa3-a09b-7c4c9df02b07",
-    "fields": {
-      "created": "2021-01-20T10:32:32.469Z",
-      "modified": "2021-01-20T10:32:32.469Z",
-      "deleted": null,
-      "short_uuid": "655R-wHNU-Btse-xRbl",
-      "object_uuid": "121257f5-805b-42d2-bbbf-a647774c66c3",
-      "object_type": "WS",
-      "role": "WA",
-      "job_title": "Open admin",
-      "user": 2,
-      "name": "Anthony open",
-      "use_global_profile": true
-    }
-  },
-  {
-    "model": "users.membership",
-    "pk": "2859cf25-32c0-4fff-8f3c-2fc95b4a0010",
-    "fields": {
-      "created": "2021-01-20T10:31:50.109Z",
-      "modified": "2021-01-20T10:31:50.109Z",
-      "deleted": null,
-      "short_uuid": "1E8j-d6rJ-Bxqq-GNq3",
-      "object_uuid": "e2433fa9-56b8-451e-9649-4ba00b94d17a",
-      "object_type": "WS",
-      "role": "WM",
-      "job_title": "Demo member",
-      "user": 2,
-      "name": "Anthony demo",
-      "use_global_profile": true
-    }
-  },
-  {
-    "model": "users.membership",
-    "pk": "7be54580-c374-41e6-a555-6e8104637e1a",
-    "fields": {
-      "created": "2021-01-12T12:23:52.749Z",
-      "modified": "2021-01-12T12:23:52.749Z",
-      "deleted": null,
-      "short_uuid": "3lmp-gIrC-W5Ll-3iDi",
-      "object_uuid": "695fcc8b-ba8c-4575-a1e0-f0fcfc70a349",
-      "object_type": "WS",
-      "role": "WA",
-      "job_title": "AskAnna Admin",
-      "user": 2,
-      "name": "Anthony",
-      "use_global_profile": true
-    }
-  },
-  {
-    "model": "users.membership",
     "pk": "1af22df4-d5a7-4d62-95e3-087a0e6bac8c",
     "fields": {
       "created": "2021-01-20T10:32:48.416Z",
