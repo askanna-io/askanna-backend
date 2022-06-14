@@ -51,5 +51,9 @@ def post_run_deduplicate_variables(self, run_suuid):
             variable.delete()
         last_variable = variable
 
-    runvariables = RunVariables.objects.get(jobrun__short_uuid=run_suuid)
-    runvariables.update_meta()
+    try:
+        runvariables = RunVariables.objects.get(jobrun__short_uuid=run_suuid)
+    except RunVariables.DoesNotExist:
+        pass
+    else:
+        runvariables.update_meta()
