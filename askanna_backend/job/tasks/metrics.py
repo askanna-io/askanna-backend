@@ -49,5 +49,9 @@ def post_run_deduplicate_metrics(self, run_suuid):
             metric.delete()
         last_metric = metric
 
-    runmetrics = RunMetrics.objects.get(jobrun__short_uuid=run_suuid)
-    runmetrics.update_meta()
+    try:
+        runmetrics = RunMetrics.objects.get(jobrun__short_uuid=run_suuid)
+    except RunMetrics.DoesNotExist:
+        pass
+    else:
+        runmetrics.update_meta()
