@@ -12,12 +12,11 @@ from job.models.const import JOB_STATUS
 
 class JobRun(BaseModel):
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
-    payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, null=True)
+    payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
 
     # Clarification, jobid holds the job-id of Celery
-    # Status is also the status from the Celery run
-    jobid = models.CharField(max_length=120, blank=True, null=True)
+    jobid = models.CharField(max_length=120, blank=True, null=True, help_text="The job-id of the Celery run")
     status = models.CharField(max_length=20, choices=JOB_STATUS)
 
     trigger = models.CharField(max_length=20, blank=True, null=True, default="API")
@@ -28,12 +27,12 @@ class JobRun(BaseModel):
     # Register the start and end of a run
     started = DateTimeField(null=True, editable=False)
     finished = DateTimeField(null=True, editable=False)
+    duration = models.PositiveIntegerField(
+        null=True, blank=True, editable=False, help_text="Duration of the run in seconds"
+    )
 
     environment_name = models.CharField(max_length=256, default="")
     timezone = models.CharField(max_length=256, default="UTC")
-
-    # how long did the run take in seconds?
-    duration = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
     # the image where it was ran with
     run_image = models.ForeignKey("job.RunImage", on_delete=models.SET_NULL, null=True)
