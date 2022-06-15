@@ -78,12 +78,15 @@ class JobRunSerializer(serializers.ModelSerializer):
         }
 
     def get_duration(self, instance):
-        if not instance.duration or not instance.is_finished:
-            # calculate the duration because we are still running
-            if not instance.started:
-                return 0
-            return (timezone.now() - instance.started).seconds
-        return instance.duration
+        if instance.duration or instance.duration == 0:
+            return instance.duration
+
+        # Calculate the duration or return 0
+        if not instance.started:
+            return 0
+        if instance.finished:
+            return (instance.finished - instance.started).seconds
+        return (timezone.now() - instance.started).seconds
 
     def get_environment(self, instance):
         environment = {

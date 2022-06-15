@@ -91,37 +91,78 @@ class JobRunAdmin(admin.ModelAdmin):
     def project(obj):  # pragma: no cover
         return obj.jobdef.project.get_name()
 
-    def jobname(obj):  # pragma: no cover
+    def job_name(obj):  # pragma: no cover
         return obj.jobdef.get_name()
 
     def job_suuid(obj):  # pragma: no cover
         return obj.jobdef.short_uuid
 
-    def payload_suuid(obj):  # pragma: no cover
-        if obj.payload:
-            return obj.payload.short_uuid
-        return ""
+    fields = (
+        "short_uuid",
+        "jobdef",
+        "jobid",
+        "status",
+        "trigger",
+        "started",
+        "finished",
+        "duration",
+        "name",
+        "description",
+        "package",
+        "owner",
+        "member",
+        "payload",
+        "environment_name",
+        "run_image",
+        "timezone",
+        "modified",
+        "created",
+        "deleted",
+    )
+    readonly_fields = [
+        "short_uuid",
+        "jobid",
+        "trigger",
+        "started",
+        "finished",
+        "duration",
+        "environment_name",
+        "timezone",
+        "modified",
+        "created",
+    ]
+    raw_id_fields = (
+        "jobdef",
+        "package",
+        "owner",
+        "member",
+        "payload",
+        "run_image",
+    )
 
     list_display = [
         "short_uuid",
         project,
-        jobname,
+        job_name,
         job_suuid,
-        payload_suuid,
         "status",
         "created",
         "started",
-        "modified",
+        "finished",
         "owner",
     ]
-
     date_hierarchy = "created"
-    list_filter = ("created", "modified", "deleted")
+    list_filter = (
+        "status",
+        "created",
+        "started",
+        "finished",
+        "deleted",
+    )
     search_fields = [
         "short_uuid",
         "jobdef__short_uuid",
         "jobdef__name",
-        "payload__short_uuid",
     ]
 
 
