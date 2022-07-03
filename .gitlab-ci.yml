@@ -105,7 +105,7 @@ build_deploy:
 .deploy-variables:
   variables:
     GIT_STRATEGY: none
-    ASKANNA_DEPLOY_BRANCH: master
+    ASKANNA_DEPLOY_BRANCH: main
     ASKANNA_DEPLOY_PRODUCT: askanna-backend
 
 .deploy:

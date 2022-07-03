@@ -7,31 +7,10 @@ set -o nounset
 python manage.py migrate --noinput --database=default
 python manage.py migrate --noinput --database=runinfo
 
-if [[ "${DJANGO_DEBUG}" == "1" ]]; then
-    echo "***************************************************"
-    echo "Working on develop environment, installing fixtures"
-    echo "***************************************************"
-    python manage.py loaddata fixtures/users.json
-    python manage.py loaddata fixtures/accounts.json
-    python manage.py loaddata fixtures/workspace.json
-    python manage.py loaddata fixtures/memberships.json
-    python manage.py loaddata fixtures/userprofiles.json
-    python manage.py loaddata fixtures/projects.json
-    python manage.py loaddata fixtures/jobdef.json
-    python manage.py loaddata fixtures/jobpayload.json
-
-    python manage.py install_fixture
-else
-    echo "**********************************************************"
-    echo "Working on production environment, not installing fixtures"
-    echo "**********************************************************"
-fi
-
-python manage.py install_default_avatar
 python manage.py install_askanna_create_project
 python manage.py install_default_settings
 
 python manage.py collectstatic --noinput
 
 echo "Starting Django server"
-/usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app --workers=5
+/usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app --workers=5 --timeout 300
