@@ -1,0 +1,3 @@
+create_project:
+  job:
+    - askanna create "Demo train, select and serve a model" -w "${PLV_WORKSPACE_SUUID}" -d "This is a demo project to show a potential data science project with jobs to train models and serve results." -t https://gitlab.com/askanna/demo/demo-train-select-serve-model.git -p

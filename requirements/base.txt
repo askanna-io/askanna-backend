@@ -3,8 +3,8 @@ python-slugify==4.0.0  # https://github.com/un33k/python-slugify
 Pillow==8.1.0  # https://github.com/python-pillow/Pillow
 argon2-cffi==19.2.0  # https://github.com/hynek/argon2_cffi
 whitenoise==4.1.4  # https://github.com/evansd/whitenoise
-redis~=3.4.0  # https://github.com/andymccurdy/redis-py
-celery==4.4.0  # pyup: < 5.0  # https://github.com/celery/celery
+redis~=4.2.0  # https://github.com/andymccurdy/redis-py
+celery~=4.4.0  # https://github.com/celery/celery
 django-celery-beat==2.1.0  # https://github.com/celery/django-celery-beat
 django-timezone-field==4.0.0 # for celery beat
 flower==0.9.3  # https://github.com/mher/flower
@@ -18,12 +18,12 @@ django-resumable~=0.2.0
 
 # Django
 # ------------------------------------------------------------------------------
-django~=2.2.0  # pyup: < 3.0  # https://www.djangoproject.com/
+django==3.0  # https://www.djangoproject.com/
 django-environ==0.4.5  # https://github.com/joke2k/django-environ
 django-model-utils==3.2.0  # https://github.com/jazzband/django-model-utils
 django-allauth==0.40.0  # https://github.com/pennersr/django-allauth
 django-crispy-forms==1.8.1  # https://github.com/django-crispy-forms/django-crispy-forms
-django-redis==4.10.0  # https://github.com/niwinz/django-redis
+django-redis~=5.0  # https://github.com/niwinz/django-redis
 django-filter==2.3.0
 django-sendgrid-v5==0.8.1  # https://pypi.org/project/django-sendgrid-v5
 

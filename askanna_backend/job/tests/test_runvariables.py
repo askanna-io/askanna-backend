@@ -43,18 +43,22 @@ class TestRunVariablesModel(BaseJobTestDef, APITestCase):
 
         self.assertEqual(self.tracked_variables["run7"].count, 4)
         self.assertEqual(self.tracked_variables["run7"].size, 1198)
-        self.assertEqual(
-            self.tracked_variables["run7"].variable_names,
-            [{"name": "Accuracy", "type": "integer", "count": 2}, {"name": "Quality", "type": "string", "count": 2}],
-        )
-        self.assertEqual(
-            self.tracked_variables["run7"].label_names,
-            [
-                {"name": "city", "type": "string"},
-                {"name": "product", "type": "string"},
-                {"name": "Missing data", "type": "boolean"},
-            ],
-        )
+        expected_variable_names = [
+            {"name": "Accuracy", "type": "integer", "count": 2},
+            {"name": "Quality", "type": "string", "count": 2},
+        ]
+        self.assertEqual(len(self.tracked_variables["run7"].variable_names), 2)
+        self.assertIn(self.tracked_variables["run7"].variable_names[0], expected_variable_names)
+        self.assertIn(self.tracked_variables["run7"].variable_names[1], expected_variable_names)
+        expected_label_names = [
+            {"name": "city", "type": "string"},
+            {"name": "product", "type": "string"},
+            {"name": "Missing data", "type": "boolean"},
+        ]
+        self.assertEqual(len(self.tracked_variables["run7"].label_names), 3)
+        self.assertIn(self.tracked_variables["run7"].label_names[0], expected_label_names)
+        self.assertIn(self.tracked_variables["run7"].label_names[1], expected_label_names)
+        self.assertIn(self.tracked_variables["run7"].label_names[2], expected_label_names)
 
     def test_runvariables_function_update_meta_no_labels(self):
         self.tracked_variables["run6"].update_meta()
