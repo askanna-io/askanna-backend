@@ -2,6 +2,7 @@
 import os
 import tempfile
 import uuid
+import warnings
 from zipfile import ZipFile
 
 from django.core.management.base import BaseCommand
@@ -54,7 +55,7 @@ class Command(BaseCommand):
             workspace.visibility = "PRIVATE"
             workspace.save()
         elif workspace.name != "AskAnna Core" or workspace.visibility != "PRIVATE":
-            raise Warning(
+            warnings.warn(
                 "Workspace '3Cpy-QMzd-MVko-1rDQ' already exists but is not configured with the expected workspace "
                 "name or workspace visibility."
             )
