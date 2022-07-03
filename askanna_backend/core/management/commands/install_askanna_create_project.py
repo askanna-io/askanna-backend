@@ -71,7 +71,7 @@ class Command(BaseCommand):
             project.visibility = "PRIVATE"
             project.save()
         elif project.name != "AskAnna Create Project" or project.visibility != "PRIVATE":
-            raise Warning(
+            warnings.warn(
                 "Project '7Lif-Rhcn-IRvS-Wv7J' already exists but is not configured with the expected project name "
                 "or project visibility."
             )
@@ -86,7 +86,7 @@ class Command(BaseCommand):
             jobdef.project = project
             jobdef.save()
         elif jobdef.name != "create_project" or jobdef.project != project:
-            raise Warning(
+            warnings.warn(
                 "Job '640q-2AMP-T5BL-Cnml' already exists but is not configured with the expected job name or project."
             )
 
