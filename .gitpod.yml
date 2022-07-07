@@ -1,0 +1,11 @@
+tasks:
+  - init: |
+      pip install -r requirements/local.txt
+      pre-commit install
+    command: |
+      docker-compose up -d
+
+ports:
+  - name: AskAnna Backend
+    description: The AskAnna Backend application
+    port: 8000

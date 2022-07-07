@@ -56,5 +56,5 @@ filetype~=1.0.7 # https://pypi.org/project/filetype/#history
 Jinja2~=3.0.0
 
 # Django health check
-django-health-check~=3.16.4 # https://pypi.org/project/django-health-check/
-psutil~=5.8.0 # https://pypi.org/project/psutil/
+django-health-check~=3.16.5 # https://pypi.org/project/django-health-check/
+psutil~=5.9.1 # https://pypi.org/project/psutil/

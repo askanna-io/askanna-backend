@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.urls import include, path
+from django.urls import include, path, reverse_lazy
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.views import defaults as default_views
@@ -7,10 +7,11 @@ from django.views.generic.base import RedirectView
 
 
 urlpatterns = [
-    path("", RedirectView.as_view(url=settings.ASKANNA_UI_URL), name="home"),
+    # Django authentication
+    path("accounts/", include("allauth.urls")),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
-    # Authentication support over django drf
+    # Authentication support over Django DRF
     path("rest-auth/", include("users.rest_auth_urls")),
     path("rest-auth/", include("rest_auth.urls")),
     # API Urls
@@ -30,6 +31,14 @@ if settings.DEBUG:
     # This allows the error pages to be debugged during development, just visit
     # these url in browser to see how these error pages look like.
     urlpatterns += [
+        path(
+            "",
+            RedirectView.as_view(
+                url=reverse_lazy("schema-swagger-ui", kwargs={"version": "v1"}),
+                permanent=False,
+            ),
+            name="home",
+        ),
         path(
             "400/",
             default_views.bad_request,
@@ -51,3 +60,7 @@ if settings.DEBUG:
         import debug_toolbar
 
         urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
+else:
+    urlpatterns += [
+        path("", RedirectView.as_view(url=settings.ASKANNA_UI_URL, permanent=False), name="home"),
+    ]
