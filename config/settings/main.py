@@ -223,6 +223,20 @@ sentry.settings(locals(), env)
 celery.settings(locals(), env)
 
 
+# HEALTHCHECK
+# ------------------------------------------------------------------------------
+# https://django-health-check.readthedocs.io/en/stable/settings.html
+HEALTH_CHECK = {
+    "DISK_USAGE_MAX": env.float("HEALTHCHECK_DISK_USAGE_MAX", 90),  # percent
+    "MEMORY_MIN": env.float("HEALTHCHECK_MEMORY_MIN", 100),  # in MB
+}
+
+HEALTHCHECK_CELERY_QUEUE_TIMEOUT = env.float("HEALTHCHECK_CELERY_QUEUE_TIMEOUT", 3)  # seconds
+HEALTHCHECK_CELERY_RESULT_TIMEOUT = env.float(
+    "HEALTHCHECK_CELERY_RESULT_TIMEOUT", HEALTHCHECK_CELERY_QUEUE_TIMEOUT + 1  # seconds
+)
+
+
 # LOGGING
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#logging
