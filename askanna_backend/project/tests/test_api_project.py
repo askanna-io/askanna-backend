@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """Define tests for API of invitation workflow."""
-import pytest
 import re
 
+import pytest
+from core.tests.base import BaseUserPopulation
 from django.conf import settings
-from django.urls import reverse, re_path
+from django.urls import re_path, reverse
 from django.views.static import serve
+from job.models import JobDef, JobOutput, JobPayload, JobRun
 from rest_framework import status
 from rest_framework.test import APITestCase
+from workspace.models import Workspace
 
 import config.urls
-from core.tests.base import BaseUserPopulation
-from job.models import JobDef, JobRun, JobOutput, JobPayload
-from workspace.models import Workspace
 
 from ..models import Project
 
@@ -378,7 +378,7 @@ class TestProjectDeleteAPI(BaseProjectTest):
         self.payload = {"test": 1, "format": "json", "user": "askanna"}
 
         # setup a payload for the project
-        job_url = reverse("run-job", kwargs={"short_uuid": self.job.short_uuid})
+        job_url = reverse("run-job", kwargs={"version": "v1", "short_uuid": self.job.short_uuid})
         response = self.client.post(
             job_url,
             self.payload,

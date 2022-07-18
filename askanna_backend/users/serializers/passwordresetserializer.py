@@ -1,13 +1,12 @@
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode as uid_decoder
 from rest_auth.serializers import (
     PasswordResetSerializer as DefaultPasswordResetSerializer,
 )
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
 from users.forms import PasswordResetForm
 from users.models import User
 from users.signals import password_reset_signal
@@ -18,9 +17,7 @@ class PasswordResetSerializer(DefaultPasswordResetSerializer):
     Serializer for requesting a password reset e-mail.
     """
 
-    front_end_domain = serializers.CharField(
-        required=False, default=settings.ASKANNA_UI_URL
-    )
+    front_end_domain = serializers.CharField(required=False, default=settings.ASKANNA_UI_URL)
     password_reset_form_class = PasswordResetForm
 
     def get_email_options(self) -> dict:
@@ -72,7 +69,7 @@ class PasswordResetStatusSerializer(serializers.Serializer):
 
         # Decode the uidb64 to uid to get User object
         try:
-            uid = force_text(uid_decoder(attrs["uid"]))
+            uid = force_str(uid_decoder(attrs["uid"]))
             self.user = User._default_manager.get(pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             raise ValidationError({"uid": ["Invalid value"], "status": "invalid"})

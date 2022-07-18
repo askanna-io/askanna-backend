@@ -3,26 +3,25 @@ import datetime
 import os
 import typing
 
+from core.models import SlimBaseForAuthModel, SlimBaseModel
+from core.permissions import (
+    AskAnnaAdmin,
+    AskAnnaMember,
+    ProjectAdmin,
+    ProjectMember,
+    ProjectNoMember,
+    PublicViewer,
+    WorkspaceAdmin,
+    WorkspaceMember,
+    WorkspaceNoMember,
+    WorkspaceViewer,
+)
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
-from core.models import SlimBaseModel, SlimBaseForAuthModel
-from core.permissions import (
-    AskAnnaAdmin,
-    AskAnnaMember,
-    PublicViewer,
-    ProjectAdmin,
-    ProjectMember,
-    ProjectNoMember,
-    WorkspaceAdmin,
-    WorkspaceMember,
-    WorkspaceViewer,
-    WorkspaceNoMember,
-)
-
+from django.utils.translation import gettext_lazy as _
 from users.signals import avatar_changed_signal
 
 

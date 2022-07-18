@@ -3,7 +3,6 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-
 from .base import BaseJobTestDef
 
 
@@ -137,15 +136,15 @@ class TestJobRunLogShortCutAPI(TestJobRunLogAPI):
         super().setUp()
         self.url = reverse(
             "shortcut-jobrun-log",
-            kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
 
         self.url2 = reverse(
             "shortcut-jobrun-log",
-            kwargs={"short_uuid": self.jobruns["run2"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid},
         )
 
         self.url3 = reverse(
             "shortcut-jobrun-log",
-            kwargs={"short_uuid": self.jobruns["run5"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run5"].short_uuid},
         )

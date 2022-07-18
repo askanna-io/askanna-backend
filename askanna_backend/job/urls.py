@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.conf.urls import include
-from django.urls import path, re_path
-
+from django.urls import re_path
 from job.views import (
     ChunkedArtifactViewSet,
     ChunkedJobResultViewSet,
@@ -10,17 +9,17 @@ from job.views import (
     JobArtifactView,
     JobJobRunView,
     JobPayloadView,
-    RunResultCreateView,
-    RunResultView,
-    RunStatusView,
     JobRunView,
     JobVariableView,
     ProjectJobViewSet,
-    StartJobView,
-    RunMetricsView,
     RunMetricsRowView,
-    RunVariablesView,
+    RunMetricsView,
+    RunResultCreateView,
+    RunResultView,
+    RunStatusView,
     RunVariableRowView,
+    RunVariablesView,
+    StartJobView,
 )
 from project.urls import project_route
 from project.urls import router as prouter
@@ -137,58 +136,34 @@ runresult_route.register(
 
 
 urlpatterns = [
-    re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
-    re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
-    path(
-        r"v1/run/<shortuuid:short_uuid>/",
+    re_path(r"^(?P<version>(v1))/", include(router.urls)),
+    re_path(r"^(?P<version>(v1))/", include(prouter.urls)),
+    re_path(
+        r"^(?P<version>(v1))/run/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/?$",
         StartJobView.as_view({"post": "newrun"}, detail=True),
         kwargs={"uuid": None},
         name="run-job",
     ),
-    path(
-        r"v1/run/<shortuuid:short_uuid>",
-        StartJobView.as_view({"post": "newrun"}, detail=True),
-        kwargs={"uuid": None},
-        name="run-job-deprecated",
-    ),
-    path(
-        r"v1/result/<shortuuid:short_uuid>/",
+    re_path(
+        r"^(?P<version>(v1))/result/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/?$",
         RunResultView.as_view({"get": "retrieve"}, detail=True),
         name="shortcut-jobrun-result",
     ),
-    path(
-        r"v1/result/<shortuuid:short_uuid>",
-        RunResultView.as_view({"get": "retrieve"}, detail=True),
-    ),
-    path(
-        r"v1/log/<shortuuid:short_uuid>/",
+    re_path(
+        r"^(?P<version>(v1))/log/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/?$",
         JobRunView.as_view({"get": "log"}, detail=True),
         kwargs={},
         name="shortcut-jobrun-log",
     ),
-    path(
-        r"v1/log/<shortuuid:short_uuid>",
-        JobRunView.as_view({"get": "log"}, detail=True),
-        kwargs={},
-    ),
-    path(
-        r"v1/status/<shortuuid:short_uuid>/",
+    re_path(
+        r"^(?P<version>(v1))/status/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/?$",
         RunStatusView.as_view({"get": "retrieve"}, detail=True),
         name="shortcut-jobrun-status",
     ),
-    path(
-        r"v1/status/<shortuuid:short_uuid>",
-        RunStatusView.as_view({"get": "retrieve"}, detail=True),
-    ),
-    path(
-        r"v1/artifact/<shortuuid:short_uuid>/",
+    re_path(
+        r"^(?P<version>(v1))/artifact/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/?$",
         JobArtifactShortcutView.as_view({"get": "retrieve"}, detail=True),
         kwargs={},
         name="shortcut-artifact",
-    ),
-    path(
-        r"v1/artifact/<shortuuid:short_uuid>",
-        JobArtifactShortcutView.as_view({"get": "retrieve"}, detail=True),
-        kwargs={},
     ),
 ]

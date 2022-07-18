@@ -1,22 +1,16 @@
 # -*- coding: utf-8 -*-
-from .test_global_me import (
-    BaseTestGlobalMeGet,
-    BaseTestGlobalMeDelete,
-    BaseTestGlobalMePatch,
-)
-
-from django.urls import reverse
 import pytest
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from users.models import (
-    UserProfile,
-    MSP_WORKSPACE,
-    WS_ADMIN,
-    WS_MEMBER,
-)
+from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
 from workspace.models import Workspace
+
+from .test_global_me import (
+    BaseTestGlobalMeDelete,
+    BaseTestGlobalMeGet,
+    BaseTestGlobalMePatch,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -63,6 +57,7 @@ class WorkspaceTestSet:
         self.url = reverse(
             "workspace-me",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.workspace.short_uuid,
             },
         )
@@ -70,6 +65,7 @@ class WorkspaceTestSet:
         self.url_non_exist = reverse(
             "workspace-me",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.workspace.short_uuid[:-1] + "1",
             },
         )

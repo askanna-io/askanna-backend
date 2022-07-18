@@ -76,5 +76,5 @@ class TestJobRunLogShortCutAPI(TestJobRunLogAPI):
         super().setUp()
         self.url = reverse(
             "shortcut-jobrun-log",
-            kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )

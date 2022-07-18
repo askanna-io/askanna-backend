@@ -15,7 +15,7 @@ class TestJobRunStatusAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "shortcut-jobrun-status",
-            kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
 
     def test_retrieve_as_admin(self):

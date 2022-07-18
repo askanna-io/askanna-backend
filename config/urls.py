@@ -1,10 +1,9 @@
 from django.conf import settings
-from django.urls import include, path, reverse_lazy
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.urls import include, path, re_path, reverse_lazy
 from django.views import defaults as default_views
 from django.views.generic.base import RedirectView
-
 
 urlpatterns = [
     # Django authentication
@@ -12,8 +11,8 @@ urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # Authentication support over Django DRF
-    path("rest-auth/", include("users.rest_auth_urls")),
-    path("rest-auth/", include("rest_auth.urls")),
+    re_path(r"^(?P<version>(v1))/auth/", include("users.rest_auth_urls")),
+    re_path(r"^(?P<version>(v1))/auth/", include("rest_auth.urls")),
     # API Urls
     path("", include("utils.urls")),
     path("", include("project.urls")),

@@ -1,11 +1,12 @@
-from django.conf.urls import url, include, re_path
-from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
+from django.conf.urls import include, re_path
 from package.views import (
     ChunkedPackagePartViewSet,
     PackageViewSet,
     ProjectPackageViewSet,
 )
-from project.urls import project_route, router as prouter
+from project.urls import project_route
+from project.urls import router as prouter
+from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
 router = DefaultRouter()
 
@@ -26,6 +27,6 @@ package_router.register(
 )
 
 urlpatterns = [
-    re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
-    re_path(r"^(?P<version>(v1|v2))/", include(prouter.urls)),
+    re_path(r"^(?P<version>(v1))/", include(router.urls)),
+    re_path(r"^(?P<version>(v1))/", include(prouter.urls)),
 ]

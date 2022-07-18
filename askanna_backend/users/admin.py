@@ -1,13 +1,11 @@
 from django.contrib import admin, messages
 from django.contrib.auth import admin as auth_admin
 from django.contrib.auth import get_user_model
-from django.utils.html import mark_safe, escape
-from django.utils.translation import ugettext_lazy as _
-
+from django.utils.html import escape, mark_safe
+from django.utils.translation import gettext_lazy as _
 from users.forms import UserChangeForm, UserCreationForm
-from users.models import Membership, UserProfile, Invitation, PasswordResetLog
+from users.models import Invitation, Membership, PasswordResetLog, UserProfile
 from users.serializers import PersonSerializer
-
 
 User = get_user_model()
 
@@ -17,9 +15,7 @@ class UserAdmin(auth_admin.UserAdmin):
 
     form = UserChangeForm
     add_form = UserCreationForm
-    fieldsets = (
-        ("User", {"fields": ("name", "short_uuid")}),
-    ) + auth_admin.UserAdmin.fieldsets
+    fieldsets = (("User", {"fields": ("name", "short_uuid")}),) + auth_admin.UserAdmin.fieldsets
     list_display = ["username", "name", "uuid", "short_uuid", "is_superuser"]
     search_fields = ["name", "uuid", "short_uuid"]
 
@@ -49,7 +45,7 @@ class MembershipAdmin(admin.ModelAdmin):
         return qs.filter(user__isnull=False)
 
     def has_add_permission(self, request, obj=None):  # pragma: no cover
-        """ want to force users always to create memberships with user profile"""
+        """want to force users always to create memberships with user profile"""
         return False
 
 
@@ -101,9 +97,7 @@ class InvitationAdmin(admin.ModelAdmin):
             messages.success(
                 request,
                 mark_safe(
-                    _(
-                        "Invitation sent to <strong>%(email)s</strong> for %(type)s %(workspace)s."
-                    )
+                    _("Invitation sent to <strong>%(email)s</strong> for %(type)s %(workspace)s.")
                     % {
                         "email": escape(invitation.email),
                         "type": invitation.object_type,
@@ -112,9 +106,7 @@ class InvitationAdmin(admin.ModelAdmin):
                 ),
             )
 
-    resend_invitation.short_description = _(
-        "Resend invitation email for the given Invitations"
-    )
+    resend_invitation.short_description = _("Resend invitation email for the given Invitations")
 
 
 @admin.register(PasswordResetLog)
@@ -135,5 +127,5 @@ class PasswordResetLogAdmin(admin.ModelAdmin):
     search_fields = ["uuid", "email", "remote_ip"]
 
     def has_add_permission(self, request, obj=None):  # pragma: no cover
-        """ disable adding logs manually, since that doesn't make sense """
+        """disable adding logs manually, since that doesn't make sense"""
         return False
