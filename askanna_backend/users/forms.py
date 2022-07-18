@@ -1,7 +1,7 @@
-from django.contrib.auth import get_user_model, forms
-from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.contrib.auth import forms, get_user_model
 from django.contrib.auth.forms import PasswordResetForm as DjangoPasswordResetForm
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 User = get_user_model()
 
@@ -33,7 +33,6 @@ class UserCreationForm(forms.UserCreationForm):
 
 class PasswordResetForm(DjangoPasswordResetForm):
     def get_users(self, email):
-        """Given an email, return matching active user(s) who should receive a reset.
-        """
+        """Given an email, return matching active user(s) who should receive a reset."""
         active_users = User._default_manager.filter(email__iexact=email, is_active=True)
         return (u for u in active_users if u.has_usable_password())

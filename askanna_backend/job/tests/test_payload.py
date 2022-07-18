@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.urls import reverse
+from job.models import JobPayload, JobRun
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from job.models import JobRun, JobPayload
 
 from .base import BaseJobTestDef
 
@@ -17,7 +16,7 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.startjob_url = reverse(
             "run-job",
-            kwargs={"short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
         )
         self.url = reverse(
             "job-payload-list",
@@ -92,7 +91,7 @@ class TestJobRunPayloadAPI(TestJobPayloadAPI):
         super().setUp()
         self.startjob_url = reverse(
             "run-job",
-            kwargs={"short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
         )
         self.setUpPayload()
         self.url = reverse(
@@ -113,7 +112,7 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.startjob_url = reverse(
             "run-job",
-            kwargs={"short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
         )
         self.setUpPayload()
         self.url = reverse(

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -17,7 +18,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-job",
-            kwargs={"short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
         )
 
     def test_startjob_as_admin(self):
@@ -28,9 +29,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
         payload = {"example_payload": "startjob"}
 
-        response = self.client.post(
-            self.url, payload, format="json", HTTP_HOST="testserver"
-        )
+        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("status"), "queued")
         self.assertEqual(response.data.get("message_type"), "status")
@@ -43,9 +42,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
         payload = {"example_payload": "startjob"}
 
-        response = self.client.post(
-            self.url, payload, format="json", HTTP_HOST="testserver"
-        )
+        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("status"), "queued")
         self.assertEqual(response.data.get("message_type"), "status")
@@ -58,9 +55,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
         payload = {"example_payload": "startjob"}
 
-        response = self.client.post(
-            self.url, payload, format="json", HTTP_HOST="testserver"
-        )
+        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_startjob_as_anonymous(self):
@@ -79,12 +74,8 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
         payload = json.dumps({"example_payload": "startjob"})
 
-        response = self.client.post(
-            self.url, payload, format="json", HTTP_HOST="testserver"
-        )
-        self.assertIn(
-            "JSON not valid, please check and try again", str(response.content)
-        )
+        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
+        self.assertIn("JSON not valid, please check and try again", str(response.content))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_startjob_with_payload_in_uri(self):
@@ -106,9 +97,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
 
         payload = None
 
-        response = self.client.post(
-            self.url, payload, format="json", HTTP_HOST="testserver"
-        )
+        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_startjob_with_payload_in_uri_empty(self):

@@ -11,4 +11,4 @@ python manage.py install_askanna_create_project
 python manage.py install_default_settings
 
 echo "Starting Django server"
-python manage.py runserver_plus 0.0.0.0:8000
+python -Wd manage.py runserver_plus 0.0.0.0:8000

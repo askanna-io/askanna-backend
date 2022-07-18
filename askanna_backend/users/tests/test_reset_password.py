@@ -1,12 +1,12 @@
 import re
 
+import pytest
 from django.core import mail
 from django.urls import reverse
-import pytest
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from users.models import PasswordResetLog
+
 from .base_tests import BaseUsers
 
 pytestmark = pytest.mark.django_db
@@ -18,8 +18,8 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
     """
 
     def setUp(self):
-        self.url = reverse("rest_password_reset")
-        self.status_url = reverse("token-status")
+        self.url = reverse("rest_password_reset", kwargs={"version": "v1"})
+        self.status_url = reverse("token-status", kwargs={"version": "v1"})
 
     @pytest.fixture(autouse=True)
     def email_backend_setup(self, settings):
@@ -46,9 +46,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
         self.assertEqual(invite_email.to, [self.users["user"].email])
         self.assertEqual(invite_email.from_email, "AskAnna <support@askanna.io>")
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_reset_existing_account_without_front_end_domain(self):
@@ -69,9 +67,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
         self.assertEqual(invite_email.to, [self.users["user"].email])
         self.assertEqual(invite_email.from_email, "AskAnna <support@askanna.io>")
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_reset_nonexisting_account(self):
@@ -85,9 +81,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 0)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_reset_invalid_email(self):
@@ -148,9 +142,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check whether the request is logged
@@ -171,9 +163,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check whether the request is logged
@@ -219,9 +209,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check whether the request is logged
@@ -267,9 +255,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check whether the request is logged
@@ -315,9 +301,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check whether the request is logged
@@ -364,9 +348,7 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
         )
 
         self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(
-            response.data.get("detail") == "Password reset request has been processed."
-        )
+        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check whether the request is logged

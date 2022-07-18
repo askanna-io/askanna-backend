@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-from .test_global_me import BaseTestGlobalMeGet
-from .test_workspace_me import WorkspaceTestSet
-
-from django.urls import reverse
 import pytest
+from django.urls import reverse
+from project.models import Project
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from project.models import Project
+from .test_global_me import BaseTestGlobalMeGet
+from .test_workspace_me import WorkspaceTestSet
 
 pytestmark = pytest.mark.django_db
 
@@ -25,6 +24,7 @@ class ProjectTestSet(WorkspaceTestSet):
         self.url = reverse(
             "project-me",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.project.short_uuid,
             },
         )
@@ -32,6 +32,7 @@ class ProjectTestSet(WorkspaceTestSet):
         self.url_non_exist = reverse(
             "project-me",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.project.short_uuid[:-1] + "1",
             },
         )
@@ -68,6 +69,7 @@ class TestProjectPublicMeGet(ProjectTestSet, BaseTestGlobalMeGet, APITestCase):
         self.url = reverse(
             "project-me",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.project_public.short_uuid,
             },
         )

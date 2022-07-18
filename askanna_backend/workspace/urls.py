@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.conf.urls import include
-from django.urls import path, re_path
-from users.views import PersonViewSet, ObjectMeViewSet, ObjectAvatarMeViewSet
+from django.urls import re_path
+from users.views import ObjectAvatarMeViewSet, ObjectMeViewSet, PersonViewSet
 from utils.urls import router
 from workspace.views import WorkspaceViewSet
 
@@ -14,17 +14,17 @@ workspace_people_route = workspace_route.register(
 )
 
 urlpatterns = [
-    path(
-        r"v1/workspace/<shortuuid:short_uuid>/me/avatar/",
+    re_path(
+        r"^(?P<version>(v1))/workspace/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/avatar/?$",
         ObjectAvatarMeViewSet.as_view(),
         kwargs={"object_type": "WS"},
         name="workspace-me-avatar",
     ),
-    path(
-        r"v1/workspace/<shortuuid:short_uuid>/me/",
+    re_path(
+        r"^(?P<version>(v1))/workspace/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/?$",
         ObjectMeViewSet.as_view(),
         kwargs={"object_type": "WS"},
         name="workspace-me",
     ),
-    re_path(r"^(?P<version>(v1|v2))/", include(router.urls)),
+    re_path(r"^(?P<version>(v1))/", include(router.urls)),
 ]

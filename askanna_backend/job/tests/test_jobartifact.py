@@ -3,14 +3,15 @@ import hashlib
 import io
 import re
 
-from django.conf import settings
-from django.urls import reverse, re_path
-from django.views.static import serve
 import pytest
+from django.conf import settings
+from django.urls import re_path, reverse
+from django.views.static import serve
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 import config.urls
+
 from .base import BaseJobTestDef, BaseUploadTestMixin
 
 pytestmark = pytest.mark.django_db
@@ -160,11 +161,11 @@ class TestShortcutArtifactAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "shortcut-artifact",
-            kwargs={"short_uuid": self.jobruns["run1"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run1"].short_uuid},
         )
         self.url_no_artifact = reverse(
             "shortcut-artifact",
-            kwargs={"short_uuid": self.jobruns["run2"].short_uuid},
+            kwargs={"version": "v1", "short_uuid": self.jobruns["run2"].short_uuid},
         )
 
         self.setUpUrls()

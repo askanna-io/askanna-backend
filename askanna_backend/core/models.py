@@ -4,12 +4,9 @@ import uuid
 
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.models import (
-    ActivatorModel,
-    TimeStampedModel,
-)
+from django.utils.translation import gettext_lazy as _
 from django_cryptography.fields import encrypt
+from django_extensions.db.models import ActivatorModel, TimeStampedModel
 
 from .utils import GoogleTokenGenerator
 

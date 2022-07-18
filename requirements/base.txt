@@ -1,60 +1,54 @@
-pytz~=2021.1  # https://github.com/stub42/pytz
+croniter~=1.0.12       # crontab library for scheduled jobs
+Jinja2~=3.0.0          # parse templates non-django
+pytz~=2021.1           # https://github.com/stub42/pytz
 python-slugify==4.0.0  # https://github.com/un33k/python-slugify
-Pillow==8.1.0  # https://github.com/python-pillow/Pillow
-argon2-cffi==19.2.0  # https://github.com/hynek/argon2_cffi
-whitenoise==4.1.4  # https://github.com/evansd/whitenoise
-redis~=4.2.0  # https://github.com/andymccurdy/redis-py
-celery~=4.4.0  # https://github.com/celery/celery
-django-celery-beat==2.1.0  # https://github.com/celery/django-celery-beat
-django-timezone-field==4.0.0 # for celery beat
-flower==0.9.3  # https://github.com/mher/flower
-sentry-sdk~=1.3  # https://github.com/getsentry/sentry-python
-
-# yaml support
-PyYAML~=5.4.1  # https://pypi.org/project/PyYAML/#description
-
-# resumable upload
-django-resumable~=0.2.0
+Pillow==8.1.0          # https://github.com/python-pillow/Pillow
+PyYAML~=5.4.1          # https://pypi.org/project/PyYAML/#description
+argon2-cffi==19.2.0    # https://github.com/hynek/argon2_cffi
+whitenoise==4.1.4      # https://github.com/evansd/whitenoise
+sentry-sdk~=1.3        # https://github.com/getsentry/sentry-python
 
 # Django
-# ------------------------------------------------------------------------------
-django==3.0  # https://www.djangoproject.com/
-django-environ==0.4.5  # https://github.com/joke2k/django-environ
-django-model-utils==3.2.0  # https://github.com/jazzband/django-model-utils
-django-allauth==0.40.0  # https://github.com/pennersr/django-allauth
+# --------------------------------------------------------------------------------------
+django~=3.0.14              # https://www.djangoproject.com/
+django-cryptography==1.0    # https://github.com/georgemarshall/django-cryptography
+django-environ~=0.9.0       # https://github.com/joke2k/django-environ
+django-extensions~=3.1.5    # https://github.com/django-extensions/django-extensions
+django-model-utils~=4.2.0   # https://github.com/jazzband/django-model-utils
+django-allauth==0.40.0      # https://github.com/pennersr/django-allauth
 django-crispy-forms==1.8.1  # https://github.com/django-crispy-forms/django-crispy-forms
-django-redis~=5.0  # https://github.com/niwinz/django-redis
+django-redis~=5.0           # https://github.com/niwinz/django-redis
 django-filter==2.3.0
-django-sendgrid-v5==0.8.1  # https://pypi.org/project/django-sendgrid-v5
+django-resumable~=0.2.0
+django-sendgrid-v5==0.8.1   # https://github.com/sklarsa/django-sendgrid-v5
 
 # Django REST Framework
+# --------------------------------------------------------------------------------------
 djangorestframework==3.10.3  # https://github.com/encode/django-rest-framework
-coreapi==2.3.3  # https://github.com/core-api/python-client
+django-rest-auth==0.9.5      # https://github.com/Tivix/django-rest-auth
+coreapi==2.3.3               # https://github.com/core-api/python-client
+drf-yasg==1.17.0             # https://drf-yasg.readthedocs.io/en/stable/readme.html
+drf-extensions==0.6.0        # https://github.com/chibisov/drf-extensions
 
-drf-yasg==1.17.0  # https://drf-yasg.readthedocs.io/en/stable/readme.html
-drf-extensions==0.6.0  # https://github.com/chibisov/drf-extensions
-django-rest-auth==0.9.5  # https://github.com/Tivix/django-rest-auth
-django-celery-results==1.1.2  # https://github.com/celery/django-celery-results
+# Celery
+# --------------------------------------------------------------------------------------
+celery~=4.4.0                 # https://github.com/celery/celery
+flower==0.9.3                 # https://github.com/mher/flower
+django-celery-beat==2.1.0     # https://github.com/celery/django-celery-beat
+django-celery-results~=1.1.2  # https://github.com/celery/django-celery-results
+django-timezone-field~=4.0.0  # for celery beat | https://github.com/mfogel/django-timezone-field
+redis~=4.2.0                  # https://github.com/andymccurdy/redis-py
 
-# Using models from django extensions
-django-extensions==2.2.5  # https://github.com/django-extensions/django-extensions
+# Docker
+# --------------------------------------------------------------------------------------
+docker~=5.0.3
 
-# docker
-docker==5.0.0
-
-# new encryption for django fields
-django-cryptography==1.0 # https://pypi.org/project/django-cryptography/
-
-# crontab library for scheduled jobs
-croniter~=1.0.12
-
-# detect fileformats
-python-magic==0.4.24 # https://pypi.org/project/python-magic/
-filetype~=1.0.7 # https://pypi.org/project/filetype/#history
-
-# parse templates non-django
-Jinja2~=3.0.0
+# Detect fileformats
+# --------------------------------------------------------------------------------------
+python-magic==0.4.24  # https://pypi.org/project/python-magic/
+filetype~=1.0.7       # https://pypi.org/project/filetype/#history
 
 # Django health check
-django-health-check~=3.16.5 # https://pypi.org/project/django-health-check/
-psutil~=5.9.1 # https://pypi.org/project/psutil/
+# --------------------------------------------------------------------------------------
+django-health-check~=3.16.5  # https://pypi.org/project/django-health-check/
+psutil~=5.9.1                # https://pypi.org/project/psutil/

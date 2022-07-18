@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import Dict
 import uuid
-
-from django.conf import settings
-from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from typing import Dict
 
 from core.config import AskAnnaConfig
 from core.models import AuthorModel, BaseModel
+from django.conf import settings
+from django.db import models
+from django.utils.translation import gettext_lazy as _
 from package.signals import package_upload_finish
 
 
@@ -57,9 +56,7 @@ class Package(AuthorModel, BaseModel):
 
     @property
     def stored_path(self):
-        return os.path.join(
-            settings.PACKAGES_ROOT, self.storage_location, self.filename
-        )
+        return os.path.join(settings.PACKAGES_ROOT, self.storage_location, self.filename)
 
     @property
     def filename(self):
@@ -77,9 +74,7 @@ class Package(AuthorModel, BaseModel):
         """
         Write contents to the filesystem
         """
-        os.makedirs(
-            os.path.join(settings.PACKAGES_ROOT, self.storage_location), exist_ok=True
-        )
+        os.makedirs(os.path.join(settings.PACKAGES_ROOT, self.storage_location), exist_ok=True)
         with open(self.stored_path, "wb") as f:
             f.write(stream.read())
 
@@ -124,17 +119,13 @@ class Package(AuthorModel, BaseModel):
 
 
 class ChunkedPackagePart(models.Model):
-    uuid = models.UUIDField(
-        primary_key=True, db_index=True, editable=False, default=uuid.uuid4
-    )
+    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
     filename = models.CharField(max_length=500)
     size = models.IntegerField(help_text="Size of this chunk of the package")
     file_no = models.IntegerField()
     is_last = models.BooleanField(default=False)
 
-    package = models.ForeignKey(
-        Package, on_delete=models.CASCADE, blank=True, null=True
-    )
+    package = models.ForeignKey(Package, on_delete=models.CASCADE, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True)

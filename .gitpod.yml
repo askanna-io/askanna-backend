@@ -1,11 +1,29 @@
 tasks:
   - init: |
+      python -m venv venv
+      source venv/bin/activate
       pip install -r requirements/local.txt
-      pre-commit install
+      pre-commit install --install-hooks
+      cp .env.django.example .env.django
+      cp .env.postgres.example .env.postgres
     command: |
+      source venv/bin/activate
       docker-compose up -d
 
 ports:
   - name: AskAnna Backend
     description: The AskAnna Backend application
     port: 8000
+
+vscode:
+  extensions:
+    - EditorConfig.EditorConfig
+    - eamodio.gitlens
+    - GitLab.gitlab-workflow
+    - yzhang.markdown-all-in-one
+    - TakumiI.markdowntable
+    - ms-azuretools.vscode-docker
+    - jeff-hykin.better-dockerfile-syntax
+    - timonwong.shellcheck
+    - batisteo.vscode-django
+    - ZainChen.json

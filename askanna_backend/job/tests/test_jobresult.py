@@ -16,6 +16,7 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
         self.url = reverse(
             "shortcut-jobrun-result",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.jobruns["run1"].short_uuid,
             },
         )
@@ -30,24 +31,16 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase
             "result-resultchunk-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_runresult__run__short_uuid": self.jobruns[
-                    "run1"
-                ].short_uuid,
-                "parent_lookup_runresult__short_uuid": artifact_object.get(
-                    "short_uuid"
-                ),
+                "parent_lookup_runresult__run__short_uuid": self.jobruns["run1"].short_uuid,
+                "parent_lookup_runresult__short_uuid": artifact_object.get("short_uuid"),
             },
         )
         self.upload_chunk_url = lambda artifact_object, chunk_uuid: reverse(
             "result-resultchunk-chunk",
             kwargs={
                 "version": "v1",
-                "parent_lookup_runresult__run__short_uuid": self.jobruns[
-                    "run1"
-                ].short_uuid,
-                "parent_lookup_runresult__short_uuid": artifact_object.get(
-                    "short_uuid"
-                ),
+                "parent_lookup_runresult__run__short_uuid": self.jobruns["run1"].short_uuid,
+                "parent_lookup_runresult__short_uuid": artifact_object.get("short_uuid"),
                 "pk": chunk_uuid,
             },
         )
@@ -159,6 +152,7 @@ class TestResultDetailAPI(BaseJobTestDef, APITestCase):
         self.url = reverse(
             "shortcut-jobrun-result",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.jobruns["run2"].short_uuid,
             },
         )

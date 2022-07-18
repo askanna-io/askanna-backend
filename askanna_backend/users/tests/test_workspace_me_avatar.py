@@ -1,10 +1,10 @@
 """Define tests for API of updating user profile image."""
-from .test_global_me_avatar import BaseTestAvatarAPI
-from .test_workspace_me import WorkspaceTestSet
-
 import pytest
 from django.urls import reverse
 from rest_framework.test import APITestCase
+
+from .test_global_me_avatar import BaseTestAvatarAPI
+from .test_workspace_me import WorkspaceTestSet
 
 pytestmark = pytest.mark.django_db
 
@@ -15,6 +15,7 @@ class TestWorkspaceAvatarAPI(WorkspaceTestSet, BaseTestAvatarAPI, APITestCase):
         self.url = reverse(
             "workspace-me-avatar",
             kwargs={
+                "version": "v1",
                 "short_uuid": self.workspace.short_uuid,
             },
         )

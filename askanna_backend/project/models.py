@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
+from core.models import ActivatorModel, AuthorModel, NameDescriptionModel, SlimBaseModel
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
-
-from core.models import (
-    ActivatorModel,
-    AuthorModel,
-    SlimBaseModel,
-    NameDescriptionModel,
-)
+from django.utils.translation import gettext_lazy as _
 
 
 class ProjectQuerySet(models.QuerySet):
@@ -50,15 +44,11 @@ class Project(AuthorModel, ActivatorModel, NameDescriptionModel, SlimBaseModel):
     objects = models.Manager()
     projects = ActiveProjectManager()
 
-    workspace = models.ForeignKey(
-        "workspace.Workspace", on_delete=models.CASCADE, blank=True, null=True
-    )
+    workspace = models.ForeignKey("workspace.Workspace", on_delete=models.CASCADE, blank=True, null=True)
 
     template = models.UUIDField(db_index=True, editable=False, null=True)
 
-    visibility = models.CharField(
-        _("Visibility"), max_length=255, default="PRIVATE", db_index=True
-    )
+    visibility = models.CharField(_("Visibility"), max_length=255, default="PRIVATE", db_index=True)
 
     def __str__(self):
         return " - ".join([self.name, str(self.uuid)])

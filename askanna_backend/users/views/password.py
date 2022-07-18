@@ -1,13 +1,9 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status, viewsets
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-
-from users.serializers import (
-    PasswordResetStatusSerializer,
-    PasswordResetSerializer,
-)
+from users.serializers import PasswordResetSerializer, PasswordResetStatusSerializer
 
 
 class PasswordResetView(GenericAPIView):
