@@ -1,12 +1,7 @@
-# -*- coding: utf-8 -*-
 import datetime
 
 from celery import shared_task
-
-from job.models import (
-    RunVariableRow,
-    RunVariables,
-)
+from job.models import RunVariableRow, RunVariables
 
 
 @shared_task(bind=True, name="job.tasks.extract_variables_meta")
@@ -44,10 +39,15 @@ def post_run_deduplicate_variables(self, run_suuid):
     """
     Remove double run variables if any
     """
-    variables = RunVariableRow.objects.filter(run_suuid=run_suuid).order_by("created")
+    variables = RunVariableRow.objects.filter(run_suuid=run_suuid).order_by("created", "label")
     last_variable = None
     for variable in variables:
-        if variable == last_variable:
+        if last_variable and (
+            variable.variable == last_variable.variable
+            and variable.is_masked == last_variable.is_masked
+            and variable.label == last_variable.label
+            and variable.created == last_variable.created
+        ):
             variable.delete()
         last_variable = variable
 

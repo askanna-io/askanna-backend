@@ -1,9 +1,14 @@
-# -*- coding: utf-8 -*-
 from django.urls import reverse
+from job.models import JobRun, RunVariableRow, RunVariables
+from job.tasks.variables import post_run_deduplicate_variables
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import BaseJobTestDef, variable_response_good_small, tracked_variables_response_good
+from .base import (
+    BaseJobTestDef,
+    tracked_variables_response_good,
+    variable_response_good_small,
+)
 
 
 class TestRunVariablesModel(BaseJobTestDef, APITestCase):
@@ -292,3 +297,76 @@ class TestVariablesUpdateAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestRunVariablesDeduplicate(BaseJobTestDef, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.jobrun_deduplicate = JobRun.objects.create(
+            name="deduplicate",
+            description="test deduplicate",
+            package=self.package,
+            jobdef=self.jobdef,
+            status="COMPLETED",
+            owner=self.users.get("member"),
+            member=self.members.get("member"),
+            run_image=self.run_image,
+            duration=123,
+        )
+
+        self.variables_to_test_deduplicate = [
+            {
+                "run_suuid": self.jobrun_deduplicate.short_uuid,
+                "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
+                "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
+                "created": "2021-02-14T12:00:01.123456+00:00",
+            },
+            {
+                "run_suuid": self.jobrun_deduplicate.short_uuid,
+                "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
+                "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
+                "created": "2021-02-14T12:00:01.123456+00:00",
+            },
+        ]
+
+        self.run_variables_deduplicate = RunVariables.objects.get(jobrun=self.jobrun_deduplicate)
+        self.run_variables_deduplicate.variables = self.variables_to_test_deduplicate
+        self.run_variables_deduplicate.save()
+
+    def test_run_variables_deduplicate(self):
+        #  Count variables before adding duplicates
+        variables = RunVariableRow.objects.filter(run_suuid=self.jobrun_deduplicate.short_uuid)
+        self.assertEqual(len(variables), 2)
+        variable_record = RunVariables.objects.get(uuid=self.run_variables_deduplicate.uuid)
+        self.assertEqual(variable_record.count, 2)
+
+        # Add duplicate variables
+        for variable in self.variables_to_test_deduplicate:
+            RunVariableRow.objects.create(
+                project_suuid=self.jobrun_deduplicate.jobdef.project.short_uuid,
+                job_suuid=self.jobrun_deduplicate.jobdef.short_uuid,
+                run_suuid=self.jobrun_deduplicate.short_uuid,
+                variable=variable["variable"],
+                label=variable["label"],
+                created=variable["created"],
+            )
+        self.run_variables_deduplicate.update_meta()
+
+        variables_with_duplicates = RunVariableRow.objects.filter(run_suuid=self.jobrun_deduplicate.short_uuid)
+        self.assertEqual(len(variables_with_duplicates), 4)
+        variable_record_with_duplicates = RunVariables.objects.get(uuid=self.run_variables_deduplicate.uuid)
+        self.assertEqual(variable_record_with_duplicates.count, 4)
+
+        # Dedepulicate run metric records
+        post_run_deduplicate_variables(self.jobrun_deduplicate.short_uuid)
+
+        variables_after_deduplicates = RunVariableRow.objects.filter(run_suuid=self.jobrun_deduplicate.short_uuid)
+        self.assertEqual(len(variables_after_deduplicates), 2)
+
+        # Deduplicate should also update the main metrics count
+        variable_record_after_deduplicate = RunVariables.objects.get(uuid=self.run_variables_deduplicate.uuid)
+        self.assertEqual(variable_record_after_deduplicate.count, 2)
+
+    def tearDown(self):
+        super().tearDown()
+        self.jobrun_deduplicate.delete()

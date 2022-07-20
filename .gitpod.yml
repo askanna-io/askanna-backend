@@ -1,13 +1,13 @@
 tasks:
   - init: |
-      python -m venv venv
-      source venv/bin/activate
+      python -m venv .venv
+      source .venv/bin/activate
       pip install -r requirements/local.txt
       pre-commit install --install-hooks
       cp .env.django.example .env.django
       cp .env.postgres.example .env.postgres
     command: |
-      source venv/bin/activate
+      source .venv/bin/activate
       docker-compose up -d
 
 ports:

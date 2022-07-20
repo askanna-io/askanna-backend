@@ -1,12 +1,7 @@
-# -*- coding: utf-8 -*-
 import datetime
 
 from celery import shared_task
-
-from job.models import (
-    RunMetrics,
-    RunMetricsRow,
-)
+from job.models import RunMetrics, RunMetricsRow
 
 
 @shared_task(bind=True, name="job.tasks.extract_metrics_meta")
@@ -42,10 +37,14 @@ def post_run_deduplicate_metrics(self, run_suuid):
     """
     Remove double run metrics if any
     """
-    metrics = RunMetricsRow.objects.filter(run_suuid=run_suuid).order_by("created")
+    metrics = RunMetricsRow.objects.filter(run_suuid=run_suuid).order_by("created", "metric")
     last_metric = None
     for metric in metrics:
-        if metric == last_metric:
+        if last_metric and (
+            metric.metric == last_metric.metric
+            and metric.label == last_metric.label
+            and metric.created == last_metric.created
+        ):
             metric.delete()
         last_metric = metric
 
