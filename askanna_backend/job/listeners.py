@@ -1,26 +1,25 @@
-# -*- coding: utf-8 -*-
 import os
 from zipfile import ZipFile
 
-from config.celery_app import app as celery_app
+from core.utils import detect_file_mimetype
 from django.conf import settings
-from django.db.models.signals import pre_delete, pre_save, post_save
+from django.db.models.signals import post_save, pre_delete, pre_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
-
-from core.utils import detect_file_mimetype
 from job.models import (
     JobArtifact,
     JobOutput,
     JobPayload,
     JobRun,
-    RunResult,
     RunMetrics,
-    RunVariables,
+    RunResult,
     RunVariableRow,
+    RunVariables,
 )
 from job.signals import artifact_upload_finish, result_upload_finish
 from users.models import MSP_WORKSPACE
+
+from config.celery_app import app as celery_app
 
 
 @receiver(result_upload_finish)

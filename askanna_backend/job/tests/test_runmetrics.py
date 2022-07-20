@@ -1,5 +1,6 @@
-# -*- coding: utf-8 -*-
 from django.urls import reverse
+from job.models import JobRun, RunMetrics, RunMetricsRow
+from job.tasks.metrics import post_run_deduplicate_metrics
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -361,3 +362,76 @@ class JobTestMetricsListAPI(TestMetricsListAPI):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 6)
+
+
+class TestRunMetricsDeduplicate(BaseJobTestDef, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.jobrun_deduplicate = JobRun.objects.create(
+            name="deduplicate",
+            description="test deduplicate",
+            package=self.package,
+            jobdef=self.jobdef,
+            status="COMPLETED",
+            owner=self.users.get("member"),
+            member=self.members.get("member"),
+            run_image=self.run_image,
+            duration=123,
+        )
+
+        self.metric_to_test_deduplicate = [
+            {
+                "run_suuid": self.jobrun_deduplicate.short_uuid,
+                "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
+                "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
+                "created": "2021-02-14T12:00:01.123456+00:00",
+            },
+            {
+                "run_suuid": self.jobrun_deduplicate.short_uuid,
+                "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
+                "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
+                "created": "2021-02-14T12:00:01.123456+00:00",
+            },
+        ]
+
+        self.run_metrics_deduplicate = RunMetrics.objects.create(
+            jobrun=self.jobrun_deduplicate, metrics=self.metric_to_test_deduplicate
+        )
+
+    def test_run_metrics_deduplicate(self):
+        #  Count metrics before adding duplicates
+        metrics = RunMetricsRow.objects.filter(run_suuid=self.jobrun_deduplicate.short_uuid)
+        self.assertEqual(len(metrics), 2)
+        metric_record = RunMetrics.objects.get(uuid=self.run_metrics_deduplicate.uuid)
+        self.assertEqual(metric_record.count, 2)
+
+        # Add duplicate metrics
+        for metric in self.metric_to_test_deduplicate:
+            RunMetricsRow.objects.create(
+                project_suuid=self.jobrun_deduplicate.jobdef.project.short_uuid,
+                job_suuid=self.jobrun_deduplicate.jobdef.short_uuid,
+                run_suuid=self.jobrun_deduplicate.short_uuid,
+                metric=metric["metric"],
+                label=metric["label"],
+                created=metric["created"],
+            )
+        self.run_metrics_deduplicate.update_meta()
+
+        metrics_with_duplicates = RunMetricsRow.objects.filter(run_suuid=self.jobrun_deduplicate.short_uuid)
+        self.assertEqual(len(metrics_with_duplicates), 4)
+        metric_record_with_duplicates = RunMetrics.objects.get(uuid=self.run_metrics_deduplicate.uuid)
+        self.assertEqual(metric_record_with_duplicates.count, 4)
+
+        # Dedepulicate run metric records
+        post_run_deduplicate_metrics(self.jobrun_deduplicate.short_uuid)
+
+        metrics_after_deduplicates = RunMetricsRow.objects.filter(run_suuid=self.jobrun_deduplicate.short_uuid)
+        self.assertEqual(len(metrics_after_deduplicates), 2)
+
+        # Deduplicate should also update the main metrics count
+        metric_record_after_deduplicate = RunMetrics.objects.get(uuid=self.run_metrics_deduplicate.uuid)
+        self.assertEqual(metric_record_after_deduplicate.count, 2)
+
+    def tearDown(self):
+        super().tearDown()
+        self.jobrun_deduplicate.delete()
