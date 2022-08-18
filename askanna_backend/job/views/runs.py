@@ -125,7 +125,7 @@ class JobRunView(
                     "payload__jobdef",
                     "payload__jobdef__project",
                     "package",
-                    "owner",
+                    "created_by",
                     "member",
                     "output",
                 )
@@ -153,7 +153,7 @@ class JobRunView(
                 "payload__jobdef",
                 "payload__jobdef__project",
                 "package",
-                "owner",
+                "created_by",
                 "member",
                 "output",
             )

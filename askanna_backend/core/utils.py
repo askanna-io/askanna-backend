@@ -1,21 +1,23 @@
-# -*- coding: utf-8 -*-
-from collections.abc import Mapping
 import datetime
 import json
 import os
 import uuid
+from collections.abc import Mapping
+from functools import reduce
+from typing import Tuple, Union
+from zipfile import ZipFile
 
 import croniter
+import filetype
+import magic
+import pytz
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_email
 from django.db.models.query import QuerySet
 from django.urls import register_converter
 from django.utils import timezone
-import filetype
 from jinja2 import Environment
-import magic
-import pytz
 from yaml import load
 
 try:
@@ -97,9 +99,7 @@ def bx_decode(string, alphabet=DEFAULT, mapping=None):
         try:
             sum_of_string = base * sum_of_string + mapping[digit]
         except KeyError:
-            raise ValueError(
-                "invalid literal for bx_decode with base %i: '%s'" % (base, digit)
-            )
+            raise ValueError("invalid literal for bx_decode with base %i: '%s'" % (base, digit))
 
     return sum_of_string
 
@@ -171,7 +171,7 @@ def get_config(filename: str) -> dict:
 
 
 def parse_string(string, variables):
-    env = Environment(variable_start_string="${", variable_end_string="}")
+    env = Environment(variable_start_string="${", variable_end_string="}")  # nosec: B701
     template = env.from_string(string)
     rendered = template.render(variables)
     return rendered
@@ -239,16 +239,6 @@ def parse_cron_schedule(schedule: list):
 
     for cron_line in schedule:
         yield cron_line, parse_cron_line(cron_line)
-
-
-def find_last_modified(directory, filelist):
-    latest_modified = datetime.datetime(1970, 1, 1, 0, 0, 0)
-    sub_dir_files = filter(lambda x: x["parent"].startswith(directory), filelist)
-    for f in sub_dir_files:
-        if f.get("last_modified") > latest_modified:
-            latest_modified = f.get("last_modified")
-
-    return latest_modified
 
 
 # File mimetype detection logic
@@ -339,9 +329,7 @@ def remove_objects(queryset, ttl_hours: int = 1):
     if not isinstance(queryset, QuerySet):
         raise Exception("Given queryset is not a Django Queryset")
 
-    remove_ttl = get_setting_from_database(
-        name="OBJECT_REMOVAL_TTL_HOURS", default=ttl_hours
-    )
+    remove_ttl = get_setting_from_database(name="OBJECT_REMOVAL_TTL_HOURS", default=ttl_hours)
     remove_ttl_mins = int(float(remove_ttl) * 60.0)
 
     older_than = timezone.now() - datetime.timedelta(minutes=remove_ttl_mins)
@@ -388,3 +376,130 @@ def pretty_time_delta(seconds: int) -> str:
 
 def flatten(t):
     return [item for sublist in t for item in sublist]
+
+
+def get_last_modified_in_directory(directory: str, filelist: list) -> datetime.datetime:
+    latest_modified = datetime.datetime(1970, 1, 1, 0, 0, 0)
+    files = [file for file in filelist if file["parent"].startswith(directory)]
+
+    # If the directory does not contain any files, we use the latest modified date in the filelist as last modified
+    # date for the directory
+    if not files:
+        files = filelist
+
+    for f in files:
+        if f.get("last_modified") > latest_modified:
+            latest_modified = f.get("last_modified")
+
+    return latest_modified
+
+
+def get_directory_size_from_filelist(directory: str, filelist: list) -> int:
+    """
+    Get the size of a directory by summing the size of all the files in the directory. The sum also includes the files
+    in subdirectories.
+    """
+    return reduce(
+        lambda x, y: x + y["size"],
+        filter(lambda x: x["path"].startswith(directory + "/") and x["type"] == "file", filelist),
+        0,
+    )
+
+
+def get_items_in_zip_file(zip_file_path: Union[str, os.PathLike]) -> Tuple[list, list]:
+    """
+    Reading a zip archive and returns a list with items and a list with paths in the zip file.
+    """
+    zip_files = []
+    zip_paths = []
+    with ZipFile(os.path.join(zip_file_path), mode="r") as zip_file:
+        for item in zip_file.infolist():
+            if (
+                item.filename.startswith(".git/")
+                or item.filename.startswith(".askanna/")
+                or item.filename.startswith("__MACOSX/")
+                or item.filename.endswith(".pyc")
+                or ".egg-info" in item.filename
+            ):
+                # Hide files and directories that we don't want to appear in the result list
+                continue
+
+            if item.is_dir():
+                zip_paths.append(item.filename)
+                continue
+
+            filename_parts = item.filename.split("/")
+            filename_path = "/".join(filename_parts[: len(filename_parts) - 1])
+            name = item.filename.replace(filename_path + "/", "")
+
+            zip_paths.append(filename_path)
+
+            if not name:
+                # If the name becomes blank, we remove the entry
+                continue
+
+            zip_item = {
+                "path": item.filename,
+                "parent": filename_path or "/",
+                "name": name,
+                "size": item.file_size,
+                "type": "file",
+                "last_modified": datetime.datetime(*item.date_time),
+            }
+
+            zip_files.append(zip_item)
+
+    return zip_files, zip_paths
+
+
+def get_all_directories(paths: list) -> list:
+    """
+    Get a list of all directories from a list of paths. By unwinding the paths we make sure that all (sub)directories
+    are available in the list of directories we return.
+    """
+
+    directories = []
+    for path in paths:
+        directories.append(path)
+
+        path_parts = path.split("/")
+        while len(path_parts) > 1:
+            path_parts = path_parts[: len(path_parts) - 1]
+            path = "/".join(path_parts)
+            if path and path != "/":
+                directories.append(path)
+
+    directories = sorted(list(set(directories) - set(["/"]) - set([""])))
+
+    return directories
+
+
+def get_files_and_directories_in_zip_file(zip_file_path: Union[str, os.PathLike]) -> list:
+    """
+    Reading a zip archive and returns the information about which files and directories are in the archive
+    """
+
+    zip_files, zip_paths = get_items_in_zip_file(zip_file_path)
+    zip_directories = get_all_directories(zip_paths)
+
+    for zip_dir in zip_directories:
+        zip_dir_parts = zip_dir.split("/")
+        zip_dir_path = "/".join(zip_dir_parts[: len(zip_dir_parts) - 1])
+        name = zip_dir.replace(zip_dir_path + "/", "")
+
+        if not name:
+            # If the name becomes blank, we remove the entry
+            continue
+
+        zip_files.append(
+            {
+                "path": zip_dir,
+                "parent": zip_dir_path or "/",
+                "name": name,
+                "size": get_directory_size_from_filelist(zip_dir, zip_files),
+                "type": "directory",
+                "last_modified": get_last_modified_in_directory(zip_dir, zip_files),
+            }
+        )
+
+    return zip_files

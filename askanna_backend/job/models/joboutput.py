@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 import datetime
 import json
-import os
-
-from config.settings.main import env
-from django.db import models
-from django.conf import settings
-
-from core.fields import JSONField
-from core.models import SlimBaseModel
 
 import redis
+from core.fields import JSONField
+from core.models import SlimBaseModel
+from django.db import models
+
+from config.settings.main import env
 
 
 class RedisLogQueue:
@@ -55,20 +52,6 @@ class JobOutput(SlimBaseModel):
     )
     exit_code = models.IntegerField(default=0)
     stdout = JSONField(blank=True, null=True)
-    mime_type = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        help_text="Storing the mime-type of the output file",
-    )
-    size = models.PositiveIntegerField(
-        editable=False, default=0, help_text="Size of the result stored"
-    )
-    lines = models.PositiveIntegerField(
-        editable=False, default=0, help_text="Number of lines in the result"
-    )
-
-    owner = models.CharField(max_length=100, blank=True, null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -95,22 +78,26 @@ class JobOutput(SlimBaseModel):
         self.save(update_fields=["exit_code"])
 
     @property
-    def stored_path(self):
-        return os.path.join(
-            settings.ARTIFACTS_ROOT, self.storage_location, self.filename
-        )
+    def lines(self):
+        return len(self.stdout) if self.stdout else 0
 
     @property
-    def storage_location(self):
-        return os.path.join(
-            self.jobrun.jobdef.project.uuid.hex,
-            self.jobrun.jobdef.uuid.hex,
-            self.jobrun.uuid.hex,
-        )
+    def size(self):
+        return len(json.dumps(self.stdout).encode("utf-8")) if self.stdout else 0
 
     @property
-    def filename(self):
-        return "result_{}.output".format(self.uuid.hex)
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "log",
+            "name": "log.json",
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+            "size": self.size,
+            "lines": self.lines,
+        }
 
     @property
     def read(self):
@@ -140,9 +127,7 @@ class ChunkedJobOutputPart(SlimBaseModel):
     file_no = models.IntegerField()
     is_last = models.BooleanField(default=False)
 
-    joboutput = models.ForeignKey(
-        "job.JobOutput", on_delete=models.CASCADE, blank=True, null=True
-    )
+    joboutput = models.ForeignKey("job.JobOutput", on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
         ordering = ["-created"]

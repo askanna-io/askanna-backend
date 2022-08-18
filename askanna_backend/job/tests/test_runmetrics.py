@@ -373,7 +373,7 @@ class TestRunMetricsDeduplicate(BaseJobTestDef, APITestCase):
             package=self.package,
             jobdef=self.jobdef,
             status="COMPLETED",
-            owner=self.users.get("member"),
+            created_by=self.users.get("member"),
             member=self.members.get("member"),
             run_image=self.run_image,
             duration=123,

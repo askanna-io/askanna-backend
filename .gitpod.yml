@@ -3,27 +3,34 @@ tasks:
       python -m venv .venv
       source .venv/bin/activate
       pip install -r requirements/local.txt
-      pre-commit install --install-hooks
       cp .env.django.example .env.django
       cp .env.postgres.example .env.postgres
+      docker-compose build
     command: |
-      source .venv/bin/activate
       docker-compose up -d
+      source .venv/bin/activate
+      pre-commit install --install-hooks
 
 ports:
   - name: AskAnna Backend
     description: The AskAnna Backend application
     port: 8000
+    visibility: public
+  - name: AskAnna Flower
+    description: Flower for monitoring Celery
+    port: 5555
+    visibility: private
 
 vscode:
   extensions:
     - EditorConfig.EditorConfig
     - eamodio.gitlens
     - GitLab.gitlab-workflow
+    - ms-python.python
+    - batisteo.vscode-django
     - yzhang.markdown-all-in-one
     - TakumiI.markdowntable
     - ms-azuretools.vscode-docker
     - jeff-hykin.better-dockerfile-syntax
     - timonwong.shellcheck
-    - batisteo.vscode-django
     - ZainChen.json

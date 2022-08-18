@@ -23,6 +23,20 @@ class RunImage(BaseModel):
             name += ":" + self.tag
         return name
 
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "image",
+            "name": self.fullname,
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+            "tag": self.tag,
+            "digest": self.digest,
+        }
+
     class Meta:
         ordering = ["-created"]
         verbose_name = "Run image"

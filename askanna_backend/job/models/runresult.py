@@ -28,11 +28,6 @@ class RunResult(BaseModel):
     size = models.PositiveIntegerField(
         editable=False, default=0, help_text="Size of the result stored"
     )
-    lines = models.PositiveIntegerField(
-        editable=False, default=0, help_text="Number of lines in the result"
-    )
-
-    owner = models.CharField(max_length=100, blank=True, null=True)
 
     @property
     def stored_path(self):
@@ -53,6 +48,21 @@ class RunResult(BaseModel):
         return "result_{}.output".format(self.uuid.hex)
 
     @property
+    def extension(self):
+        extension = None
+        if self.name:
+            filename, extension = os.path.splitext(self.name)
+            if extension == "":
+                extension = filename
+            if extension.startswith("."):
+                extension = extension[1:]
+        else:
+            # the result.name is not set, we deal with an older result
+            extension = "json"
+
+        return extension
+
+    @property
     def read(self):
         """
         Read the result from filesystem and return
@@ -62,6 +72,21 @@ class RunResult(BaseModel):
                 return f.read()
         except FileNotFoundError:
             return b""
+
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "result",
+            "name": self.name or "result.json",
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+            "size": self.size,
+            "extension": self.extension,
+            "mimetype": self.mime_type,
+        }
 
     def write(self, stream):
         """

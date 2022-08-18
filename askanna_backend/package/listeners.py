@@ -2,12 +2,11 @@
 import os
 from zipfile import ZipFile
 
+from core.config import AskAnnaConfig
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
-
-from core.config import AskAnnaConfig
 from job.models import JobDef, ScheduledJob
 from package.models import Package
 from package.signals import package_upload_finish
@@ -23,14 +22,12 @@ def package_upload_101_extract_zip(sender, signal, postheaders, obj, **kwargs):
     source_path = obj.stored_path
     target_path = os.path.join(target_location, str(obj.uuid))
 
-    with ZipFile(source_path) as zippackage:
+    with ZipFile(source_path, mode="r") as zippackage:
         zippackage.extractall(path=target_path)
 
 
 @receiver(package_upload_finish)
-def package_upload_102_extract_jobs_from_askannayml(
-    sender, signal, postheaders, obj, **kwargs
-):
+def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     """
     Extract jobs defined in the askanna.yml (if set)
 
@@ -96,9 +93,7 @@ def package_upload_102_extract_jobs_from_askannayml(
                 "member": obj.member,
             }
             last_run = [
-                old.get("last_run")
-                for old in old_schedules
-                if old.get("raw_definition") == schedule.raw_definition
+                old.get("last_run") for old in old_schedules if old.get("raw_definition") == schedule.raw_definition
             ]
             if len(last_run) > 0:
                 new_schedule_def["last_run"] = last_run[0]

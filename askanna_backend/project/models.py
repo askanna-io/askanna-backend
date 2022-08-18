@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from core.models import ActivatorModel, AuthorModel, NameDescriptionModel, SlimBaseModel
+from core.models import ActivatorModel, AuthorModel, BaseModel
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -38,7 +37,7 @@ class ActiveProjectManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Project(AuthorModel, ActivatorModel, NameDescriptionModel, SlimBaseModel):
+class Project(AuthorModel, ActivatorModel, BaseModel):
     """A project resembles an organisation with code, jobs, runs artifacts"""
 
     objects = models.Manager()

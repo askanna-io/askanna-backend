@@ -147,7 +147,7 @@ def start_run(self, run_uuid):
     hostname = pr.short_uuid
 
     # jr_token is the token of the user who started the run
-    jr_token = jr.owner.auth_token.key
+    jr_token = jr.created_by.auth_token.key
 
     # get runner command (default do echo "askanna-runner for project {}")
     runner_command = [
