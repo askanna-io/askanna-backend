@@ -37,6 +37,8 @@ class JobArtifact(ArtifactModelMixin, SlimBaseModel):
     )
 
     size = models.PositiveIntegerField(editable=False, default=0)
+    count_dir = models.PositiveIntegerField(editable=False, default=0)
+    count_files = models.PositiveIntegerField(editable=False, default=0)
 
     @property
     def relation_to_json(self):
@@ -48,6 +50,9 @@ class JobArtifact(ArtifactModelMixin, SlimBaseModel):
             "name": self.get_name(),
             "uuid": str(self.uuid),
             "short_uuid": self.short_uuid,
+            "size": self.size,
+            "count_dir": self.count_dir,
+            "count_files": self.count_files,
         }
 
     class Meta:

@@ -1,7 +1,7 @@
 import os
 from zipfile import ZipFile
 
-from core.utils import detect_file_mimetype
+from core.utils import detect_file_mimetype, get_files_and_directories_in_zip_file
 from django.conf import settings
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.db.transaction import on_commit
@@ -48,8 +48,13 @@ def handle_upload(sender, signal, postheaders, obj, **kwargs):
     source_path = os.path.join(source_location, obj.storage_location, obj.filename)
     target_path = os.path.join(target_location, str(obj.uuid))
 
-    with ZipFile(source_path) as zippackage:
-        zippackage.extractall(path=target_path)
+    zip_list = get_files_and_directories_in_zip_file(source_path)
+    obj.count_dir = sum(map(lambda x: x["type"] == "directory", zip_list))
+    obj.count_files = sum(map(lambda x: x["type"] == "file", zip_list))
+    obj.save(update_fields=["count_dir", "count_files"])
+
+    with ZipFile(source_path, mode="r") as zip_file:
+        zip_file.extractall(path=target_path)
 
 
 @receiver(pre_delete, sender=JobArtifact)
@@ -79,7 +84,7 @@ def create_job_output_for_new_jobrun_signal(sender, instance, created, **kwargs)
     """
     if created:
         try:
-            JobOutput.objects.create(jobrun=instance, jobdef=instance.jobdef.uuid, owner=instance.owner)
+            JobOutput.objects.create(jobrun=instance, jobdef=instance.jobdef.uuid)
         except Exception as exc:
             raise Exception("Issue creating a JobOutput: {}".format(exc))
 
@@ -148,7 +153,7 @@ def add_member_to_jobrun(sender, instance, **kwargs):
     if not instance.member:
         # first lookup which member this could be based on workspace
         in_workspace = instance.jobdef.project.workspace
-        member_query = instance.owner.memberships.filter(
+        member_query = instance.created_by.memberships.filter(
             object_uuid=in_workspace.uuid,
             object_type=MSP_WORKSPACE,
             deleted__isnull=True,
@@ -182,7 +187,7 @@ def extract_meta_from_metrics(sender, instance, created, **kwargs):
 @receiver(post_save, sender=RunMetrics)
 def move_metrics_to_rows(sender, instance, created, **kwargs):
     """
-    After saving metrics, we save the individueal rows to
+    After saving metrics, we save the individual rows to
     a new table which allows us to query the metrics
     """
     update_fields = kwargs.get("update_fields")

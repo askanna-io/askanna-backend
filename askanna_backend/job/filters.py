@@ -1,16 +1,13 @@
-from django_filters import rest_framework as filters
-from django_filters import CharFilter
 import django_filters
-
+from django_filters import CharFilter
+from django_filters import rest_framework as filters
 from django_filters.constants import EMPTY_VALUES
 from job.models import JobRun, RunMetricsRow, RunVariableRow
 
 
 class RunFilter(filters.FilterSet):
 
-    project = CharFilter(
-        field_name="jobdef__project__short_uuid", method="filter_multiple"
-    )
+    project = CharFilter(field_name="jobdef__project__short_uuid", method="filter_multiple")
     job = CharFilter(field_name="jobdef__short_uuid", method="filter_multiple")
     runs = CharFilter(field_name="short_uuid", method="filter_multiple")
 
@@ -42,14 +39,6 @@ class MetricDataFilter(django_filters.OrderingFilter):
                 (ordering[0], ordering[1]),
                 ("-" + ordering[0], ordering[1] + " (descending)"),
             ]
-        # self.extra['choices'] += [
-        #     ("metric.name", "Metric name"),
-        #     ("-metric.name", "Metric name"),
-        #     ("metric.value", "Metric value"),
-        #     ("-metric.value", "Metric value"),
-        #     ("metric.type", "Metric type"),
-        #     ("-metric.type", "Metric type"),
-        # ]
 
     def filter(self, qs, value):
         if value in EMPTY_VALUES:
@@ -66,9 +55,7 @@ class MetricDataFilter(django_filters.OrderingFilter):
                     descending = v.startswith("-")
                     param = v[1:] if descending else v
                     # find field to sort on
-                    field_name = [
-                        order[2] for order in self.custom_ordering if order[0] == param
-                    ][0]
+                    field_name = [order[2] for order in self.custom_ordering if order[0] == param][0]
                     ordering.append("-%s" % field_name if descending else field_name)
             return qs.order_by(*ordering)
 
@@ -144,9 +131,7 @@ class RunVariablesDataFilter(django_filters.OrderingFilter):
                     descending = v.startswith("-")
                     param = v[1:] if descending else v
                     # find field to sort on
-                    field_name = [
-                        order[2] for order in self.custom_ordering if order[0] == param
-                    ][0]
+                    field_name = [order[2] for order in self.custom_ordering if order[0] == param][0]
                     ordering.append("-%s" % field_name if descending else field_name)
             return qs.order_by(*ordering)
 

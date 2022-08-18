@@ -70,7 +70,7 @@ def launch_scheduled_jobs():
             payload=None,
             package=package,
             trigger="SCHEDULE",
-            owner=job.member.user,
+            created_by=job.member.user,
         )
         job.update_last(timestamp=now)
         job.update_next()

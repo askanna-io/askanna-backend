@@ -45,7 +45,7 @@ class BaseRunResultView(
         "jobdef",
         "jobdef__project",
         "jobdef__project__workspace",
-        "owner",
+        "created_by",
         "member",
     )
     lookup_field = "short_uuid"
@@ -274,8 +274,7 @@ class RunResultCreateView(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["lines", "size"]
-        instance_obj.lines = len(instance_obj.read.splitlines())
+        update_fields = ["size"]
         instance_obj.size = resume_obj.size
         instance_obj.save(update_fields=update_fields)
 

@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 import unittest
 
-from django.conf import settings
 import pytest
-
 from core.config import AskAnnaConfig
 from core.utils import get_config, get_config_from_string, get_setting_from_database
+from django.conf import settings
 
 pytestmark = pytest.mark.django_db
 

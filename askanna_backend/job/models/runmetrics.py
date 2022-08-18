@@ -3,13 +3,12 @@ import io
 import json
 import os
 
+from core.models import ArtifactModelMixin, SlimBaseModel
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils import timezone
-
-from core.models import SlimBaseModel, ArtifactModelMixin
 from job.utils import get_unique_names_with_data_type
 
 
@@ -96,7 +95,7 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
             return var
 
         self.count = len(runmetrics)
-        self.size = len(json.dumps([compose_response(self, v) for v in runmetrics]))
+        self.size = len(json.dumps([compose_response(self, v) for v in runmetrics]).encode("utf-8"))
 
         all_metric_names = []
         all_label_names = []

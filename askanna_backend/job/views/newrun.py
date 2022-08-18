@@ -142,7 +142,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
             "payload": payload,
             "package": package,
             "trigger": self.get_trigger_source(request),
-            "owner": request.user,
+            "created_by": request.user,
         }
         run = JobRun.objects.create(**runspec)
 

@@ -40,18 +40,21 @@ pytest:
   before_script:
     - pip install -r requirements/local.txt
   script:
+    - python manage.py collectstatic --no-input
     - pytest --cov=askanna_backend --cov-report=xml --junitxml=report.junit.xml
     - cat coverage.xml | sed -e "s.filename=\".filename=\"askanna_backend/.g" > report.coverage.xml
     - coverage html
     - coverage report
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+([\d\.]+)\%/'
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     expire_in: 2 weeks
     name: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
     paths:
       - htmlcov/
     reports:
-      cobertura: report.coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: report.coverage.xml
       junit: report.junit.xml
 
 migrations:
@@ -119,6 +122,9 @@ build_deploy:
 
 deploy_branch:
   extends: .deploy
+  needs:
+    - job: build_deploy
+    - job: migrations
   environment:
     name: $CI_COMMIT_REF_NAME
     url: https://${CI_ENVIRONMENT_SLUG}-api.askanna.eu/v1/docs/swagger
@@ -126,6 +132,7 @@ deploy_branch:
   except:
     refs:
       - master
+      - beta
 
 deploy_master:
   extends: .deploy
@@ -135,6 +142,15 @@ deploy_master:
   only:
     refs:
       - master
+
+deploy_beta:
+  extends: .deploy
+  environment:
+    name: beta
+    url: https://beta-api.askanna.eu/v1/docs/swagger
+  only:
+    refs:
+      - beta
 
 stop_review:
   stage: cleanup

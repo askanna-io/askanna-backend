@@ -6,11 +6,11 @@ from django.db.transaction import on_commit
 from django.utils import timezone
 
 from config.celery_app import app as celery_app
-from core.models import BaseModel
+from core.models import AuthorModel, BaseModel
 from job.models.const import JOB_STATUS
 
 
-class JobRun(BaseModel):
+class JobRun(AuthorModel, BaseModel):
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
@@ -21,7 +21,6 @@ class JobRun(BaseModel):
 
     trigger = models.CharField(max_length=20, blank=True, null=True, default="API")
 
-    owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
 
     # Register the start and end of a run

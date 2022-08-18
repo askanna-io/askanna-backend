@@ -63,6 +63,20 @@ class JobPayload(SlimBaseModel):
         with open(self.stored_path, "w") as f:
             f.write(stream.read())
 
+    @property
+    def relation_to_json(self):
+        """
+        Used for the serializer to trace back to this instance
+        """
+        return {
+            "relation": "payload",
+            "name": self.filename,
+            "uuid": str(self.uuid),
+            "short_uuid": self.short_uuid,
+            "size": self.size,
+            "lines": self.lines,
+        }
+
     def prune(self):
         os.remove(self.stored_path)
 

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from rest_framework import serializers
@@ -15,21 +13,23 @@ class JobPayloadSerializer(serializers.ModelSerializer):
 
 
 class JobRunSerializer(serializers.ModelSerializer):
-    artifact = serializers.SerializerMethodField("get_artifact")
-    package = serializers.SerializerMethodField("get_package")
+    job = serializers.SerializerMethodField("get_job")
     project = serializers.SerializerMethodField("get_project")
-    owner = serializers.SerializerMethodField("get_user")
+    workspace = serializers.SerializerMethodField("get_workspace")
 
+    created_by = serializers.SerializerMethodField("get_created_by")
+
+    environment = serializers.SerializerMethodField("get_environment")
+    package = serializers.SerializerMethodField("get_package")
     payload = serializers.SerializerMethodField("get_payload")
+
     result = serializers.SerializerMethodField("get_result")
-
-    jobdef = serializers.SerializerMethodField("get_jobdef")
-
+    artifact = serializers.SerializerMethodField("get_artifact")
     metrics_meta = serializers.SerializerMethodField("get_metrics_meta")
     variables_meta = serializers.SerializerMethodField("get_variables_meta")
+    log = serializers.SerializerMethodField("get_log")
 
     duration = serializers.SerializerMethodField("get_duration")
-    environment = serializers.SerializerMethodField("get_environment")
 
     def get_metrics_meta(self, instance):
         try:
@@ -91,86 +91,58 @@ class JobRunSerializer(serializers.ModelSerializer):
     def get_environment(self, instance):
         environment = {
             "name": instance.environment_name,
-            "description": None,
-            "label": None,
             "image": None,
             "timezone": instance.timezone,
         }
         if instance.run_image:
-            environment["image"] = {
-                "name": instance.run_image.name,
-                "tag": instance.run_image.tag,
-                "digest": instance.run_image.digest,
-            }
+            environment["image"] = instance.run_image.relation_to_json
         return environment
 
     def get_payload(self, instance):
-        payload = JobPayloadSerializer(instance.payload, many=False)
-        return payload.data
+        try:
+            return instance.payload.relation_to_json
+        except AttributeError or ObjectDoesNotExist:
+            return None
 
     def get_result(self, instance):
         try:
-            result = instance.result
-        except ObjectDoesNotExist:
+            return instance.result.relation_to_json
+        except AttributeError or ObjectDoesNotExist:
             return None
 
-        extension = None
-        if result.name:
-            filename, extension = os.path.splitext(result.name)
-            if extension == "":
-                extension = filename
-            if extension.startswith("."):
-                extension = extension[1:]
-        else:
-            # the result.name is not set, we deal with an older result
-            extension = "json"
-
-        return {
-            "size": result.size,
-            "lines": result.lines,
-            "original_name": result.name or ".json",
-            "extension": extension,
-            "mimetype": result.mime_type,
-        }
-
-    def get_jobdef(self, instance):
-        jobdef = instance.jobdef
-        return jobdef.relation_to_json
+    def get_job(self, instance):
+        return instance.jobdef.relation_to_json
 
     def get_artifact(self, instance):
         try:
             artifact = instance.artifact.first()
-            assert artifact is not None, "No artifact"
-        except AssertionError:
-            return {
-                "relation": "artifact",
-                "name": None,
-                "uuid": None,
-                "short_uuid": None,
-            }
-        else:
             return artifact.relation_to_json
+        except AttributeError or ObjectDoesNotExist:
+            return None
 
     def get_package(self, instance):
-        package = instance.package
-        if package:
-            return package.relation_to_json
+        if instance.package:
+            return instance.package.relation_to_json
         return {
             "relation": "package",
-            "name": "latest",
+            "name": None,
             "uuid": None,
             "short_uuid": None,
         }
+
+    def get_workspace(self, instance):
+        workspace = instance.jobdef.project.workspace
+        return workspace.relation_to_json
 
     def get_project(self, instance):
         project = instance.jobdef.project
         return project.relation_to_json
 
-    def get_user(self, instance):
+    def get_created_by(self, instance):
         if instance.member:
             return instance.member.relation_to_json_with_avatar
-        if instance.owner:
-            return instance.owner.relation_to_json
+        if instance.created_by:
+            return instance.created_by.relation_to_json
         return {
             "relation": "user",
             "name": None,
@@ -178,15 +150,38 @@ class JobRunSerializer(serializers.ModelSerializer):
             "short_uuid": None,
         }
 
+    def get_log(self, instance):
+        try:
+            return instance.output.relation_to_json
+        except ObjectDoesNotExist:
+            return None
+
     class Meta:
         model = JobRun
-        exclude = [
-            "jobid",
-            "member",
-            "deleted",
-            "environment_name",
-            "timezone",
-            "run_image",
+        fields = [
+            "uuid",
+            "short_uuid",
+            "name",
+            "description",
+            "status",
+            "started",
+            "finished",
+            "duration",
+            "trigger",
+            "created_by",
+            "package",
+            "payload",
+            "result",
+            "artifact",
+            "metrics_meta",
+            "variables_meta",
+            "log",
+            "environment",
+            "job",
+            "project",
+            "workspace",
+            "created",
+            "modified",
         ]
 
 

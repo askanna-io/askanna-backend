@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 from django.contrib import admin
-
 from job.models import (
     ChunkedArtifactPart,
     JobArtifact,
@@ -9,16 +7,14 @@ from job.models import (
     JobPayload,
     JobRun,
     JobVariable,
-    ScheduledJob,
+    RunImage,
     RunMetrics,
     RunMetricsRow,
-    RunImage,
     RunResult,
-    RunVariables,
     RunVariableRow,
+    RunVariables,
+    ScheduledJob,
 )
-
-admin.site.register(ChunkedArtifactPart)
 
 
 @admin.register(ScheduledJob)
@@ -79,11 +75,40 @@ class JobPayloadAdmin(admin.ModelAdmin):
 
 @admin.register(JobArtifact)
 class JobArtifactAdmin(admin.ModelAdmin):
-    list_display = ["uuid", "jobrun", "created", "size"]
-
+    list_display = ["uuid", "jobrun", "size", "count_dir", "count_files", "created"]
     date_hierarchy = "created"
     list_filter = ("created", "modified", "deleted")
     search_fields = ["uuid", "short_uuid"]
+    raw_id_fields = ["jobrun"]
+
+    fields = [
+        "short_uuid",
+        "size",
+        "count_dir",
+        "count_files",
+        "jobrun",
+        "modified",
+        "created",
+        "deleted",
+    ]
+    readonly_fields = [
+        "short_uuid",
+        "size",
+        "count_dir",
+        "count_files",
+        "modified",
+        "created",
+        "deleted",
+    ]
+
+
+@admin.register(ChunkedArtifactPart)
+class ChunkedArtifactPartAdmin(admin.ModelAdmin):
+    list_display = ["uuid", "artifact", "created", "size"]
+    date_hierarchy = "created"
+    list_filter = ("created", "deleted")
+    search_fields = ["uuid", "short_uuid", "artifact__uuid", "artifact__short_uuid"]
+    raw_id_fields = ["artifact"]
 
 
 @admin.register(JobRun)
@@ -109,7 +134,7 @@ class JobRunAdmin(admin.ModelAdmin):
         "name",
         "description",
         "package",
-        "owner",
+        "created_by",
         "member",
         "payload",
         "environment_name",
@@ -134,7 +159,7 @@ class JobRunAdmin(admin.ModelAdmin):
     raw_id_fields = (
         "jobdef",
         "package",
-        "owner",
+        "created_by",
         "member",
         "payload",
         "run_image",
@@ -149,7 +174,7 @@ class JobRunAdmin(admin.ModelAdmin):
         "created",
         "started",
         "finished",
-        "owner",
+        "created_by",
     ]
     date_hierarchy = "created"
     list_filter = (

@@ -290,7 +290,6 @@ class BaseUploadTestMixin:
                 self.assertEqual(chunk_upload_req.status_code, status.HTTP_200_OK)
             except AssertionError as e:
                 raise AssertionError(e)
-            # self.assertTrue(False)
 
         # finish uplaod
         final_call_payload = {

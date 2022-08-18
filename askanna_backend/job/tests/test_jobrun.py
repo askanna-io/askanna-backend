@@ -319,7 +319,7 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobruns["run2"].short_uuid)
-        self.assertEqual(response.data.get("result", {}).get("original_name"), "someresult.txt")
+        self.assertEqual(response.data.get("result", {}).get("name"), "someresult.txt")
         self.assertEqual(response.data.get("result", {}).get("extension"), "txt")
 
     def test_detail_as_member_changed_membername(self):
@@ -334,7 +334,7 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobruns["run1"].short_uuid)
-        self.assertEqual(response.data.get("owner").get("name"), "name of member in membership")
+        self.assertEqual(response.data.get("created_by").get("name"), "name of member in membership")
 
         # now change membername to new membername
         self.members.get("member").name = "new membername"
@@ -346,7 +346,7 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobruns["run1"].short_uuid)
-        self.assertEqual(response.data.get("owner").get("name"), "new membername")
+        self.assertEqual(response.data.get("created_by").get("name"), "new membername")
 
         # now change back new membername to membername
         self.members.get("member").name = "membername"
@@ -365,7 +365,7 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobruns["run1"].short_uuid)
-        self.assertEqual(response.data.get("owner").get("name"), "name of member in membership")
+        self.assertEqual(response.data.get("created_by").get("name"), "name of member in membership")
 
         # then visit 2nd workspace
         response = self.client.get(
@@ -374,7 +374,7 @@ class TestJobRunDetailAPI(BaseJobTestDef, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("short_uuid") == self.jobruns["run3"].short_uuid)
-        self.assertEqual(response.data.get("owner").get("name"), "member")
+        self.assertEqual(response.data.get("created_by").get("name"), "member")
 
     def test_detail_as_nonmember(self):
         """
