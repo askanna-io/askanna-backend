@@ -18,7 +18,6 @@ from core.permissions import (
 )
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -453,7 +452,7 @@ class PasswordResetLog(SlimBaseModel):
     remote_ip = models.GenericIPAddressField(_("Remote IP"), null=True)
     remote_host = models.CharField(max_length=1024, null=True, default=None)
     front_end_domain = models.CharField(max_length=1024, null=True, default=None)
-    meta = JSONField(null=True, default=None)
+    meta = models.JSONField(null=True, default=None)
 
     class Meta:
         ordering = ["-created"]

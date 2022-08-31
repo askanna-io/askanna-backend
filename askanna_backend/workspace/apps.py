@@ -6,5 +6,4 @@ class WorkspaceConfig(AppConfig):
     verbose_name = "workspaces"
 
     def ready(self):
-        from workspace import signals  # noqa
         from workspace import listeners  # noqa

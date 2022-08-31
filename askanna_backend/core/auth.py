@@ -3,7 +3,7 @@ from rest_framework.authentication import BaseAuthentication
 
 class PassthroughAuthentication(BaseAuthentication):
     def authenticate(self, request):
-        # set user from old request
+        # Set user from previous request
         user = request._request.user
         auth = None
         if hasattr(request._request, "auth"):
@@ -15,4 +15,4 @@ class PassthroughAuthentication(BaseAuthentication):
         return user, auth
 
     def authenticate_header(self, request):
-        return "Passtrough"
+        return "Passthrough"

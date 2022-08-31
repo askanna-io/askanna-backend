@@ -3,13 +3,14 @@ tasks:
       python -m venv .venv
       source .venv/bin/activate
       pip install -r requirements/local.txt
-      cp .env.django.example .env.django
-      cp .env.postgres.example .env.postgres
-      docker-compose build
     command: |
-      docker-compose up -d
       source .venv/bin/activate
       pre-commit install --install-hooks
+  - init: |
+      cp .env.django.example .env.django
+      cp .env.postgres.example .env.postgres
+    command: |
+      docker-compose up --detach --build
 
 ports:
   - name: AskAnna Backend

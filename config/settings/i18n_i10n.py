@@ -1,5 +1,6 @@
 """Localization and internationalization related settings."""
 from django.utils.translation import gettext_lazy as _
+
 from .settings_decorator import configclass
 
 
@@ -13,8 +14,6 @@ def settings(config, _env):
     config.TIME_ZONE = "UTC"
     # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
     config.LANGUAGE_CODE = "en-us"
-    # https://docs.djangoproject.com/en/dev/ref/settings/#site-id
-    config.SITE_ID = 1
     # https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
     config.USE_I18N = True
     # https://docs.djangoproject.com/en/dev/ref/settings/#use-l10n
