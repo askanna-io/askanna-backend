@@ -5,7 +5,6 @@ import os
 
 from core.models import ArtifactModelMixin, SlimBaseModel
 from django.conf import settings
-from django.contrib.postgres.fields import JSONField
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils import timezone
@@ -46,14 +45,14 @@ class RunVariables(ArtifactModelMixin, SlimBaseModel):
     count = models.PositiveIntegerField(editable=False, default=0, help_text="Count of variables")
     size = models.PositiveIntegerField(editable=False, default=0, help_text="File size of variables JSON")
 
-    variable_names = JSONField(
+    variable_names = models.JSONField(
         blank=True,
         null=True,
         editable=False,
         default=None,
         help_text="Unique variable names and data type for variable",
     )
-    label_names = JSONField(
+    label_names = models.JSONField(
         blank=True,
         null=True,
         editable=False,
@@ -149,13 +148,13 @@ class RunVariableRow(SlimBaseModel):
     job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
 
-    variable = JSONField(
+    variable = models.JSONField(
         editable=False,
         default=None,
         help_text="JSON field to store a variable",
     )
     is_masked = models.BooleanField(default=False)
-    label = JSONField(
+    label = models.JSONField(
         editable=False,
         default=None,
         help_text="JSON field as list with multiple objects which are labels",

@@ -1,16 +1,7 @@
-import django
+import django.dispatch
 
-password_reset_signal = django.dispatch.Signal(
-    providing_args=["users", "request", "domain", "email"]
-)
-user_created_signal = django.dispatch.Signal(
-    providing_args=["user", "request", "workspace_name"]
-)
-
-password_changed_signal = django.dispatch.Signal(providing_args=["user", "request"])
-
-email_changed_signal = django.dispatch.Signal(
-    providing_args=["user", "request", "old_email"]
-)
-
-avatar_changed_signal = django.dispatch.Signal(providing_args=["instance"])
+avatar_changed_signal = django.dispatch.Signal()
+email_changed_signal = django.dispatch.Signal()
+password_changed_signal = django.dispatch.Signal()
+password_reset_signal = django.dispatch.Signal()
+user_created_signal = django.dispatch.Signal()

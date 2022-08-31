@@ -3,7 +3,6 @@ import datetime
 import json
 
 import redis
-from core.fields import JSONField
 from core.models import SlimBaseModel
 from django.db import models
 
@@ -51,7 +50,7 @@ class JobOutput(SlimBaseModel):
         related_name="output",
     )
     exit_code = models.IntegerField(default=0)
-    stdout = JSONField(blank=True, null=True)
+    stdout = models.JSONField(blank=True, null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

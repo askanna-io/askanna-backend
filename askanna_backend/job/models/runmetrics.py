@@ -5,7 +5,6 @@ import os
 
 from core.models import ArtifactModelMixin, SlimBaseModel
 from django.conf import settings
-from django.contrib.postgres.fields import JSONField
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils import timezone
@@ -46,14 +45,14 @@ class RunMetrics(ArtifactModelMixin, SlimBaseModel):
     count = models.PositiveIntegerField(editable=False, default=0, help_text="Count of metrics")
     size = models.PositiveIntegerField(editable=False, default=0, help_text="File size of metrics JSON")
 
-    metric_names = JSONField(
+    metric_names = models.JSONField(
         blank=True,
         null=True,
         editable=False,
         default=None,
         help_text="Unique metric names and data type for metric",
     )
-    label_names = JSONField(
+    label_names = models.JSONField(
         blank=True,
         null=True,
         editable=False,
@@ -147,12 +146,12 @@ class RunMetricsRow(SlimBaseModel):
     job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
 
-    metric = JSONField(
+    metric = models.JSONField(
         editable=False,
         default=None,
         help_text="JSON field as list with multiple objects which are metrics, but we limit to one",
     )
-    label = JSONField(
+    label = models.JSONField(
         editable=False,
         default=None,
         help_text="JSON field as list with multiple objects which are labels",
