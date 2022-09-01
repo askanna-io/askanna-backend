@@ -44,5 +44,5 @@ class Migration(migrations.Migration):
                 verbose_name="Use global profile",
             ),
         ),
-        migrations.RunPython(forwards_func, reverse_func),
+        migrations.RunPython(forwards_func, reverse_func, elidable=True),
     ]

@@ -53,5 +53,5 @@ class Migration(migrations.Migration):
                 verbose_name="Finished upload",
             ),
         ),
-        migrations.RunPython(forwards_func, reverse_func),
+        migrations.RunPython(forwards_func, reverse_func, elidable=True),
     ]

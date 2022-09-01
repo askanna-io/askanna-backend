@@ -56,5 +56,5 @@ class Migration(migrations.Migration):
                 to="users.Membership",
             ),
         ),
-        migrations.RunPython(forwards_func, reverse_func),
+        migrations.RunPython(forwards_func, reverse_func, elidable=True),
     ]
