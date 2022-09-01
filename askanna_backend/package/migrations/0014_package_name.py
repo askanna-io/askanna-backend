@@ -33,5 +33,5 @@ class Migration(migrations.Migration):
                 blank=True, max_length=255, null=True, verbose_name="name"
             ),
         ),
-        migrations.RunPython(forwards_func, reverse_func),
+        migrations.RunPython(forwards_func, reverse_func, elidable=True),
     ]
