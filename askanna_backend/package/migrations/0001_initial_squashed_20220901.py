@@ -10,13 +10,12 @@ import uuid
 
 class Migration(migrations.Migration):
 
-    replaces = [('package', '0001_initial'), ('package', '0002_auto_20200331_0629'), ('package', '0003_auto_20200519_1348'), ('package', '0004_auto_20200519_1350'), ('package', '0005_auto_20200519_2059'), ('package', '0006_short_uuid_missing'), ('package', '0007_auto_20200706_1113'), ('package', '0008_auto_20201028_2111'), ('package', '0009_auto_20201201_1545'), ('package', '0010_package_original_filename'), ('package', '0011_migrate_storage_location_to_original_filename'), ('package', '0012_remove_package_filename'), ('package', '0013_package_member'), ('package', '0014_package_name'), ('package', '0015_remove_package_title'), ('package', '0016_fill_in_member'), ('package', '0017_package_finished')]
+    initial = True
 
     dependencies = [
-        ('users', '0019_auto_20201222_1508'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('project', '0001_initial_squashed_20220901'),
-        ('users', '0001_initial_squashed_20220901'),
+        ('project', '__first__'),
+        ('users', '__first__'),
     ]
 
     operations = [

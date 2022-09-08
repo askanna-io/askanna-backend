@@ -35,7 +35,7 @@ services:
       - .env.postgres
 
   redis:
-    image: redis:5.0
+    image: redis:7
     <<: *restart-policy
     volumes:
       - redis_volume:/data
@@ -43,15 +43,18 @@ services:
   #                       #
   # AskAnna images        #
   #                       #
-  backup_helper:
-    image: askanna/backup-helper
-    <<: *restart-policy
-    volumes:
-      - backup_volume:/backups
-      - storage_volume:/data
-    env_file:
-      - .env.django
-      - .env.postgres
+  # For development, you don't need the AskAnna Backup Helper. If you want to use the backup helper, feel free to
+  # uncomment the following lines.
+  #
+  # backup_helper:
+  #   image: askanna/backup-helper
+  #   <<: *restart-policy
+  #   volumes:
+  #     - backup_volume:/backups
+  #     - storage_volume:/data
+  #   env_file:
+  #     - .env.django
+  #     - .env.postgres
 
   #                       #
   # Project images        #

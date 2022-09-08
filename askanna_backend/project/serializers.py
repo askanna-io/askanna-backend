@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Dict
-from rest_framework import serializers
 
 from package.models import Package
 from project.models import Project
+from rest_framework import serializers
 from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
 
@@ -78,12 +78,7 @@ class BaseProjectSerializer:
         """
         If notifications are configured we return them here
         """
-        package = (
-            Package.objects.filter(finished__isnull=False)
-            .filter(project=instance)
-            .order_by("-created")
-            .first()
-        )
+        package = Package.objects.filter(finished__isnull=False).filter(project=instance).order_by("-created").first()
         if not package:
             return {}
 
@@ -114,7 +109,6 @@ class BaseProjectSerializer:
             "package": self.get_package(instance),
             "notifications": self.get_notifications(instance),
             "permission": self.get_permission(instance),  # this is relative to the user requesting this
-            "template": instance.template,
             "is_member": self.get_is_member(instance),
             "created_by": self.get_created_by(instance),
             "visibility": instance.visibility,

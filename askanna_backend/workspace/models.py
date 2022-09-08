@@ -1,14 +1,19 @@
-# -*- coding: utf-8 -*-
+from core.const import VISIBLITY
 from core.models import ActivatedModel, AuthorModel
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 
 class Workspace(AuthorModel, ActivatedModel):
-    def get_name(self):
-        return self.name
 
-    visibility = models.CharField(_("Visibility"), max_length=255, default="PRIVATE", db_index=True)
+    visibility = models.CharField(max_length=10, choices=VISIBLITY, default="PRIVATE", db_index=True)
+
+    def get_name(self):
+        return None or self.name
+
+    def __str__(self):
+        if self.name:
+            return f"{self.name} ({self.short_uuid})"
+        return self.short_uuid
 
     @property
     def relation_to_json(self):

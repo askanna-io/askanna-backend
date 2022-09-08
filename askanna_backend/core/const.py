@@ -5,3 +5,8 @@ ALLOWED_API_AGENTS = (
     "WEBUI",
     "WORKER",
 )
+
+VISIBLITY = (
+    ("PRIVATE", "PRIVATE"),
+    ("PUBLIC", "PUBLIC"),
+)

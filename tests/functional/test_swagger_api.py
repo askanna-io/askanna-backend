@@ -1,15 +1,9 @@
 import pytest
 import requests
+from pytest_bdd import given, parsers, scenarios, then, when
 
-from pytest_bdd import scenarios, given, when, then, parsers
-
-
-# Scenarios
 scenarios("features/swagger_api.feature")
 pytestmark = pytest.mark.django_db
-
-
-# Fixtures
 
 
 @pytest.fixture
@@ -18,17 +12,12 @@ def browser():
     yield r
 
 
-# Given steps
-
-
 @given("AskAnna API-Homepage is available", target_fixture="session")
 @pytest.mark.django_db
 def aaa_homepage(browser, client):
     response = client.get("/")
+    assert response.status_code == 302
     return {}
-
-
-# When steps
 
 
 @when(parsers.parse("the user goes to {where}"))
@@ -36,9 +25,6 @@ def aaa_homepage(browser, client):
 def goto_api(session, browser, where, client):
     response = client.get("/v1/docs/swagger/")
     session["response"] = response
-
-
-# Then steps
 
 
 @then(parsers.parse("the user sees the {where}"))

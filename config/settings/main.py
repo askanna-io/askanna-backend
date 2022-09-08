@@ -65,6 +65,9 @@ DATABASES = {
 
 DATABASE_ROUTERS = ["core.dbrouter.RunInfoRouter"]
 
+# https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 # URLS
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
@@ -75,37 +78,34 @@ WSGI_APPLICATION = "config.wsgi.application"
 # APPS
 # ------------------------------------------------------------------------------
 INSTALLED_APPS = [
-    # Local apps.
+    # AskAnna apps
     "users",
     "utils",
     "core",
+    "workspace",
     "project",
-    "project_template",
     "package",
     "job",
-    "workspace",
-    # Third party app.
+    # Third party apps
     "django_extensions",
-    "crispy_forms",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "rest_framework",
-    "rest_framework.authtoken",
-    "rest_auth",
+    "django_filters",
     "django_celery_beat",
     "django_celery_results",
-    "drf_yasg",
-    # Django Health check
-    "health_check",  # required
-    "health_check.db",  # stock Django health checkers
+    # Django rest framework
+    "rest_framework",
+    "rest_framework.authtoken",
+    "dj_rest_auth",
+    "drf_spectacular",
+    # Django health check
+    "health_check",
+    "health_check.db",
     "health_check.cache",
     "health_check.storage",
     "health_check.contrib.migrations",
-    "health_check.contrib.celery",  # requires celery
-    "health_check.contrib.celery_ping",  # requires celery
+    "health_check.contrib.celery",
+    "health_check.contrib.celery_ping",
     "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
-    "health_check.contrib.redis",  # requires Redis broker
+    "health_check.contrib.redis",
     # Django apps
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -113,7 +113,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.admin",
-    "django_filters",
 ]
 
 # MIDDLEWARE
@@ -163,8 +162,6 @@ TEMPLATES = [
         },
     }
 ]
-# http://django-crispy-forms.readthedocs.io/en/latest/install.html#template-packs
-CRISPY_TEMPLATE_PACK = "bootstrap4"
 
 # FIXTURES
 # ------------------------------------------------------------------------------

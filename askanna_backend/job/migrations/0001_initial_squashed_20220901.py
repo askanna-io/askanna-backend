@@ -13,13 +13,13 @@ import uuid
 
 class Migration(migrations.Migration):
 
-    replaces = [('job', '0001_squashed_0035_merge_20210916_2355'), ('job', '0002_refactor_metricsmeta_and_runvariablesmeta'), ('job', '0003_metrics_and_variables_meta_for_old_runs'), ('job', '0004_changes_for_django_admin'), ('job', '0005_metrics_and_variables_deduplicate_for_historical_runs'), ('job', '0006_rename_jobrun_owner_and_remove_unused_fields'), ('job', '0007_add_artifact_counts_to_historical_runs'), ('job', '0008_change_to_use_models_jsonfield')]
+    initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('users', '0001_initial_squashed_20220901'),
-        ('package', '0001_initial_squashed_20220901'),
-        ('project', '0001_initial_squashed_20220901'),
+        ('package', '__first__'),
+        ('project', '__first__'),
+        ('users', '__first__'),
     ]
 
     operations = [

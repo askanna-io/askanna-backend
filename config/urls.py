@@ -6,23 +6,18 @@ from django.views import defaults as default_views
 from django.views.generic.base import RedirectView
 
 urlpatterns = [
-    # Django authentication
-    path("accounts/", include("allauth.urls")),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # Authentication support over Django DRF
     re_path(r"^(?P<version>(v1))/auth/", include("users.rest_auth_urls")),
-    re_path(r"^(?P<version>(v1))/auth/", include("rest_auth.urls")),
+    re_path(r"^(?P<version>(v1))/auth/", include("dj_rest_auth.urls")),
     # API Urls
     path("", include("utils.urls")),
     path("", include("project.urls")),
     path("", include("job.urls")),
-    # path("", include("flow.urls")),
     path("", include("package.urls")),
     path("", include("workspace.urls")),
-    path("", include("project_template.urls")),
     path("", include("users.urls")),
-    # Your stuff: custom urls includes go here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
@@ -33,7 +28,7 @@ if settings.DEBUG:
         path(
             "",
             RedirectView.as_view(
-                url=reverse_lazy("schema-swagger-ui", kwargs={"version": "v1"}),
+                url=reverse_lazy("api-swagger", kwargs={"version": "v1"}),
                 permanent=False,
             ),
             name="home",

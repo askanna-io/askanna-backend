@@ -9,11 +9,11 @@ import uuid
 
 class Migration(migrations.Migration):
 
-    replaces = [('project', '0001_initial'), ('project', '0002_auto_20200812_0614'), ('project', '0003_project_created_by'), ('project', '0004_project_template'), ('project', '0005_auto_20201028_2111'), ('project', '0006_auto_20210414_0804'), ('project', '0007_auto_20210705_1229'), ('project', '0008_project_visibility'), ('project', '0009_auto_20211024_2224')]
+    initial = True
 
     dependencies = [
-        ('workspace', '0001_initial_squashed_20220901'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('workspace', '__first__'),
     ]
 
     operations = [

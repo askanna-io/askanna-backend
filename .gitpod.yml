@@ -3,6 +3,7 @@ tasks:
       python -m venv .venv
       source .venv/bin/activate
       pip install -r requirements/local.txt
+      mkdir .vscode && ln -n .gitpod-vscode-settings.json .vscode/settings.json
     command: |
       source .venv/bin/activate
       pre-commit install --install-hooks

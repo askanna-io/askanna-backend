@@ -10,27 +10,12 @@
   <meta name="description" content="">
   <meta name="author" content="">
 
-  <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
-  <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-    <![endif]-->
-
   <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}">
 
   {% block css %}
-
-  <!-- Latest compiled and minified Bootstrap CSS -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-
-
-  <!-- Your stuff: Third-party CSS libraries go here -->
-
-  <!-- This file stores project-specific CSS -->
-
   <link href="{% static 'css/project.css' %}" rel="stylesheet">
-
-
   {% endblock %}
 
 </head>
@@ -45,16 +30,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <a class="navbar-brand" href="{% url 'home' %}">AskAnna Backend</a>
-
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item active">
-            <a class="nav-link" href="{{ login_url }}">Sign In</a>
-          </li>
-        </ul>
-      </div>
     </nav>
-
   </div>
 
   <div class="container">
@@ -67,18 +43,14 @@
     {% endif %}
 
     {% block content %}
-    <p>Use this document as a way to quick start any new project.</p>
     {% endblock content %}
 
-  </div> <!-- /container -->
+  </div>
 
   {% block modal %}{% endblock modal %}
 
-  <!-- Le javascript
-    ================================================== -->
-  <!-- Placed at the end of the document so the pages load faster -->
-  {% block javascript %}
 
+  {% block javascript %}
   <!-- Bootstrap JS and its dependencies-->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
     integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -90,14 +62,7 @@
     integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
     crossorigin="anonymous"></script>
 
-  <!-- Your stuff: Third-party javascript libraries go here -->
-
-
-  <!-- place project specific Javascript in this file -->
-
   <script src="{% static 'js/project.js' %}"></script>
-
-
   {% endblock javascript %}
 </body>
 

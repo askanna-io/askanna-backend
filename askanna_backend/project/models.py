@@ -1,6 +1,6 @@
+from core.const import VISIBLITY
 from core.models import ActivatorModel, AuthorModel, BaseModel
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 
 class ProjectQuerySet(models.QuerySet):
@@ -45,15 +45,15 @@ class Project(AuthorModel, ActivatorModel, BaseModel):
 
     workspace = models.ForeignKey("workspace.Workspace", on_delete=models.CASCADE, blank=True, null=True)
 
-    template = models.UUIDField(db_index=True, editable=False, null=True)
-
-    visibility = models.CharField(_("Visibility"), max_length=255, default="PRIVATE", db_index=True)
-
-    def __str__(self):
-        return " - ".join([self.name, str(self.uuid)])
+    visibility = models.CharField(max_length=10, choices=VISIBLITY, default="PRIVATE", db_index=True)
 
     def get_name(self):
-        return self.name
+        return None or self.name
+
+    def __str__(self):
+        if self.name:
+            return f"{self.name} ({self.short_uuid})"
+        return self.short_uuid
 
     @property
     def relation_to_json(self):
