@@ -38,6 +38,11 @@ class Package(AuthorModel, BaseModel):
         db_index=True,
     )
 
+    def __str__(self):
+        if self.original_filename:
+            return f"{self.original_filename} ({self.short_uuid})"
+        return self.short_uuid
+
     @property
     def relation_to_json(self):
         return {

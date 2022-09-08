@@ -384,6 +384,11 @@ class Membership(BaseAvatarModel, SlimBaseModel):
             "status": self.get_status(),
         }
 
+    def __str__(self):
+        if self.get_name():
+            return f"{self.get_name()} ({self.short_uuid})"
+        return self.short_uuid
+
     def get_name(self):
         """
         Get name, respecting the `use_global_profile` setting

@@ -9,7 +9,7 @@ import uuid
 
 class Migration(migrations.Migration):
 
-    replaces = [('workspace', '0001_initial'), ('workspace', '0002_auto_20201028_2111'), ('workspace', '0003_workspace_name'), ('workspace', '0004_remove_workspace_title'), ('workspace', '0005_workspace_visibility'), ('workspace', '0006_auto_20211024_2224'), ('workspace', '0007_workspace_created_by')]
+    initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

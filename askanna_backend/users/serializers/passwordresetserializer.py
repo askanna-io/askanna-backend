@@ -1,10 +1,10 @@
+from dj_rest_auth.serializers import (
+    PasswordResetSerializer as DefaultPasswordResetSerializer,
+)
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode as uid_decoder
-from rest_auth.serializers import (
-    PasswordResetSerializer as DefaultPasswordResetSerializer,
-)
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from users.forms import PasswordResetForm
@@ -39,9 +39,9 @@ class PasswordResetSerializer(DefaultPasswordResetSerializer):
             "domain_override": domain,
             "use_https": is_secure,
             "request": request,
-            "subject_template_name": "registration/password_reset_subject.txt",
-            "email_template_name": "registration/password_reset_email.txt",
-            "html_email_template_name": "registration/password_reset_email.html",
+            "subject_template_name": "emails/password_reset_subject.txt",
+            "email_template_name": "emails/password_reset_email.txt",
+            "html_email_template_name": "emails/password_reset_email.html",
         }
 
         opts.update(self.get_email_options())

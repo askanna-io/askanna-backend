@@ -8,7 +8,7 @@ import uuid
 
 class Migration(migrations.Migration):
 
-    replaces = [('core', '0001_squashed_0004_remove_setting_old_value')]
+    initial = True
 
     dependencies = [
     ]

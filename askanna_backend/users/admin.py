@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.contrib.auth import admin as auth_admin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.utils.html import escape, mark_safe
 from django.utils.translation import gettext_lazy as _
 from users.forms import UserChangeForm, UserCreationForm
@@ -8,6 +9,10 @@ from users.models import Invitation, Membership, PasswordResetLog, UserProfile
 from users.serializers import PersonSerializer
 
 User = get_user_model()
+
+
+# Don't show Auth Groups in the Django Admin because we don't use them.
+admin.site.unregister(Group)
 
 
 @admin.register(User)

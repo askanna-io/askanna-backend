@@ -12,7 +12,7 @@ import uuid
 
 class Migration(migrations.Migration):
 
-    replaces = [('users', '0001_initial'), ('users', '0002_auto_20200409_0525'), ('users', '0003_auto_20200409_0530'), ('users', '0004_auto_20200409_0530'), ('users', '0005_auto_20200417_0844'), ('users', '0006_auto_20200519_2129'), ('users', '0007_membership_role'), ('users', '0008_auto_20200910_1102'), ('users', '0009_auto_20200916_0900'), ('users', '0010_auto_20200916_1017'), ('users', '0011_auto_20201005_1100'), ('users', '0012_auto_20201013_0653'), ('users', '0013_invitation_front_end_url'), ('users', '0014_auto_20201028_2111'), ('users', '0015_auto_20201124_0223'), ('users', '0016_auto_20201125_1318'), ('users', '0017_passwordresetlog'), ('users', '0018_user_front_end_domain'), ('users', '0019_auto_20201222_1508'), ('users', '0020_global_profile'), ('users', '0021_auto_20210929_1254'), ('users', '0022_auto_20220823_1123'), ('users', '0023_change_to_use_models_jsonfield')]
+    initial = True
 
     dependencies = [
         ('auth', '0008_alter_user_username_max_length'),
