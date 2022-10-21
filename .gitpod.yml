@@ -1,12 +1,65 @@
+additionalRepositories:
+  - url: https://gitlab.askanna.io/askanna/askanna-frontend/
+  - url: https://gitlab.askanna.io/askanna/askanna-cli/
+  - url: https://gitlab.askanna.io/askanna/askanna-docs/
+
+workspaceLocation: askanna-backend/.gitpod.askanna.code-workspace
+
 tasks:
-  - name: Python
-    before: |
-      python -m venv .venv && source .venv/bin/activate
-      pip install --upgrade pip
-      pip install -r requirements/local.txt
-      pre-commit install --install-hooks
+  - name: Docker Backend
     init: |
-      mkdir .vscode && ln -n .gitpod-vscode-settings.json .vscode/settings.json
+      cp .env.django.example .env.django
+      cp .env.postgres.example .env.postgres
+    command: |
+      sed -i "s~ASKANNA_API_URL.*~ASKANNA_API_URL=$(gp url 8000)~g" .env.django
+      sed -i "s~ASKANNA_CDN_URL.*~ASKANNA_CDN_URL=$(gp url 8000)~g" .env.django
+      sed -i "s~ASKANNA_UI_URL.*~ASKANNA_UI_URL=$(gp url 4173)~g" .env.django
+      docker compose up --detach --build
+      while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do sleep 5; done
+      docker compose exec -e DJANGO_SUPERUSER_PASSWORD=DevAskAnna django python manage.py createsuperuser --username admin@localhost.com --email admin@localhost.com --noinput
+      docker compose logs --follow django
+  - name: Vite Frontend Preview
+    before: |
+      cd ../askanna-frontend
+    init: |
+      cp .env.development .env.production.local
+    command: |
+      sed -i "s~VITE_APP_URL=.*~VITE_APP_URL=$(gp url 4173)~g" .env.production.local
+      sed -i "s~VITE_APP_API_URL=.*~VITE_APP_API_URL=$(gp url 8000)~g" .env.production.local
+      npm install
+      npm run build
+      npm run preview
+  - name: MkDocs Documentation
+    before: |
+      cd ../askanna-docs
+    init: |
+      git lfs install && git lfs pull
+      python -m venv .venv
+      pip install -r requirements-dev.txt
+    command: |
+      source .venv/bin/activate
+      pip install -r requirements-dev.txt
+      mkdocs serve --dev-addr "127.0.0.1:8080"
+  - name: Frontend
+    command: |
+      cd ../askanna-frontend
+  - name: Documentation
+    command: |
+      cd ../askanna-docs
+      source .venv/bin/activate
+      pre-commit install --install-hooks
+  - name: CLI & SDK
+    before: |
+      cd ../askanna-cli
+    command: |
+      source .venv/bin/activate
+      pip install -r requirements-dev.txt
+      pip install --editable .
+      pre-commit install --install-hooks
+      askanna --help
+  - name: Backend
+    init: |
+      python -m venv .venv
     command: |
       [[ -n $GPG_KEY ]] && [[ -n $GPG_SIGNING_KEY ]] \
         && echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf \
@@ -14,24 +67,34 @@ tasks:
         && git config --global user.signingkey $GPG_SIGNING_KEY \
         && git config --global commit.gpgsign true \
         && echo '>> Commits will be signed with a GPG key'
-  - name: Docker
-    init: |
-      cp .env.django.example .env.django
-      cp .env.postgres.example .env.postgres
-      docker compose build
-    command: |
       source .venv/bin/activate
-      docker compose up --detach --build
-      docker compose logs --follow django
+      pip install -r requirements/local.txt
+      pre-commit install --install-hooks
+      while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:4173/ht/)" != "200" ]]; do echo "Frontend is not ready yet..." && sleep 10; done && echo "Frontend is ready!"
+      while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do echo "Backend is not ready yet..." && sleep 10; done && echo "Backend is ready!"
 
 ports:
-  - name: AskAnna Backend
-    description: The AskAnna Backend application
+  - name: Backend Dev
+    description: The AskAnna Backend application in development mode
     port: 8000
     visibility: public
-  - name: AskAnna Flower
+    onOpen: open-browser
+  - name: Backend Flower
     description: Flower for monitoring Celery
     port: 5555
+    visibility: private
+  - name: Frontend Dev
+    description: The AskAnna Frontend application in development mode
+    port: 5173
+    visibility: private
+    onOpen: open-browser
+  - name: Frontend Preview
+    description: The AskAnna Frontend application in review mode
+    port: 4173
+    visibility: private
+  - name: Documentation
+    description: The AskAnna documentation
+    port: 8080
     visibility: private
 
 vscode:
@@ -40,10 +103,13 @@ vscode:
     - eamodio.gitlens
     - GitLab.gitlab-workflow
     - ms-python.python
+    - njpwerner.autodocstring
     - batisteo.vscode-django
+    - DavidAnson.vscode-markdownlint
     - yzhang.markdown-all-in-one
     - TakumiI.markdowntable
     - ms-azuretools.vscode-docker
     - jeff-hykin.better-dockerfile-syntax
     - timonwong.shellcheck
     - ZainChen.json
+    - octref.vetur
