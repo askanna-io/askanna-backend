@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 from typing import Dict
-from rest_framework import serializers
 
-from workspace.models import Workspace
+from rest_framework import serializers
 from users.models import Membership
+from workspace.models import Workspace
 
 
 class BaseWorkspaceSerializer(serializers.ModelSerializer):

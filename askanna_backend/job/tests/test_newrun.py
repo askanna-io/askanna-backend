@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 
 from django.urls import reverse
@@ -139,7 +138,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
             self.assertEqual(response.data.get("message_type"), "status")
             runinfo = self.client.get(
                 reverse(
-                    "runinfo-detail",
+                    "run-detail",
                     kwargs={
                         "version": "v1",
                         "short_uuid": response.data.get("short_uuid"),

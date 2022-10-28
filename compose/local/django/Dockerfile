@@ -12,7 +12,7 @@ RUN apk update \
     && apk add libffi-dev py-cffi \
     # Translations dependencies
     && apk add gettext \
-    # https://docs.djangoproject.com/en/dev/ref/django-admin/#dbshell
+    # https://docs.djangoproject.com/en/stable/ref/django-admin/#dbshell
     && apk add postgresql-client \
     && apk add git \
     && apk add libmagic

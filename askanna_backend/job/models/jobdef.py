@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-from django.db import models
-
 from core.models import BaseModel
+from django.db import models
 
 
 class JobQuerySet(models.QuerySet):
@@ -47,9 +45,7 @@ class JobDef(BaseModel):
     objects = models.Manager()
     jobs = ActiveJobManager()
 
-    project = models.ForeignKey(
-        "project.Project", on_delete=models.CASCADE, blank=True, null=True
-    )
+    project = models.ForeignKey("project.Project", on_delete=models.CASCADE, blank=True, null=True)
 
     environment_image = models.CharField(
         max_length=2048,
@@ -62,6 +58,9 @@ class JobDef(BaseModel):
     def get_name(self):
         return self.name
 
+    def __str__(self):
+        return f"{self.name} ({self.short_uuid})"
+
     @property
     def relation_to_json(self):
         return {
@@ -73,5 +72,4 @@ class JobDef(BaseModel):
 
     class Meta:
         ordering = ["-created"]
-        verbose_name = "Job Definition"
-        verbose_name_plural = "Job Definitions"
+        verbose_name = "Job definition"

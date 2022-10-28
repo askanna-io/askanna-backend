@@ -1,21 +1,16 @@
-# -*- coding: utf-8 -*-
 import collections
 import dataclasses
 from typing import Dict, List, Optional
 
-from django.conf import settings
-
 import yaml
+from django.conf import settings
 
 try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
 
-from core.utils import (
-    is_valid_timezone,
-    parse_cron_line,
-)
+from core.utils import is_valid_timezone, parse_cron_line
 
 
 class AskAnnaConfig:
@@ -74,7 +69,7 @@ class AskAnnaConfig:
     @classmethod
     def from_stream(cls, filename, defaults: Dict = {}):
         try:
-            config = yaml.load(filename, Loader=Loader)
+            config = yaml.load(filename, Loader=Loader)  # nosec: B506
         except yaml.scanner.ScannerError:
             return None
         else:
@@ -179,9 +174,7 @@ class Environment:
     @classmethod
     def from_python(cls, environment: Dict = {}):
         spec = {"image": environment.get("image")}
-        if environment.get("credentials") and environment.get("credentials", {}).get(
-            "username"
-        ):
+        if environment.get("credentials") and environment.get("credentials", {}).get("username"):
             # Credentials are specified, we just assume at least the username is filled out.
             credentials = ImageCredentials(
                 **{
@@ -216,9 +209,7 @@ class Job:
 
         # get warning level if set
         for level in levels:
-            receivers += self.__flatten_email_receivers(
-                self.notifications.get(level, {}).get(medium, [])
-            )
+            receivers += self.__flatten_email_receivers(self.notifications.get(level, {}).get(medium, []))
 
         return list(set(receivers))
 
@@ -248,28 +239,14 @@ class Job:
         # update the job notifications with those in `global_config.notifications`
         # FIXME: make merging of these list pretier
         # update global
-        job_notifications["all"] = {
-            "email": job_config.get("notifications", {}).get("all", {}).get("email", [])
-        }
-        job_notifications["all"]["email"] += global_config.notifications.get(
-            "all", {}
-        ).get("email", [])
-        job_notifications["all"]["email"] = sorted(
-            list(set(job_notifications["all"]["email"]))
-        )
+        job_notifications["all"] = {"email": job_config.get("notifications", {}).get("all", {}).get("email", [])}
+        job_notifications["all"]["email"] += global_config.notifications.get("all", {}).get("email", [])
+        job_notifications["all"]["email"] = sorted(list(set(job_notifications["all"]["email"])))
 
         # update error
-        job_notifications["error"] = {
-            "email": job_config.get("notifications", {})
-            .get("error", {})
-            .get("email", [])
-        }
-        job_notifications["error"]["email"] += global_config.notifications.get(
-            "error", {}
-        ).get("email", [])
-        job_notifications["error"]["email"] = sorted(
-            list(set(job_notifications["error"]["email"]))
-        )
+        job_notifications["error"] = {"email": job_config.get("notifications", {}).get("error", {}).get("email", [])}
+        job_notifications["error"]["email"] += global_config.notifications.get("error", {}).get("email", [])
+        job_notifications["error"]["email"] = sorted(list(set(job_notifications["error"]["email"])))
 
         return cls(
             name=name,

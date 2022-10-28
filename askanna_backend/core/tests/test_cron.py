@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 import datetime
 import unittest
-from django.test import TestCase
+
 import pytest
 import pytz
-
 from core.utils import parse_cron_line, parse_cron_schedule
+from django.test import TestCase
 from job.models import ScheduledJob
 
 pytestmark = pytest.mark.django_db
@@ -80,9 +79,7 @@ class TestScheduledJobModel(TestCase):
             scheduled_job.last_run,
             datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=pytz.UTC),
         )
-        scheduled_job.update_last(
-            timestamp=datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=pytz.UTC)
-        )
+        scheduled_job.update_last(timestamp=datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=pytz.UTC))
         scheduled_job.refresh_from_db()
 
         self.assertEqual(
@@ -104,18 +101,14 @@ class TestScheduledJobModel(TestCase):
             datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC),
         )
 
-        scheduled_job.update_next(
-            current_dt=datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC)
-        )
+        scheduled_job.update_next(current_dt=datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC))
         scheduled_job.refresh_from_db()
         self.assertEqual(
             scheduled_job.next_run,
             datetime.datetime(2021, 3, 14, 23, 0, 0, tzinfo=pytz.UTC),
         )
 
-        scheduled_job.update_next(
-            current_dt=datetime.datetime(2050, 3, 15, 0, 15, 0, tzinfo=pytz.UTC)
-        )
+        scheduled_job.update_next(current_dt=datetime.datetime(2050, 3, 15, 0, 15, 0, tzinfo=pytz.UTC))
         scheduled_job.refresh_from_db()
         self.assertEqual(
             scheduled_job.next_run,

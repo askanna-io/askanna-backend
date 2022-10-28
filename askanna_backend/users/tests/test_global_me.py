@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-from django.urls import reverse
 import pytest
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from users.models import User
 
 pytestmark = pytest.mark.django_db

@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import unittest
 
-from django.conf import settings
 from core.utils import detect_file_mimetype
+from django.conf import settings
 
 
 class TestFiletype(unittest.TestCase):
@@ -22,6 +21,4 @@ class TestFiletype(unittest.TestCase):
         filepath = str(settings.TEST_RESOURCES_DIR.path("misc/python.py"))
 
         # not all platforms return the same mimetype, so we match on 2 different
-        self.assertIn(
-            detect_file_mimetype(filepath), ["text/x-script.python", "text/x-python"]
-        )
+        self.assertIn(detect_file_mimetype(filepath), ["text/x-script.python", "text/x-python"])

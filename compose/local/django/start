@@ -4,8 +4,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-python manage.py migrate --database=default
-python manage.py migrate --database=runinfo
+python manage.py migrate --noinput
 
 python manage.py install_askanna_create_project
 python manage.py install_default_settings

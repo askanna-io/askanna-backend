@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 from django.urls import reverse
-from job.models import JobPayload, JobRun
+from job.models import JobPayload
 from rest_framework import status
 from rest_framework.test import APITestCase
+from run.models import Run
 
 from .base import BaseJobTestDef
 
@@ -40,7 +40,7 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
         }
 
         response = self.client.post(self.startjob_url, payload, format="json", HTTP_HOST="testserver")
-        self.jobruns["after_payload"] = JobRun.objects.get(short_uuid=response.data.get("short_uuid"))
+        self.runs["after_payload"] = Run.objects.get(short_uuid=response.data.get("short_uuid"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.client.credentials()
 
@@ -81,10 +81,10 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(len(response.data), 0)
 
 
-class TestJobRunPayloadAPI(TestJobPayloadAPI):
+class TestRunPayloadAPI(TestJobPayloadAPI):
 
     """
-    Test Getting back the payload of a jobrun
+    Test getting back the payload of a run
     """
 
     def setUp(self):
@@ -98,7 +98,7 @@ class TestJobRunPayloadAPI(TestJobPayloadAPI):
             "run-payload-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.jobruns["after_payload"].short_uuid,
+                "parent_lookup_run__short_uuid": self.runs["after_payload"].short_uuid,
             },
         )
 
@@ -123,14 +123,6 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
                 "short_uuid": self.payload.short_uuid,
             },
         )
-        self.partial_url = reverse(
-            "job-payload-get-partial",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
-                "short_uuid": self.payload.short_uuid,
-            },
-        )
 
     def setUpPayload(self):
         """
@@ -147,14 +139,14 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         response = self.client.post(self.startjob_url, payload, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.jobruns["after_payload"] = JobRun.objects.get(short_uuid=response.data.get("short_uuid"))
-        # get the payload of this jobrun
+        self.runs["after_payload"] = Run.objects.get(short_uuid=response.data.get("short_uuid"))
+        # get the payload of this run
 
         run_payload_list_url = reverse(
             "run-payload-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobrun__short_uuid": self.jobruns["after_payload"].short_uuid,
+                "parent_lookup_run__short_uuid": self.runs["after_payload"].short_uuid,
             },
         )
         response = self.client.get(run_payload_list_url, format="json", HTTP_HOST="testserver")
@@ -178,18 +170,6 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_content(response)
 
-        response = self.client.get(
-            self.partial_url + "?offset=1&limit=2",
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("example_payload", str(response.content))
-        self.assertIn("startjob", str(response.content))
-
-        self.assertIn("multirow", str(response.content))
-        self.assertIn("true", str(response.content))
-
     def test_list_as_member(self):
         """
         We can get the payload as a member
@@ -200,18 +180,6 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_content(response)
 
-        response = self.client.get(
-            self.partial_url + "?offset=1&limit=2",
-            format="json",
-            HTTP_HOST="testserver",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("example_payload", str(response.content))
-        self.assertIn("startjob", str(response.content))
-
-        self.assertIn("multirow", str(response.content))
-        self.assertIn("true", str(response.content))
-
     def test_list_as_nonmember(self):
         """
         We can NOT get the payload as a non member
@@ -219,11 +187,4 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         self.activate_user("non_member")
 
         response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        response = self.client.get(
-            self.partial_url + "?offset=1&limit=2",
-            format="json",
-            HTTP_HOST="testserver",
-        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

@@ -1,8 +1,8 @@
+from core.urls import router
 from django.conf.urls import include, re_path
 from users.views import BaseMeViewSet, MeAvatarViewSet, UserView
-from utils.urls import router
 
-user_route = router.register(r"accounts", UserView)
+user_router = router.register(r"account", UserView)
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1))/", include(router.urls)),

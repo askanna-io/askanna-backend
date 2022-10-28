@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 import os
 import tempfile
 import uuid
 import warnings
 from zipfile import ZipFile
 
-from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from django.utils import timezone
-
 from job.models import JobDef
 from package.models import Package
 from project.models import Project

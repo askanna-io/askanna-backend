@@ -1,37 +1,31 @@
-# -*- coding: utf-8 -*-
 import os
+
+from core.permissions import ProjectMember, ProjectNoMember, RoleBasedPermission
+from core.views import (
+    BaseChunkedPartViewSet,
+    BaseUploadFinishMixin,
+    ObjectRoleMixin,
+    SerializerByActionMixin,
+    workspace_to_project_role,
+)
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
 from django.utils import timezone
-from rest_framework import mixins
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework_extensions.mixins import NestedViewSetMixin
-
-from core.views import (
-    BaseChunkedPartViewSet,
-    BaseUploadFinishMixin,
-    SerializerByActionMixin,
-    ObjectRoleMixin,
-    workspace_to_project_role,
-)
-from core.permissions import (
-    ProjectMember,
-    ProjectNoMember,
-    RoleBasedPermission,
-)
-from package.models import Package, ChunkedPackagePart
+from package.models import ChunkedPackagePart, Package
 from package.serializers import (
-    PackageSerializer,
     ChunkedPackagePartSerializer,
-    PackageSerializerDetail,
     PackageCreateSerializer,
+    PackageSerializer,
+    PackageSerializerDetail,
 )
 from package.signals import package_upload_finish
 from project.models import Project
+from rest_framework import mixins, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import MSP_WORKSPACE, Membership
 
 
@@ -119,6 +113,7 @@ class PackageViewSet(
 
     serializer_classes_by_action = {
         "post": PackageCreateSerializer,
+        "get": PackageSerializerDetail,
     }
 
     RBAC_BY_ACTION = {
@@ -147,6 +142,24 @@ class PackageViewSet(
         instance_obj.finished = timezone.now()
         update_fields = ["member", "finished"]
         instance_obj.save(update_fields=update_fields)
+
+    @action(detail=True, methods=["get"])
+    def download(self, request, **kwargs):
+        """
+        Return a response with the URI on the CDN where to find the full package.
+        """
+        package = self.get_object()
+
+        return Response(
+            {
+                "action": "redirect",
+                "target": "{BASE_URL}/files/packages/{LOCATION}/{FILENAME}".format(
+                    BASE_URL=settings.ASKANNA_CDN_URL,
+                    LOCATION=package.storage_location,
+                    FILENAME=package.filename,
+                ),
+            }
+        )
 
 
 class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
@@ -240,7 +253,10 @@ class ProjectPackageViewSet(
     def get_list_role(self, request, *args, **kwargs):
         # always return ProjectMember for logged in users since the listing always shows objects based on membership
         parents = self.get_parents_query_dict()
-        project = Project.objects.get(short_uuid=parents.get("project__short_uuid"))
+        try:
+            project = Project.objects.get(short_uuid=parents.get("project__short_uuid"))
+        except Project.DoesNotExist:
+            raise Http404
         request.user_roles += Membership.get_roles_for_project(request.user, project)
 
         if request.user.is_anonymous:

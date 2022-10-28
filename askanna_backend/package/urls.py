@@ -1,19 +1,16 @@
+from core.urls import router
 from django.conf.urls import include, re_path
 from package.views import (
     ChunkedPackagePartViewSet,
     PackageViewSet,
     ProjectPackageViewSet,
 )
-from project.urls import project_route
-from project.urls import router as prouter
-from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
-
-router = DefaultRouter()
+from project.urls import project_router
 
 package_router = router.register(r"package", PackageViewSet)
 
-project_route.register(
-    r"packages",
+project_router.register(
+    r"package",
     ProjectPackageViewSet,
     "project-package",
     parents_query_lookups=["project__short_uuid"],
@@ -28,5 +25,4 @@ package_router.register(
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1))/", include(router.urls)),
-    re_path(r"^(?P<version>(v1))/", include(prouter.urls)),
 ]

@@ -1,23 +1,7 @@
-# import io
-# import json
-# import os
-# import sys
-
-# from django.conf import settings
-# from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-
-# from job.models import JobDef, JobPayload, JobRun
-# from package.models import Package
+from users.models import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
 from workspace.models import Workspace
-from users.models import (
-    # User,
-    Membership,
-    UserProfile,
-    MSP_WORKSPACE,
-    WS_ADMIN,
-)
 
 
 @receiver(post_delete, sender=Workspace)
@@ -56,8 +40,8 @@ def install_demo_project_in_workspace(sender, instance, **kwargs):
     #     Package.objects.filter(finished__isnull=False).filter(project=jobdef.project).order_by("-created").first()
     # )
 
-    # # create new Jobrun
-    # jobrun = JobRun.objects.create(
+    # # create new run
+    # run = Run.objects.create(
     #     status="PENDING", jobdef=jobdef, payload=job_pl, package=package, owner=anna,
     # )
 

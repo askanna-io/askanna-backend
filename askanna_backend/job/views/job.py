@@ -1,22 +1,13 @@
-# -*- coding: utf-8 -*-
+from core.permissions import ProjectMember, ProjectNoMember, RoleBasedPermission
+from core.views import ObjectRoleMixin, workspace_to_project_role
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
+from job.models import JobDef
+from job.serializers import JobSerializer
+from project.models import Project
 from rest_framework import mixins, viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
-from core.permissions import (
-    ProjectMember,
-    ProjectNoMember,
-    RoleBasedPermission,
-)
-from core.views import ObjectRoleMixin
-from core.views import workspace_to_project_role
-from job.models import JobDef
-from job.serializers import (
-    JobSerializer,
-)
-from project.models import Project
 from users.models import MSP_WORKSPACE, Membership
 
 
@@ -49,26 +40,18 @@ class JobObjectRoleMixin:
             return (
                 super()
                 .get_queryset()
-                .filter(
-                    Q(project__workspace__visibility="PUBLIC")
-                    & Q(project__visibility="PUBLIC")
-                )
+                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
                 .order_by("name")
             )
 
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()
             .get_queryset()
             .filter(
                 Q(project__workspace__in=member_of_workspaces)
-                | (
-                    Q(project__workspace__visibility="PUBLIC")
-                    & Q(project__visibility="PUBLIC")
-                )
+                | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
 
@@ -107,7 +90,8 @@ class ProjectJobViewSet(
     JobObjectRoleMixin,
     ObjectRoleMixin,
     NestedViewSetMixin,
-    viewsets.ReadOnlyModelViewSet,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
 ):
     """
     This is a duplicated viewset like `JobActionView` but ReadOnly version
@@ -133,9 +117,7 @@ class ProjectJobViewSet(
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(
-            request.user, project.workspace
-        )
+        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
         request.user_roles.append(workspace_role)
         request.object_role = workspace_role
 

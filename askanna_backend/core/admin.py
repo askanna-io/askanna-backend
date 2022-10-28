@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-from django.contrib import admin
-
 from core.models import Setting
+from django.contrib import admin
 
 
 @admin.register(Setting)
@@ -11,4 +9,3 @@ class SettingAdmin(admin.ModelAdmin):
 
     date_hierarchy = "created"
     search_fields = ["name"]
-

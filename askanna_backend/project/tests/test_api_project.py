@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-"""Define tests for API of invitation workflow."""
 import re
 
 import pytest
@@ -7,9 +5,10 @@ from core.tests.base import BaseUserPopulation
 from django.conf import settings
 from django.urls import re_path, reverse
 from django.views.static import serve
-from job.models import JobDef, JobOutput, JobPayload, JobRun
+from job.models import JobDef, JobPayload
 from rest_framework import status
 from rest_framework.test import APITestCase
+from run.models import Run, RunLog
 from workspace.models import Workspace
 
 import config.urls
@@ -20,8 +19,6 @@ pytestmark = pytest.mark.django_db
 
 
 class BaseProjectTest(BaseUserPopulation, APITestCase):
-    databases = ["default", "runinfo"]
-
     def setUp(self):
         super().setUp()
         self.project = Project.objects.create(name="test project", workspace=self.workspace_a)
@@ -386,15 +383,15 @@ class TestProjectDeleteAPI(BaseProjectTest):
             HTTP_HOST="testserver",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        job_run_suuid = response.data.get("short_uuid")
+        run_suuid = response.data.get("short_uuid")
 
         # Fix issue for a job that was not run, so create output
-        self.jobrun = JobRun.objects.get(short_uuid=job_run_suuid)
+        self.run = Run.objects.get(short_uuid=run_suuid)
         self.jobpayload = JobPayload.objects.get(jobdef__pk=self.job.pk)
-        self.joboutput = JobOutput.objects.get(jobrun=self.jobrun)
-        self.joboutput.exit_code = 0
-        self.joboutput.stdout = []
-        self.joboutput.save()
+        self.runlog = RunLog.objects.get(run=self.run)
+        self.runlog.exit_code = 0
+        self.runlog.stdout = []
+        self.runlog.save()
 
         # reset credentials
         self.client.credentials()

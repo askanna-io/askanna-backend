@@ -28,7 +28,6 @@ include:
     POSTGRES_USER: anna
     POSTGRES_PASSWORD: pass
     POSTGRES_DB: askanna_backend
-    POSTGRES_DB_RUNINFO: askanna_runinfo
   services:
     - name: postgres:12
       alias: postgres

@@ -1,22 +1,17 @@
-# -*- coding: utf-8 -*-
-import json
 import io
-
-from django.db.models import Q
-from rest_framework import viewsets
-from rest_framework.exceptions import ParseError
-from rest_framework.response import Response
+import json
 
 from core.const import ALLOWED_API_AGENTS
 from core.permissions import RoleBasedPermission
 from core.views import ObjectRoleMixin
-from job.models import (
-    JobDef,
-    JobPayload,
-    JobRun,
-)
+from django.db.models import Q
+from job.models import JobDef, JobPayload
 from job.serializers import StartJobSerializer
 from package.models import Package
+from rest_framework import viewsets
+from rest_framework.exceptions import ParseError
+from rest_framework.response import Response
+from run.models import Run
 from users.models import MSP_WORKSPACE
 
 
@@ -47,9 +42,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
             # we don't allow anonymous users to start any jobs
             return super().get_queryset().none()
 
-        member_of_workspaces = user.memberships.filter(
-            object_type=MSP_WORKSPACE
-        ).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         # with the following query, when a project is set to PUBLIC,
         # or by workspace=PUBLIC
@@ -60,10 +53,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
             .get_queryset()
             .filter(
                 Q(project__workspace__in=member_of_workspaces)
-                | (
-                    Q(project__workspace__visibility="PUBLIC")
-                    & Q(project__visibility="PUBLIC")
-                )
+                | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
 
@@ -78,9 +68,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
 
         # validate whether request.data is really a json structure
         try:
-            assert isinstance(
-                request.data, (dict, list)
-            ), "JSON not valid, please check and try again"
+            assert isinstance(request.data, (dict, list)), "JSON not valid, please check and try again"
         except AssertionError as e:
             raise ParseError(
                 detail={
@@ -95,12 +83,10 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
         lines = 0
         try:
             lines = len(json.dumps(request.data, indent=1).splitlines())
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
-        job_pl = JobPayload.objects.create(
-            jobdef=job, size=size, lines=lines, owner=request.user
-        )
+        job_pl = JobPayload.objects.create(jobdef=job, size=size, lines=lines, owner=request.user)
         job_pl.write(io.StringIO(json_string))
 
         return job_pl
@@ -133,7 +119,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
             .first()
         )
 
-        # create new Jobrun
+        # create new run
         runspec = {
             "name": request.query_params.get("name"),
             "description": request.query_params.get("description"),
@@ -144,7 +130,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
             "trigger": self.get_trigger_source(request),
             "created_by": request.user,
         }
-        run = JobRun.objects.create(**runspec)
+        run = Run.objects.create(**runspec)
 
         # return the run id
         return Response(
@@ -161,8 +147,6 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
                 "job": run.jobdef.relation_to_json,
                 "project": run.jobdef.project.relation_to_json,
                 "workspace": run.jobdef.project.workspace.relation_to_json,
-                "next_url": "{}://{}/v1/status/{}/".format(
-                    request.scheme, request.META["HTTP_HOST"], run.short_uuid
-                ),
+                "next_url": "{}://{}/v1/status/{}/".format(request.scheme, request.META["HTTP_HOST"], run.short_uuid),
             }
         )

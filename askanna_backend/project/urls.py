@@ -1,25 +1,34 @@
+from core.urls import router
 from django.conf.urls import include
 from django.urls import re_path
-from project.views import ProjectReadOnlyView, ProjectView
+from project.views import ProjectReadOnlyView, ProjectVariableView, ProjectView
 from users.views import ProjectMeViewSet
-from utils.urls import router
-from workspace.urls import workspace_route
+from workspace.urls import workspace_router
 
-project_route = router.register(r"project", ProjectView, basename="project")
+project_router = router.register(r"project", ProjectView, basename="project")
 
-workspace_route.register(
-    r"projects",
+project_router.register(
+    r"variable",
+    ProjectVariableView,
+    basename="project-variable",
+    parents_query_lookups=["project__short_uuid"],
+)
+
+variable_router = router.register(r"variable", ProjectVariableView, basename="variable")
+
+workspace_router.register(
+    r"project",
     ProjectReadOnlyView,
     basename="workspace-project",
     parents_query_lookups=["workspace__short_uuid"],
 )
 
 urlpatterns = [
+    re_path(r"^(?P<version>(v1))/", include(router.urls)),
     re_path(
         r"^(?P<version>(v1))/project/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/?$",
         ProjectMeViewSet.as_view(),
         kwargs={"object_type": "PR"},
         name="project-me",
     ),
-    re_path(r"^(?P<version>(v1))/", include(router.urls)),
 ]

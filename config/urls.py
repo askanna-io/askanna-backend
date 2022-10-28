@@ -12,12 +12,13 @@ urlpatterns = [
     re_path(r"^(?P<version>(v1))/auth/", include("users.rest_auth_urls")),
     re_path(r"^(?P<version>(v1))/auth/", include("dj_rest_auth.urls")),
     # API Urls
-    path("", include("utils.urls")),
-    path("", include("project.urls")),
-    path("", include("job.urls")),
-    path("", include("package.urls")),
-    path("", include("workspace.urls")),
+    path("", include("core.urls")),
     path("", include("users.urls")),
+    path("", include("workspace.urls")),
+    path("", include("project.urls")),
+    path("", include("package.urls")),
+    path("", include("job.urls")),
+    path("", include("run.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

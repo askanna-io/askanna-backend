@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-from django.db import models
-
 from core.models import BaseModel
+from django.db import models
 
 
 class RunImage(BaseModel):
@@ -12,16 +10,16 @@ class RunImage(BaseModel):
     tag = models.CharField(max_length=128, null=True, blank=True, editable=False)
     digest = models.CharField(max_length=256, null=True, blank=True, editable=False)
 
-    cached_image = models.CharField(
-        max_length=256, null=True, blank=True, editable=False
-    )
+    cached_image = models.CharField(max_length=256, null=True, blank=True, editable=False)
 
     @property
     def fullname(self):
-        name = self.name
         if self.tag:
-            name += ":" + self.tag
-        return name
+            return f"{self.name}:{self.tag}"
+        return self.name
+
+    def __str__(self):
+        return self.fullname
 
     @property
     def relation_to_json(self):
@@ -39,5 +37,3 @@ class RunImage(BaseModel):
 
     class Meta:
         ordering = ["-created"]
-        verbose_name = "Run image"
-        verbose_name_plural = "Run images"

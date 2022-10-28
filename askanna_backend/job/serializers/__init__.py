@@ -1,34 +1,8 @@
-# -*- coding: utf-8 -*-
-from django.conf import settings
-from rest_framework import serializers
-
 from core.utils import get_setting_from_database
-from job.models import JobDef
+from django.conf import settings
+from job.models import JobDef, JobPayload
 from package.models import Package
-
-from .artifact import (  # noqa: F401
-    JobArtifactSerializer,
-    JobArtifactSerializerDetail,
-    JobArtifactSerializerForInsert,
-    ChunkedArtifactPartSerializer,
-    RunResultSerializer,
-    ChunkedRunResultPartSerializer,
-)
-from .metric import RunMetricsRowSerializer, RunMetricsSerializer  # noqa: F401
-from .variable import (  # noqa: F401
-    JobVariableCreateSerializer,
-    JobVariableUpdateSerializer,
-    JobVariableSerializer,
-)
-from .runvariable import (  # noqa: F401
-    RunVariableRowSerializer,
-    RunVariablesSerializer,
-)
-from .run import (  # noqa: F401
-    JobRunSerializer,
-    JobRunUpdateSerializer,
-    JobPayloadSerializer,
-)
+from rest_framework import serializers
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -42,11 +16,7 @@ class JobSerializer(serializers.ModelSerializer):
         """
         If notifications are configured we return them here
         """
-        package = (
-            Package.objects.filter(project=instance.project)
-            .order_by("-created")
-            .first()
-        )
+        package = Package.objects.filter(project=instance.project).order_by("-created").first()
 
         configyml = package.get_askanna_config()
         if configyml is None:
@@ -93,3 +63,9 @@ class StartJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobDef
         fields = "__all__"
+
+
+class JobPayloadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobPayload
+        exclude = ("jobdef", "owner")

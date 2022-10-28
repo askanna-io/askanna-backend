@@ -1,27 +1,24 @@
-# -*- coding: utf-8 -*-
 import random
 import string
 
+from core.permissions import RoleBasedPermission
+from core.views import SerializerByActionMixin
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
-
+from project.models import Project
 from rest_framework.generics import DestroyAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
-from core.permissions import RoleBasedPermission
-from core.views import SerializerByActionMixin
 from users.models import Membership
 from users.serializers import (
-    GlobalMeSerializer,
     AvatarMeSerializer,
-    ProjectMeSerializer,
-    WorkspaceMeSerializer,
+    GlobalMeSerializer,
     ObjectAvatarMeSerializer,
+    ProjectMeSerializer,
     UpdateMeSerializer,
     UpdateObjectMeSerializer,
+    WorkspaceMeSerializer,
 )
-from project.models import Project
 from workspace.models import Workspace
 
 User = get_user_model()
@@ -87,7 +84,9 @@ class BaseMeViewSet(
 
         instance.to_deleted()
         instance.is_active = False
-        instance.username = "deleted-user-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        instance.username = "deleted-user-" + "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=6)  # nosec: B311
+        )
 
         instance.name = "deleted user"
         instance.job_title = "deleted"
