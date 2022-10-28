@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from core.container import get_descriptive_docker_error

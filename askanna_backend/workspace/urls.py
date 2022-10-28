@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
+from core.urls import router
 from django.conf.urls import include
 from django.urls import re_path
 from users.views import ObjectAvatarMeViewSet, ObjectMeViewSet, PersonViewSet
-from utils.urls import router
 from workspace.views import WorkspaceViewSet
 
-workspace_route = router.register(r"workspace", WorkspaceViewSet)
-workspace_people_route = workspace_route.register(
+workspace_router = router.register(r"workspace", WorkspaceViewSet)
+workspace_people_router = workspace_router.register(
     r"people",
     PersonViewSet,
     basename="workspace-people",
@@ -14,6 +13,7 @@ workspace_people_route = workspace_route.register(
 )
 
 urlpatterns = [
+    re_path(r"^(?P<version>(v1))/", include(router.urls)),
     re_path(
         r"^(?P<version>(v1))/workspace/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/avatar/?$",
         ObjectAvatarMeViewSet.as_view(),
@@ -26,5 +26,4 @@ urlpatterns = [
         kwargs={"object_type": "WS"},
         name="workspace-me",
     ),
-    re_path(r"^(?P<version>(v1))/", include(router.urls)),
 ]

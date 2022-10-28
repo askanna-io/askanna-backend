@@ -1,19 +1,18 @@
-# -*- coding: utf-8 -*-
 import json
 
-from django.conf import settings
 import pytz
-
 from core.config import Job
 from core.mail import send_email
 from core.utils import (
     flatten,
-    is_valid_email,
     get_setting_from_database,
+    is_valid_email,
+    parse_string,
     pretty_time_delta,
-    parse_string
 )
-from job.models import JobRun, JobVariable
+from django.conf import settings
+from project.models import ProjectVariable
+from run.models import Run
 from users.models import Membership
 
 
@@ -24,8 +23,8 @@ def fill_in_mail_variable(string, variables):
 
 def send_run_notification(
     run_status: str,
-    run: JobRun = None,
-    job: Job = None,
+    run: Run,
+    job: Job,
     extra_vars={},
 ):
     # determine the notification levels
@@ -48,15 +47,13 @@ def send_run_notification(
     }
 
     event_type = notification_levels.get(run_status)
-    notification_receivers = job.get_notifications(
-        levels=notification_receivers_lookup.get(event_type)
-    )
+    notification_receivers = job.get_notifications(levels=notification_receivers_lookup.get(event_type))
 
     vars = {}
     if run:
         # inject external information to fill the variables
-        jobvariables = JobVariable.objects.filter(project=run.jobdef.project)
-        for variable in jobvariables:
+        project_variables = ProjectVariable.objects.filter(project=run.jobdef.project)
+        for variable in project_variables:
             vars[variable.name] = variable.value
 
         if run.payload and isinstance(run.payload.payload, dict):
@@ -73,11 +70,7 @@ def send_run_notification(
                     vars[k] = v
         # end of information injection
 
-    notification_receivers = flatten(
-        list(
-            map(lambda mail: fill_in_mail_variable(mail, vars), notification_receivers)
-        )
-    )
+    notification_receivers = flatten(list(map(lambda mail: fill_in_mail_variable(mail, vars), notification_receivers)))
 
     # send to workspace admins if this is defined
     if "workspace admins" in notification_receivers:
@@ -107,9 +100,7 @@ def send_run_notification(
     }
 
     using_template = email_template.get(run_status, "run_update")
-    from_email = get_setting_from_database(
-        "DEFAULT_FROM_EMAIL", settings.DEFAULT_FROM_EMAIL
-    )
+    from_email = get_setting_from_database("DEFAULT_FROM_EMAIL", settings.DEFAULT_FROM_EMAIL)
 
     template_context = {
         "run_status": run_status,

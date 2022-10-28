@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 import pytest
-from rest_framework.test import APITestCase
-
-from job.mailer import fill_in_mail_variable, send_run_notification
 from core.utils import parse_string
+from job.mailer import fill_in_mail_variable, send_run_notification
 from job.tests.base import BaseJobTestDef
+from rest_framework.test import APITestCase
 
 pytestmark = pytest.mark.django_db
 
@@ -36,7 +34,7 @@ class TestJobMailerUtils(unittest.TestCase):
 
 class TestSendNotification(BaseJobTestDef, APITestCase):
     def test_send_notification_mail_running(self):
-        run = self.jobruns.get("run4")
+        run = self.runs.get("run4")
 
         package = run.package
         configyml = package.get_askanna_config()

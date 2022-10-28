@@ -36,12 +36,12 @@ sys.path.insert(0, str(APPS_DIR))
 
 # GENERAL
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#debug
+# https://docs.djangoproject.com/en/stable/ref/settings/#debug
 DEBUG = env.bool("DJANGO_DEBUG", False)
 
 # DATABASES
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#databases
+# https://docs.djangoproject.com/en/stable/ref/settings/#databases
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -53,39 +53,30 @@ DATABASES = {
         "ATOMIC_REQUESTS": True,
         "CONN_MAX_AGE": env.int("CONN_MAX_AGE", default=60),
     },
-    "runinfo": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env.str("POSTGRES_DB_RUNINFO"),
-        "USER": env.str("POSTGRES_USER"),
-        "PASSWORD": env.str("POSTGRES_PASSWORD"),
-        "HOST": env.str("POSTGRES_HOST"),
-        "PORT": env.str("POSTGRES_PORT"),
-    },
 }
-
-DATABASE_ROUTERS = ["core.dbrouter.RunInfoRouter"]
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # URLS
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
+# https://docs.djangoproject.com/en/stable/ref/settings/#root-urlconf
 ROOT_URLCONF = "config.urls"
-# https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
+# https://docs.djangoproject.com/en/stable/ref/settings/#wsgi-application
 WSGI_APPLICATION = "config.wsgi.application"
 
 # APPS
 # ------------------------------------------------------------------------------
 INSTALLED_APPS = [
     # AskAnna apps
-    "users",
-    "utils",
     "core",
+    "utils",
+    "users",
     "workspace",
     "project",
     "package",
     "job",
+    "run",
     # Third party apps
     "django_extensions",
     "django_filters",
@@ -117,7 +108,7 @@ INSTALLED_APPS = [
 
 # MIDDLEWARE
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#middleware
+# https://docs.djangoproject.com/en/stable/ref/settings/#middleware
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -138,16 +129,16 @@ if env.bool("DJANGO_DEBUG_DB", False):
 
 # TEMPLATES
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#templates
+# https://docs.djangoproject.com/en/stable/ref/settings/#templates
 TEMPLATES = [
     {
-        # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-TEMPLATES-BACKEND
+        # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-TEMPLATES-BACKEND
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "APP_DIRS": True,
-        # https://docs.djangoproject.com/en/dev/ref/settings/#template-dirs
+        # https://docs.djangoproject.com/en/stable/ref/settings/#template-dirs
         "DIRS": [str(APPS_DIR.path("templates"))],
         "OPTIONS": {
-            # https://docs.djangoproject.com/en/dev/ref/settings/#template-context-processors
+            # https://docs.djangoproject.com/en/stable/ref/settings/#template-context-processors
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
@@ -165,7 +156,7 @@ TEMPLATES = [
 
 # FIXTURES
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#fixture-dirs
+# https://docs.djangoproject.com/en/stable/ref/settings/#fixture-dirs
 FIXTURE_DIRS = (str(ROOT_DIR.path("fixtures")),)
 
 
@@ -179,14 +170,14 @@ ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
 FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")
 
 
-# https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
+# https://docs.djangoproject.com/en/stable/ref/settings/#test-runner
 # https://docs.celeryproject.org/projects/django-celery/en/2.4/cookbook/unit-testing.html
 TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
 
 
 # CACHES
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#caches
+# https://docs.djangoproject.com/en/stable/ref/settings/#caches
 if env("REDIS_URL", default=None):
     REDIS_URL = env("REDIS_URL")
     CACHES = {
@@ -229,8 +220,8 @@ HEALTHCHECK_CELERY_RESULT_TIMEOUT = env.float(
 
 # LOGGING
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#logging
-# See https://docs.djangoproject.com/en/dev/topics/logging for
+# https://docs.djangoproject.com/en/stable/ref/settings/#logging
+# See https://docs.djangoproject.com/en/stable/topics/logging for
 # more details on how to customize your logging configuration.
 LOGGING = {
     "version": 1,

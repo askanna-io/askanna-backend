@@ -13,17 +13,17 @@ def settings(config, env):
     # WhiteNoise
     # ------------------------------------------------------------------------------
     # http://whitenoise.evans.io/en/latest/django.html#using-whitenoise-in-development
-    config.INSTALLED_APPS = ["whitenoise.runserver_nostatic",] + config.INSTALLED_APPS
+    config.INSTALLED_APPS = [
+        "whitenoise.runserver_nostatic",
+    ] + config.INSTALLED_APPS
 
     # STATIC
     # ------------------------------------------------------------------------------
-    # https://docs.djangoproject.com/en/dev/ref/settings/#static-root
+    # https://docs.djangoproject.com/en/stable/ref/settings/#static-root
     config.STATIC_ROOT = str(config.ROOT_DIR("staticfiles"))
-    # https://docs.djangoproject.com/en/dev/ref/settings/#static-url
+    # https://docs.djangoproject.com/en/stable/ref/settings/#static-url
     config.STATIC_URL = "/static/"
-    # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
-    config.STATICFILES_DIRS = [str(config.APPS_DIR.path("static"))]
-    # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
+    # https://docs.djangoproject.com/en/stable/ref/contrib/staticfiles/#staticfiles-finders
     config.STATICFILES_FINDERS = [
         "django.contrib.staticfiles.finders.FileSystemFinder",
         "django.contrib.staticfiles.finders.AppDirectoriesFinder",
@@ -33,9 +33,9 @@ def settings(config, env):
 
     # MEDIA
     # ------------------------------------------------------------------------------
-    # https://docs.djangoproject.com/en/dev/ref/settings/#media-root
+    # https://docs.djangoproject.com/en/stable/ref/settings/#media-root
     config.MEDIA_ROOT = str(config.APPS_DIR("media"))
-    # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
+    # https://docs.djangoproject.com/en/stable/ref/settings/#media-url
     config.MEDIA_URL = "/media/"
 
     # FILE STORAGE
@@ -84,7 +84,7 @@ def settings(config, env):
             os.makedirs(folder, exist_ok=True)
 
     # Django large payload receipt
-    # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-DATA_UPLOAD_MAX_MEMORY_SIZE
+    # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DATA_UPLOAD_MAX_MEMORY_SIZE
     # https://github.com/encode/django-rest-framework/issues/4760#issuecomment-562059446
     # allow 250M to be used in request.body
     config.DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 250

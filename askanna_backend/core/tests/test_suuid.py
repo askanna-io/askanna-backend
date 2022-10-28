@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-import uuid
 import unittest
+import uuid
 
 from core.utils import GoogleTokenGenerator, bx_encode
 

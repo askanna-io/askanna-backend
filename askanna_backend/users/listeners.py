@@ -1,25 +1,17 @@
-# -*- coding: utf-8 -*-
 import socket
 
+from core.mail import send_email
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
 from PIL import Image
-
-from core.mail import send_email
-from users.models import (
-    PasswordResetLog,
-    UserProfile,
-    Invitation,
-    User,
-)
+from users.models import Invitation, PasswordResetLog, User, UserProfile
 from users.signals import (
+    avatar_changed_signal,
+    email_changed_signal,
+    password_changed_signal,
     password_reset_signal,
     user_created_signal,
-    password_changed_signal,
-    email_changed_signal,
-    avatar_changed_signal,
 )
 from workspace.models import Workspace
 

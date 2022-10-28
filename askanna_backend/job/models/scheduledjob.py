@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 import datetime
 
 import croniter
-from django.db import models
 import pytz
-
 from core.models import SlimBaseModel
+from django.db import models
 
 
 class ScheduledJob(SlimBaseModel):
@@ -23,9 +21,7 @@ class ScheduledJob(SlimBaseModel):
 
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
 
-    last_run = models.DateTimeField(
-        null=True, help_text="The last run of this scheduled job"
-    )
+    last_run = models.DateTimeField(null=True, help_text="The last run of this scheduled job")
     next_run = models.DateTimeField(
         null=True,
         help_text="We store the datetime with timzone in UTC of the next run to be queried on",

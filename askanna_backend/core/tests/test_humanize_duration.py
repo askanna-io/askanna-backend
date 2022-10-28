@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from core.utils import pretty_time_delta

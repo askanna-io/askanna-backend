@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
-from config.celery_app import app as celery_app
-
 from job.mailer import send_run_notification as do_send_notification
-from job.models import JobRun, JobDef
+from job.models import JobDef
 from package.models import Package
+from run.models import Run
+
+from config.celery_app import app as celery_app
 
 
 @celery_app.task(bind=True, name="job.tasks.send_run_notification")
@@ -11,7 +11,7 @@ def send_run_notification(self, run_uuid):
     print(f"Received message to send notifications for run {run_uuid}")
 
     # get the run
-    run = JobRun.objects.get(pk=run_uuid)
+    run = Run.objects.get(pk=run_uuid)
 
     package = run.package
     configyml = package.get_askanna_config()
@@ -35,12 +35,7 @@ def send_missed_schedule_notification(self, job_uuid):
 
     # get latest package for the job
     # Fetch the latest package found in the job.project
-    package = (
-        Package.objects.filter(finished__isnull=False)
-        .filter(project=job.project)
-        .order_by("-created")
-        .first()
-    )
+    package = Package.objects.filter(finished__isnull=False).filter(project=job.project).order_by("-created").first()
     configyml = package.get_askanna_config()
     if configyml is None:
         # we could not parse the config

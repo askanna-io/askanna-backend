@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import datetime
 import io
 import typing
@@ -7,12 +6,12 @@ import zipfile
 
 from rest_framework import status
 from users.models import (
-    User,
-    UserProfile,
     MSP_WORKSPACE,
     WS_ADMIN,
     WS_MEMBER,
     WS_VIEWER,
+    User,
+    UserProfile,
 )
 from workspace.models import Workspace
 
@@ -31,43 +30,43 @@ class BaseUserPopulation:
                 is_superuser=True,
                 email="anna@askanna.dev",
             ),
-            "admin": User.objects.create(
+            "admin": User.objects.create(  # nosec: B106
                 username="admin",
                 email="admin@askanna.dev",
                 password="password-admin",
             ),
-            "member": User.objects.create(
+            "member": User.objects.create(  # nosec: B106
                 username="member",
                 email="member@askanna.dev",
                 password="password-member",
             ),
-            "non_member": User.objects.create(
+            "non_member": User.objects.create(  # nosec: B106
                 username="non_member",
                 email="non_member@askanna.dev",
                 password="password-non_member",
             ),
             # the following users take a different role in testing and are not needed for primairy tests
-            "admin2": User.objects.create(
+            "admin2": User.objects.create(  # nosec: B106
                 username="admin2",
                 email="admin2@askanna.dev",
                 password="password-admin2",
             ),
-            "member2": User.objects.create(
+            "member2": User.objects.create(  # nosec: B106
                 username="member2",
                 email="member2@askanna.dev",
                 password="password-member2",
             ),
-            "member_wv": User.objects.create(
+            "member_wv": User.objects.create(  # nosec: B106
                 username="member_wv",
                 email="member_wv@askanna.dev",
                 password="password-member_wv",
             ),
-            "admin_inactive": User.objects.create(
+            "admin_inactive": User.objects.create(  # nosec: B106
                 username="admin_inactive",
                 email="admin_inactive@askanna.dev",
                 password="password-admin_inactive",
             ),
-            "member_inactive": User.objects.create(
+            "member_inactive": User.objects.create(  # nosec: B106
                 username="member_inactive",
                 email="member_inactive@askanna.dev",
                 password="password-member_inactive",
@@ -201,7 +200,7 @@ class BaseUploadTestMixin:
 
         payload = {
             "filename": filename,
-            "project": self.jobruns["run1"].jobdef.project.short_uuid,  # project is only needed in package upload
+            "project": self.runs["run1"].jobdef.project.short_uuid,  # project is only needed in package upload
             "size": filesize,
         }
 

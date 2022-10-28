@@ -4,32 +4,6 @@ from workspace.models import Workspace
 
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
-    list_display = [
-        "short_uuid",
-        "name",
-        "description",
-        "visibility",
-        "created_by",
-        "created",
-        "deleted",
-    ]
-    list_display_links = [
-        "short_uuid",
-        "name",
-    ]
-    date_hierarchy = "created"
-    list_filter = (
-        "created",
-        "modified",
-        "deleted",
-        "status",
-        "visibility",
-    )
-    search_fields = [
-        "uuid",
-        "short_uuid",
-        "name",
-    ]
     fields = [
         "short_uuid",
         "status",
@@ -51,6 +25,26 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "activate_date",
         "deactivate_date",
         "deleted",
+    ]
+
+    list_display = [
+        "short_uuid",
+        "name",
+        "visibility",
+        "created_by",
+        "created",
+    ]
+    date_hierarchy = "created"
+    list_filter = [
+        "status",
+        "visibility",
+        "created",
+        "modified",
+        "deleted",
+    ]
+    search_fields = [
+        "short_uuid",
+        "name",
     ]
 
     def has_add_permission(self, request):

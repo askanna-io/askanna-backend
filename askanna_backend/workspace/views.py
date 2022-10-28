@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
-from django.contrib.auth import get_user_model
-from django.db.models import Q, Exists, OuterRef, Value, BooleanField
-from django.http import Http404
 import django_filters
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, viewsets
-
 from core.permissions import RoleBasedPermission
 from core.views import SerializerByActionMixin
+from django.contrib.auth import get_user_model
+from django.db.models import BooleanField, Exists, OuterRef, Q, Value
+from django.http import Http404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, viewsets
 from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceCreateSerializer, WorkspaceSerializer

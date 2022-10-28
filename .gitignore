@@ -45,6 +45,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+report.*.xml
 
 # Translations
 *.mo
@@ -348,5 +349,4 @@ docker-compose.override.yml
 
 # pytest coverage reports
 .coverage
-cov.xml
-cov.html/
+cov.*

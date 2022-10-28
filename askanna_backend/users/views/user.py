@@ -1,28 +1,25 @@
-# -*- coding: utf-8 -*-
+from core.views import PermissionByActionMixin, SerializerByActionMixin
 from django.contrib.auth import get_user_model
-
-from rest_framework.decorators import action
 from rest_framework import mixins, viewsets
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
-from core.views import PermissionByActionMixin, SerializerByActionMixin
-from users.serializers import (
-    UserCreateSerializer,
-    UserUpdateSerializer,
-    UserSerializer,
-    PersonSerializer,
-)
-from users.models import Invitation, MSP_WORKSPACE, Membership
+from users.models import MSP_WORKSPACE, Invitation, Membership
 from users.permissions import (
-    IsOwnerOfUser,
     IsNotAlreadyMember,
+    IsOwnerOfUser,
     RequestHasAccessToMembershipPermission,
     RequestIsValidInvite,
     RoleUpdateByAdminOnlyPermission,
 )
-from users.serializers import ProfileImageSerializer
+from users.serializers import (
+    PersonSerializer,
+    ProfileImageSerializer,
+    UserCreateSerializer,
+    UserSerializer,
+    UserUpdateSerializer,
+)
 from workspace.models import Workspace
 
 User = get_user_model()
@@ -86,7 +83,7 @@ class PersonViewSet(
         return {"object_uuid": workspace.uuid}
 
     def initial(self, request, *args, **kwargs):
-        """This function sets the uuid from the query_dict and object_type as "WS" by default. """
+        """This function sets the uuid from the query_dict and object_type as "WS" by default."""
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
         request.data.update(parents)

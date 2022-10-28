@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
 import datetime
 
+import docker
+from core.utils import get_setting_from_database, remove_objects
 from dateutil import parser
 from django.conf import settings
-import docker
+from job.models.jobdef import JobDef
+from run.models import Run
 
 from config.celery_app import app as celery_app
-from core.utils import get_setting_from_database, remove_objects
-from job.models.jobdef import JobDef
-from job.models.jobrun import JobRun
 
 
 @celery_app.task(name="job.tasks.clean_dangling_images")
@@ -82,7 +81,7 @@ def delete_runs():
     Otherwise we would conflict the deletion operation
     """
     remove_objects(
-        JobRun.objects.filter(
+        Run.objects.filter(
             jobdef__deleted__isnull=True,
             jobdef__project__deleted__isnull=True,
             jobdef__project__workspace__deleted__isnull=True,

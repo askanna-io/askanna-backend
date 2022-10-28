@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
 from typing import Dict
-from rest_framework import serializers
 
-from users.models import (
-    Membership,
-    User,
-    UserProfile,
-)
+from rest_framework import serializers
+from users.models import Membership, User, UserProfile
+
 from .personserializer import PersonSerializer
 from .profileimageserializer import ProfileImageSerializer
 

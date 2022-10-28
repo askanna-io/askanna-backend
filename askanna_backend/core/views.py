@@ -1,20 +1,6 @@
-import django
-from django.core.exceptions import ValidationError
-from django.core.files.storage import FileSystemStorage
-from django.conf import settings
-
-from django.http import Http404
-from django.shortcuts import get_object_or_404 as _get_object_or_404
-
-from rest_framework import mixins
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework_extensions.mixins import NestedViewSetMixin
-from resumable.files import ResumableFile
-
 from typing import Optional, Union
 
+import django
 from core.permissions import (
     BaseRoleType,
     ProjectAdmin,
@@ -23,6 +9,16 @@ from core.permissions import (
     WorkspaceAdmin,
     WorkspaceMember,
 )
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.files.storage import FileSystemStorage
+from django.http import Http404
+from django.shortcuts import get_object_or_404 as _get_object_or_404
+from rest_framework import mixins, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework_extensions.mixins import NestedViewSetMixin
+from resumable.files import ResumableFile
 from users.models import Membership, User
 
 
@@ -40,8 +36,6 @@ def get_object_or_404(queryset, *filter_args, **filter_kwargs):
 class BaseChunkedPartViewSet(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     """"""
@@ -65,7 +59,7 @@ class BaseChunkedPartViewSet(
         response["Cache-Control"] = "no-cache"
         return response
 
-    @action(detail=True, methods=["post", "get"])
+    @action(detail=True, methods=["post"])
     def chunk(self, request, **kwargs):
         """
         Receives one chunk in the POST request

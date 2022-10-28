@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-from config.celery_app import app as celery_app
-
 from core.utils import remove_objects
 from project.models import Project
+
+from config.celery_app import app as celery_app
 
 
 @celery_app.task(name="project.tasks.delete_projects")

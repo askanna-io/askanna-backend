@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 import typing
+
 from rest_framework import permissions
 
 """

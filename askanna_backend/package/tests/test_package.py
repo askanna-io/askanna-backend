@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
-from django.urls import reverse
-
 import pytest
-
+from django.urls import reverse
+from job.tests.base import BaseJobTestDef
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from job.tests.base import BaseJobTestDef
 
 pytestmark = pytest.mark.django_db
 

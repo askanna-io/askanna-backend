@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
 import base64
 import binascii
 import io
-from PIL import Image
 
+from PIL import Image
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
 from users.models import UserProfile
 
 
