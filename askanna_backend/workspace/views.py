@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import BooleanField, Exists, OuterRef, Q, Value
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
 from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
@@ -35,6 +36,14 @@ class FilterByMembershipFilterSet(django_filters.FilterSet):
         fields = ["membership"]
 
 
+@extend_schema_view(
+    list=extend_schema(description="List the workspaces you have access to"),
+    retrieve=extend_schema(description="Get info from a specific workspace"),
+    create=extend_schema(description="Create a new workspace"),
+    update=extend_schema(description="Update a workspace"),
+    partial_update=extend_schema(description="Update a workspace"),
+    destroy=extend_schema(description="Remove a workspace"),
+)
 class WorkspaceViewSet(
     SerializerByActionMixin,
     mixins.CreateModelMixin,
@@ -46,7 +55,7 @@ class WorkspaceViewSet(
 ):
     queryset = Workspace.objects.filter(deleted__isnull=True)
     serializer_class = WorkspaceSerializer
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     permission_classes = [RoleBasedPermission]
 
     serializer_classes_by_action = {
@@ -111,7 +120,7 @@ class WorkspaceViewSet(
         self.current_object_type = "WS"
         if self.detail:
             try:
-                self.current_object = Workspace.objects.get(short_uuid=kwargs.get("short_uuid"))
+                self.current_object = Workspace.objects.get(suuid=kwargs.get("suuid"))
             except Workspace.DoesNotExist:
                 raise Http404
 

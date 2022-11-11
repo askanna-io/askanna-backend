@@ -9,7 +9,7 @@ from .profileimageserializer import ProfileImageSerializer
 
 class BaseMeSerializer(serializers.ModelSerializer):
     uuid = serializers.SerializerMethodField("get_uuid")
-    short_uuid = serializers.SerializerMethodField("get_short_uuid")
+    suuid = serializers.SerializerMethodField("get_suuid")
     name = serializers.SerializerMethodField("get_name")
     job_title = serializers.SerializerMethodField("get_job_title")
     email = serializers.SerializerMethodField("get_email")
@@ -23,7 +23,7 @@ class BaseMeSerializer(serializers.ModelSerializer):
     def is_member(self) -> bool:
         """
         Helper function to determine the no-member role from both Membership and User model
-        A non-member doesn't have the uuid and short_uuid set
+        A non-member doesn't have the uuid and suuid set
         """
         if isinstance(self.instance, Membership) and getattr(self.instance, "user"):
             return True
@@ -37,9 +37,9 @@ class BaseMeSerializer(serializers.ModelSerializer):
             return instance.uuid
         return None
 
-    def get_short_uuid(self, instance):
+    def get_suuid(self, instance):
         if self.is_member:
-            return instance.short_uuid
+            return instance.suuid
         return None
 
     def get_name(self, instance):
@@ -101,7 +101,7 @@ class BaseMeSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "uuid",
-            "short_uuid",
+            "suuid",
             "name",
             "email",
             "job_title",
@@ -146,7 +146,7 @@ class ObjectMeSerializer(BaseMeSerializer):
         model = UserProfile
         fields = (
             "uuid",
-            "short_uuid",
+            "suuid",
             "name",
             "email",
             "job_title",
@@ -200,7 +200,7 @@ class AvatarMeSerializer(ProfileImageSerializer):
         model = User
         fields = [
             "avatar",
-            "short_uuid",
+            "suuid",
         ]
 
 
@@ -209,5 +209,5 @@ class ObjectAvatarMeSerializer(ProfileImageSerializer):
         model = UserProfile
         fields = [
             "avatar",
-            "short_uuid",
+            "suuid",
         ]

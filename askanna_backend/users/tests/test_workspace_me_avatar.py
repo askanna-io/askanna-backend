@@ -16,7 +16,7 @@ class TestWorkspaceAvatarAPI(WorkspaceTestSet, BaseTestAvatarAPI, APITestCase):
             "workspace-me-avatar",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.workspace.short_uuid,
+                "suuid": self.workspace.suuid,
             },
         )
 

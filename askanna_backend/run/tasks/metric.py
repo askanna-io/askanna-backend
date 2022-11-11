@@ -18,14 +18,14 @@ def move_metrics_to_rows(self, metrics_uuid):
     run_metric = RunMetric.objects.get(pk=metrics_uuid)
 
     # Remove old rows if any
-    RunMetricRow.objects.filter(run_suuid=run_metric.short_uuid).delete()
+    RunMetricRow.objects.filter(run_suuid=run_metric.suuid).delete()
 
     for metric in run_metric.metrics:
         metric["created"] = datetime.datetime.fromisoformat(metric["created"])
-        metric["project_suuid"] = run_metric.run.jobdef.project.short_uuid
-        metric["job_suuid"] = run_metric.run.jobdef.short_uuid
+        metric["project_suuid"] = run_metric.run.jobdef.project.suuid
+        metric["job_suuid"] = run_metric.run.jobdef.suuid
         # Overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
-        metric["run_suuid"] = run_metric.run.short_uuid
+        metric["run_suuid"] = run_metric.run.suuid
 
         RunMetricRow.objects.create(**metric)
 
@@ -49,7 +49,7 @@ def post_run_deduplicate_metrics(self, run_suuid):
         last_metric = metric
 
     try:
-        run_metric = RunMetric.objects.get(run__short_uuid=run_suuid)
+        run_metric = RunMetric.objects.get(run__suuid=run_suuid)
     except RunMetric.DoesNotExist:
         pass
     else:

@@ -1,11 +1,12 @@
 import datetime
-from django.urls import reverse
+
 import pytz
+from django.urls import reverse
+from job.models import ScheduledJob
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .base import BaseJobTestDef
-from job.models import ScheduledJob
 
 
 class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
@@ -19,12 +20,10 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "job-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
 
-    def add_schedules_to_job(
-        self, job=None, definitions=[], current_dt=datetime.datetime.now(tz=pytz.UTC)
-    ):
+    def add_schedules_to_job(self, job=None, definitions=[], current_dt=datetime.datetime.now(tz=pytz.UTC)):
         for definition in definitions:
             scheduled_job = ScheduledJob.objects.create(
                 job=job,
@@ -44,9 +43,9 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
-        self.assertTrue(response.data.get("schedules") == [])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data.get("suuid") == self.jobdef.suuid
+        assert response.data.get("schedules") is None
 
     def test_some_schedules_in_jobresponse(self):
         self.activate_user("member")
@@ -82,25 +81,22 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
             self.url,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
-        self.assertEqual(len(response.data.get("schedules")), 2)
-        self.assertTrue(
-            response.data.get("schedules")
-            == [
-                {
-                    "last_run": None,
-                    "next_run": datetime.datetime(2021, 4, 12, 18, 10, tzinfo=pytz.UTC),
-                    "cron_definition": "*/10 * * * *",
-                    "cron_timezone": "Europe/Amsterdam",
-                    "raw_definition": "*/10 * * * *",
-                },
-                {
-                    "last_run": None,
-                    "next_run": datetime.datetime(2021, 4, 13, 16, 0, tzinfo=pytz.UTC),
-                    "cron_definition": "0 0 * * *",
-                    "cron_timezone": "Asia/Hong_Kong",
-                    "raw_definition": "@midnight",
-                },
-            ]
-        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data.get("suuid") == self.jobdef.suuid
+        assert len(response.data.get("schedules")) == 2
+        assert response.data.get("schedules") == [
+            {
+                "last_run": None,
+                "next_run": datetime.datetime(2021, 4, 12, 18, 10, tzinfo=pytz.UTC),
+                "cron_definition": "*/10 * * * *",
+                "cron_timezone": "Europe/Amsterdam",
+                "raw_definition": "*/10 * * * *",
+            },
+            {
+                "last_run": None,
+                "next_run": datetime.datetime(2021, 4, 13, 16, 0, tzinfo=pytz.UTC),
+                "cron_definition": "0 0 * * *",
+                "cron_timezone": "Asia/Hong_Kong",
+                "raw_definition": "@midnight",
+            },
+        ]

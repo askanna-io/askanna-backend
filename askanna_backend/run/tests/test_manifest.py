@@ -14,7 +14,7 @@ class TestRunManifestAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-manifest",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
 
     def test_manifest_as_admin(self):
@@ -84,7 +84,7 @@ class TestRunManifestAPI(BaseRunTest, APITestCase):
 
         url = reverse(
             "run-manifest",
-            kwargs={"version": "v1", "short_uuid": self.runs["run3"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run3"].suuid},
         )
 
         response = self.client.get(
@@ -102,7 +102,7 @@ class TestRunManifestAPI(BaseRunTest, APITestCase):
 
         url = reverse(
             "run-manifest",
-            kwargs={"version": "v1", "short_uuid": self.runs["run4"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run4"].suuid},
         )
 
         response = self.client.get(

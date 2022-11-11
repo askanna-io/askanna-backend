@@ -1,6 +1,5 @@
 from typing import Dict
 
-from package.models import Package
 from project.models import Project
 from rest_framework import serializers
 from users.models import MSP_WORKSPACE, Membership
@@ -8,12 +7,14 @@ from workspace.models import Workspace
 
 
 class BaseProjectSerializer:
+    created_by = serializers.SerializerMethodField("get_created_by")
     is_member = serializers.SerializerMethodField("get_is_member")
+    permission = serializers.SerializerMethodField("get_permission")
+    workspace = serializers.SerializerMethodField("get_workspace")
+    package = serializers.SerializerMethodField("get_package")
 
     def get_is_member(self, instance):
         return instance.is_member
-
-    permission = serializers.SerializerMethodField("get_permission")
 
     def _get_true_permissions(self, permissions: Dict) -> Dict:
         return dict(filter(lambda x: x[1] is True, permissions.items()))
@@ -41,72 +42,35 @@ class BaseProjectSerializer:
         return instance.workspace.relation_to_json
 
     def get_created_by(self, instance):
-        if instance.created_by is not None:
-            return {
-                "uuid": instance.created_by.uuid,
-                "short_uuid": instance.created_by.short_uuid,
-                "name": instance.created_by.get_name(),
-            }
-        return {
-            "uuid": None,
-            "short_uuid": None,
-            "name": None,
-        }
+        if instance.created_by:
+            return instance.created_by.relation_to_json
+        else:
+            return None
 
     def get_package(self, instance):
         """
         Get references to the last pushed package for this project
         """
         package = instance.packages.order_by("-created").first()
-
         if package:
-            return {
-                "uuid": package.uuid,
-                "short_uuid": package.short_uuid,
-                "name": package.original_filename,
-            }
-        return {
-            "uuid": None,
-            "short_uuid": None,
-            "name": None,
-        }
-
-    notifications = serializers.SerializerMethodField("get_notifications")
-
-    def get_notifications(self, instance):
-        """
-        If notifications are configured we return them here
-        """
-        package = Package.objects.filter(finished__isnull=False).filter(project=instance).order_by("-created").first()
-        if not package:
-            return {}
-
-        configyml = package.get_askanna_config()
-        if configyml is None:
-            # we could not parse the config
-            return {}
-
-        if configyml.notifications:
-            return configyml.notifications
-
-        return {}
+            return package.relation_to_json
+        else:
+            return None
 
     def to_representation(self, instance):
         request = self.context["request"]
         url = "{scheme}://{host}/{workspace}/project/{project}".format(
             scheme=request.scheme,
             host=request.get_host().replace("-api", "").replace("api.", ""),
-            workspace=instance.workspace.short_uuid,
-            project=instance.short_uuid,
+            workspace=instance.workspace.suuid,
+            project=instance.suuid,
         )
         return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
+            "suuid": instance.suuid,
             "name": instance.get_name(),
             "description": instance.description,
             "workspace": self.get_workspace(instance),
             "package": self.get_package(instance),
-            "notifications": self.get_notifications(instance),
             "permission": self.get_permission(instance),  # this is relative to the user requesting this
             "is_member": self.get_is_member(instance),
             "created_by": self.get_created_by(instance),
@@ -118,13 +82,10 @@ class BaseProjectSerializer:
 
 
 class ProjectSerializer(BaseProjectSerializer, serializers.ModelSerializer):
-    created_by = serializers.SerializerMethodField("get_created_by")
-    workspace = serializers.SerializerMethodField("get_workspace")
-    package = serializers.SerializerMethodField("get_package")
-
     class Meta:
         model = Project
         exclude = [
+            "uuid",
             "deleted",
             "activate_date",
             "deactivate_date",
@@ -168,18 +129,18 @@ class ProjectCreateSerializer(BaseProjectSerializer, serializers.ModelSerializer
 
     def validate_workspace(self, value):
         """
-        Validation of a given workspace short_uuid
+        Validation of a given workspace suuid
 
         Steps needed:
-        - check in database for existing workspace with short_uuid
+        - check in database for existing workspace with suuid
         - check whether the user is a member of this workspace
-        - return the workspace.uuid instead of short_uuid in `value`
+        - return the workspace.uuid instead of suuid in `value`
 
         In all cases of error, return a message that workspace doesn't exist or user has no access
 
         """
         try:
-            workspace = Workspace.objects.get(short_uuid=value)
+            workspace = Workspace.objects.get(suuid=value)
         except Exception:
             raise serializers.ValidationError("Workspace with SUUID={} was not found".format(value))
         else:

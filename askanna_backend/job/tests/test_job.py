@@ -84,7 +84,7 @@ class TestProjectJobListAPI(TestJobListAPI):
             "project-job-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 
@@ -148,7 +148,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "job-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
 
     def test_detail_as_admin(self):
@@ -162,7 +162,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.jobdef.suuid)
 
     def test_detail_as_member(self):
         """
@@ -175,7 +175,7 @@ class TestJobDetailAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.jobdef.suuid)
 
     def test_detail_as_nonmember(self):
         """
@@ -212,7 +212,7 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             "job-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.jobdef.short_uuid,
+                "suuid": self.jobdef.suuid,
             },
         )
 
@@ -233,10 +233,10 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("description") == "test")
-        self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.jobdef.suuid)
 
     def test_change_as_member(self):
         """
@@ -255,10 +255,10 @@ class TestJobChangeAPI(BaseJobTestDef, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("description") == "test")
-        self.assertTrue(response.data.get("short_uuid") == self.jobdef.short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.jobdef.suuid)
 
     def test_change_as_nonmember(self):
         """
@@ -292,7 +292,7 @@ class TestJobDeleteAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "job-detail",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
 
     def test_delete_as_anna(self):

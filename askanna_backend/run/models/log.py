@@ -24,7 +24,7 @@ class RunLog(SlimBaseModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logqueue = RedisLogQueue(suuid=self.run.short_uuid)
+        self.logqueue = RedisLogQueue(suuid=self.run.suuid)
         self.log_idx = 0
 
     def log(self, message: str = None, timestamp: str = None, print_log: bool = False):
@@ -61,9 +61,8 @@ class RunLog(SlimBaseModel):
         """
         return {
             "relation": "log",
+            "suuid": self.suuid,
             "name": "log.json",
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "size": self.size,
             "lines": self.lines,
         }

@@ -16,8 +16,10 @@ from users.models import MSP_WORKSPACE
 
 
 class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
+    """Start a new run for a job"""
+
     queryset = JobDef.jobs.active()
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = StartJobSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -103,13 +105,10 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
         return source
 
     def newrun(self, request, **kwargs):
-        """
-        We accept any data that is sent in request.data
-        """
+        """Start a new run for a job"""
         job = self.get_object()
         payload = self.handle_payload(request=request, job=job)
 
-        # TODO: Determine wheter we need the latest or pinned package
         # Fetch the latest package found in the job.project
         package = (
             Package.objects.exclude(original_filename="")
@@ -119,7 +118,7 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
             .first()
         )
 
-        # create new run
+        # Create new run
         runspec = {
             "name": request.query_params.get("name"),
             "description": request.query_params.get("description"),
@@ -132,13 +131,12 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
         }
         run = Run.objects.create(**runspec)
 
-        # return the run id
+        # Return the run information
         return Response(
             {
                 "message_type": "status",
+                "suuid": run.suuid,
                 "status": "queued",
-                "uuid": run.uuid,
-                "short_uuid": run.short_uuid,
                 "name": run.name,
                 "created": run.created,
                 "updated": run.modified,
@@ -147,6 +145,6 @@ class StartJobView(ObjectRoleMixin, viewsets.GenericViewSet):
                 "job": run.jobdef.relation_to_json,
                 "project": run.jobdef.project.relation_to_json,
                 "workspace": run.jobdef.project.workspace.relation_to_json,
-                "next_url": "{}://{}/v1/status/{}/".format(request.scheme, request.META["HTTP_HOST"], run.short_uuid),
+                "next_url": "{}://{}/v1/status/{}/".format(request.scheme, request.META["HTTP_HOST"], run.suuid),
             }
         )

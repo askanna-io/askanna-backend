@@ -72,6 +72,7 @@ tasks:
       pre-commit install --install-hooks
       while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:4173/ht/)" != "200" ]]; do echo "Frontend is not ready yet..." && sleep 10; done && echo "Frontend is ready!"
       while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do echo "Backend is not ready yet..." && sleep 10; done && echo "Backend is ready!"
+      while ! command -v askanna >/dev/null; do echo "CLI & SDK is not ready yet..." && sleep 10; done && echo "CLI & SDK is ready!" && askanna login --remote $(gp url 8000) --email admin@localhost.com --password DevAskAnna
 
 ports:
   - name: Backend Dev

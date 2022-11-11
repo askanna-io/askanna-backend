@@ -34,10 +34,10 @@ class RunVariableObjectMixin:
         # always return ProjectMember for logged in users since the listing always shows objects based on membership
         project = None
         if kwargs.get("parent_lookup_run_suuid"):
-            run = Run.objects.get(short_uuid=kwargs.get("parent_lookup_run_suuid"))
+            run = Run.objects.get(suuid=kwargs.get("parent_lookup_run_suuid"))
             project = run.jobdef.project
-        elif kwargs.get("parent_lookup_run__short_uuid"):
-            run = Run.objects.get(short_uuid=kwargs.get("parent_lookup_run__short_uuid"))
+        elif kwargs.get("parent_lookup_run__suuid"):
+            run = Run.objects.get(suuid=kwargs.get("parent_lookup_run__suuid"))
             project = run.jobdef.project
         if project:
             request.user_roles += Membership.get_roles_for_project(request.user, project)
@@ -55,12 +55,14 @@ class RunVariableView(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Update the variables for a run"""
+
     # we removed 'put' from the http_method_names as we don't suppor this in this view
     # - post and delete
     http_method_names = ["get", "patch", "head", "options", "trace"]
 
     queryset = RunVariable.objects.all()
-    lookup_field = "run__short_uuid"  # not needed for listviews
+    lookup_field = "run__suuid"  # not needed for listviews
     serializer_class = RunVariableSerializer
 
     def get_queryset(self):
@@ -117,8 +119,10 @@ class RunVariableRowView(
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
+    """List variables"""
+
     queryset = RunVariableRow.objects.all()
-    lookup_field = "short_uuid"  # not needed for listviews
+    lookup_field = "suuid"  # not needed for listviews
     serializer_class = RunVariableRowSerializer
 
     # Override default, remove OrderingFilter because we use the DjangoFilterBackend version
@@ -129,7 +133,7 @@ class RunVariableRowView(
         return self.get_object_project().workspace
 
     def get_object_project(self):
-        return Project.objects.get(short_uuid=self.current_object.project_suuid)
+        return Project.objects.get(suuid=self.current_object.project_suuid)
 
     def get_queryset(self):
         """
@@ -145,7 +149,7 @@ class RunVariableRowView(
 
         """
         user = self.request.user
-        run = Run.objects.get(short_uuid=self.kwargs.get("parent_lookup_run_suuid"))
+        run = Run.objects.get(suuid=self.kwargs.get("parent_lookup_run_suuid"))
 
         if user.is_anonymous and (
             (run.jobdef.project.visibility == "PUBLIC" and run.jobdef.project.workspace.visibility == "PUBLIC")
@@ -159,7 +163,7 @@ class RunVariableRowView(
         member_of_projects = (
             Project.objects.filter(
                 Q(workspace_id__in=member_of_workspaces) | (Q(workspace__visibility="PUBLIC") & Q(visibility="PUBLIC"))
-            ).values_list("short_uuid", flat=True)
+            ).values_list("suuid", flat=True)
         )[
             ::-1
         ]  # hard convert to list for cross db query

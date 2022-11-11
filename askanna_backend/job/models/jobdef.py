@@ -59,15 +59,14 @@ class JobDef(BaseModel):
         return self.name
 
     def __str__(self):
-        return f"{self.name} ({self.short_uuid})"
+        return f"{self.name} ({self.suuid})"
 
     @property
     def relation_to_json(self):
         return {
             "relation": "jobdef",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
         }
 
     class Meta:

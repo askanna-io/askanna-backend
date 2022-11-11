@@ -21,7 +21,7 @@ run_router.register(
     r"metric",
     RunMetricView,
     basename="run-metric",
-    parents_query_lookups=["run__short_uuid"],
+    parents_query_lookups=["run__suuid"],
 )
 
 run_router.register(
@@ -42,47 +42,47 @@ run_router.register(
     r"variable",
     RunVariableView,
     basename="run-variable",
-    parents_query_lookups=["run__short_uuid"],
+    parents_query_lookups=["run__suuid"],
 )
 
 run_router.register(
     r"payload",
     JobPayloadView,
     basename="run-payload",
-    parents_query_lookups=["run__short_uuid"],
+    parents_query_lookups=["run__suuid"],
 )
 
 artifact_router = run_router.register(
     r"artifact",
     RunArtifactView,
     basename="run-artifact",
-    parents_query_lookups=["run__short_uuid"],
+    parents_query_lookups=["run__suuid"],
 )
 artifact_router.register(
     r"artifactchunk",
     ChunkedArtifactViewSet,
     basename="artifact-artifactchunk",
-    parents_query_lookups=["artifact__run__short_uuid", "artifact__short_uuid"],
+    parents_query_lookups=["artifact__run__suuid", "artifact__suuid"],
 )
 
 result_router = run_router.register(
     r"result-upload",
     RunResultCreateView,
     basename="run-result",
-    parents_query_lookups=["run__short_uuid"],
+    parents_query_lookups=["run__suuid"],
 )
 result_router.register(
     r"resultchunk",
     ChunkedJobResultViewSet,
     basename="result-resultchunk",
-    parents_query_lookups=["runresult__run__short_uuid", "runresult__short_uuid"],
+    parents_query_lookups=["runresult__run__suuid", "runresult__suuid"],
 )
 
 job_router.register(
     r"run",
     JobRunView,
     basename="job-run",
-    parents_query_lookups=["jobdef__short_uuid"],
+    parents_query_lookups=["jobdef__suuid"],
 )
 job_router.register(
     r"metric",

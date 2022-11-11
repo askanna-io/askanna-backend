@@ -19,7 +19,7 @@ def install_demo_project_in_workspace(sender, instance, **kwargs):
     # this code is disabled untill the `askanna run` is finished`
     pass
     # workspace = instance
-    # workspace_suuid = workspace.short_uuid
+    # workspace_suuid = workspace.suuid
 
     # trigger celery job with the following args:
     # workspace_suuid
@@ -27,7 +27,7 @@ def install_demo_project_in_workspace(sender, instance, **kwargs):
 
     # anna = User.objects.get(pk=1)
 
-    # jobdef = JobDef.objects.get(short_uuid=settings.JOB_CREATE_PROJECT_SUUID)
+    # jobdef = JobDef.objects.get(suuid=settings.JOB_CREATE_PROJECT_SUUID)
     # json_string = json.dumps({"WORKSPACE_SUUID": workspace_suuid,})
     # job_pl = JobPayload.objects.create(
     #     jobdef=jobdef, size=len(json_string), lines=3, owner=anna

@@ -1,12 +1,11 @@
 """Define tests for API of UserProfile."""
 import pytest
+from core.tests.base import BaseUserPopulation
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from core.tests.base import BaseUserPopulation
+from users.models import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
 from workspace.models import Workspace
-from users.models import Membership, UserProfile, MSP_WORKSPACE, WS_ADMIN
-
 
 pytestmark = pytest.mark.django_db
 
@@ -119,8 +118,8 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        uuid = response.data["uuid"]
-        workspace = Workspace.objects.get(uuid=uuid)
+        suuid = response.data["suuid"]
+        workspace = Workspace.objects.get(suuid=suuid)
 
         self.assertIsNotNone(workspace)
         self.assertEqual(workspace.created_by, user)
@@ -135,12 +134,13 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        uuid = response.data["uuid"]
+        suuid = response.data["suuid"]
+        workspace = Workspace.objects.get(suuid=suuid)
 
-        membership = Membership.objects.get(object_uuid=uuid, object_type=MSP_WORKSPACE, user=user)
+        membership = Membership.objects.get(object_uuid=workspace.uuid, object_type=MSP_WORKSPACE, user=user)
         self.assertIsNotNone(membership)
         self.assertEqual(membership.role, WS_ADMIN)
 
-        userprofile = UserProfile.objects.get(object_uuid=uuid, object_type=MSP_WORKSPACE, user=user)
+        userprofile = UserProfile.objects.get(object_uuid=workspace.uuid, object_type=MSP_WORKSPACE, user=user)
         self.assertEqual(userprofile.uuid, membership.uuid)
         self.assertEqual(userprofile.role, membership.role)

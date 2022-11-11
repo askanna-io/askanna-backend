@@ -7,9 +7,9 @@ from run.models import Run, RunMetricRow, RunVariableRow
 
 class RunFilter(filters.FilterSet):
 
-    project = CharFilter(field_name="jobdef__project__short_uuid", method="filter_multiple")
-    job = CharFilter(field_name="jobdef__short_uuid", method="filter_multiple")
-    runs = CharFilter(field_name="short_uuid", method="filter_multiple")
+    project = CharFilter(field_name="jobdef__project__suuid", method="filter_multiple")
+    job = CharFilter(field_name="jobdef__suuid", method="filter_multiple")
+    runs = CharFilter(field_name="suuid", method="filter_multiple")
 
     def filter_multiple(self, queryset, name, value):
         """
@@ -21,7 +21,7 @@ class RunFilter(filters.FilterSet):
 
     class Meta:
         model = Run
-        fields = ["short_uuid"]
+        fields = ["suuid"]
 
 
 class MetricDataFilter(django_filters.OrderingFilter):
@@ -97,7 +97,7 @@ class MetricFilter(filters.FilterSet):
 
     class Meta:
         model = RunMetricRow
-        fields = ["short_uuid"]
+        fields = ["suuid"]
 
 
 class RunVariableDataFilter(django_filters.OrderingFilter):
@@ -173,4 +173,4 @@ class RunVariableFilter(filters.FilterSet):
 
     class Meta:
         model = RunVariableRow
-        fields = ["short_uuid"]
+        fields = ["suuid"]

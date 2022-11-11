@@ -19,7 +19,7 @@ class ProfileImageSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             "avatar",
-            "short_uuid",
+            "suuid",
         ]
 
     def validate_avatar(self, value):

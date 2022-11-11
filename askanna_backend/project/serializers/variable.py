@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from drf_spectacular.utils import extend_schema_field
 from project.models import Project, ProjectVariable
 from rest_framework import serializers
 
@@ -8,20 +9,13 @@ class ProjectVariableCreateSerializer(serializers.ModelSerializer):
     value = serializers.CharField(trim_whitespace=False, allow_blank=True)
 
     def validate_project(self, value):
-        project = value
-        # is it a short_uuid?
-        # or is it a uuid?
         try:
-            dbproject = Project.objects.get(short_uuid=project)
+            return Project.objects.get(suuid=value)
         except ObjectDoesNotExist:
-            dbproject = Project.objects.get(uuid=project)
-
-        # return uuid for this project
-        return dbproject
+            raise serializers.ValidationError("Project cannot be found.")
 
     def create(self, validated_data):
-        instance = ProjectVariable.objects.create(**validated_data)
-        return instance
+        return ProjectVariable.objects.create(**validated_data)
 
     def validate_value(self, value):
         if len(value) == 0:
@@ -30,12 +24,12 @@ class ProjectVariableCreateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
+            "suuid": instance.suuid,
             "name": instance.name,
             "value": instance.value,
             "is_masked": instance.is_masked,
             "project": instance.project.relation_to_json,
+            "workspace": instance.project.workspace.relation_to_json,
             "created": instance.created,
             "modified": instance.modified,
         }
@@ -43,13 +37,15 @@ class ProjectVariableCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectVariable
         exclude = [
+            "uuid",
             "deleted",
         ]
 
 
 class ProjectVariableSerializer(serializers.ModelSerializer):
-    project = serializers.SerializerMethodField("get_project")
     value = serializers.SerializerMethodField("get_value")
+    project = serializers.SerializerMethodField("get_project")
+    workspace = serializers.SerializerMethodField("get_workspace")
 
     def get_value(self, instance):
         """
@@ -58,25 +54,34 @@ class ProjectVariableSerializer(serializers.ModelSerializer):
         show_masked = self.context["request"].query_params.get("show_masked")
         return instance.get_value(show_masked=show_masked)
 
+    @extend_schema_field(
+        {"type": "string", "format": "binary", "example": {"relation": "string", "suuid": "string", "name": "string"}}
+    )
     def get_project(self, instance):
-        """
-        return short project relation info
-        """
         return instance.project.relation_to_json
+
+    @extend_schema_field(
+        {"type": "string", "format": "binary", "example": {"relation": "string", "suuid": "string", "name": "string"}}
+    )
+    def get_workspace(self, instance):
+        return instance.project.workspace.relation_to_json
 
     class Meta:
         model = ProjectVariable
-        exclude = [
-            "deleted",
+        fields = [
+            "suuid",
+            "name",
+            "value",
+            "is_masked",
+            "project",
+            "workspace",
+            "created",
+            "modified",
         ]
 
 
 class ProjectVariableUpdateSerializer(serializers.ModelSerializer):
     value = serializers.CharField(trim_whitespace=False, allow_blank=True)
-
-    class Meta:
-        model = ProjectVariable
-        fields = ["name", "value", "is_masked"]
 
     def validate_value(self, value):
         if len(value) == 0:
@@ -92,12 +97,20 @@ class ProjectVariableUpdateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
+            "suuid": instance.suuid,
             "name": instance.name,
             "value": instance.value,
             "is_masked": instance.is_masked,
             "project": instance.project.relation_to_json,
+            "workspace": instance.project.workspace.relation_to_json,
             "created": instance.created,
             "modified": instance.modified,
         }
+
+    class Meta:
+        model = ProjectVariable
+        fields = [
+            "name",
+            "value",
+            "is_masked",
+        ]

@@ -17,30 +17,30 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase):
             "run-result",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.runs["run1"].short_uuid,
+                "suuid": self.runs["run1"].suuid,
             },
         )
         self.register_upload_url = reverse(
             "run-result-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__short_uuid": self.runs["run1"].short_uuid,
+                "parent_lookup_run__suuid": self.runs["run1"].suuid,
             },
         )
         self.create_chunk_url = lambda artifact_object: reverse(
             "result-resultchunk-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_runresult__run__short_uuid": self.runs["run1"].short_uuid,
-                "parent_lookup_runresult__short_uuid": artifact_object.get("short_uuid"),
+                "parent_lookup_runresult__run__suuid": self.runs["run1"].suuid,
+                "parent_lookup_runresult__suuid": artifact_object.get("suuid"),
             },
         )
         self.upload_chunk_url = lambda artifact_object, chunk_uuid: reverse(
             "result-resultchunk-chunk",
             kwargs={
                 "version": "v1",
-                "parent_lookup_runresult__run__short_uuid": self.runs["run1"].short_uuid,
-                "parent_lookup_runresult__short_uuid": artifact_object.get("short_uuid"),
+                "parent_lookup_runresult__run__suuid": self.runs["run1"].suuid,
+                "parent_lookup_runresult__suuid": artifact_object.get("suuid"),
                 "pk": chunk_uuid,
             },
         )
@@ -48,8 +48,8 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase):
             "run-result-finish-upload",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__short_uuid": self.runs["run1"].short_uuid,
-                "short_uuid": artifact_object.get("short_uuid"),
+                "parent_lookup_run__suuid": self.runs["run1"].suuid,
+                "suuid": artifact_object.get("suuid"),
             },
         )
 
@@ -153,7 +153,7 @@ class TestResultDetailAPI(BaseRunTest, APITestCase):
             "run-result",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.runs["run2"].short_uuid,
+                "suuid": self.runs["run2"].suuid,
             },
         )
 

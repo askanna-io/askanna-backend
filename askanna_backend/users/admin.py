@@ -3,7 +3,6 @@ from django.contrib.auth import admin as auth_admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils.html import escape, mark_safe
-from django.utils.translation import gettext_lazy as _
 from users.forms import UserChangeForm, UserCreationForm
 from users.models import Invitation, Membership, PasswordResetLog, UserProfile
 from users.serializers import PersonSerializer
@@ -20,15 +19,15 @@ class UserAdmin(auth_admin.UserAdmin):
 
     form = UserChangeForm
     add_form = UserCreationForm
-    fieldsets = (("User", {"fields": ("name", "short_uuid")}),) + auth_admin.UserAdmin.fieldsets
-    list_display = ["username", "name", "uuid", "short_uuid", "is_superuser"]
-    search_fields = ["name", "uuid", "short_uuid"]
+    fieldsets = (("User", {"fields": ("name", "suuid")}),) + auth_admin.UserAdmin.fieldsets
+    list_display = ["username", "name", "uuid", "suuid", "is_superuser"]
+    search_fields = ["name", "uuid", "suuid"]
 
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
     list_display = [
-        "short_uuid",
+        "suuid",
         "uuid",
         "user",
         "object_uuid",
@@ -57,7 +56,7 @@ class MembershipAdmin(admin.ModelAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = [
-        "short_uuid",
+        "suuid",
         "uuid",
         "user",
         "object_uuid",
@@ -102,7 +101,7 @@ class InvitationAdmin(admin.ModelAdmin):
             messages.success(
                 request,
                 mark_safe(
-                    _("Invitation sent to <strong>%(email)s</strong> for %(type)s %(workspace)s.")
+                    "Invitation sent to <strong>%(email)s</strong> for %(type)s %(workspace)s."
                     % {
                         "email": escape(invitation.email),
                         "type": invitation.object_type,
@@ -111,7 +110,7 @@ class InvitationAdmin(admin.ModelAdmin):
                 ),
             )
 
-    resend_invitation.short_description = _("Resend invitation email for the given Invitations")
+    resend_invitation.short_description = "Resend invitation email for the given Invitations"
 
 
 @admin.register(PasswordResetLog)

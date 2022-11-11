@@ -14,7 +14,7 @@ class TestRunLogAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-log",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
 
     def test_log_as_admin(self):
@@ -74,15 +74,15 @@ class TestMoreRunLogAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-log",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
         self.url2 = reverse(
             "run-log",
-            kwargs={"version": "v1", "short_uuid": self.runs["run2"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run2"].suuid},
         )
         self.url3 = reverse(
             "run-log",
-            kwargs={"version": "v1", "short_uuid": self.runs["run5"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run5"].suuid},
         )
 
     def test_log_as_admin(self):

@@ -5,7 +5,7 @@ from job.models import JobDef, JobPayload, RunImage, ScheduledJob
 @admin.register(JobDef)
 class JobDefAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "project",
         "name",
         "description",
@@ -16,7 +16,7 @@ class JobDefAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "environment_image",
         "timezone",
         "created",
@@ -27,7 +27,7 @@ class JobDefAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "name",
         "project",
         "created",
@@ -39,8 +39,8 @@ class JobDefAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "project__short_uuid",
+        "suuid",
+        "project__suuid",
     ]
 
     def has_add_permission(self, request):
@@ -53,7 +53,7 @@ class JobDefAdmin(admin.ModelAdmin):
 @admin.register(JobPayload)
 class JobPayloadAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "jobdef",
         "lines",
         "size",
@@ -63,7 +63,7 @@ class JobPayloadAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "lines",
         "size",
         "modified",
@@ -75,7 +75,7 @@ class JobPayloadAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "jobdef",
         "project",
         "size",
@@ -89,8 +89,8 @@ class JobPayloadAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "jobdef__short_uuid",
+        "suuid",
+        "jobdef__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover
@@ -106,7 +106,7 @@ class JobPayloadAdmin(admin.ModelAdmin):
 @admin.register(RunImage)
 class RunImageAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "name",
         "tag",
         "description",
@@ -117,7 +117,7 @@ class RunImageAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "name",
         "tag",
         "digest",
@@ -138,7 +138,7 @@ class RunImageAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
+        "suuid",
         "name",
         "tag",
         "digest",
@@ -152,7 +152,7 @@ class RunImageAdmin(admin.ModelAdmin):
 @admin.register(ScheduledJob)
 class ScheduledJobAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "job",
         "member",
         "raw_definition",
@@ -165,7 +165,7 @@ class ScheduledJobAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "modified",
         "created",
     ]
@@ -175,7 +175,7 @@ class ScheduledJobAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "job_name",
         "project_name",
         "raw_definition",
@@ -192,7 +192,7 @@ class ScheduledJobAdmin(admin.ModelAdmin):
         "created",
         "deleted",
     ]
-    search_fields = ["short_uuid", "job__short_uuid", "raw_definition", "cron_definition", "cron_timezone"]
+    search_fields = ["suuid", "job__suuid", "raw_definition", "cron_definition", "cron_timezone"]
 
     def job_name(self, obj):  # pragma: no cover
         return obj.job.get_name()

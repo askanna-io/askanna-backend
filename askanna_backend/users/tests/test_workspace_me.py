@@ -57,7 +57,7 @@ class WorkspaceTestSet:
             "workspace-me",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.workspace.short_uuid,
+                "suuid": self.workspace.suuid,
             },
         )
 
@@ -65,7 +65,7 @@ class WorkspaceTestSet:
             "workspace-me",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.workspace.short_uuid[:-1] + "1",
+                "suuid": self.workspace.suuid[:-1] + "1",
             },
         )
 
@@ -250,8 +250,8 @@ class TestWorkspaceMeDelete(WorkspaceTestSet, BaseTestGlobalMeDelete, APITestCas
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_profile.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.member_profile.suuid,
             },
         )
         response = self.client.delete(
@@ -290,8 +290,8 @@ class TestWorkspaceMeDelete(WorkspaceTestSet, BaseTestGlobalMeDelete, APITestCas
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_profile_b.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.member_profile_b.suuid,
             },
         )
         response = self.client.delete(

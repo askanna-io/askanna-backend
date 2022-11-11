@@ -1,8 +1,8 @@
-Run #{{ run.short_uuid|slice:":4" }} has started
+Run #{{ run.suuid|slice:":4" }} has started
 
 Project:  {{run.jobdef.project.get_name}}
 Job:      {{run.jobdef.get_name}}
-Run:      {% if run.name %}{{ run.name }}{% else %}{{ run.short_uuid }}{% endif %} ({{ ui_url }}/{{ run.jobdef.project.workspace.short_uuid }}/project/{{ run.jobdef.project.short_uuid }}/jobs/{{ run.jobdef.short_uuid }}/runs/{{ run.short_uuid }}/overview)
+Run:      {% if run.name %}{{ run.name }}{% else %}{{ run.suuid }}{% endif %} ({{ ui_url }}/{{ run.jobdef.project.workspace.suuid }}/project/{{ run.jobdef.project.suuid }}/jobs/{{ run.jobdef.suuid }}/runs/{{ run.suuid }}/overview)
 
 Date:     {{ run_created|date:"F d, Y, h:i:s a e" }}
 
@@ -10,7 +10,7 @@ By:       {{ run.member.get_name }}
 Trigger:  {{ trigger }}
 
 {% if result %}
-Result:   {{ result.name }} ({{ ui_url }}/{{ run.jobdef.project.workspace.short_uuid }}/project/{{ run.jobdef.project.short_uuid }}/jobs/{{ run.jobdef.short_uuid }}/runs/{{ run.short_uuid }}/result)
+Result:   {{ result.name }} ({{ ui_url }}/{{ run.jobdef.project.workspace.suuid }}/project/{{ run.jobdef.project.suuid }}/jobs/{{ run.jobdef.suuid }}/runs/{{ run.suuid }}/result)
 {% endif %}
 {% if log %}
 Information:

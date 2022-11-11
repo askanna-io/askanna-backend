@@ -23,7 +23,7 @@ class JobPayload(SlimBaseModel):
 
     @property
     def storage_location(self):
-        return os.path.join(self.jobdef.project.uuid.hex, self.short_uuid)
+        return os.path.join(self.jobdef.project.uuid.hex, self.suuid)
 
     size = models.PositiveIntegerField(editable=False, default=0)
     lines = models.PositiveIntegerField(editable=False, default=0)
@@ -62,9 +62,8 @@ class JobPayload(SlimBaseModel):
         """
         return {
             "relation": "payload",
+            "suuid": self.suuid,
             "name": self.filename,
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "size": self.size,
             "lines": self.lines,
         }

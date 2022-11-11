@@ -37,7 +37,7 @@ class BaseProjectVariableTest(BaseUserPopulation):
 
 class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
     """
-    Testing the delete function for the /v1/variable/{{ short_uuid }}
+    Testing the delete function for the /v1/variable/{{ suuid }}
     """
 
     def setUp(self):
@@ -61,7 +61,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             "name": "TestVariable",
             "value": "TestValue",
             "is_masked": False,
-            "project": self.project.short_uuid,
+            "project": self.project.suuid,
         }
 
         response = self.client.post(
@@ -69,7 +69,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             new_token,
             format="json",
         )
-        self.tmp_variable = response.data.get("short_uuid")
+        self.tmp_variable = response.data.get("suuid")
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -84,7 +84,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             "name": "TestVariable",
             "value": "TestValue",
             "is_masked": False,
-            "project": self.project.short_uuid,
+            "project": self.project.suuid,
         }
 
         response = self.client.post(
@@ -92,7 +92,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             new_token,
             format="json",
         )
-        self.tmp_variable = response.data.get("short_uuid")
+        self.tmp_variable = response.data.get("suuid")
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -109,7 +109,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             "name": "TestVariable",
             "value": "",
             "is_masked": False,
-            "project": self.project.short_uuid,
+            "project": self.project.suuid,
         }
 
         response = self.client.post(
@@ -117,7 +117,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             new_token,
             format="json",
         )
-        self.tmp_variable = response.data.get("short_uuid")
+        self.tmp_variable = response.data.get("suuid")
         self.assertIn(b"cannot be empty", response.content)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -133,7 +133,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             "name": "TestVariable",
             "value": " ",
             "is_masked": False,
-            "project": self.project.short_uuid,
+            "project": self.project.suuid,
         }
 
         response = self.client.post(
@@ -141,7 +141,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             new_token,
             format="json",
         )
-        self.tmp_variable = response.data.get("short_uuid")
+        self.tmp_variable = response.data.get("suuid")
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == " ")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -157,7 +157,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             "name": "TestVariable",
             "value": "TestValue",
             "is_masked": False,
-            "project": self.project.short_uuid,
+            "project": self.project.suuid,
         }
 
         response = self.client.post(
@@ -175,7 +175,7 @@ class TestVariableCreateAPI(BaseProjectVariableTest, APITestCase):
             "name": "TestVariable",
             "value": "TestValue",
             "is_masked": False,
-            "project": self.project.short_uuid,
+            "project": self.project.suuid,
         }
 
         response = self.client.post(
@@ -252,18 +252,18 @@ class TestVariableListAPI(BaseProjectVariableTest, APITestCase):
 
 class TestVariableDetailAPI(BaseProjectVariableTest, APITestCase):
     """
-    Testing the detail function for the /v1/variable/{{ short_uuid }}
+    Testing the detail function for the /v1/variable/{{ suuid }}
     """
 
     def setUp(self):
         super().setUp()
         self.urlformaskedvar = reverse(
             "variable-detail",
-            kwargs={"version": "v1", "short_uuid": self.variable_masked.short_uuid},
+            kwargs={"version": "v1", "suuid": self.variable_masked.suuid},
         )
         self.url = reverse(
             "variable-detail",
-            kwargs={"version": "v1", "short_uuid": self.variable.short_uuid},
+            kwargs={"version": "v1", "suuid": self.variable.suuid},
         )
 
     def test_detail_as_admin(self):
@@ -276,7 +276,7 @@ class TestVariableDetailAPI(BaseProjectVariableTest, APITestCase):
             self.url,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -291,7 +291,7 @@ class TestVariableDetailAPI(BaseProjectVariableTest, APITestCase):
             self.urlformaskedvar,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariableMasked")
         self.assertTrue(response.data.get("value") == "***masked***")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -306,7 +306,7 @@ class TestVariableDetailAPI(BaseProjectVariableTest, APITestCase):
             self.url,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariable")
         self.assertTrue(response.data.get("value") == "TestValue")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -321,7 +321,7 @@ class TestVariableDetailAPI(BaseProjectVariableTest, APITestCase):
             self.urlformaskedvar,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "TestVariableMasked")
         self.assertTrue(response.data.get("value") == "***masked***")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -352,14 +352,14 @@ class TestVariableDetailAPI(BaseProjectVariableTest, APITestCase):
 
 class TestVariableChangeAPI(BaseProjectVariableTest, APITestCase):
     """
-    Testing the change (PUT/PATCH) function for the /v1/variable/{{ short_uuid }}
+    Testing the change (PUT/PATCH) function for the /v1/variable/{{ suuid }}
     """
 
     def setUp(self):
         super().setUp()
         self.url = reverse(
             "variable-detail",
-            kwargs={"version": "v1", "short_uuid": self.variable.short_uuid},
+            kwargs={"version": "v1", "suuid": self.variable.suuid},
         )
 
     def test_change_as_admin(self):
@@ -379,7 +379,7 @@ class TestVariableChangeAPI(BaseProjectVariableTest, APITestCase):
             change_var_payload,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == "newvalue")
         self.assertTrue(response.data.get("created") != response.data.get("modified"))
@@ -402,7 +402,7 @@ class TestVariableChangeAPI(BaseProjectVariableTest, APITestCase):
             change_var_payload,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == "newvalue")
         self.assertTrue(response.data.get("created") != response.data.get("modified"))
@@ -426,7 +426,7 @@ class TestVariableChangeAPI(BaseProjectVariableTest, APITestCase):
             change_var_payload,
             format="json",
         )
-        self.assertTrue("short_uuid" in response.data.keys())
+        self.assertTrue("suuid" in response.data.keys())
         self.assertTrue(response.data.get("name") == "newname")
         self.assertTrue(response.data.get("value") == " ")
         self.assertTrue(response.data.get("created") != response.data.get("modified"))
@@ -452,7 +452,7 @@ class TestVariableChangeAPI(BaseProjectVariableTest, APITestCase):
             change_var_payload,
             format="json",
         )
-        self.tmp_variable = response.data.get("short_uuid")
+        self.tmp_variable = response.data.get("suuid")
         self.assertIn(b"cannot be empty", response.content)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -496,14 +496,14 @@ class TestVariableChangeAPI(BaseProjectVariableTest, APITestCase):
 
 class TestVariableDeleteAPI(BaseProjectVariableTest, APITestCase):
     """
-    Testing the delete function for the /v1/variable/{{ short_uuid }}
+    Testing the delete function for the /v1/variable/{{ suuid }}
     """
 
     def setUp(self):
         super().setUp()
         self.url = reverse(
             "variable-detail",
-            kwargs={"version": "v1", "short_uuid": self.variable.short_uuid},
+            kwargs={"version": "v1", "suuid": self.variable.suuid},
         )
 
     def test_delete_as_admin(self):
@@ -554,12 +554,12 @@ class TestVariableDeleteAPI(BaseProjectVariableTest, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-# The same tests but on /v1/project/{{ short_uuid}}/variables/ level
+# The same tests but on /v1/project/{{ suuid}}/variables/ level
 
 
 class TestProjectVariableCreateAPI(TestVariableCreateAPI):
     """
-    Testing the create function for the /v1/project/{{ project-short_uuid }}/variable/{{ short_uuid }}
+    Testing the create function for the /v1/project/{{ project-suuid }}/variable/{{ suuid }}
     """
 
     def setUp(self):
@@ -568,7 +568,7 @@ class TestProjectVariableCreateAPI(TestVariableCreateAPI):
             "project-variable-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
         self.tmp_variable = None
@@ -576,7 +576,7 @@ class TestProjectVariableCreateAPI(TestVariableCreateAPI):
 
 class TestProjectVariableListAPI(TestVariableListAPI):
     """
-    Testing the list function for the /v1/project/{{ project-short_uuid }}/variable/{{ short_uuid }}
+    Testing the list function for the /v1/project/{{ project-suuid }}/variable/{{ suuid }}
     """
 
     def setUp(self):
@@ -585,7 +585,7 @@ class TestProjectVariableListAPI(TestVariableListAPI):
             "project-variable-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 
@@ -605,7 +605,7 @@ class TestProjectVariableListAPI(TestVariableListAPI):
 
 class TestProjectVariableChangeAPI(TestVariableChangeAPI):
     """
-    Testing the change function for the /v1/project/{{ project-short_uuid }}/{{ short_uuid }}
+    Testing the change function for the /v1/project/{{ project-suuid }}/{{ suuid }}
     """
 
     def setUp(self):
@@ -614,15 +614,15 @@ class TestProjectVariableChangeAPI(TestVariableChangeAPI):
             "project-variable-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.variable.short_uuid,
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "suuid": self.variable.suuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 
 
 class TestProjectVariableDetailAPI(TestVariableDetailAPI):
     """
-    Testing the detail function for the /v1/project/{{ project-short_uuid }}/{{ short_uuid }}
+    Testing the detail function for the /v1/project/{{ project-suuid }}/{{ suuid }}
     """
 
     def setUp(self):
@@ -631,23 +631,23 @@ class TestProjectVariableDetailAPI(TestVariableDetailAPI):
             "project-variable-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.variable.short_uuid,
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "suuid": self.variable.suuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
         self.urlformaskedvar = reverse(
             "project-variable-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.variable_masked.short_uuid,
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "suuid": self.variable_masked.suuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 
 
 class TestProjectVariableDeleteAPI(TestVariableDeleteAPI):
     """
-    Testing the delete function for the /v1/project/{{ project-short_uuid }}/{{ short_uuid }}
+    Testing the delete function for the /v1/project/{{ project-suuid }}/{{ suuid }}
     """
 
     def setUp(self):
@@ -656,8 +656,8 @@ class TestProjectVariableDeleteAPI(TestVariableDeleteAPI):
             "project-variable-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.variable.short_uuid,
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "suuid": self.variable.suuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 

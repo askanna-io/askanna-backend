@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from users.models import (
     MSP_WORKSPACE,
     WS_ADMIN,
@@ -18,8 +17,8 @@ from users.models import (
 )
 from users.serializers import PersonSerializer
 
-from ..models import Workspace
 from ..listeners import install_demo_project_in_workspace
+from ..models import Workspace
 
 pytestmark = pytest.mark.django_db
 
@@ -76,14 +75,14 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
         response = self.client.get(url, {"token": PersonSerializer(self.invitation).generate_token()})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
 
     def test_retrieve_invite_as_anonymous_no_token(self):
         """With no token, invites are not available to anonymous users."""
@@ -91,8 +90,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -107,8 +106,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -117,7 +116,7 @@ class TestInviteAPI(APITestCase):
 
         response = self.client.get(url, {"token": PersonSerializer(self.invitation).generate_token()})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
 
     def test_retrieve_invite_with_no_token_fails(self):
         """Authenticated need a token to retrieve an invite."""
@@ -125,8 +124,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -144,8 +143,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -156,7 +155,7 @@ class TestInviteAPI(APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
 
     def test_retrieve_invite_as_admin(self):
         """An admin can see existing invitations from a workspace."""
@@ -164,8 +163,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -176,14 +175,14 @@ class TestInviteAPI(APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.invitation.short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
 
     def test_create_invite(self):
         url = reverse(
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -203,7 +202,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -229,7 +228,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -256,7 +255,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -276,8 +275,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -294,8 +293,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -312,8 +311,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -337,8 +336,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": extra_workspace.short_uuid,
-                "short_uuid": extra_invitation.short_uuid,
+                "parent_lookup_workspace__suuid": extra_workspace.suuid,
+                "suuid": extra_invitation.suuid,
             },
         )
 
@@ -356,8 +355,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -381,7 +380,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -400,7 +399,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -419,7 +418,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -439,8 +438,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -469,8 +468,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -498,8 +497,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -529,8 +528,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -553,8 +552,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -571,8 +570,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -597,8 +596,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -622,8 +621,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_profile.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.member_profile.suuid,
             },
         )
 
@@ -648,8 +647,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -681,8 +680,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": to_fail_workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": to_fail_workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -712,7 +711,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -724,11 +723,11 @@ class TestInviteAPI(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        uuids = [p["uuid"] for p in response.data]
-        self.assertEqual(len(uuids), 4)
-        self.assertNotIn(str(filtered_invitation.pk), uuids)
-        self.assertIn(str(self.invitation.pk), uuids)
-        self.assertIn(str(self.member_profile.pk), uuids)
+        suuids = [p["suuid"] for p in response.data]
+        self.assertEqual(len(suuids), 4)
+        self.assertNotIn(str(filtered_invitation.suuid), suuids)
+        self.assertIn(str(self.invitation.suuid), suuids)
+        self.assertIn(str(self.member_profile.suuid), suuids)
 
     def test_invitation_data_is_not_writable(self):
         """Data from an invitation is read only once it has been created."""
@@ -736,8 +735,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -760,8 +759,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -777,7 +776,7 @@ class TestInviteAPI(APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
             },
         )
 
@@ -802,8 +801,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.invitation.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.invitation.suuid,
             },
         )
 
@@ -824,8 +823,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_profile.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.member_profile.suuid,
             },
         )
 
@@ -849,8 +848,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace.short_uuid,
-                "short_uuid": self.member_profile.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace.suuid,
+                "suuid": self.member_profile.suuid,
             },
         )
 
@@ -858,8 +857,8 @@ class TestInviteAPI(APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace2.short_uuid,
-                "short_uuid": self.member_profile2.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace2.suuid,
+                "suuid": self.member_profile2.suuid,
             },
         )
         token = self.users["member_a"].auth_token

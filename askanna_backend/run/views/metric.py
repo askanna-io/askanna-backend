@@ -30,13 +30,13 @@ class RunMetricObjectMixin:
         # always return ProjectMember for logged in users since the listing always shows objects based on membership
         project = None
         if kwargs.get("parent_lookup_run_suuid"):
-            run = Run.objects.get(short_uuid=kwargs.get("parent_lookup_run_suuid"))
+            run = Run.objects.get(suuid=kwargs.get("parent_lookup_run_suuid"))
             project = run.jobdef.project
-        elif kwargs.get("parent_lookup_run__short_uuid"):
-            run = Run.objects.get(short_uuid=kwargs.get("parent_lookup_run__short_uuid"))
+        elif kwargs.get("parent_lookup_run__suuid"):
+            run = Run.objects.get(suuid=kwargs.get("parent_lookup_run__suuid"))
             project = run.jobdef.project
         elif kwargs.get("parent_lookup_job_suuid"):
-            job = JobDef.objects.get(short_uuid=kwargs.get("parent_lookup_job_suuid"))
+            job = JobDef.objects.get(suuid=kwargs.get("parent_lookup_job_suuid"))
             project = job.project
         if project:
             request.user_roles += Membership.get_roles_for_project(request.user, project)
@@ -54,6 +54,8 @@ class RunMetricRowView(
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
+    """List metrics"""
+
     queryset = RunMetricRow.objects.all().order_by("created")
     lookup_field = "run_suuid"  # not needed for listviews
     serializer_class = RunMetricRowSerializer
@@ -66,7 +68,7 @@ class RunMetricRowView(
         return self.get_object_project().workspace
 
     def get_object_project(self):
-        return Project.objects.get(short_uuid=self.current_object.project_suuid)
+        return Project.objects.get(suuid=self.current_object.project_suuid)
 
     def get_queryset(self):
         """
@@ -84,10 +86,10 @@ class RunMetricRowView(
         user = self.request.user
 
         if self.kwargs.get("parent_lookup_run_suuid"):
-            run = Run.objects.get(short_uuid=self.kwargs.get("parent_lookup_run_suuid"))
+            run = Run.objects.get(suuid=self.kwargs.get("parent_lookup_run_suuid"))
             project = run.jobdef.project
         elif self.kwargs.get("parent_lookup_job_suuid"):
-            job = JobDef.objects.get(short_uuid=self.kwargs.get("parent_lookup_job_suuid"))
+            job = JobDef.objects.get(suuid=self.kwargs.get("parent_lookup_job_suuid"))
             project = job.project
 
         if user.is_anonymous and ((project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC")):
@@ -100,7 +102,7 @@ class RunMetricRowView(
         member_of_projects = (
             Project.objects.filter(
                 Q(workspace_id__in=member_of_workspaces) | (Q(workspace__visibility="PUBLIC") & Q(visibility="PUBLIC"))
-            ).values_list("short_uuid", flat=True)
+            ).values_list("suuid", flat=True)
         )[
             ::-1
         ]  # hard convert to list for cross db query
@@ -114,13 +116,14 @@ class RunMetricView(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Update the metrics for a run"""
 
     # we removed 'patch' from the http_method_names as we don't suppor this in this view
     # - post and delete
     http_method_names = ["get", "put", "head", "options", "trace"]
 
     queryset = RunMetric.objects.all()
-    lookup_field = "run__short_uuid"
+    lookup_field = "run__suuid"
     serializer_class = RunMetricSerializer
 
     # Override because we don't return the full object, just the `metrics` field
@@ -165,7 +168,7 @@ class RunMetricView(
         return self.new_object()
 
     def get_parent_instance(self):
-        filter_kwargs = {"short_uuid": self.kwargs[self.lookup_field]}
+        filter_kwargs = {"suuid": self.kwargs[self.lookup_field]}
         parent = get_object_or_404(Run, **filter_kwargs)
         return parent
 

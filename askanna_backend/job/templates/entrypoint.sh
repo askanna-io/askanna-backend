@@ -55,7 +55,7 @@ echo "Payload is not set"
 {% endif %}
 
 echo 'AskAnna is running job "{{ jd.name }}" for project "{{ pr.name }}"'
-echo 'We are running on "run_{{ jr.short_uuid }}"'
+echo 'We are running on "run_{{ jr.suuid }}"'
 print_newline
 
 # first navigate to the folder where user code is located

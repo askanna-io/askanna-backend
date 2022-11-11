@@ -1,19 +1,17 @@
 import unittest
 import uuid
 
-from core.utils import GoogleTokenGenerator, bx_encode
+from core.utils.suuid import bx_encode, create_suuid
 
 
 class TestSUUIDGenerator(unittest.TestCase):
     def test_generate_suuid(self):
-        generator = GoogleTokenGenerator()
         uuid_original = uuid.UUID("90d1adc2-6833-4c9a-a54f-f21f9dbf0640")
-        suuid = generator.create_token(uuid_in=uuid_original)
+        suuid = create_suuid(uuid=uuid_original)
         self.assertEqual(suuid, "4PGi-Y4Zs-xGZB-E9GF")
 
     def test_generate_suuid_without_suuid(self):
-        generator = GoogleTokenGenerator()
-        suuid = generator.create_token()
+        suuid = create_suuid()
         self.assertEqual(len(suuid), len("0000-0000-0000-0000"))
         self.assertEqual(suuid.count("-"), 3)
         self.assertEqual(len(suuid.split("-")), 4)

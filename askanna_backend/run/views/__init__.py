@@ -1,8 +1,4 @@
-from .artifact import (  # noqa: F401
-    ChunkedArtifactViewSet,
-    RunArtifactShortcutView,
-    RunArtifactView,
-)
+from .artifact import ChunkedArtifactViewSet, RunArtifactView  # noqa: F401
 from .metric import RunMetricRowView, RunMetricView  # noqa: F401
 from .result import ChunkedJobResultViewSet, RunResultCreateView  # noqa: F401
 from .run import JobRunView, RunView  # noqa: F401

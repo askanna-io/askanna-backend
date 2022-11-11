@@ -1,11 +1,11 @@
 from core.utils import get_setting_from_database
 from django.conf import settings
 from job.models import JobDef, JobPayload
-from package.models import Package
 from rest_framework import serializers
 
 
 class JobSerializer(serializers.ModelSerializer):
+    workspace = serializers.SerializerMethodField("get_workspace")
     project = serializers.SerializerMethodField("get_project")
     environment = serializers.SerializerMethodField("get_environment")
     schedules = serializers.SerializerMethodField("get_schedules")
@@ -16,24 +16,30 @@ class JobSerializer(serializers.ModelSerializer):
         """
         If notifications are configured we return them here
         """
-        package = Package.objects.filter(project=instance.project).order_by("-created").first()
+        package = instance.project.packages.order_by("-created").first()
+
+        if not package:
+            return None
 
         configyml = package.get_askanna_config()
         if configyml is None:
             # we could not parse the config
-            return {}
+            return None
 
         job = configyml.jobs.get(instance.name)
         if job and job.notifications:
             return job.notifications
 
-        return {}
+        return None
 
     def get_default_image(self, instance):
         return get_setting_from_database(
             name="RUNNER_DEFAULT_DOCKER_IMAGE",
             default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
         )
+
+    def get_workspace(self, instance):
+        return instance.project.workspace.relation_to_json
 
     def get_project(self, instance):
         return instance.project.relation_to_json
@@ -43,20 +49,34 @@ class JobSerializer(serializers.ModelSerializer):
 
     def get_schedules(self, instance):
         schedules = instance.schedules.order_by("next_run")
-        return [
-            {
-                "raw_definition": schedule.raw_definition,
-                "cron_definition": schedule.cron_definition,
-                "cron_timezone": schedule.cron_timezone,
-                "next_run": schedule.next_run,
-                "last_run": schedule.last_run,
-            }
-            for schedule in schedules
-        ]
+        if schedules:
+            return [
+                {
+                    "raw_definition": schedule.raw_definition,
+                    "cron_definition": schedule.cron_definition,
+                    "cron_timezone": schedule.cron_timezone,
+                    "next_run": schedule.next_run,
+                    "last_run": schedule.last_run,
+                }
+                for schedule in schedules
+            ]
+        return None
 
     class Meta:
         model = JobDef
-        exclude = ("deleted", "environment_image")
+        fields = [
+            "suuid",
+            "name",
+            "description",
+            "workspace",
+            "project",
+            "environment",
+            "timezone",
+            "schedules",
+            "notifications",
+            "created",
+            "modified",
+        ]
 
 
 class StartJobSerializer(serializers.ModelSerializer):
@@ -68,4 +88,10 @@ class StartJobSerializer(serializers.ModelSerializer):
 class JobPayloadSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobPayload
-        exclude = ("jobdef", "owner")
+        fields = [
+            "suuid",
+            "size",
+            "lines",
+            "created",
+            "modified",
+        ]

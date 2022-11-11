@@ -95,7 +95,7 @@ class ProjectTestPackageList(TestPackageList):
             "project-package-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__short_uuid": self.project.short_uuid,
+                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 
@@ -161,7 +161,7 @@ class ProjectPublicTestPackageList(TestPackageList):
             "project-package-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__short_uuid": self.project3.short_uuid,
+                "parent_lookup_project__suuid": self.project3.suuid,
             },
         )
 

@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import BooleanField, Exists, OuterRef, Q, Value
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from project.models import Project
 from project.serializers import (
     ProjectCreateSerializer,
@@ -81,6 +82,14 @@ class ProjectRoleMixin:
         )
 
 
+@extend_schema_view(
+    list=extend_schema(description="List the projects you have access to"),
+    retrieve=extend_schema(description="Get info from a specific project"),
+    create=extend_schema(description="Create a new project"),
+    update=extend_schema(description="Update a project"),
+    partial_update=extend_schema(description="Update a project"),
+    destroy=extend_schema(description="Remove a project"),
+)
 class ProjectView(
     ProjectRoleMixin,
     ObjectRoleMixin,
@@ -92,9 +101,9 @@ class ProjectView(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Project.projects.active().select_related("workspace")
+    queryset = Project.projects.active().select_related("workspace", "created_by")
     serializer_class = ProjectSerializer
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     permission_classes = [RoleBasedPermission]
 
     serializer_classes_by_action = {
@@ -133,15 +142,18 @@ class ProjectView(
 
     def get_create_role(self, request, *args, **kwargs):
         # The role for creating a Project is based on the payload
-        # we read the 'workspace' short_uuid from the payload and determine the user role based on that
+        # we read the 'workspace' suuid from the payload and determine the user role based on that
         workspace_suuid = request.data.get("workspace")
         try:
-            workspace = Workspace.objects.get(short_uuid=workspace_suuid)
+            workspace = Workspace.objects.get(suuid=workspace_suuid)
         except ObjectDoesNotExist:
             raise Http404
         return Membership.get_workspace_role(request.user, workspace)
 
 
+@extend_schema_view(
+    list=extend_schema(description="List the projects you have access to"),
+)
 class ProjectReadOnlyView(
     ProjectRoleMixin,
     ObjectRoleMixin,
@@ -149,9 +161,9 @@ class ProjectReadOnlyView(
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Project.projects.active().select_related("workspace")
+    queryset = Project.projects.active().select_related("workspace", "created_by")
     serializer_class = ProjectSerializer
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     permission_classes = [RoleBasedPermission]
 
     RBAC_BY_ACTION = {
@@ -161,7 +173,7 @@ class ProjectReadOnlyView(
     def get_list_role(self, request, *args, **kwargs):
         # we read the workspace suuid from the url
         try:
-            workspace = Workspace.objects.get(short_uuid=kwargs.get("parent_lookup_workspace__short_uuid"))
+            workspace = Workspace.objects.get(suuid=kwargs.get("parent_lookup_workspace__suuid"))
         except Workspace.DoesNotExist:
             raise Http404
         return Membership.get_workspace_role(request.user, workspace)

@@ -5,15 +5,8 @@ from django.core import signing
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Model, Q
 from django.template.loader import render_to_string
-
 from rest_framework import serializers
-from users.models import (
-    MEMBERSHIPS,
-    MSP_WORKSPACE,
-    Invitation,
-    Membership,
-    UserProfile,
-)
+from users.models import MEMBERSHIPS, MSP_WORKSPACE, Invitation, Membership, UserProfile
 from workspace.models import Workspace
 
 
@@ -43,24 +36,19 @@ class ReadWriteSerializerMethodField(serializers.Field):
 
 
 class PersonSerializer(serializers.Serializer):
+    suuid = serializers.CharField(read_only=True)
     name = ReadWriteSerializerMethodField("get_name", required=False)
     status = ReadWriteSerializerMethodField("get_status", required=False)
     email = ReadWriteSerializerMethodField("get_email")
-    uuid = serializers.UUIDField(read_only=True)
-    short_uuid = serializers.CharField(read_only=True)
     object_uuid = serializers.UUIDField()
     object_type = serializers.ChoiceField(choices=MEMBERSHIPS, default=MSP_WORKSPACE)
     workspace = serializers.SerializerMethodField("get_workspace")
-    role = ReadWriteSerializerMethodField(
-        "get_role", required=False
-    )  # the role will be set later
+    role = ReadWriteSerializerMethodField("get_role", required=False)  # the role will be set later
     job_title = ReadWriteSerializerMethodField("get_job_title", required=False)
     user = serializers.SerializerMethodField("get_user")
     avatar = serializers.SerializerMethodField("get_avatar")
     token = serializers.CharField(write_only=True)
-    front_end_url = serializers.URLField(
-        required=False, default=settings.ASKANNA_UI_URL
-    )
+    front_end_url = serializers.URLField(required=False, default=settings.ASKANNA_UI_URL)
 
     token_signer = signing.TimestampSigner()
 
@@ -99,11 +87,7 @@ class PersonSerializer(serializers.Serializer):
         """
         if instance.user:
             return instance.user.relation_to_json
-        return {
-            "uuid": None,
-            "short_uuid": None,
-            "name": None,
-        }
+        return None
 
     def get_avatar(self, instance):
         """
@@ -256,9 +240,7 @@ class PersonSerializer(serializers.Serializer):
         if not current_user_role.role == "WA":
             # normal members cannot set invite roles to admin.
             # only existing WA can to this
-            raise serializers.ValidationError(
-                {"role": ["You are not allowed to set an invite role to admin."]}
-            )
+            raise serializers.ValidationError({"role": ["You are not allowed to set an invite role to admin."]})
 
     def validate_token_usage(self, data):
         """
@@ -271,9 +253,7 @@ class PersonSerializer(serializers.Serializer):
         """
         if "status" in data and data["status"] == "accepted":
             if self.get_status(self.instance) == "invited" and "token" not in data:
-                raise serializers.ValidationError(
-                    {"token": ["Token is required when accepting invitation"]}
-                )
+                raise serializers.ValidationError({"token": ["Token is required when accepting invitation"]})
 
             elif self.get_status(self.instance) == "accepted":
                 raise serializers.ValidationError({"token": ["Token is already used"]})
@@ -290,16 +270,11 @@ class PersonSerializer(serializers.Serializer):
             membership = data["object_uuid"]
 
             if (
-                Membership.objects.filter(
-                    Q(invitation__email=email)
-                    | (Q(user__email=email, deleted__isnull=True))
-                )
+                Membership.objects.filter(Q(invitation__email=email) | (Q(user__email=email, deleted__isnull=True)))
                 .filter(object_uuid=membership)
                 .exists()
             ):
-                raise serializers.ValidationError(
-                    {"email": ["This email already belongs to this workspace"]}
-                )
+                raise serializers.ValidationError({"email": ["This email already belongs to this workspace"]})
 
     def validate_user_in_membership(self, data):
         """
@@ -308,10 +283,7 @@ class PersonSerializer(serializers.Serializer):
         Also invalidate the invite immediately
         """
         if "status" in data:
-            if (
-                data["status"] == "accepted"
-                and self.get_status(self.instance) == "invited"
-            ):
+            if data["status"] == "accepted" and self.get_status(self.instance) == "invited":
                 user = self._context["request"].user
                 if (
                     Membership.members.members()
@@ -320,9 +292,7 @@ class PersonSerializer(serializers.Serializer):
                     .exists()
                 ):
                     self.invalidate_invite(self.instance)
-                    raise serializers.ValidationError(
-                        {"user": ["User is already part of this workspace"]}
-                    )
+                    raise serializers.ValidationError({"user": ["User is already part of this workspace"]})
 
     def update(self, instance, validated_data):
         """
@@ -373,9 +343,9 @@ class PersonSerializer(serializers.Serializer):
         data = {
             "token": token,
             "workspace_name": workspace.name,
-            "workspace_short_uuid": workspace.short_uuid,
+            "workspace_suuid": workspace.suuid,
             "web_ui_url": instance.invitation.front_end_url.rstrip("/"),
-            "people_short_uuid": instance.short_uuid,
+            "people_suuid": instance.suuid,
         }
 
         subject = f"You’re invited to join {workspace.name} on AskAnna"
@@ -384,8 +354,6 @@ class PersonSerializer(serializers.Serializer):
         text_version = render_to_string("emails/invitation_email.txt", data)
         html_version = render_to_string("emails/invitation_email.html", data)
 
-        msg = EmailMultiAlternatives(
-            subject, text_version, from_email, [instance.invitation.email]
-        )
+        msg = EmailMultiAlternatives(subject, text_version, from_email, [instance.invitation.email])
         msg.attach_alternative(html_version, "text/html")
         msg.send()

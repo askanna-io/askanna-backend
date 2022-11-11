@@ -12,6 +12,7 @@ from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from job.models import JobDef
 from project.models import Project
 from rest_framework import mixins, status, viewsets
@@ -39,12 +40,12 @@ class RunObjectRoleMixin:
 
     def get_create_role(self, request, *args, **kwargs):
         # The role for creating a Project is based on the payload
-        # we read the 'workspace' short_uuid from the payload and determine the user role based on that
+        # we read the 'workspace' suuid from the payload and determine the user role based on that
         project_suuid = None
         parents = self.get_parents_query_dict()
-        project_suuid = parents.get("project__short_uuid") or request.data.get("project")
+        project_suuid = parents.get("project__suuid") or request.data.get("project")
         try:
-            project = Project.objects.get(short_uuid=project_suuid)
+            project = Project.objects.get(suuid=project_suuid)
         except ObjectDoesNotExist:
             raise Http404
 
@@ -63,6 +64,13 @@ class RunObjectRoleMixin:
         return Membership.get_workspace_role(user, self.current_object.jobdef.project.workspace)
 
 
+@extend_schema_view(
+    list=extend_schema(description="List the runs you have access to"),
+    retrieve=extend_schema(description="Get info from a specific run"),
+    update=extend_schema(description="Update a run"),
+    partial_update=extend_schema(description="Update a run"),
+    destroy=extend_schema(description="Remove a run"),
+)
 class RunView(
     RunObjectRoleMixin,
     ObjectRoleMixin,
@@ -78,7 +86,7 @@ class RunView(
     http_method_names = ["get", "patch", "head", "options", "trace", "delete"]
 
     queryset = Run.objects.filter(deleted__isnull=True)
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = RunSerializer
 
     permission_classes = [RoleBasedPermission]
@@ -160,7 +168,8 @@ class RunView(
         methods=["get"],
         name="Run Manifest",
     )
-    def manifest(self, request, short_uuid, **kwargs):
+    def manifest(self, request, suuid, **kwargs):
+        """Get the manifest for a specific run"""
         instance = self.get_object()
         jr = instance
 
@@ -225,12 +234,13 @@ class RunView(
         methods=["get"],
         name="Run Log",
     )
-    def log(self, request, short_uuid, **kwargs):
+    def log(self, request, suuid, **kwargs):
+        """Get the log from a specific run"""
         instance = self.get_object()
         if instance.is_finished:
             stdout = instance.output.stdout
         else:
-            logqueue = RedisLogQueue(instance.short_uuid)
+            logqueue = RedisLogQueue(instance.suuid)
             stdout = logqueue.get()
 
         limit = request.query_params.get("limit", 100)
@@ -279,7 +289,8 @@ class RunView(
         methods=["get", "head"],
         name="Run Result",
     )
-    def result(self, request, short_uuid, **kwargs):
+    def result(self, request, suuid, **kwargs):
+        """Get the result from a specific run"""
         run = self.get_object()
         try:
             run.result.uuid
@@ -301,15 +312,15 @@ class RunView(
         methods=["get"],
         name="Run Status",
     )
-    def status(self, request, short_uuid, **kwargs):
+    def status(self, request, suuid, **kwargs):
+        """Get the status from a specific run"""
         run = self.get_object()
-        next_url = "{}://{}/v1/status/{}/".format(request.scheme, request.META["HTTP_HOST"], run.short_uuid)
-        finished_next_url = "{}://{}/v1/result/{}/".format(request.scheme, request.META["HTTP_HOST"], run.short_uuid)
+        next_url = "{}://{}/v1/status/{}/".format(request.scheme, request.META["HTTP_HOST"], run.suuid)
+        finished_next_url = "{}://{}/v1/result/{}/".format(request.scheme, request.META["HTTP_HOST"], run.suuid)
 
         base_status = {
             "message_type": "status",
-            "uuid": run.uuid,
-            "short_uuid": run.short_uuid,
+            "suuid": run.suuid,
             "name": run.name,
             "created": run.created,
             "updated": run.modified,
@@ -349,8 +360,10 @@ class JobRunView(
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
+    """List all runs for a job"""
+
     queryset = Run.objects.filter(deleted__isnull=True)
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = RunSerializer
     permission_classes = [RoleBasedPermission]
     RBAC_BY_ACTION = {
@@ -385,9 +398,9 @@ class JobRunView(
 
     def get_list_role(self, request, *args, **kwargs):
         # always return ProjectMember for logged in users since the listing always shows objects based on membership
-        job_suuid = kwargs.get("parent_lookup_jobdef__short_uuid")
+        job_suuid = kwargs.get("parent_lookup_jobdef__suuid")
         try:
-            job = JobDef.objects.get(short_uuid=job_suuid)
+            job = JobDef.objects.get(suuid=job_suuid)
         except ObjectDoesNotExist:
             raise Http404
 

@@ -200,7 +200,7 @@ class BaseUploadTestMixin:
 
         payload = {
             "filename": filename,
-            "project": self.runs["run1"].jobdef.project.short_uuid,  # project is only needed in package upload
+            "project": self.runs["run1"].jobdef.project.suuid,  # project is only needed in package upload
             "size": filesize,
         }
 

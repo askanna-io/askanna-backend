@@ -46,7 +46,7 @@ class Command(BaseCommand):
         # Make sure we are operating on the 'AskAnna workspace'
         workspace, workspace_created = Workspace.objects.get_or_create(
             uuid="695fcc8b-ba8c-4575-a1e0-f0fcfc70a349",
-            short_uuid="3Cpy-QMzd-MVko-1rDQ",
+            suuid="3Cpy-QMzd-MVko-1rDQ",
         )
         if workspace_created:
             workspace.name = "AskAnna Core"
@@ -61,7 +61,7 @@ class Command(BaseCommand):
         # Make sure we operate on the 'AskAnna Create Project' project
         project, project_created = Project.objects.get_or_create(
             uuid=uuid.UUID("f1823c3b-e9e7-47bb-a610-5462c9cd9767"),
-            short_uuid="7Lif-Rhcn-IRvS-Wv7J",
+            suuid="7Lif-Rhcn-IRvS-Wv7J",
             workspace=workspace,
         )
         if project_created:
@@ -77,7 +77,7 @@ class Command(BaseCommand):
         # Make sure the job is available for triggering 'create_project'
         jobdef, job_created = JobDef.objects.get_or_create(
             uuid=uuid.UUID("c744a283-f307-40e1-a21d-570bbbe6d9d2"),
-            short_uuid="640q-2AMP-T5BL-Cnml",
+            suuid="640q-2AMP-T5BL-Cnml",
         )
         if job_created:
             jobdef.name = "create_project"

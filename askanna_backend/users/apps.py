@@ -1,11 +1,10 @@
 from django.apps import AppConfig
-from django.utils.translation import gettext_lazy as _
 
 
 class UsersConfig(AppConfig):
     name = "users"
-    verbose_name = _("Users")
+    verbose_name = "Users"
 
     def ready(self):
-        from users import signals  # noqa
         from users import listeners  # noqa
+        from users import signals  # noqa

@@ -1,12 +1,11 @@
 import os
 import uuid
-from typing import Dict
+from typing import Union
 
 from core.config import AskAnnaConfig
 from core.models import AuthorModel, BaseModel
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from package.signals import package_upload_finish
 
 
@@ -17,7 +16,6 @@ class Package(AuthorModel, BaseModel):
         "project.Project",
         on_delete=models.CASCADE,
         related_name="packages",
-        related_query_name="package",
         null=True,
         blank=True,
         default=None,
@@ -28,7 +26,7 @@ class Package(AuthorModel, BaseModel):
 
     # Store when it was finished uploading
     finished = models.DateTimeField(
-        _("Finished upload"),
+        "Finished upload",
         blank=True,
         auto_now_add=False,
         auto_now=False,
@@ -39,16 +37,15 @@ class Package(AuthorModel, BaseModel):
 
     def __str__(self):
         if self.original_filename:
-            return f"{self.original_filename} ({self.short_uuid})"
-        return self.short_uuid
+            return f"{self.original_filename} ({self.suuid})"
+        return self.suuid
 
     @property
     def relation_to_json(self):
         return {
             "relation": "package",
+            "suuid": str(self.suuid),
             "name": self.original_filename,
-            "uuid": str(self.uuid),
-            "short_uuid": str(self.short_uuid),
         }
 
     @property
@@ -96,7 +93,7 @@ class Package(AuthorModel, BaseModel):
         if os.path.exists(self.stored_path):
             os.remove(self.stored_path)
 
-    def get_askanna_yml_path(self) -> str:
+    def get_askanna_yml_path(self) -> Union[str, None]:
         """
         Read the askanna.yml from the package stored on the settings.BLOB_ROOT
         If file doesn't exist, return None
@@ -109,14 +106,14 @@ class Package(AuthorModel, BaseModel):
             return None
         return askanna_yml_path
 
-    def get_askanna_config(self, defaults: Dict = {}) -> dict:
+    def get_askanna_config(self) -> Union[AskAnnaConfig, None]:
         """
-        Reads the askanna.yml as is and return as dictionary or None
+        Reads the askanna.yml as is and return as AskAnnaConfig or None
         """
         askanna_yml = self.get_askanna_yml_path()
         if not askanna_yml:
             return None
-        return AskAnnaConfig.from_stream(open(askanna_yml, "r"), defaults=defaults)
+        return AskAnnaConfig.from_stream(open(askanna_yml, "r"))
 
     class Meta:
         ordering = ["-created"]
