@@ -19,7 +19,6 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from users.signals import avatar_changed_signal
 
 
@@ -125,12 +124,12 @@ class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
     # First Name and Last Name do not cover name patterns
     # around the globe.
 
-    name = models.CharField(_("Name of User"), blank=True, max_length=255)
-    job_title = models.CharField(_("Job title"), blank=True, max_length=255)
+    name = models.CharField("Name of User", blank=True, max_length=255)
+    job_title = models.CharField("Job title", blank=True, max_length=255)
     front_end_domain = models.CharField(max_length=1024, null=True, default=None)
 
     def get_name(self):
-        return self.name or self.username or self.short_uuid
+        return self.name or self.username or self.suuid
 
     @classmethod
     def get_role(self, request):
@@ -157,9 +156,8 @@ class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
         """
         return {
             "relation": "user",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "avatar": self.avatar_cdn_locations(),
         }
 
@@ -170,9 +168,8 @@ class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
         """
         return {
             "relation": "user",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
         }
 
 
@@ -232,7 +229,7 @@ class Membership(BaseAvatarModel, SlimBaseModel):
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
     role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
-    job_title = models.CharField(_("Job title"), blank=True, max_length=255)
+    job_title = models.CharField("Job title", blank=True, max_length=255)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
@@ -241,11 +238,11 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         blank=True,
         null=True,
     )
-    name = models.CharField(_("Name of User"), blank=True, max_length=255)
+    name = models.CharField("Name of User", blank=True, max_length=255)
     use_global_profile = models.BooleanField(
-        _("Use AskAnna profile"),
+        "Use AskAnna profile",
         default=True,
-        help_text=_("Use information from the global AskAnna profile"),
+        help_text="Use information from the global AskAnna profile",
     )
 
     def get_role(self):
@@ -343,8 +340,8 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         }
         role = roles.get(self.role, PublicViewer)
         return {
-            "name": role.name,
             "code": role.code,
+            "name": role.name,
         }
 
     def get_status(self):
@@ -359,13 +356,12 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         """
         return {
             "relation": "membership",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
-            "avatar": self.get_avatar(),
             "job_title": self.get_job_title(),
             "role": self.get_role_serialized(),
             "status": self.get_status(),
+            "avatar": self.get_avatar(),
         }
 
     @property
@@ -375,9 +371,8 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         """
         return {
             "relation": "membership",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "job_title": self.get_job_title(),
             "role": self.get_role_serialized(),
             "status": self.get_status(),
@@ -385,8 +380,8 @@ class Membership(BaseAvatarModel, SlimBaseModel):
 
     def __str__(self):
         if self.get_name():
-            return f"{self.get_name()} ({self.short_uuid})"
-        return self.short_uuid
+            return f"{self.get_name()} ({self.suuid})"
+        return self.suuid
 
     def get_name(self):
         """
@@ -453,7 +448,7 @@ class Invitation(Membership):
 class PasswordResetLog(SlimBaseModel):
     email = models.EmailField()
     user = models.ForeignKey("users.User", blank=True, null=True, default=None, on_delete=models.SET_NULL)
-    remote_ip = models.GenericIPAddressField(_("Remote IP"), null=True)
+    remote_ip = models.GenericIPAddressField("Remote IP", null=True)
     remote_host = models.CharField(max_length=1024, null=True, default=None)
     front_end_domain = models.CharField(max_length=1024, null=True, default=None)
     meta = models.JSONField(null=True, default=None)

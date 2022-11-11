@@ -1,4 +1,3 @@
-from django.utils.translation import gettext_lazy as _
 from rest_framework import status, viewsets
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
@@ -24,7 +23,7 @@ class PasswordResetView(GenericAPIView):
         serializer.save()
         # Return the success message with OK HTTP status
         return Response(
-            {"detail": _("Password reset request has been processed.")},
+            {"detail": "Password reset request has been processed."},
             status=status.HTTP_200_OK,
         )
 

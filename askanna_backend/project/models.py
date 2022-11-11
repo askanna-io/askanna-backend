@@ -53,8 +53,8 @@ class Project(AuthorModel, ActivatorModel, BaseModel):
 
     def __str__(self):
         if self.name:
-            return f"{self.name} ({self.short_uuid})"
-        return self.short_uuid
+            return f"{self.name} ({self.suuid})"
+        return self.suuid
 
     @property
     def relation_to_json(self):
@@ -63,9 +63,8 @@ class Project(AuthorModel, ActivatorModel, BaseModel):
         """
         return {
             "relation": "project",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
         }
 
     class Meta:

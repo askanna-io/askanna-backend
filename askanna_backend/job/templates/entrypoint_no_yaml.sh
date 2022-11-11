@@ -1,7 +1,7 @@
 #!/bin/bash
 askanna --version
 
-echo 'AskAnna is running for project "{{pr.name}}" and running on "{{pr.short_uuid}}"'
+echo 'AskAnna is running for project "{{pr.name}}" and running on "{{pr.suuid}}"'
 
 echo "AskAnna could not find the file: 'askanna.yml'"
 echo "Read on https://docs.askanna.io/code/#askannayml on how to create an 'askanna.yml' to configure a job."

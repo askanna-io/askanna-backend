@@ -1,9 +1,8 @@
-from django.core.exceptions import ObjectDoesNotExist
-from rest_framework import serializers
-
 from core.serializers import BaseArchiveDetailSerializer
-from package.models import Package, ChunkedPackagePart
+from django.core.exceptions import ObjectDoesNotExist
+from package.models import ChunkedPackagePart, Package
 from project.models import Project
+from rest_framework import serializers
 from users.models import MSP_WORKSPACE
 
 
@@ -13,8 +12,7 @@ class PackageCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Package
-        # fields = ["filename", "project", "size", "description"]
-        fields = "__all__"
+        exclude = ["uuid"]
 
     def create(self, validated_data):
         validated_data["created_by"] = self.context.get("request").user
@@ -28,11 +26,9 @@ class PackageCreateSerializer(serializers.ModelSerializer):
         Validation of the project specified in the create request
         """
         try:
-            project = Project.objects.get(short_uuid=value)
+            project = Project.objects.get(suuid=value)
         except ObjectDoesNotExist:
-            raise serializers.ValidationError(
-                f"Project with SUUID={value} was not found"
-            )
+            raise serializers.ValidationError(f"Project with SUUID={value} was not found")
         else:
             # check whether the user has access to this projet
             request = self.context["request"]
@@ -45,42 +41,30 @@ class PackageCreateSerializer(serializers.ModelSerializer):
             if is_member:
                 return project
             else:
-                raise serializers.ValidationError(
-                    f"User has no access to project with SUUID={value}"
-                )
+                raise serializers.ValidationError(f"User has no access to project with SUUID={value}")
 
         return value
 
 
 class PackageSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField("get_created_by")
+    workspace = serializers.SerializerMethodField("get_workspace")
+    project = serializers.SerializerMethodField("get_project")
+    filename = serializers.SerializerMethodField("get_filename")
 
     def get_created_by(self, instance):
-        user = instance.created_by
-        member = instance.member
-        if member:
-            return member.relation_to_json
-        if user:
-            return user.relation_to_json
+        if instance.member:
+            return instance.member.relation_to_json
+        elif instance.created_by:
+            return instance.created_by.relation_to_json
+        else:
+            return None
 
-        # if not of the user or member is filled, return default empty
-        return {
-            "name": "",
-            "uuid": "",
-            "short_uuid": "",
-        }
-
-    project = serializers.SerializerMethodField("get_project")
+    def get_workspace(self, instance):
+        return instance.project.workspace.relation_to_json
 
     def get_project(self, instance):
-        project = instance.project
-        return {
-            "name": project.name,
-            "uuid": str(project.uuid),
-            "short_uuid": str(project.short_uuid),
-        }
-
-    filename = serializers.SerializerMethodField("get_filename")
+        return instance.project.relation_to_json
 
     def get_filename(self, instance):
         """
@@ -92,7 +76,18 @@ class PackageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Package
-        fields = "__all__"
+        fields = [
+            "suuid",
+            "workspace",
+            "project",
+            "created_by",
+            "created",
+            "modified",
+            "name",
+            "description",
+            "filename",
+            "size",
+        ]
 
 
 class ChunkedPackagePartSerializer(serializers.ModelSerializer):
@@ -102,8 +97,10 @@ class ChunkedPackagePartSerializer(serializers.ModelSerializer):
 
 
 class PackageSerializerDetail(BaseArchiveDetailSerializer):
-
     filename = serializers.SerializerMethodField("get_filename")
+    project = serializers.SerializerMethodField("get_project")
+    workspace = serializers.SerializerMethodField("get_workspace")
+    created_by = serializers.SerializerMethodField("get_created_by")
 
     def get_filename(self, instance):
         """
@@ -113,6 +110,20 @@ class PackageSerializerDetail(BaseArchiveDetailSerializer):
         filename = instance.original_filename
         return filename
 
+    def get_created_by(self, instance):
+        if instance.member:
+            return instance.member.relation_to_json
+        elif instance.created_by:
+            return instance.get_created_by()
+        else:
+            return None
+
+    def get_workspace(self, instance):
+        return instance.project.workspace.relation_to_json
+
+    def get_project(self, instance):
+        return instance.project.relation_to_json
+
     class Meta:
         model = Package
-        exclude = ("original_filename", "deleted", "finished")
+        exclude = ["uuid", "original_filename", "deleted", "finished", "member"]

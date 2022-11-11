@@ -1,6 +1,4 @@
 """Localization and internationalization related settings."""
-from django.utils.translation import gettext_lazy as _
-
 from .settings_decorator import configclass
 
 
@@ -24,5 +22,5 @@ def settings(config, _env):
     config.LOCALE_PATHS = [config.ROOT_DIR.path("locale")]
     # https://docs.djangoproject.com/en/stable/ref/settings/#languages
     config.LANGUAGES = [
-        ("en", _("English")),
+        ("en", "English"),
     ]

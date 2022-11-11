@@ -13,14 +13,14 @@ project_router.register(
     r"package",
     ProjectPackageViewSet,
     "project-package",
-    parents_query_lookups=["project__short_uuid"],
+    parents_query_lookups=["project__suuid"],
 )
 
 package_router.register(
     r"packagechunk",
     ChunkedPackagePartViewSet,
     "package-packagechunk",
-    parents_query_lookups=["package__short_uuid"],
+    parents_query_lookups=["package__suuid"],
 )
 
 urlpatterns = [

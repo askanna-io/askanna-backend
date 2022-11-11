@@ -59,11 +59,11 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
         help_text="Unique metric label names and data type for metric label",
     )
 
-    # short_uuid is taken from the parent Run model.
+    # suuid is taken from the parent Run model.
     @property
-    def short_uuid(self):
-        """Return the short_uuid from the parent Run instance."""
-        return self.run.short_uuid
+    def suuid(self):
+        """Return the suuid from the parent Run instance."""
+        return self.run.suuid
 
     def load_from_file(self, reverse=False):
         with open(self.stored_path, "r") as f:
@@ -73,19 +73,19 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
         super().prune()
 
         # also remove the rows of metrics attached to this object
-        RunMetricRow.objects.filter(run_suuid=self.short_uuid).delete()
+        RunMetricRow.objects.filter(run_suuid=self.suuid).delete()
 
     def update_meta(self):
         """
         Update the meta information metric_names and label_names
         """
-        runmetrics = RunMetricRow.objects.filter(run_suuid=self.short_uuid)
+        runmetrics = RunMetricRow.objects.filter(run_suuid=self.suuid)
         if not runmetrics:
             return
 
         def compose_response(instance, metric):
             var = {
-                "run_suuid": instance.short_uuid,
+                "run_suuid": instance.suuid,
                 "metric": metric.metric,
                 "label": metric.label,
                 "created": metric.created.isoformat(),

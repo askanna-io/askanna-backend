@@ -36,7 +36,7 @@ class UserView(
 ):
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = UserSerializer
 
     permission_classes_by_action = {
@@ -64,7 +64,7 @@ class PersonViewSet(
     viewsets.GenericViewSet,
 ):
     queryset = Membership.members.members()
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = PersonSerializer
     permission_classes = [
         RoleUpdateByAdminOnlyPermission,
@@ -76,10 +76,10 @@ class PersonViewSet(
     }
 
     def get_parents_query_dict(self):
-        """This function retrieves the workspace uuid from the workspace short_uuid"""
+        """This function retrieves the workspace uuid from the workspace suuid"""
         query_dict = super().get_parents_query_dict()
-        short_uuid = query_dict.get("workspace__short_uuid")
-        workspace = Workspace.objects.get(short_uuid=short_uuid)
+        suuid = query_dict.get("workspace__suuid")
+        workspace = Workspace.objects.get(suuid=suuid)
         return {"object_uuid": workspace.uuid}
 
     def initial(self, request, *args, **kwargs):

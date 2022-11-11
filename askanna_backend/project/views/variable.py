@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from job.models import JobDef
 from project.models import Project, ProjectVariable
 from project.serializers import (
@@ -21,6 +22,14 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import MSP_WORKSPACE, Membership
 
 
+@extend_schema_view(
+    list=extend_schema(description="List variables you have access to"),
+    retrieve=extend_schema(description="Get info from a specific variable"),
+    create=extend_schema(description="Create a new variable for a project"),
+    update=extend_schema(description="Update a variable"),
+    partial_update=extend_schema(description="Update a variable"),
+    destroy=extend_schema(description="Remove a variable"),
+)
 class ProjectVariableView(
     ObjectRoleMixin,
     SerializerByActionMixin,
@@ -32,8 +41,8 @@ class ProjectVariableView(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = ProjectVariable.objects.all()
-    lookup_field = "short_uuid"
+    queryset = ProjectVariable.objects.all().select_related("project", "project__workspace")
+    lookup_field = "suuid"
     serializer_class = ProjectVariableSerializer
 
     filter_backends = (OrderingFilter, DjangoFilterBackend)
@@ -65,10 +74,10 @@ class ProjectVariableView(
     def get_list_role(self, request, *args, **kwargs):
         # always return ProjectMember for logged in users since the listing always shows objects based on membership
         project = None
-        if kwargs.get("parent_lookup_project__short_uuid"):
-            project = Project.objects.get(short_uuid=kwargs.get("parent_lookup_project__short_uuid"))
+        if kwargs.get("parent_lookup_project__suuid"):
+            project = Project.objects.get(suuid=kwargs.get("parent_lookup_project__suuid"))
         elif kwargs.get("parent_lookup_job_suuid"):
-            job = JobDef.objects.get(short_uuid=kwargs.get("parent_lookup_job_suuid"))
+            job = JobDef.objects.get(suuid=kwargs.get("parent_lookup_job_suuid"))
             project = job.project
         if project:
             request.user_roles += Membership.get_roles_for_project(request.user, project)
@@ -79,9 +88,9 @@ class ProjectVariableView(
 
     def get_create_role(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
-        project_suuid = parents.get("project__short_uuid") or request.data.get("project")
+        project_suuid = parents.get("project__suuid") or request.data.get("project")
         try:
-            project = Project.objects.get(short_uuid=project_suuid)
+            project = Project.objects.get(suuid=project_suuid)
         except ObjectDoesNotExist:
             raise Http404
 
@@ -106,8 +115,8 @@ class ProjectVariableView(
         if self.request.method.upper() in ["PUT", "PATCH"]:
             if hasattr(request.data, "_mutable"):
                 setattr(request.data, "_mutable", True)
-            if parents.get("project__short_uuid"):
-                project_suuid = parents.get("project__short_uuid")
+            if parents.get("project__suuid"):
+                project_suuid = parents.get("project__suuid")
                 request.data.update({"project": project_suuid})
 
             if not project_suuid:
@@ -115,7 +124,7 @@ class ProjectVariableView(
                 Determine the project id by getting it from the object requested
                 """
                 variable = self.get_object()
-                project_suuid = variable.project.short_uuid
+                project_suuid = variable.project.suuid
                 request.data.update({"project": project_suuid})
 
             if hasattr(request.data, "_mutable"):

@@ -22,9 +22,9 @@ def log_run_variables(variable_name, variable_value, project, job, run, masked, 
     Log the variables used for the run
     """
     spec = {
-        "project_suuid": project.short_uuid,
-        "job_suuid": job.short_uuid,
-        "run_suuid": run.short_uuid,
+        "project_suuid": project.suuid,
+        "job_suuid": job.suuid,
+        "run_suuid": run.suuid,
         "created": datetime.datetime.now(tz=datetime.timezone.utc),
         "variable": {
             "name": variable_name,
@@ -65,21 +65,6 @@ def get_project_variables(project, job, run):
 def start_run(self, run_uuid):
     print(f"Received message to start run {run_uuid}")
 
-    # get runner image
-    # the default image can be set in core.models.Setting
-    default_runner_image = get_setting_from_database(
-        name="RUNNER_DEFAULT_DOCKER_IMAGE",
-        default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
-    )
-    default_runner_image_user = get_setting_from_database(
-        name="RUNNER_DEFAULT_DOCKER_IMAGE_USER",
-        default=settings.ASKANNA_DOCKER_USER,
-    )
-    default_runner_image_pass = get_setting_from_database(
-        name="RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
-        default=settings.ASKANNA_DOCKER_PASS,
-    )
-
     docker_debug_log = get_setting_from_database(
         name="DOCKER_DEBUG_LOG",
         default=False,
@@ -99,13 +84,7 @@ def start_run(self, run_uuid):
     tv = run.runvariables.get()
 
     package = run.package
-    askanna_config = package.get_askanna_config(
-        defaults={
-            "RUNNER_DEFAULT_DOCKER_IMAGE": default_runner_image,
-            "RUNNER_DEFAULT_DOCKER_IMAGE_USER": default_runner_image_user,
-            "RUNNER_DEFAULT_DOCKER_IMAGE_PASS": default_runner_image_pass,
-        }
-    )
+    askanna_config = package.get_askanna_config() if package else None
     if not askanna_config:
         op.log("Could not find askanna.yml", print_log=docker_debug_log)
         op.log("", print_log=docker_debug_log)
@@ -136,7 +115,7 @@ def start_run(self, run_uuid):
     project_variables = get_project_variables(project=pr, job=jd, run=run)
 
     # configure hostname for this project docker container
-    hostname = pr.short_uuid
+    hostname = pr.suuid
 
     # run_token is the token of the user who started the run
     run_token = run.created_by.auth_token.key
@@ -151,10 +130,10 @@ def start_run(self, run_uuid):
     worker_variables = {
         "AA_TOKEN": run_token,
         "AA_REMOTE": settings.ASKANNA_API_URL,
-        "AA_RUN_SUUID": run.short_uuid,
+        "AA_RUN_SUUID": run.suuid,
         "AA_JOB_NAME": jd.name,
-        "AA_PROJECT_SUUID": str(pr.short_uuid),
-        "AA_PACKAGE_SUUID": str(package.short_uuid),
+        "AA_PROJECT_SUUID": str(pr.suuid),
+        "AA_PACKAGE_SUUID": str(package.suuid),
         "TZ": job_timezone,
         "LC_ALL": "C.UTF-8",
         "LANG": "C.UTF-8",
@@ -163,7 +142,7 @@ def start_run(self, run_uuid):
         # we have a payload, so set the payload
         worker_variables.update(
             **{
-                "AA_PAYLOAD_SUUID": str(pl.short_uuid),
+                "AA_PAYLOAD_SUUID": str(pl.suuid),
                 "AA_PAYLOAD_PATH": "/input/payload.json",
             }
         )
@@ -275,11 +254,11 @@ def start_run(self, run_uuid):
             run_image.cached_image,
             runner_command,
             environment=env_variables,
-            name="run_{run_suuid}".format(run_suuid=run.short_uuid),
+            name="run_{run_suuid}".format(run_suuid=run.suuid),
             labels={
-                "run": run.short_uuid,
-                "project": pr.short_uuid,
-                "job": jd.short_uuid,
+                "run": run.suuid,
+                "project": pr.suuid,
+                "job": jd.suuid,
                 "askanna_environment": settings.ASKANNA_ENVIRONMENT,
             },
             hostname=hostname,

@@ -59,11 +59,11 @@ class RunVariable(ArtifactModelMixin, SlimBaseModel):
         help_text="Unique variable label names and data type for variable label",
     )
 
-    # short_uuid is taken from the parent Run model.
+    # suuid is taken from the parent Run model.
     @property
-    def short_uuid(self):
-        """Return the short_uuid from the parent Run instance."""
-        return self.run.short_uuid
+    def suuid(self):
+        """Return the suuid from the parent Run instance."""
+        return self.run.suuid
 
     def load_from_file(self):
         with open(self.stored_path, "r") as f:
@@ -73,19 +73,19 @@ class RunVariable(ArtifactModelMixin, SlimBaseModel):
         super().prune()
 
         # also remove the rows of variables attached to this object
-        RunVariableRow.objects.filter(run_suuid=self.short_uuid).delete()
+        RunVariableRow.objects.filter(run_suuid=self.suuid).delete()
 
     def update_meta(self):
         """
         Update the meta information variable_names and label_names
         """
-        runvariables = RunVariableRow.objects.filter(run_suuid=self.short_uuid)
+        runvariables = RunVariableRow.objects.filter(run_suuid=self.suuid)
         if not runvariables:
             return
 
         def compose_response(instance, variable):
             var = {
-                "run_suuid": instance.short_uuid,
+                "run_suuid": instance.suuid,
                 "variable": variable.variable,
                 "label": variable.label,
                 "created": variable.created.isoformat(),

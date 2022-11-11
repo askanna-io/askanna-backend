@@ -3,6 +3,7 @@ from core.views import ObjectRoleMixin, workspace_to_project_role
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from job.models import JobDef
 from job.serializers import JobSerializer
 from project.models import Project
@@ -56,7 +57,14 @@ class JobObjectRoleMixin:
         )
 
 
-class JobActionView(
+@extend_schema_view(
+    list=extend_schema(description="List the jobs you have access to"),
+    retrieve=extend_schema(description="Get info from a specific job"),
+    update=extend_schema(description="Update a job"),
+    partial_update=extend_schema(description="Update a job"),
+    destroy=extend_schema(description="Remove a job"),
+)
+class JobView(
     JobObjectRoleMixin,
     ObjectRoleMixin,
     mixins.ListModelMixin,
@@ -66,7 +74,7 @@ class JobActionView(
     viewsets.GenericViewSet,
 ):
     queryset = JobDef.jobs.active()
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = JobSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -86,6 +94,9 @@ class JobActionView(
         instance.to_deleted()
 
 
+@extend_schema_view(
+    list=extend_schema(description="List the jobs for a project you have access to"),
+)
 class ProjectJobViewSet(
     JobObjectRoleMixin,
     ObjectRoleMixin,
@@ -97,8 +108,8 @@ class ProjectJobViewSet(
     This is a duplicated viewset like `JobActionView` but ReadOnly version
     """
 
-    queryset = JobDef.jobs.active()
-    lookup_field = "short_uuid"
+    queryset = JobDef.jobs.active().select_related("project", "project__workspace")
+    lookup_field = "suuid"
     serializer_class = JobSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -111,9 +122,9 @@ class ProjectJobViewSet(
         """
         Get list permision based on the project_suuid from the url
         """
-        project_suuid = kwargs.get("parent_lookup_project__short_uuid")
+        project_suuid = kwargs.get("parent_lookup_project__suuid")
         try:
-            project = Project.objects.get(short_uuid=project_suuid)
+            project = Project.objects.get(suuid=project_suuid)
         except ObjectDoesNotExist:
             raise Http404
 

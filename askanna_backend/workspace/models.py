@@ -12,8 +12,8 @@ class Workspace(AuthorModel, ActivatedModel):
 
     def __str__(self):
         if self.name:
-            return f"{self.name} ({self.short_uuid})"
-        return self.short_uuid
+            return f"{self.name} ({self.suuid})"
+        return self.suuid
 
     @property
     def relation_to_json(self):
@@ -22,7 +22,6 @@ class Workspace(AuthorModel, ActivatedModel):
         """
         return {
             "relation": "workspace",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
         }

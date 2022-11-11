@@ -115,12 +115,7 @@ class RunSerializer(serializers.ModelSerializer):
     def get_package(self, instance):
         if instance.package:
             return instance.package.relation_to_json
-        return {
-            "relation": "package",
-            "name": None,
-            "uuid": None,
-            "short_uuid": None,
-        }
+        return None
 
     def get_workspace(self, instance):
         workspace = instance.jobdef.project.workspace
@@ -135,12 +130,7 @@ class RunSerializer(serializers.ModelSerializer):
             return instance.member.relation_to_json_with_avatar
         if instance.created_by:
             return instance.created_by.relation_to_json
-        return {
-            "relation": "user",
-            "name": None,
-            "uuid": None,
-            "short_uuid": None,
-        }
+        return None
 
     def get_log(self, instance):
         try:
@@ -151,8 +141,7 @@ class RunSerializer(serializers.ModelSerializer):
     class Meta:
         model = Run
         fields = [
-            "uuid",
-            "short_uuid",
+            "suuid",
             "name",
             "description",
             "status",

@@ -84,7 +84,7 @@ class TestTrackedVariablesListAPI(BaseRunTest, APITestCase):
             "run-variable-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run_suuid": self.tracked_variables.get("run1").short_uuid,
+                "parent_lookup_run_suuid": self.tracked_variables.get("run1").suuid,
             },
         )
 
@@ -204,7 +204,7 @@ class TestTrackedVariablesPublicProjectListAPI(BaseRunTest, APITestCase):
             "run-variable-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run_suuid": self.tracked_variables.get("run6").short_uuid,
+                "parent_lookup_run_suuid": self.tracked_variables.get("run6").suuid,
             },
         )
 
@@ -242,8 +242,8 @@ class TestVariablesUpdateAPI(BaseRunTest, APITestCase):
             "run-variable-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__short_uuid": self.tracked_variables.get("run1").short_uuid,
-                "run__short_uuid": self.tracked_variables.get("run1").short_uuid,
+                "parent_lookup_run__suuid": self.tracked_variables.get("run1").suuid,
+                "run__suuid": self.tracked_variables.get("run1").suuid,
             },
         )
 
@@ -316,13 +316,13 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
 
         self.variables_to_test_deduplicate = [
             {
-                "run_suuid": self.run_deduplicate.short_uuid,
+                "run_suuid": self.run_deduplicate.suuid,
                 "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
                 "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
                 "created": "2021-02-14T12:00:01.123456+00:00",
             },
             {
-                "run_suuid": self.run_deduplicate.short_uuid,
+                "run_suuid": self.run_deduplicate.suuid,
                 "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
                 "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
                 "created": "2021-02-14T12:00:01.123456+00:00",
@@ -335,7 +335,7 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
 
     def test_run_variables_deduplicate(self):
         #  Count variables before adding duplicates
-        variables = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.short_uuid)
+        variables = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
         self.assertEqual(len(variables), 2)
         variable_record = RunVariable.objects.get(uuid=self.run_variables_deduplicate.uuid)
         self.assertEqual(variable_record.count, 2)
@@ -343,24 +343,24 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
         # Add duplicate variables
         for variable in self.variables_to_test_deduplicate:
             RunVariableRow.objects.create(
-                project_suuid=self.run_deduplicate.jobdef.project.short_uuid,
-                job_suuid=self.run_deduplicate.jobdef.short_uuid,
-                run_suuid=self.run_deduplicate.short_uuid,
+                project_suuid=self.run_deduplicate.jobdef.project.suuid,
+                job_suuid=self.run_deduplicate.jobdef.suuid,
+                run_suuid=self.run_deduplicate.suuid,
                 variable=variable["variable"],
                 label=variable["label"],
                 created=variable["created"],
             )
         self.run_variables_deduplicate.update_meta()
 
-        variables_with_duplicates = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.short_uuid)
+        variables_with_duplicates = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
         self.assertEqual(len(variables_with_duplicates), 4)
         variable_record_with_duplicates = RunVariable.objects.get(uuid=self.run_variables_deduplicate.uuid)
         self.assertEqual(variable_record_with_duplicates.count, 4)
 
         # Dedepulicate run metric records
-        post_run_deduplicate_variables(self.run_deduplicate.short_uuid)
+        post_run_deduplicate_variables(self.run_deduplicate.suuid)
 
-        variables_after_deduplicates = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.short_uuid)
+        variables_after_deduplicates = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
         self.assertEqual(len(variables_after_deduplicates), 2)
 
         # Deduplicate should also update the main metrics count

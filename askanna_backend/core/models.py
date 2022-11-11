@@ -1,13 +1,12 @@
 import os
-import uuid
+import uuid as _uuid
 
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from django_cryptography.fields import encrypt
 from django_extensions.db.models import ActivatorModel, TimeStampedModel
 
-from .utils import GoogleTokenGenerator
+from .utils.suuid import create_suuid
 
 
 class DeletedModel(models.Model):
@@ -32,7 +31,7 @@ class DescriptionModel(models.Model):
     An abstract base class model that provides a description field.
     """
 
-    description = models.TextField(_("description"), blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -45,7 +44,7 @@ class NameModel(models.Model):
     An abstract base class model that provides a name field.
     """
 
-    name = models.CharField(_("name"), max_length=255, blank=True, null=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -58,17 +57,14 @@ class NameDescriptionModel(NameModel, DescriptionModel):
 
 class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
-    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
-    short_uuid = models.CharField(max_length=32, blank=True, unique=True)
+    uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
+    suuid = models.CharField(max_length=32, unique=True, editable=False, verbose_name="SUUID")
 
     def save(self, *args, **kwargs):
-        # Manually set the uuid and short_uuid
         if not self.uuid:
-            self.uuid = uuid.uuid4()
-        if not self.short_uuid and self.uuid:
-            # FIXME: mode this part of code outside save to check for potential collision in existing set
-            google_token = GoogleTokenGenerator()
-            self.short_uuid = google_token.create_token(uuid_in=self.uuid)
+            self.uuid = _uuid.uuid4()
+        if not self.suuid and self.uuid:
+            self.suuid = create_suuid(uuid=self.uuid)
         super().save(*args, **kwargs)
 
     class Meta:
@@ -77,7 +73,7 @@ class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
 class SlimBaseForAuthModel(SlimBaseModel):
 
-    uuid = models.UUIDField(db_index=True, editable=False, default=uuid.uuid4)
+    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4)
 
     class Meta:
         abstract = True
@@ -100,19 +96,6 @@ class AuthorModel(models.Model):
     """
 
     created_by = models.ForeignKey("users.User", on_delete=models.SET_NULL, blank=True, null=True)
-
-    def get_created_by(self):
-        if self.created_by is not None:
-            return {
-                "uuid": self.created_by.uuid,
-                "short_uuid": self.created_by.short_uuid,
-                "name": self.created_by.get_name(),
-            }
-        return {
-            "uuid": None,
-            "short_uuid": None,
-            "name": None,
-        }
 
     class Meta:
         abstract = True

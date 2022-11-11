@@ -176,15 +176,6 @@ class MeAvatarViewSet(
 
 
 class ObjectMeViewSet(BaseMeViewSet):
-    """
-    Object specific /me {project,workspace}
-
-    specific method:
-    - get_object returning membership instance or None if not member
-    - get_object_role, returning the role for the user for this request
-
-    """
-
     serializer_class = WorkspaceMeSerializer
 
     serializer_classes_by_action = {
@@ -247,14 +238,15 @@ class ObjectMeViewSet(BaseMeViewSet):
         """
         To be executed before super().initial() in our custom initial
         - Setting current_object to Project/Workspace
+        - Returning the role for the user for this request
         """
         object_role = None
         self.current_object = None
         self.current_object_type = kwargs.get("object_type")
 
-        if kwargs.get("object_type") == "WS" and kwargs.get("short_uuid"):
+        if kwargs.get("object_type") == "WS" and kwargs.get("suuid"):
             try:
-                obj = Workspace.objects.get(short_uuid=kwargs.get("short_uuid"))
+                obj = Workspace.objects.get(suuid=kwargs.get("suuid"))
             except ObjectDoesNotExist:
                 raise Http404
             self.current_object = obj
@@ -265,9 +257,9 @@ class ObjectMeViewSet(BaseMeViewSet):
 
             object_role, request.membership = Membership.get_workspace_role(request.user, obj)
 
-        if kwargs.get("object_type") == "PR" and kwargs.get("short_uuid"):
+        if kwargs.get("object_type") == "PR" and kwargs.get("suuid"):
             try:
-                obj = Project.objects.get(short_uuid=kwargs.get("short_uuid"))
+                obj = Project.objects.get(suuid=kwargs.get("suuid"))
             except ObjectDoesNotExist:
                 raise Http404
             self.current_object = obj
@@ -333,17 +325,17 @@ class ObjectAvatarMeViewSet(MeAvatarViewSet):
         self.current_object = None
         self.current_object_type = kwargs.get("object_type")
 
-        if kwargs.get("object_type") == "WS" and kwargs.get("short_uuid"):
+        if kwargs.get("object_type") == "WS" and kwargs.get("suuid"):
             try:
-                obj = Workspace.objects.get(short_uuid=kwargs.get("short_uuid"))
+                obj = Workspace.objects.get(suuid=kwargs.get("suuid"))
             except ObjectDoesNotExist:
                 raise Http404
             self.current_object = obj
             object_role, request.membership = Membership.get_workspace_role(request.user, obj)
 
-        if kwargs.get("object_type") == "PR" and kwargs.get("short_uuid"):
+        if kwargs.get("object_type") == "PR" and kwargs.get("suuid"):
             try:
-                obj = Project.objects.get(short_uuid=kwargs.get("short_uuid"))
+                obj = Project.objects.get(suuid=kwargs.get("suuid"))
             except ObjectDoesNotExist:
                 raise Http404
             self.current_object = obj

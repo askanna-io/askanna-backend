@@ -12,10 +12,10 @@ class TestRunModel(BaseRunTest, APITestCase):
     """
 
     def test_run_function__str__run_with_name(self):
-        self.assertEqual(str(self.runs["run1"]), f"run1 ({self.runs['run1'].short_uuid})")
+        self.assertEqual(str(self.runs["run1"]), f"run1 ({self.runs['run1'].suuid})")
 
     def test_run_function__str__run_with_no_name(self):
-        self.assertEqual(str(self.runs["run7"]), str(self.runs["run7"].short_uuid))
+        self.assertEqual(str(self.runs["run7"]), str(self.runs["run7"].suuid))
 
     def test_run_function_set_status(self):
         self.assertEqual(self.runs["run7"].status, "FAILED")
@@ -113,7 +113,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         """
         self.activate_user("member")
 
-        filter_params = {"job": self.jobdef.short_uuid}
+        filter_params = {"job": self.jobdef.suuid}
         response = self.client.get(
             self.url,
             filter_params,
@@ -128,7 +128,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         """
         self.activate_user("member")
 
-        filter_params = {"job": ",".join([self.jobdef.short_uuid, self.jobdef2.short_uuid])}
+        filter_params = {"job": ",".join([self.jobdef.suuid, self.jobdef2.suuid])}
         response = self.client.get(
             self.url,
             filter_params,
@@ -162,7 +162,7 @@ class TestJobRunListAPI(TestRunListAPI):
             "job-run-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
+                "parent_lookup_jobdef__suuid": self.jobdef.suuid,
             },
         )
 
@@ -221,7 +221,7 @@ class TestJobRunListAPI(TestRunListAPI):
         """
         self.activate_user("member")
 
-        filter_params = {"job": self.jobdef.short_uuid}
+        filter_params = {"job": self.jobdef.suuid}
         response = self.client.get(
             self.url,
             filter_params,
@@ -236,7 +236,7 @@ class TestJobRunListAPI(TestRunListAPI):
         """
         self.activate_user("member")
 
-        filter_params = {"job": ",".join([self.jobdef.short_uuid, self.jobdef2.short_uuid])}
+        filter_params = {"job": ",".join([self.jobdef.suuid, self.jobdef2.suuid])}
         response = self.client.get(
             self.url,
             filter_params,
@@ -269,15 +269,15 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
         self.url_run2 = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run2"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run2"].suuid},
         )
         self.url_other_workspace = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run3"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run3"].suuid},
         )
 
     def test_detail_as_admin(self):
@@ -291,7 +291,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
 
     def test_detail_as_member(self):
         """
@@ -304,7 +304,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
 
     def test_detail_as_member_other_run(self):
         """
@@ -317,7 +317,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run2"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run2"].suuid)
         self.assertEqual(response.data.get("result", {}).get("name"), "someresult.txt")
         self.assertEqual(response.data.get("result", {}).get("extension"), "txt")
 
@@ -332,7 +332,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
         self.assertEqual(response.data.get("created_by").get("name"), "name of member in membership")
 
         # now change membername to new membername
@@ -344,7 +344,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
         self.assertEqual(response.data.get("created_by").get("name"), "new membername")
 
         # now change back new membername to membername
@@ -363,7 +363,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
         self.assertEqual(response.data.get("created_by").get("name"), "name of member in membership")
 
         # then visit 2nd workspace
@@ -372,7 +372,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run3"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run3"].suuid)
         self.assertEqual(response.data.get("created_by").get("name"), "member")
 
     def test_detail_as_nonmember(self):
@@ -407,7 +407,7 @@ class TestRunResultAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-result",
-            kwargs={"version": "v1", "short_uuid": self.runs["run2"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run2"].suuid},
         )
 
     def test_retrieve_as_admin(self):
@@ -454,15 +454,15 @@ class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
         self.url_run2 = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run2"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run2"].suuid},
         )
         self.url_other_workspace = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run3"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run3"].suuid},
         )
 
     def run_test(self):
@@ -471,7 +471,7 @@ class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(initial_response.status_code, status.HTTP_200_OK)
-        self.assertTrue(initial_response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(initial_response.data.get("suuid") == self.runs["run1"].suuid)
         self.assertEqual(initial_response.data.get("name"), self.runs["run1"].name)
         self.assertEqual(
             date_parse(initial_response.data.get("modified")),
@@ -488,7 +488,7 @@ class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("short_uuid") == self.runs["run1"].short_uuid)
+        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
         self.assertEqual(response.data.get("name"), "new name")
         self.assertEqual(response.data.get("description"), "new description")
         # the modified time of the run can be changed as changing name/description will update the
@@ -538,7 +538,7 @@ class TestRunDeleteAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-detail",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
 
     def is_deleted(self):

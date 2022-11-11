@@ -16,13 +16,13 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.startjob_url = reverse(
             "run-job",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
         self.url = reverse(
             "job-payload-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
+                "parent_lookup_jobdef__suuid": self.jobdef.suuid,
             },
         )
         self.setUpPayload()
@@ -40,7 +40,7 @@ class TestJobPayloadAPI(BaseJobTestDef, APITestCase):
         }
 
         response = self.client.post(self.startjob_url, payload, format="json", HTTP_HOST="testserver")
-        self.runs["after_payload"] = Run.objects.get(short_uuid=response.data.get("short_uuid"))
+        self.runs["after_payload"] = Run.objects.get(suuid=response.data.get("suuid"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.client.credentials()
 
@@ -91,14 +91,14 @@ class TestRunPayloadAPI(TestJobPayloadAPI):
         super().setUp()
         self.startjob_url = reverse(
             "run-job",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
         self.setUpPayload()
         self.url = reverse(
             "run-payload-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__short_uuid": self.runs["after_payload"].short_uuid,
+                "parent_lookup_run__suuid": self.runs["after_payload"].suuid,
             },
         )
 
@@ -112,15 +112,15 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.startjob_url = reverse(
             "run-job",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
         self.setUpPayload()
         self.url = reverse(
             "job-payload-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_jobdef__short_uuid": self.jobdef.short_uuid,
-                "short_uuid": self.payload.short_uuid,
+                "parent_lookup_jobdef__suuid": self.jobdef.suuid,
+                "suuid": self.payload.suuid,
             },
         )
 
@@ -139,19 +139,19 @@ class TestJobPayloadRetrieveAPI(BaseJobTestDef, APITestCase):
         response = self.client.post(self.startjob_url, payload, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.runs["after_payload"] = Run.objects.get(short_uuid=response.data.get("short_uuid"))
+        self.runs["after_payload"] = Run.objects.get(suuid=response.data.get("suuid"))
         # get the payload of this run
 
         run_payload_list_url = reverse(
             "run-payload-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__short_uuid": self.runs["after_payload"].short_uuid,
+                "parent_lookup_run__suuid": self.runs["after_payload"].suuid,
             },
         )
         response = self.client.get(run_payload_list_url, format="json", HTTP_HOST="testserver")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.payload = JobPayload.objects.get(short_uuid=response.data[0]["short_uuid"])
+        self.payload = JobPayload.objects.get(suuid=response.data[0]["suuid"])
 
         self.client.credentials()
 

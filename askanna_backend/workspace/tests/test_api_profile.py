@@ -1,11 +1,10 @@
 """Define tests for API of UserProfile."""
 import pytest
+from core.tests.base import BaseUserPopulation
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from core.tests.base import BaseUserPopulation
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
 
 from ..models import Workspace
@@ -23,8 +22,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member2").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member2").suuid,
             },
         )
 
@@ -51,8 +50,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": new_workspace.short_uuid,
-                "short_uuid": new_profile.short_uuid,
+                "parent_lookup_workspace__suuid": new_workspace.suuid,
+                "suuid": new_profile.suuid,
             },
         )
 
@@ -80,8 +79,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": new_workspace.short_uuid,
-                "short_uuid": new_profile.short_uuid,
+                "parent_lookup_workspace__suuid": new_workspace.suuid,
+                "suuid": new_profile.suuid,
             },
         )
 
@@ -99,8 +98,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member2").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member2").suuid,
             },
         )
 
@@ -120,8 +119,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -142,8 +141,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -164,8 +163,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -186,8 +185,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin").suuid,
             },
         )
 
@@ -208,8 +207,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -230,8 +229,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -251,8 +250,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin2").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin2").suuid,
             },
         )
 
@@ -273,8 +272,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin").suuid,
             },
         )
 
@@ -294,8 +293,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin").suuid,
             },
         )
 
@@ -317,8 +316,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": workspace_to_fail.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": workspace_to_fail.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -336,8 +335,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -352,8 +351,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -371,8 +370,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -383,7 +382,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.members.get("member").short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.members.get("member").suuid}.items() <= dict(response.data).items())
 
     def test_retrieve_profile_as_admin(self):
         """An admin can see existing profiles from a workspace."""
@@ -391,8 +390,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -403,7 +402,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             url,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.members.get("member").short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.members.get("member").suuid}.items() <= dict(response.data).items())
 
     def test_list_limited_to_current_workspace(self):
         """Listing of people is correctly filtered to requested workspace."""
@@ -419,7 +418,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
             },
         )
 
@@ -431,10 +430,10 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        uuids = [p["uuid"] for p in response.data]
-        self.assertEqual(len(uuids), 6)
-        self.assertNotIn(str(filtered_profile.pk), uuids)
-        self.assertIn(str(self.members.get("member2").pk), uuids)
+        suuids = [p["suuid"] for p in response.data]
+        self.assertEqual(len(suuids), 6)
+        self.assertNotIn(str(filtered_profile.pk), suuids)
+        self.assertIn(str(self.members.get("member2").suuid), suuids)
 
 
 class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
@@ -447,7 +446,7 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
             },
         )
 
@@ -465,8 +464,8 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member_inactive").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member_inactive").suuid,
             },
         )
 
@@ -485,8 +484,8 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member_inactive").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member_inactive").suuid,
             },
         )
 
@@ -515,7 +514,7 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
             },
         )
 
@@ -534,8 +533,8 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin_inactive").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin_inactive").suuid,
             },
         )
 
@@ -554,8 +553,8 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin_inactive").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin_inactive").suuid,
             },
         )
 
@@ -589,8 +588,8 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin2").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin2").suuid,
             },
         )
 
@@ -611,8 +610,8 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -629,8 +628,8 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("member").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("member").suuid,
             },
         )
 
@@ -655,8 +654,8 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": extra_workspace.short_uuid,
-                "short_uuid": extra_profile.short_uuid,
+                "parent_lookup_workspace__suuid": extra_workspace.suuid,
+                "suuid": extra_profile.suuid,
             },
         )
 
@@ -673,8 +672,8 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
             "workspace-people-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
-                "short_uuid": self.members.get("admin").short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
+                "suuid": self.members.get("admin").suuid,
             },
         )
 

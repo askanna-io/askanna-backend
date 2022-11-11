@@ -5,7 +5,7 @@ from workspace.models import Workspace
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "status",
         "name",
         "description",
@@ -18,7 +18,7 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "created_by",
         "modified",
         "created",
@@ -28,7 +28,7 @@ class WorkspaceAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "name",
         "visibility",
         "created_by",
@@ -43,7 +43,7 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
+        "suuid",
         "name",
     ]
 

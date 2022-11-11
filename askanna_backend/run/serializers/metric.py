@@ -13,8 +13,8 @@ class RunMetricSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RunMetric
-        fields = ["uuid", "short_uuid", "metrics"]
-        read_only_fields = ["uuid", "short_uuid"]
+        fields = ["uuid", "suuid", "metrics"]
+        read_only_fields = ["uuid", "suuid"]
 
 
 class RunMetricRowSerializer(serializers.ModelSerializer):

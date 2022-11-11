@@ -24,7 +24,7 @@ class ProjectTestSet(WorkspaceTestSet):
             "project-me",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project.short_uuid,
+                "suuid": self.project.suuid,
             },
         )
 
@@ -32,7 +32,7 @@ class ProjectTestSet(WorkspaceTestSet):
             "project-me",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project.short_uuid[:-1] + "1",
+                "suuid": self.project.suuid[:-1] + "1",
             },
         )
 
@@ -69,7 +69,7 @@ class TestProjectPublicMeGet(ProjectTestSet, BaseTestGlobalMeGet, APITestCase):
             "project-me",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project_public.short_uuid,
+                "suuid": self.project_public.suuid,
             },
         )
 

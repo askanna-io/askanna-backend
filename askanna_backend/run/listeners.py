@@ -108,7 +108,7 @@ def post_run_deduplicate_metrics(sender, instance, created, **kwargs):
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_metrics",
                 args=None,
-                kwargs={"run_suuid": instance.short_uuid},
+                kwargs={"run_suuid": instance.suuid},
             )
         )
 
@@ -123,7 +123,7 @@ def post_run_deduplicate_variables(sender, instance, created, **kwargs):
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_variables",
                 args=None,
-                kwargs={"run_suuid": instance.short_uuid},
+                kwargs={"run_suuid": instance.suuid},
             )
         )
 

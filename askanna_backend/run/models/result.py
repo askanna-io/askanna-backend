@@ -74,9 +74,8 @@ class RunResult(BaseModel):
         """
         return {
             "relation": "result",
+            "suuid": self.suuid,
             "name": self.name or "result.json",
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "size": self.size,
             "extension": self.extension,
             "mimetype": self.mime_type,

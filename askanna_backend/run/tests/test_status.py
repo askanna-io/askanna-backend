@@ -14,7 +14,7 @@ class TestRunStatusAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-status",
-            kwargs={"version": "v1", "short_uuid": self.runs["run1"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
         )
 
     def test_retrieve_as_admin(self):

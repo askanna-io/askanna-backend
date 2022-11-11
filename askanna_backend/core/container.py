@@ -167,14 +167,14 @@ class ContainerImageBuilder:
         self.redis = redis.Redis.from_url(self.redis_url)
 
     def get_build_lock(self, run_image):
-        return self.redis.get(run_image.short_uuid)
+        return self.redis.get(run_image.suuid)
 
     def set_build_lock(self, run_image):
-        self.redis.set(run_image.short_uuid, datetime.datetime.utcnow().isoformat())
+        self.redis.set(run_image.suuid, datetime.datetime.utcnow().isoformat())
         return self.get_build_lock(run_image)
 
     def remove_build_lock(self, run_image):
-        return self.redis.delete(run_image.short_uuid)
+        return self.redis.delete(run_image.suuid)
 
     def get_image(
         self,
@@ -218,7 +218,7 @@ class ContainerImageBuilder:
 
             # build the new image
             # tag into askanna repo
-            repository_name = f"{image_prefix}-aa-{run_image.short_uuid}".lower()
+            repository_name = f"{image_prefix}-aa-{run_image.suuid}".lower()
             repository_tag = imagehelper.short_id_nosha
             askanna_repository_image_version_name = f"{repository_name}:{repository_tag}"
 

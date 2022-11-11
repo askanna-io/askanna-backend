@@ -17,7 +17,7 @@ from run.models import (
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "jobdef",
         "jobid",
         "status",
@@ -39,7 +39,7 @@ class RunAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "jobid",
         "trigger",
         "started",
@@ -60,7 +60,7 @@ class RunAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "name",
         "job_name",
         "project",
@@ -79,9 +79,9 @@ class RunAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
+        "suuid",
         "name",
-        "jobdef__short_uuid",
+        "jobdef__suuid",
         "jobdef__name",
     ]
 
@@ -101,7 +101,7 @@ class RunAdmin(admin.ModelAdmin):
 @admin.register(RunArtifact)
 class RunArtifactAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "run",
         "size",
         "count_dir",
@@ -111,7 +111,7 @@ class RunArtifactAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "size",
         "count_dir",
         "count_files",
@@ -123,7 +123,7 @@ class RunArtifactAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "run",
         "job_name",
         "project",
@@ -138,8 +138,8 @@ class RunArtifactAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "run__short_uuid",
+        "suuid",
+        "run__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover
@@ -158,7 +158,7 @@ class RunArtifactAdmin(admin.ModelAdmin):
 @admin.register(RunLog)
 class RunLogAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "run",
         "exit_code",
         "lines",
@@ -169,7 +169,7 @@ class RunLogAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "exit_code",
         "lines",
         "size",
@@ -182,7 +182,7 @@ class RunLogAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "run",
         "job_name",
         "project",
@@ -198,8 +198,8 @@ class RunLogAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "run__short_uuid",
+        "suuid",
+        "run__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover
@@ -226,7 +226,7 @@ class RunLogAdmin(admin.ModelAdmin):
 @admin.register(RunResult)
 class RunResultAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "run",
         "name",
         "size",
@@ -238,7 +238,7 @@ class RunResultAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "name",
         "size",
         "extension",
@@ -251,7 +251,7 @@ class RunResultAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "run",
         "job_name",
         "project",
@@ -264,8 +264,8 @@ class RunResultAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "run__short_uuid",
+        "suuid",
+        "run__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover
@@ -284,7 +284,7 @@ class RunResultAdmin(admin.ModelAdmin):
 @admin.register(RunMetric)
 class RunMetricAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "run",
         "count",
         "size",
@@ -295,7 +295,7 @@ class RunMetricAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "count",
         "size",
         "metric_names",
@@ -308,7 +308,7 @@ class RunMetricAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "run",
         "job_name",
         "project",
@@ -322,8 +322,8 @@ class RunMetricAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "run__short_uuid",
+        "suuid",
+        "run__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover
@@ -394,7 +394,7 @@ class RunMetricRowAdmin(admin.ModelAdmin):
 @admin.register(RunVariable)
 class RunVariableAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "run",
         "count",
         "size",
@@ -405,7 +405,7 @@ class RunVariableAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "count",
         "size",
         "variable_names",
@@ -418,7 +418,7 @@ class RunVariableAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "run",
         "job_name",
         "project",
@@ -432,8 +432,8 @@ class RunVariableAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "run__short_uuid",
+        "suuid",
+        "run__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover

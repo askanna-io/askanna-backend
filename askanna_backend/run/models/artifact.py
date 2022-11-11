@@ -41,9 +41,8 @@ class RunArtifact(ArtifactModelMixin, SlimBaseModel):
         """
         return {
             "relation": "artifact",
+            "suuid": self.suuid,
             "name": self.get_name(),
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "size": self.size,
             "count_dir": self.count_dir,
             "count_files": self.count_files,

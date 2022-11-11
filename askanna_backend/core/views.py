@@ -38,7 +38,9 @@ class BaseChunkedPartViewSet(
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
-    """"""
+    """
+    Request an uuid to upload a chunk
+    """
 
     def get_upload_dir(self, chunkpart):
         return settings.UPLOAD_ROOT
@@ -62,8 +64,7 @@ class BaseChunkedPartViewSet(
     @action(detail=True, methods=["post"])
     def chunk(self, request, **kwargs):
         """
-        Receives one chunk in the POST request
-
+        Receive one chunk via a POST request
         """
         chunkpart = self.get_object()
 
@@ -106,6 +107,7 @@ class BaseUploadFinishMixin:
 
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
+        """Register that the upload of all chunks is finished"""
         obj = self.get_object()
 
         storage_location = FileSystemStorage(location=self.get_upload_dir(obj))

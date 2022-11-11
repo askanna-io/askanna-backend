@@ -11,7 +11,7 @@ project_router.register(
     r"variable",
     ProjectVariableView,
     basename="project-variable",
-    parents_query_lookups=["project__short_uuid"],
+    parents_query_lookups=["project__suuid"],
 )
 
 variable_router = router.register(r"variable", ProjectVariableView, basename="variable")
@@ -20,13 +20,13 @@ workspace_router.register(
     r"project",
     ProjectReadOnlyView,
     basename="workspace-project",
-    parents_query_lookups=["workspace__short_uuid"],
+    parents_query_lookups=["workspace__suuid"],
 )
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1))/", include(router.urls)),
     re_path(
-        r"^(?P<version>(v1))/project/(?P<short_uuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/?$",
+        r"^(?P<version>(v1))/project/(?P<suuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/?$",
         ProjectMeViewSet.as_view(),
         kwargs={"object_type": "PR"},
         name="project-me",

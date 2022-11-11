@@ -8,21 +8,27 @@ from workspace.models import Workspace
 class BaseWorkspaceSerializer(serializers.ModelSerializer):
     is_member = serializers.SerializerMethodField("get_is_member")
     permission = serializers.SerializerMethodField("get_permission")
+    created_by = serializers.SerializerMethodField("get_created_by")
+
+    def get_created_by(self, instance):
+        if instance.created_by:
+            return instance.created_by.relation_to_json
+        else:
+            return None
 
     def to_representation(self, instance):
         request = self.context["request"]
         url = "{scheme}://{host}/{workspace}/".format(
             scheme=request.scheme,
             host=request.get_host().replace("-api", "").replace("api.", ""),
-            workspace=instance.short_uuid,
+            workspace=instance.suuid,
         )
         return {
-            "uuid": instance.uuid,
-            "short_uuid": instance.short_uuid,
+            "suuid": instance.suuid,
             "name": instance.get_name(),
             "description": instance.description,
             "visibility": instance.visibility,
-            "created_by": instance.get_created_by(),
+            "created_by": self.get_created_by(instance),
             "permission": self.get_permission(instance),  # this is relative to the user requesting this
             "is_member": self.get_is_member(instance),
             "created": instance.created,

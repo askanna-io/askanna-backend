@@ -18,7 +18,7 @@ def move_variables_to_rows(self, variables_uuid):
     run_variable = RunVariable.objects.get(pk=variables_uuid)
 
     # Remove old rows with source=run
-    RunVariableRow.objects.filter(run_suuid=run_variable.short_uuid).filter(
+    RunVariableRow.objects.filter(run_suuid=run_variable.suuid).filter(
         label__contains=[
             {
                 "name": "source",
@@ -30,10 +30,10 @@ def move_variables_to_rows(self, variables_uuid):
 
     for variable in run_variable.variables:
         variable["created"] = datetime.datetime.fromisoformat(variable["created"])
-        variable["project_suuid"] = run_variable.run.jobdef.project.short_uuid
-        variable["job_suuid"] = run_variable.run.jobdef.short_uuid
+        variable["project_suuid"] = run_variable.run.jobdef.project.suuid
+        variable["job_suuid"] = run_variable.run.jobdef.suuid
         # Overwrite run_suuid, even if the run_suuid defined is not right, prevent polution
-        variable["run_suuid"] = run_variable.run.short_uuid
+        variable["run_suuid"] = run_variable.run.suuid
 
         RunVariableRow.objects.create(**variable)
 
@@ -58,7 +58,7 @@ def post_run_deduplicate_variables(self, run_suuid):
         last_variable = variable
 
     try:
-        run_variable = RunVariable.objects.get(run__short_uuid=run_suuid)
+        run_variable = RunVariable.objects.get(run__suuid=run_suuid)
     except RunVariable.DoesNotExist:
         pass
     else:

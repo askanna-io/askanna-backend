@@ -9,28 +9,67 @@ from run.models import (
 
 
 class RunArtifactSerializer(serializers.ModelSerializer):
-
+    workspace = serializers.SerializerMethodField("get_workspace")
     project = serializers.SerializerMethodField("get_project")
+    job = serializers.SerializerMethodField("get_job")
+    run = serializers.SerializerMethodField("get_run")
+
+    def get_workspace(self, instance):
+        return instance.run.jobdef.project.workspace.relation_to_json
 
     def get_project(self, instance):
-        project = instance.run.jobdef.project
-        return project.relation_to_json
+        return instance.run.jobdef.project.relation_to_json
+
+    def get_job(self, instance):
+        return instance.run.jobdef.relation_to_json
+
+    def get_run(self, instance):
+        return instance.run.relation_to_json
 
     class Meta:
         model = RunArtifact
-        fields = "__all__"
+        fields = [
+            "suuid",
+            "workspace",
+            "project",
+            "job",
+            "run",
+            "size",
+            "count_dir",
+            "count_files",
+            "created",
+            "modified",
+        ]
+
+
+class RunArtifactSerializerDetail(RunArtifactSerializer, BaseArchiveDetailSerializer):
+    class Meta:
+        model = RunArtifact
+        fields = [
+            "suuid",
+            "workspace",
+            "project",
+            "job",
+            "run",
+            "size",
+            "count_dir",
+            "count_files",
+            "cdn_base_url",
+            "created",
+            "modified",
+            "files",
+        ]
 
 
 class RunArtifactSerializerForInsert(serializers.ModelSerializer):
     class Meta:
         model = RunArtifact
-        fields = "__all__"
-
-
-class RunArtifactSerializerDetail(BaseArchiveDetailSerializer):
-    class Meta:
-        model = RunArtifact
-        fields = "__all__"
+        fields = [
+            "suuid",
+            "run",
+            "size",
+            "created",
+        ]
 
 
 class ChunkedRunArtifactPartSerializer(serializers.ModelSerializer):
@@ -42,7 +81,10 @@ class ChunkedRunArtifactPartSerializer(serializers.ModelSerializer):
 class RunResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = RunResult
-        fields = "__all__"
+        exclude = [
+            "uuid",
+            "deleted",
+        ]
 
 
 class ChunkedRunResultPartSerializer(serializers.ModelSerializer):

@@ -28,9 +28,8 @@ class RunImage(BaseModel):
         """
         return {
             "relation": "image",
+            "suuid": self.suuid,
             "name": self.fullname,
-            "uuid": str(self.uuid),
-            "short_uuid": self.short_uuid,
             "tag": self.tag,
             "digest": self.digest,
         }

@@ -11,8 +11,8 @@ class RunVariableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RunVariable
-        fields = ["uuid", "short_uuid", "variables"]
-        read_only_fields = ["uuid", "short_uuid"]
+        fields = ["uuid", "suuid", "variables"]
+        read_only_fields = ["uuid", "suuid"]
 
 
 class RunVariableRowSerializer(serializers.ModelSerializer):

@@ -76,7 +76,7 @@ class TestMetricListAPI(BaseRunTest, APITestCase):
             "run-metric-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run_suuid": self.runmetrics.get("run1").short_uuid,
+                "parent_lookup_run_suuid": self.runmetrics.get("run1").suuid,
             },
         )
 
@@ -192,8 +192,8 @@ class TestMetricUpdateAPI(BaseRunTest, APITestCase):
             "run-metric-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__short_uuid": self.runmetrics.get("run1").short_uuid,
-                "run__short_uuid": self.runmetrics.get("run1").short_uuid,
+                "parent_lookup_run__suuid": self.runmetrics.get("run1").suuid,
+                "run__suuid": self.runmetrics.get("run1").suuid,
             },
         )
 
@@ -256,7 +256,7 @@ class JobTestMetricListAPI(TestMetricListAPI):
             "job-run-metric-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_job_suuid": self.jobdef.short_uuid,
+                "parent_lookup_job_suuid": self.jobdef.suuid,
             },
         )
 
@@ -337,7 +337,7 @@ class JobTestMetricListAPI(TestMetricListAPI):
         """
         self.activate_user("member")
 
-        query_params = {"metric_name": "Accuracy", "job": self.jobdef.short_uuid}
+        query_params = {"metric_name": "Accuracy", "job": self.jobdef.suuid}
 
         response = self.client.get(
             self.url,
@@ -381,13 +381,13 @@ class TestRunMetricDeduplicate(BaseRunTest, APITestCase):
 
         self.metric_to_test_deduplicate = [
             {
-                "run_suuid": self.run_deduplicate.short_uuid,
+                "run_suuid": self.run_deduplicate.suuid,
                 "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
                 "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
                 "created": "2021-02-14T12:00:01.123456+00:00",
             },
             {
-                "run_suuid": self.run_deduplicate.short_uuid,
+                "run_suuid": self.run_deduplicate.suuid,
                 "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
                 "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
                 "created": "2021-02-14T12:00:01.123456+00:00",
@@ -400,7 +400,7 @@ class TestRunMetricDeduplicate(BaseRunTest, APITestCase):
 
     def test_run_metrics_deduplicate(self):
         #  Count metrics before adding duplicates
-        metrics = RunMetricRow.objects.filter(run_suuid=self.run_deduplicate.short_uuid)
+        metrics = RunMetricRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
         self.assertEqual(len(metrics), 2)
         metric_record = RunMetric.objects.get(uuid=self.run_metrics_deduplicate.uuid)
         self.assertEqual(metric_record.count, 2)
@@ -408,24 +408,24 @@ class TestRunMetricDeduplicate(BaseRunTest, APITestCase):
         # Add duplicate metrics
         for metric in self.metric_to_test_deduplicate:
             RunMetricRow.objects.create(
-                project_suuid=self.run_deduplicate.jobdef.project.short_uuid,
-                job_suuid=self.run_deduplicate.jobdef.short_uuid,
-                run_suuid=self.run_deduplicate.short_uuid,
+                project_suuid=self.run_deduplicate.jobdef.project.suuid,
+                job_suuid=self.run_deduplicate.jobdef.suuid,
+                run_suuid=self.run_deduplicate.suuid,
                 metric=metric["metric"],
                 label=metric["label"],
                 created=metric["created"],
             )
         self.run_metrics_deduplicate.update_meta()
 
-        metrics_with_duplicates = RunMetricRow.objects.filter(run_suuid=self.run_deduplicate.short_uuid)
+        metrics_with_duplicates = RunMetricRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
         self.assertEqual(len(metrics_with_duplicates), 4)
         metric_record_with_duplicates = RunMetric.objects.get(uuid=self.run_metrics_deduplicate.uuid)
         self.assertEqual(metric_record_with_duplicates.count, 4)
 
         # Dedepulicate run metric records
-        post_run_deduplicate_metrics(self.run_deduplicate.short_uuid)
+        post_run_deduplicate_metrics(self.run_deduplicate.suuid)
 
-        metrics_after_deduplicates = RunMetricRow.objects.filter(run_suuid=self.run_deduplicate.short_uuid)
+        metrics_after_deduplicates = RunMetricRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
         self.assertEqual(len(metrics_after_deduplicates), 2)
 
         # Deduplicate should also update the main metrics count

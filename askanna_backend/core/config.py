@@ -10,7 +10,7 @@ try:
 except ImportError:
     from yaml import Loader
 
-from core.utils import is_valid_timezone, parse_cron_line
+from core.utils import get_setting_from_database, is_valid_timezone, parse_cron_line
 
 
 class AskAnnaConfig:
@@ -35,9 +35,8 @@ class AskAnnaConfig:
         "worker",
     )
 
-    def __init__(self, config: Dict = {}, defaults: Dict = {}, *args, **kwargs):
+    def __init__(self, config: Dict = {}, *args, **kwargs):
         self.config = config
-        self.defaults = defaults
         self.jobs = collections.OrderedDict()
         self.__extract_notifications()
         self.__extract_jobs()
@@ -67,13 +66,13 @@ class AskAnnaConfig:
         self.notifications = notifications
 
     @classmethod
-    def from_stream(cls, filename, defaults: Dict = {}):
+    def from_stream(cls, filename):
         try:
             config = yaml.load(filename, Loader=Loader)  # nosec: B506
         except yaml.scanner.ScannerError:
             return None
         else:
-            return cls(config=config, defaults=defaults)
+            return cls(config=config)
 
     @property
     def timezone(self):
@@ -90,14 +89,17 @@ class AskAnnaConfig:
         """
         # get runner image
         # the default image can be set in core.models.Setting
-        default_runner_image = self.defaults.get(
-            "RUNNER_DEFAULT_DOCKER_IMAGE",
+        default_runner_image = get_setting_from_database(
+            name="RUNNER_DEFAULT_DOCKER_IMAGE",
+            default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
         )
-        default_runner_image_user = self.defaults.get(
-            "RUNNER_DEFAULT_DOCKER_IMAGE_USER",
+        default_runner_image_user = get_setting_from_database(
+            name="RUNNER_DEFAULT_DOCKER_IMAGE_USER",
+            default=settings.ASKANNA_DOCKER_USER,
         )
-        default_runner_image_pass = self.defaults.get(
-            "RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
+        default_runner_image_pass = get_setting_from_database(
+            name="RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
+            default=settings.ASKANNA_DOCKER_PASS,
         )
 
         environment = self.config.get("environment", {})
@@ -113,8 +115,8 @@ class AskAnnaConfig:
                     "password": default_runner_image_pass,
                 }
 
-            return Environment.from_python(image_spec)
-        return Environment.from_python(
+            return Environment.from_dict(image_spec)
+        return Environment.from_dict(
             {
                 "image": environment.get("image"),
                 "credentials": {
@@ -172,7 +174,7 @@ class Environment:
         return spec
 
     @classmethod
-    def from_python(cls, environment: Dict = {}):
+    def from_dict(cls, environment: Dict):
         spec = {"image": environment.get("image")}
         if environment.get("credentials") and environment.get("credentials", {}).get("username"):
             # Credentials are specified, we just assume at least the username is filled out.
@@ -228,7 +230,7 @@ class Job:
 
         # extract the environment
         job_environment = job_config.get("environment", global_environment.to_dict())
-        environment = Environment.from_python(job_environment)
+        environment = Environment.from_dict(job_environment)
 
         # extract the commands
         job_commands = job_config.get("job", [])

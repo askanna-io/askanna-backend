@@ -1,8 +1,7 @@
-from django.urls import reverse
-from rest_framework.test import APITestCase
-
 from core.tests.base import BaseUploadTestMixin
+from django.urls import reverse
 from job.tests.base import BaseJobTestDef
+from rest_framework.test import APITestCase
 
 
 class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase):
@@ -23,14 +22,14 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
             "package-packagechunk-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_package__short_uuid": parent_object.get("short_uuid"),
+                "parent_lookup_package__suuid": parent_object.get("suuid"),
             },
         )
         self.upload_chunk_url = lambda parent_object, chunk_uuid: reverse(
             "package-packagechunk-chunk",
             kwargs={
                 "version": "v1",
-                "parent_lookup_package__short_uuid": parent_object.get("short_uuid"),
+                "parent_lookup_package__suuid": parent_object.get("suuid"),
                 "pk": chunk_uuid,
             },
         )
@@ -38,7 +37,7 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
             "package-finish-upload",
             kwargs={
                 "version": "v1",
-                "short_uuid": parent_object.get("short_uuid"),
+                "suuid": parent_object.get("suuid"),
             },
         )
 

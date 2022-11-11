@@ -15,7 +15,8 @@ from core.views import (
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -32,86 +33,11 @@ from run.signals import artifact_upload_finish
 from users.models import MSP_WORKSPACE, Membership
 
 
-class RunArtifactShortcutView(
-    ObjectRoleMixin,
-    mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,
-):
-    """
-    Retrieve a specific artifact to be exposed over `/v1/artifact/{{ run_suuid }}`
-    We allow the `run_suuid` to be given as short urls are for convenience to get
-    something for a specific `run_suuid`.
-
-    In case there is no artifact, we will return a http_status=404 (default via drf)
-
-    In case we have 1 artifact, we return the binary of this artifact
-    In case we find 1+ artifact, we return the first created artifact (sorted by date)
-    """
-
-    queryset = Run.objects.filter(deleted__isnull=True)
-    lookup_field = "short_uuid"
-    # The serializer class is dummy here as this is not used
-    serializer_class = RunArtifactSerializer
-    permission_classes = [RoleBasedPermission]
-
-    RBAC_BY_ACTION = {
-        "retrieve": ["project.run.list"],
-    }
-
-    def get_object_project(self):
-        return self.current_object.jobdef.project
-
-    def get_object_workspace(self):
-        return self.current_object.jobdef.project.workspace
-
-    def get_queryset(self):
-        """
-        For listings return only values from projects
-        where the current user had access to
-        meaning also beeing part of a certain workspace
-        """
-        user = self.request.user
-        if user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
-            )
-
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
-
-        return (
-            super()
-            .get_queryset()
-            .filter(
-                Q(jobdef__project__workspace__in=member_of_workspaces)
-                | (Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
-            )
-        )
-
-    # overwrite the default view and serializer for detail page
-    # We will retrieve the artifact and send binary
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        try:
-            artifact = instance.artifact.all().first()
-            location = os.path.join(artifact.storage_location, artifact.filename)
-        except (ObjectDoesNotExist, AttributeError, Exception):
-            return Response(
-                {"message_type": "error", "message": "Artifact was not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        else:
-            response = HttpResponseRedirect(
-                "{BASE_URL}/files/artifacts/{LOCATION}".format(
-                    BASE_URL=settings.ASKANNA_CDN_URL,
-                    LOCATION=location,
-                )
-            )
-            return response
-
-
+@extend_schema_view(
+    list=extend_schema(description="List artifacts for a run"),
+    create=extend_schema(description="Do a request to upload a new artifact"),
+    retrieve=extend_schema(description="Get info from a specific artifact"),
+)
 class RunArtifactView(
     ObjectRoleMixin,
     BaseUploadFinishMixin,
@@ -126,7 +52,7 @@ class RunArtifactView(
     """
 
     queryset = RunArtifact.objects.all()
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = RunArtifactSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -140,7 +66,7 @@ class RunArtifactView(
 
     def get_upload_dir(self, obj):
         # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.short_uuid)
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
         return directory
@@ -158,7 +84,7 @@ class RunArtifactView(
         # The role for creating an artifact is based on the url it is accesing
         parents = self.get_parents_query_dict()
         try:
-            run = Run.objects.get(short_uuid=parents.get("run__short_uuid"))
+            run = Run.objects.get(suuid=parents.get("run__suuid"))
             project = run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
@@ -222,7 +148,7 @@ class RunArtifactView(
 
     # overwrite create row, we need to add the run
     def create(self, request, *args, **kwargs):
-        run = Run.objects.get(short_uuid=self.kwargs.get("parent_lookup_run__short_uuid"))
+        run = Run.objects.get(suuid=self.kwargs.get("parent_lookup_run__suuid"))
         data = request.data.copy()
         data.update(**{"run": str(run.pk)})
 
@@ -243,6 +169,11 @@ class RunArtifactView(
 
     @action(detail=True, methods=["get"])
     def download(self, request, *args, **kwargs):
+        """
+        Get info to download an artifact
+
+        The request returns a response with the URI on the CDN where to find the artifact file.
+        """
         instance = self.get_object()
 
         return Response(
@@ -257,9 +188,7 @@ class RunArtifactView(
 
 
 class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
-    """
-    Allow chunked uploading of artifacts
-    """
+    """Request an uuid to upload an artifact chunk"""
 
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedRunArtifactPartSerializer
@@ -274,7 +203,7 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
 
     def get_upload_dir(self, chunkpart):
         # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.artifact.run.short_uuid)
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.artifact.run.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
         return directory
@@ -295,7 +224,7 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         # The role for creating an artifact is based on the url it is accesing
         parents = self.get_parents_query_dict()
         try:
-            artifact = RunArtifact.objects.get(short_uuid=parents.get("artifact__short_uuid"))
+            artifact = RunArtifact.objects.get(suuid=parents.get("artifact__suuid"))
             project = artifact.run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
@@ -320,9 +249,9 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         """
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
-        short_uuid = parents.get("artifact__short_uuid")
+        suuid = parents.get("artifact__suuid")
         request.data.update(
             **{
-                "artifact": RunArtifact.objects.get(short_uuid=short_uuid).pk,
+                "artifact": RunArtifact.objects.get(suuid=suuid).pk,
             }
         )

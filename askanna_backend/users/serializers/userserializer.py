@@ -1,20 +1,16 @@
 import copy
+
 from django.conf import settings
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
 from django.db.models import Q
 from rest_framework import serializers
-
-
-from users.models import (
-    User,
-    UserProfile,
-)
+from users.models import User, UserProfile
 from users.signals import (
-    user_created_signal,
-    password_changed_signal,
     email_changed_signal,
+    password_changed_signal,
+    user_created_signal,
 )
 
 
@@ -27,9 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            "suuid",
             "name",
             "email",
-            "short_uuid",
             "is_active",
             "date_joined",
             "last_login",
@@ -43,7 +39,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     old_password = serializers.CharField(write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False)
-    short_uuid = serializers.CharField(required=False, read_only=True)
+    suuid = serializers.CharField(required=False, read_only=True)
 
     def validate(self, data):
         """
@@ -127,7 +123,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "email",
             "password",
             "old_password",
-            "short_uuid",
+            "suuid",
         ]
 
 
@@ -138,7 +134,7 @@ class UserCreateSerializer(serializers.Serializer):
 
     workspace = serializers.CharField(write_only=True, required=False)
     terms_of_use = serializers.BooleanField(write_only=True, required=True)
-    short_uuid = serializers.CharField(required=False, read_only=True)
+    suuid = serializers.CharField(required=False, read_only=True)
 
     front_end_domain = serializers.CharField(required=False, default=settings.ASKANNA_UI_URL)
 
@@ -151,7 +147,7 @@ class UserCreateSerializer(serializers.Serializer):
         This function creates an user account and set the password
         """
         workspace_name = validated_data.pop("workspace", None)
-        tou = validated_data.pop("terms_of_use")
+        tou = validated_data.pop("terms_of_use")  # noqa: F841
         password = validated_data.pop("password")
         # hard code to set the username to e-mail
         validated_data["username"] = validated_data.get("email")

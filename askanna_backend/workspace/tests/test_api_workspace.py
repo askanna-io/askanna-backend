@@ -1,9 +1,9 @@
 """Define tests for API of UserProfile."""
 import pytest
+from core.tests.base import BaseUserPopulation
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from core.tests.base import BaseUserPopulation
 
 pytestmark = pytest.mark.django_db
 
@@ -38,9 +38,9 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
 
-        uuids = [r["uuid"] for r in response.json()]
-        self.assertIn(str(self.workspace_a.uuid), uuids)
-        self.assertIn(str(self.workspace_b.uuid), uuids)
+        suuids = [r["suuid"] for r in response.json()]
+        self.assertIn(str(self.workspace_a.suuid), suuids)
+        self.assertIn(str(self.workspace_b.suuid), suuids)
 
     def test_list_as_member_see_only_its_workspaces(self):
         """A member gets only workspaces it belongs to and public workspaces"""
@@ -50,8 +50,8 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
-        uuids = [r["uuid"] for r in response.json()]
-        self.assertIn(str(self.workspace_a.uuid), uuids)
+        suuids = [r["suuid"] for r in response.json()]
+        self.assertIn(str(self.workspace_a.suuid), suuids)
 
         for r in response.data:
             # make sure we have an "is_member" for each workspace
@@ -76,11 +76,11 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
         super().setUp()
         self.url = reverse(
             "workspace-detail",
-            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid},
+            kwargs={"version": "v1", "suuid": self.workspace_a.suuid},
         )
         self.url_non_existing_workspace = reverse(
             "workspace-detail",
-            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid[:-1] + "a"},
+            kwargs={"version": "v1", "suuid": self.workspace_a.suuid[:-1] + "a"},
         )
 
     def test_detail_as_anna(self):
@@ -124,7 +124,6 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
         self.activate_user("member")
 
         response = self.client.get(self.url_non_existing_workspace)
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_workspaceviewer_public_project_other_public_workspace(self):
@@ -141,7 +140,7 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
 
         url = reverse(
             "workspace-detail",
-            kwargs={"version": "v1", "short_uuid": self.workspace_c.short_uuid},
+            kwargs={"version": "v1", "suuid": self.workspace_c.suuid},
         )
 
         response = self.client.get(url)
@@ -154,7 +153,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         super().setUp()
         self.url = reverse(
             "workspace-detail",
-            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid},
+            kwargs={"version": "v1", "suuid": self.workspace_a.suuid},
         )
 
     def test_update_as_anna(self):
@@ -239,7 +238,7 @@ class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
         super().setUp()
         self.url = reverse(
             "workspace-detail",
-            kwargs={"version": "v1", "short_uuid": self.workspace_a.short_uuid},
+            kwargs={"version": "v1", "suuid": self.workspace_a.suuid},
         )
 
     def test_delete_as_anna(self):

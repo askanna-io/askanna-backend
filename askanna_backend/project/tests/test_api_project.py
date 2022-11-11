@@ -53,8 +53,8 @@ class TestProjectListAPI(BaseProjectTest):
 
         response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.project.short_uuid in str(response.content))
-        self.assertFalse(self.unused_project.short_uuid in str(response.content))
+        self.assertTrue(self.project.suuid in str(response.content))
+        self.assertFalse(self.unused_project.suuid in str(response.content))
 
     def test_list_project_as_member(self):
         """A member of the workspace can get list projects."""
@@ -62,8 +62,8 @@ class TestProjectListAPI(BaseProjectTest):
 
         response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.project.short_uuid in str(response.content))
-        self.assertFalse(self.unused_project.short_uuid in str(response.content))
+        self.assertTrue(self.project.suuid in str(response.content))
+        self.assertFalse(self.unused_project.suuid in str(response.content))
 
         for r in response.data:
             # make sure we have an "is_member" for each workspace
@@ -81,8 +81,8 @@ class TestProjectListAPI(BaseProjectTest):
         for project in response.data:
             self.assertEqual(project.get("visibility"), "PUBLIC")
 
-        self.assertFalse(self.project.short_uuid in str(response.content))
-        self.assertFalse(self.unused_project.short_uuid in str(response.content))
+        self.assertFalse(self.project.suuid in str(response.content))
+        self.assertFalse(self.unused_project.suuid in str(response.content))
 
     def test_list_project_as_anonymous(self):
         """
@@ -101,14 +101,14 @@ class TestProjectDetailAPI(BaseProjectTest):
             "project-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project.short_uuid,
+                "suuid": self.project.suuid,
             },
         )
         self.url_public_project = reverse(
             "project-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project_public.short_uuid,
+                "suuid": self.project_public.suuid,
             },
         )
 
@@ -118,7 +118,7 @@ class TestProjectDetailAPI(BaseProjectTest):
 
         response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.project.short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.project.suuid}.items() <= dict(response.data).items())
 
     def test_admin_can_get_project(self):
         """An admin of the workspace can get a project."""
@@ -126,7 +126,7 @@ class TestProjectDetailAPI(BaseProjectTest):
 
         response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"short_uuid": self.project.short_uuid}.items() <= dict(response.data).items())
+        self.assertTrue({"suuid": self.project.suuid}.items() <= dict(response.data).items())
 
     def test_non_member_cannot_get_project(self):
         """Non member do not have access to the project."""
@@ -162,7 +162,7 @@ class TestProjectCreateAPI(BaseProjectTest):
 
         response = self.client.post(
             self.url,
-            {"workspace": self.workspace_a.short_uuid, "name": "new created project"},
+            {"workspace": self.workspace_a.suuid, "name": "new created project"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -173,7 +173,7 @@ class TestProjectCreateAPI(BaseProjectTest):
 
         response = self.client.post(
             self.url,
-            {"workspace": self.workspace_a.short_uuid, "name": "new created project"},
+            {"workspace": self.workspace_a.suuid, "name": "new created project"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -184,7 +184,7 @@ class TestProjectCreateAPI(BaseProjectTest):
 
         response = self.client.post(
             self.url,
-            {"workspace": self.workspace_a.short_uuid, "name": "new created project"},
+            {"workspace": self.workspace_a.suuid, "name": "new created project"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -193,7 +193,7 @@ class TestProjectCreateAPI(BaseProjectTest):
         """An anonymous user cannot create projects."""
         response = self.client.post(
             self.url,
-            {"workspace": self.workspace_a.short_uuid, "name": "new created project"},
+            {"workspace": self.workspace_a.suuid, "name": "new created project"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -206,7 +206,7 @@ class TestProjectCreateAPI(BaseProjectTest):
             self.url,
             {
                 "name": "new created project",
-                "workspace": self.workspace_a.short_uuid,
+                "workspace": self.workspace_a.suuid,
                 "visibility": "PUBLIC",
             },
             format="json",
@@ -222,7 +222,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
             "project-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project.short_uuid,
+                "suuid": self.project.suuid,
             },
         )
 
@@ -232,7 +232,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
 
         response = self.client.put(
             self.url,
-            {"name": "a new name", "workspace": self.workspace_a.short_uuid},
+            {"name": "a new name", "workspace": self.workspace_a.suuid},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -243,7 +243,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
 
         response = self.client.put(
             self.url,
-            {"name": "a new name", "workspace": self.workspace_a.short_uuid},
+            {"name": "a new name", "workspace": self.workspace_a.suuid},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -255,7 +255,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
 
         response = self.client.put(
             self.url,
-            {"name": "a new name", "workspace": self.workspace_a.short_uuid},
+            {"name": "a new name", "workspace": self.workspace_a.suuid},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -264,7 +264,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
         """An anonymous user can not update a project."""
         response = self.client.put(
             self.url,
-            {"name": "a new name", "workspace": self.workspace_a.short_uuid},
+            {"name": "a new name", "workspace": self.workspace_a.suuid},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -348,7 +348,7 @@ class TestProjectDeleteAPI(BaseProjectTest):
             "project-detail",
             kwargs={
                 "version": "v1",
-                "short_uuid": self.project.short_uuid,
+                "suuid": self.project.suuid,
             },
         )
         self.setUpDelete()
@@ -375,7 +375,7 @@ class TestProjectDeleteAPI(BaseProjectTest):
         self.payload = {"test": 1, "format": "json", "user": "askanna"}
 
         # setup a payload for the project
-        job_url = reverse("run-job", kwargs={"version": "v1", "short_uuid": self.job.short_uuid})
+        job_url = reverse("run-job", kwargs={"version": "v1", "suuid": self.job.suuid})
         response = self.client.post(
             job_url,
             self.payload,
@@ -383,10 +383,10 @@ class TestProjectDeleteAPI(BaseProjectTest):
             HTTP_HOST="testserver",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        run_suuid = response.data.get("short_uuid")
+        run_suuid = response.data.get("suuid")
 
         # Fix issue for a job that was not run, so create output
-        self.run = Run.objects.get(short_uuid=run_suuid)
+        self.run = Run.objects.get(suuid=run_suuid)
         self.jobpayload = JobPayload.objects.get(jobdef__pk=self.job.pk)
         self.runlog = RunLog.objects.get(run=self.run)
         self.runlog.exit_code = 0
@@ -446,7 +446,7 @@ class TestWorkspaceProjectListAPI(TestProjectListAPI):
             "workspace-project-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_workspace__short_uuid": self.workspace_a.short_uuid,
+                "parent_lookup_workspace__suuid": self.workspace_a.suuid,
             },
         )
 

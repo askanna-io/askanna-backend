@@ -17,7 +17,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-job",
-            kwargs={"version": "v1", "short_uuid": self.jobdef.short_uuid},
+            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
 
     def test_startjob_as_admin(self):
@@ -141,7 +141,7 @@ class TestJobStartAPI(BaseJobTestDef, APITestCase):
                     "run-detail",
                     kwargs={
                         "version": "v1",
-                        "short_uuid": response.data.get("short_uuid"),
+                        "suuid": response.data.get("suuid"),
                     },
                 )
             )

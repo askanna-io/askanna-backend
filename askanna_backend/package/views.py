@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from package.models import ChunkedPackagePart, Package
 from package.serializers import (
     ChunkedPackagePartSerializer,
@@ -45,7 +46,7 @@ class PackageObjectRoleMixin:
     def get_create_role(self, request, *args, **kwargs):
         project_suuid = request.data.get("project")
         try:
-            project = Project.objects.get(short_uuid=project_suuid)
+            project = Project.objects.get(suuid=project_suuid)
         except ObjectDoesNotExist:
             raise Http404
 
@@ -88,6 +89,11 @@ class PackageObjectRoleMixin:
         )
 
 
+@extend_schema_view(
+    list=extend_schema(description="List packages you have access to"),
+    create=extend_schema(description="Do a request to upload a new package"),
+    retrieve=extend_schema(description="Get info from a specific package"),
+)
 class PackageViewSet(
     PackageObjectRoleMixin,
     ObjectRoleMixin,
@@ -102,8 +108,10 @@ class PackageViewSet(
     List all packages and allow to finish upload action
     """
 
-    queryset = Package.objects.exclude(original_filename="").select_related("project", "project__workspace")
-    lookup_field = "short_uuid"
+    queryset = Package.objects.exclude(original_filename="").select_related(
+        "project", "project__workspace", "created_by", "member", "member__user"
+    )
+    lookup_field = "suuid"
     serializer_class = PackageSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -111,10 +119,18 @@ class PackageViewSet(
     upload_finished_signal = package_upload_finish
     upload_finished_message = "package upload finished"
 
-    serializer_classes_by_action = {
-        "post": PackageCreateSerializer,
-        "get": PackageSerializerDetail,
-    }
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == "finish_upload":
+            return queryset.filter(finished__isnull=True)
+        return queryset.filter(finished__isnull=False)
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return PackageSerializerDetail
+        if self.action == "create":
+            return PackageCreateSerializer
+        return self.serializer_class
 
     RBAC_BY_ACTION = {
         "list": ["project.code.list"],
@@ -125,7 +141,7 @@ class PackageViewSet(
 
     def get_upload_dir(self, obj):
         # directory structure is containing the project-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "project", obj.project.short_uuid)
+        directory = os.path.join(settings.UPLOAD_ROOT, "project", obj.project.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
         return directory
@@ -146,7 +162,9 @@ class PackageViewSet(
     @action(detail=True, methods=["get"])
     def download(self, request, **kwargs):
         """
-        Return a response with the URI on the CDN where to find the full package.
+        Get info to download a package
+
+        The request returns a response with the URI on the CDN where to find the package file.
         """
         package = self.get_object()
 
@@ -163,9 +181,7 @@ class PackageViewSet(
 
 
 class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
-    """
-    Allow chunked uploading of packages
-    """
+    """Request an uuid to upload a package chunk"""
 
     queryset = ChunkedPackagePart.objects.all().select_related(
         "package__project",
@@ -183,7 +199,7 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
 
     def get_upload_dir(self, chunkpart):
         # directory structure is containing the project-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "project", chunkpart.package.project.short_uuid)
+        directory = os.path.join(settings.UPLOAD_ROOT, "project", chunkpart.package.project.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
         return directory
@@ -197,7 +213,7 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     def get_create_role(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
-            package = Package.objects.get(short_uuid=parents.get("package__short_uuid"))
+            package = Package.objects.get(suuid=parents.get("package__suuid"))
             project = package.project
         except ObjectDoesNotExist:
             raise Http404
@@ -219,12 +235,12 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         """
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
-        short_uuid = parents.get("package__short_uuid")
+        suuid = parents.get("package__suuid")
         request.data.update(
             **{
                 "package": str(
                     Package.objects.get(
-                        short_uuid=short_uuid,
+                        suuid=suuid,
                     ).pk
                 )
             }
@@ -232,15 +248,16 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
 
 
 class ProjectPackageViewSet(
-    NestedViewSetMixin, PackageObjectRoleMixin, ObjectRoleMixin, viewsets.ReadOnlyModelViewSet
+    NestedViewSetMixin, PackageObjectRoleMixin, ObjectRoleMixin, mixins.ListModelMixin, viewsets.GenericViewSet
 ):
+    """List packages of a project"""
 
     queryset = (
         Package.objects.exclude(original_filename="")
         .filter(finished__isnull=False)
-        .select_related("project", "project__workspace")
+        .select_related("project", "project__workspace", "created_by", "member", "member__user")
     )
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = PackageSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -254,7 +271,7 @@ class ProjectPackageViewSet(
         # always return ProjectMember for logged in users since the listing always shows objects based on membership
         parents = self.get_parents_query_dict()
         try:
-            project = Project.objects.get(short_uuid=parents.get("project__short_uuid"))
+            project = Project.objects.get(suuid=parents.get("project__suuid"))
         except Project.DoesNotExist:
             raise Http404
         request.user_roles += Membership.get_roles_for_project(request.user, project)
@@ -267,21 +284,3 @@ class ProjectPackageViewSet(
         if self.action == "retrieve":
             return PackageSerializerDetail
         return self.serializer_class
-
-    @action(detail=True, methods=["get"])
-    def download(self, request, **kwargs):
-        """
-        Return a response with the URI on the CDN where to find the full package.
-        """
-        package = self.get_object()
-
-        return Response(
-            {
-                "action": "redirect",
-                "target": "{BASE_URL}/files/packages/{LOCATION}/{FILENAME}".format(
-                    BASE_URL=settings.ASKANNA_CDN_URL,
-                    LOCATION=package.storage_location,
-                    FILENAME=package.filename,
-                ),
-            }
-        )

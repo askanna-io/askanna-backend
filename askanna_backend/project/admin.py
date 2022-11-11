@@ -5,7 +5,7 @@ from project.models import Project, ProjectVariable
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "status",
         "name",
         "description",
@@ -19,7 +19,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "created_by",
         "modified",
         "created",
@@ -32,7 +32,7 @@ class ProjectAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "name",
         "visibility",
         "workspace",
@@ -40,7 +40,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "created",
     ]
     list_display_links = (
-        "short_uuid",
+        "suuid",
         "name",
     )
     date_hierarchy = "created"
@@ -52,8 +52,8 @@ class ProjectAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "workspace__short_uuid",
+        "suuid",
+        "workspace__suuid",
         "name",
     ]
 
@@ -67,7 +67,7 @@ class ProjectAdmin(admin.ModelAdmin):
 @admin.register(ProjectVariable)
 class ProjectVariableAdmin(admin.ModelAdmin):
     fields = [
-        "short_uuid",
+        "suuid",
         "project",
         "name",
         "value",
@@ -77,7 +77,7 @@ class ProjectVariableAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "project",
         "modified",
         "created",
@@ -87,7 +87,7 @@ class ProjectVariableAdmin(admin.ModelAdmin):
     ]
 
     list_display = [
-        "short_uuid",
+        "suuid",
         "project",
         "name",
         "is_masked",
@@ -100,8 +100,8 @@ class ProjectVariableAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
-        "short_uuid",
-        "project__short_uuid",
+        "suuid",
+        "project__suuid",
         "name",
     ]
 

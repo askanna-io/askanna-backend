@@ -5,7 +5,7 @@ from package.models import ChunkedPackagePart, Package
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
     list_display = [
-        "short_uuid",
+        "suuid",
         "original_filename",
         "size",
         "project",
@@ -13,7 +13,7 @@ class PackageAdmin(admin.ModelAdmin):
         "created",
     ]
     list_display_links = (
-        "short_uuid",
+        "suuid",
         "original_filename",
     )
     date_hierarchy = "created"
@@ -24,12 +24,12 @@ class PackageAdmin(admin.ModelAdmin):
     )
     search_fields = [
         "uuid",
-        "short_uuid",
-        "project__short_uuid",
+        "suuid",
+        "project__suuid",
         "project__name",
     ]
     fields = [
-        "short_uuid",
+        "suuid",
         "original_filename",
         "name",
         "description",
@@ -43,7 +43,7 @@ class PackageAdmin(admin.ModelAdmin):
         "deleted",
     ]
     readonly_fields = [
-        "short_uuid",
+        "suuid",
         "original_filename",
         "size",
         "project",
@@ -83,7 +83,7 @@ class ChunkedPackagePartAdmin(admin.ModelAdmin):
     search_fields = [
         "uuid",
         "package__uuid",
-        "package__short_uuid",
+        "package__suuid",
         "package__original_filename",
     ]
     fields = [

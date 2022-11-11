@@ -1,9 +1,9 @@
-from django.urls import reverse
 import pytest
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from users.models import User
+
 from .base_tests import BaseUsers
 
 pytestmark = pytest.mark.django_db
@@ -90,7 +90,7 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # cleanup via internal functions
-        User.objects.get(short_uuid=response.data["short_uuid"]).delete()
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_user_as_normaluser(self):
         """
@@ -131,7 +131,7 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # cleanup via internal functions
-        User.objects.get(short_uuid=response.data["short_uuid"]).delete()
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_user_as_anonymous_without_workspace(self):
         """
@@ -151,7 +151,7 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # cleanup via internal functions
-        User.objects.get(short_uuid=response.data["short_uuid"]).delete()
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_user_as_anonymous_email_already_used(self):
         """
@@ -187,7 +187,7 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
         )
 
         # cleanup via internal functions
-        User.objects.get(short_uuid=response.data["short_uuid"]).delete()
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_user_as_anonymous_too_short_password(self):
         """
@@ -213,13 +213,13 @@ class TestUserCreateAPI(BaseUsers, APITestCase):
 
 class TestUserUpdateAPI(BaseUsers, APITestCase):
     """
-    Testing the update function for the /v1/accounts/{short_uuid}
+    Testing the update function for the /v1/accounts/{suuid}
     """
 
     def setUp(self):
         self.url = reverse(
             "user-detail",
-            kwargs={"version": "v1", "short_uuid": self.users["user"].short_uuid},
+            kwargs={"version": "v1", "suuid": self.users["user"].suuid},
         )
 
     def test_update_user_as_admin(self):

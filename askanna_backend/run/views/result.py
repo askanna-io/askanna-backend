@@ -40,7 +40,7 @@ class BaseRunResultCreateView(
     def get_create_role(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
-            run = Run.objects.get(short_uuid=parents.get("run__short_uuid"))
+            run = Run.objects.get(suuid=parents.get("run__suuid"))
             project = run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
@@ -63,8 +63,10 @@ class RunResultCreateView(
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Do a request to upload a new result"""
+
     queryset = RunResult.objects.filter(run__deleted__isnull=True)
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = RunResultSerializer
 
     upload_target_location = settings.ARTIFACTS_ROOT
@@ -73,14 +75,14 @@ class RunResultCreateView(
 
     def get_upload_dir(self, obj):
         # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.short_uuid)
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
         return directory
 
     # overwrite create row, we need to add the run
     def create(self, request, *args, **kwargs):
-        run = Run.objects.get(short_uuid=self.kwargs.get("parent_lookup_run__short_uuid"))
+        run = Run.objects.get(suuid=self.kwargs.get("parent_lookup_run__suuid"))
 
         data = request.data.copy()
         data.update(
@@ -110,9 +112,7 @@ class RunResultCreateView(
 
 
 class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
-    """
-    Allow chunked uploading of jobresult
-    """
+    """Request an uuid to upload a result chunk"""
 
     queryset = ChunkedRunResultPart.objects.all().select_related(
         "runresult__run__jobdef__project",
@@ -134,18 +134,18 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         """
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
-        short_uuid = parents.get("runresult__short_uuid")
+        suuid = parents.get("runresult__suuid")
         request.data.update(
             **{
                 "runresult": RunResult.objects.get(
-                    short_uuid=short_uuid,
+                    suuid=suuid,
                 ).pk
             }
         )
 
     def get_upload_dir(self, chunkpart):
         # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.runresult.run.short_uuid)
+        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.runresult.run.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
         return directory
@@ -160,7 +160,7 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         # The role for creating an artifact is based on the url it is accesing
         parents = self.get_parents_query_dict()
         try:
-            runresult = RunResult.objects.get(short_uuid=parents.get("runresult__short_uuid"))
+            runresult = RunResult.objects.get(suuid=parents.get("runresult__suuid"))
             project = runresult.run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404

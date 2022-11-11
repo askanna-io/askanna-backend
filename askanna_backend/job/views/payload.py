@@ -14,8 +14,10 @@ class JobPayloadView(
     NestedViewSetMixin,
     viewsets.ReadOnlyModelViewSet,
 ):
+    """List payloads"""
+
     queryset = JobPayload.objects.filter(jobdef__deleted__isnull=True)
-    lookup_field = "short_uuid"
+    lookup_field = "suuid"
     serializer_class = JobPayloadSerializer
     permission_classes = [RoleBasedPermission]
 
@@ -65,6 +67,11 @@ class JobPayloadView(
     # overwrite the default view and serializer for detail page
     # We will retrieve the original sent payload from the filesystem and serve as JSON
     def retrieve(self, request, *args, **kwargs):
+        """Get the payload content
+
+        Note: this request will not result in an payload information object, but it will actually retrieve the payload
+        itselves.
+        """
         instance = self.get_object()
 
         if instance:
