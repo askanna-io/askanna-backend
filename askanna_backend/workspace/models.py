@@ -1,27 +1,40 @@
 from core.const import VISIBLITY
-from core.models import ActivatedModel, AuthorModel
+from core.models import AuthorModel, BaseModel
 from django.db import models
 
 
-class Workspace(AuthorModel, ActivatedModel):
+class WorkspaceQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(deleted__isnull=True)
 
+    def inactive(self):
+        return self.filter(deleted__isnull=False)
+
+
+class WorkspaceManager(models.Manager):
+    def get_queryset(self):
+        return WorkspaceQuerySet(self.model, using=self._db)
+
+    def active(self):
+        return self.get_queryset().active()
+
+    def inactive(self):
+        return self.get_queryset().inactive()
+
+
+class Workspace(AuthorModel, BaseModel):
+    name = models.CharField(max_length=255, blank=False, null=False, db_index=True, default="New workspace")
     visibility = models.CharField(max_length=10, choices=VISIBLITY, default="PRIVATE", db_index=True)
 
-    def get_name(self):
-        return None or self.name
+    objects = WorkspaceManager()
 
     def __str__(self):
         if self.name:
             return f"{self.name} ({self.suuid})"
         return self.suuid
 
-    @property
-    def relation_to_json(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "workspace",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-        }
+    class Meta:
+        ordering = ["name"]
+        indexes = [
+            models.Index(fields=["name", "created"]),
+        ]

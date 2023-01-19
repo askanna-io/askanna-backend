@@ -10,21 +10,20 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     # Authentication support over Django DRF
     re_path(r"^(?P<version>(v1))/auth/", include("users.rest_auth_urls")),
-    re_path(r"^(?P<version>(v1))/auth/", include("dj_rest_auth.urls")),
     # API Urls
     path("", include("core.urls")),
     path("", include("users.urls")),
     path("", include("workspace.urls")),
     path("", include("project.urls")),
+    path("", include("variable.urls")),
     path("", include("package.urls")),
     path("", include("job.urls")),
     path("", include("run.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
-    print("Adding urls for DEBUG")
-    # This allows the error pages to be debugged during development, just visit
-    # these url in browser to see how these error pages look like.
+    # This allows the error pages to be debugged during development, just visit these url in browser to see how these
+    # error pages look like.
     urlpatterns += [
         path(
             "",
@@ -51,10 +50,6 @@ if settings.DEBUG:
         ),
         path("500/", default_views.server_error),
     ] + static("/files/", document_root=str(settings.ROOT_DIR("storage_root")))
-    if "debug_toolbar" in settings.INSTALLED_APPS:
-        import debug_toolbar
-
-        urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
 else:
     urlpatterns += [
         path("", RedirectView.as_view(url=settings.ASKANNA_UI_URL, permanent=False), name="home"),

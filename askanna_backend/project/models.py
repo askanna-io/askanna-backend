@@ -1,33 +1,18 @@
 from core.const import VISIBLITY
-from core.models import ActivatorModel, AuthorModel, BaseModel, SlimBaseModel
+from core.models import AuthorModel, BaseModel
 from django.db import models
-from django_cryptography.fields import encrypt
+from django.db.models import Q
 
 
 class ProjectQuerySet(models.QuerySet):
-    def active_projects(self):
-        return self.filter(
-            deleted__isnull=True,
-            workspace__deleted__isnull=True,
-        )
-
-    def inactive_projects(self):
-        return self.filter(deleted__isnull=False)
-
     def active(self):
-        """
-        Only active projects
-        """
-        return self.active_projects()
+        return self.filter(deleted__isnull=True, workspace__deleted__isnull=True)
 
     def inactive(self):
-        """
-        Inactive projects only
-        """
-        return self.inactive_projects()
+        return self.filter(Q(deleted__isnull=False) | Q(workspace__deleted__isnull=False))
 
 
-class ActiveProjectManager(models.Manager):
+class ProjectManager(models.Manager):
     def get_queryset(self):
         return ProjectQuerySet(self.model, using=self._db)
 
@@ -38,18 +23,15 @@ class ActiveProjectManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Project(AuthorModel, ActivatorModel, BaseModel):
+class Project(AuthorModel, BaseModel):
     """A project resembles an organisation with code, jobs, runs artifacts"""
 
-    objects = models.Manager()
-    projects = ActiveProjectManager()
+    name = models.CharField(max_length=255, blank=False, null=False, db_index=True, default="New project")
 
-    workspace = models.ForeignKey("workspace.Workspace", on_delete=models.CASCADE, blank=True, null=True)
-
+    workspace = models.ForeignKey("workspace.Workspace", on_delete=models.CASCADE)
     visibility = models.CharField(max_length=10, choices=VISIBLITY, default="PRIVATE", db_index=True)
 
-    def get_name(self):
-        return None or self.name
+    objects = ProjectManager()
 
     def __str__(self):
         if self.name:
@@ -57,41 +39,11 @@ class Project(AuthorModel, ActivatorModel, BaseModel):
         return self.suuid
 
     @property
-    def relation_to_json(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "project",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-        }
+    def last_created_package(self):
+        return self.packages.active_and_finished().order_by("-created").first()
 
     class Meta:
         ordering = ["name"]
-
-
-class ProjectVariable(SlimBaseModel):
-    """
-    Variables for a project that are used for runnings jobs
-    """
-
-    project = models.ForeignKey(
-        "Project",
-        on_delete=models.CASCADE,
-        to_field="uuid",
-        related_name="variable",
-    )
-
-    name = models.CharField(max_length=128)
-    value = encrypt(models.TextField(default=None, blank=True, null=True))
-    is_masked = models.BooleanField(default=False)
-
-    def get_value(self, show_masked=False):
-        if self.is_masked and not show_masked:
-            return "***masked***"
-        return self.value
-
-    class Meta:
-        db_table = "project_variable"
-        ordering = ["-created"]
+        indexes = [
+            models.Index(fields=["name", "created"]),
+        ]

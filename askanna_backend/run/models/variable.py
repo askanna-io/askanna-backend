@@ -10,7 +10,7 @@ from django.utils import timezone
 from run.utils import get_unique_names_with_data_type
 
 
-class RunVariable(ArtifactModelMixin, SlimBaseModel):
+class RunVariableMeta(ArtifactModelMixin, SlimBaseModel):
     """Store variables for a Run"""
 
     filetype = "runvariables"
@@ -31,7 +31,7 @@ class RunVariable(ArtifactModelMixin, SlimBaseModel):
     def get_full_path(self):
         return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location, self.filename)
 
-    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, to_field="uuid", related_name="runvariables")
+    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="variables_meta")
 
     @property
     def variables(self):
@@ -73,14 +73,14 @@ class RunVariable(ArtifactModelMixin, SlimBaseModel):
         super().prune()
 
         # also remove the rows of variables attached to this object
-        RunVariableRow.objects.filter(run_suuid=self.suuid).delete()
+        RunVariableRow.objects.filter(run__suuid=self.suuid).delete()
 
     def update_meta(self):
         """
         Update the meta information variable_names and label_names
         """
-        runvariables = RunVariableRow.objects.filter(run_suuid=self.suuid)
-        if not runvariables:
+        run_variables = RunVariableRow.objects.filter(run__suuid=self.suuid)
+        if not run_variables:
             return
 
         def compose_response(instance, variable):
@@ -92,12 +92,12 @@ class RunVariable(ArtifactModelMixin, SlimBaseModel):
             }
             return var
 
-        self.count = len(runvariables)
-        self.size = len(json.dumps([compose_response(self, v) for v in runvariables]).encode("utf-8"))
+        self.count = len(run_variables)
+        self.size = len(json.dumps([compose_response(self, v) for v in run_variables]).encode("utf-8"))
 
         all_variable_names = []
         all_label_names = []
-        for variable in runvariables:
+        for variable in run_variables:
             all_variable_names.append(
                 {
                     "name": variable.variable.get("name"),
@@ -129,19 +129,20 @@ class RunVariable(ArtifactModelMixin, SlimBaseModel):
         self.save(update_fields=["count", "size", "variable_names", "label_names"])
 
     class Meta:
-        db_table = "run_variable"
+        db_table = "run_variable_meta"
         ordering = ["-created"]
 
 
+# TODO: Rename to RunVariable after release v0.21.0
 class RunVariableRow(SlimBaseModel):
     """
     Tracked Variables of a Run
     """
 
-    # We keep hard references to the project/job/run suuid because this model doesn't have hard relations to the other
-    # database models
-    #
-    # project_suuid and job_suuid should not be exposed
+    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="variables")
+
+    # We keep hard references to the project/job/run suuid because historically this model had no hard relations
+    # to the other database models
     project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
@@ -162,10 +163,8 @@ class RunVariableRow(SlimBaseModel):
     created = models.DateTimeField(default=timezone.now, db_index=True)
 
     class Meta:
-        db_table = "run_variablerow"
+        db_table = "run_variable_row"
         ordering = ["-created"]
-        verbose_name = "Run variable row"
-        verbose_name_plural = "Run variables rows"
         indexes = [
             GinIndex(
                 name="runvariable_variable_json_idx",

@@ -1,4 +1,4 @@
-from core.tests.base import BaseUploadTestMixin, BaseUserPopulation  # noqa: F401
+from core.tests.base import BaseUserPopulation
 from django.conf import settings
 from django.db.models import signals
 from django.utils import timezone
@@ -23,10 +23,10 @@ class BaseJobTestDef(BaseUserPopulation):
         self.project3 = Project.objects.create(
             **{
                 "name": "TestProject3",
-                "workspace": self.workspace_c,
+                "workspace": self.workspace_c,  # This workspace is PUBLIC
                 "visibility": "PUBLIC",
             }
-        )  # the workspace is public
+        )
         self.package = Package.objects.create(
             original_filename="project-no-yml.zip",
             project=self.project,

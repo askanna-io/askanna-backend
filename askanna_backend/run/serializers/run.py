@@ -1,142 +1,151 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
+from job.serializers import (
+    JobPayloadRelationSerializer,
+    JobRelationSerializer,
+    RunImageRelationSerializer,
+)
+from package.serializers.package_relation import PackageRelationSerializer
+from project.serializers import ProjectRelationSerializer
 from rest_framework import serializers
 from run.models import Run
+from run.serializers.artifact_relation import ArtifactRelationSerializer
+from run.serializers.log import LogRelationSerializer
+from run.serializers.result import ResultRelationSerializer
+from users.serializers.people import (
+    MembershipRelationSerializer,
+    MembershipWithAvatarRelationSerializer,
+)
+from workspace.serializers import WorkspaceRelationSerializer
+
+
+class EnvironmentSerializer(serializers.Serializer):
+    name = serializers.ReadOnlyField()
+    image = RunImageRelationSerializer()
+    timezone = serializers.ReadOnlyField()
+
+
+class NameTypeSerializer(serializers.Serializer):
+    name = serializers.ReadOnlyField()
+    type = serializers.ReadOnlyField()
+
+
+class NameTypeCountSerializer(NameTypeSerializer):
+    count = serializers.ReadOnlyField()
+
+
+class MetricsMetaSerializer(serializers.Serializer):
+    count = serializers.IntegerField(read_only=True, default=0)
+    size = serializers.IntegerField(read_only=True, default=0)
+    metric_names = NameTypeCountSerializer(many=True)
+    label_names = NameTypeSerializer(many=True)
+
+
+class VariablesMetaSerializer(serializers.Serializer):
+    count = serializers.IntegerField(read_only=True, default=0)
+    size = serializers.IntegerField(read_only=True, default=0)
+    variable_names = NameTypeCountSerializer(many=True)
+    label_names = NameTypeSerializer(many=True)
 
 
 class RunSerializer(serializers.ModelSerializer):
-    job = serializers.SerializerMethodField("get_job")
-    project = serializers.SerializerMethodField("get_project")
-    workspace = serializers.SerializerMethodField("get_workspace")
+    status = serializers.ReadOnlyField(source="get_status_external")
+    duration = serializers.ReadOnlyField(source="get_duration")
+    trigger = serializers.ReadOnlyField()
 
-    created_by = serializers.SerializerMethodField("get_created_by")
+    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="member")
 
-    environment = serializers.SerializerMethodField("get_environment")
-    package = serializers.SerializerMethodField("get_package")
-    payload = serializers.SerializerMethodField("get_payload")
+    package = PackageRelationSerializer(read_only=True)
+    payload = JobPayloadRelationSerializer(read_only=True)
 
-    result = serializers.SerializerMethodField("get_result")
-    artifact = serializers.SerializerMethodField("get_artifact")
-    metrics_meta = serializers.SerializerMethodField("get_metrics_meta")
-    variables_meta = serializers.SerializerMethodField("get_variables_meta")
-    log = serializers.SerializerMethodField("get_log")
+    result = ResultRelationSerializer(read_only=True)
+    artifact = serializers.SerializerMethodField()
+    metrics_meta = serializers.SerializerMethodField()
+    variables_meta = serializers.SerializerMethodField()
+    log = LogRelationSerializer(read_only=True, source="output")
 
-    duration = serializers.SerializerMethodField("get_duration")
+    environment = serializers.SerializerMethodField()
 
+    job = JobRelationSerializer(read_only=True, source="jobdef")
+    project = ProjectRelationSerializer(read_only=True, source="jobdef.project")
+    workspace = WorkspaceRelationSerializer(read_only=True, source="jobdef.project.workspace")
+
+    @extend_schema_field(MetricsMetaSerializer)
     def get_metrics_meta(self, instance):
         try:
-            metrics = instance.metrics.get()
+            metrics_meta = instance.metrics_meta.get()
         except ObjectDoesNotExist:
-            return {
+            metrics_meta_data = {
                 "count": 0,
                 "size": 0,
                 "metric_names": [],
                 "label_names": [],
             }
-        return {
-            "count": metrics.count,
-            "size": metrics.size,
-            "metric_names": metrics.metric_names or [],
-            "label_names": metrics.label_names or [],
-        }
+        else:
+            metrics_meta_data = {
+                "count": metrics_meta.count,
+                "size": metrics_meta.size,
+                "metric_names": metrics_meta.metric_names or [],
+                "label_names": metrics_meta.label_names or [],
+            }
 
+        return MetricsMetaSerializer(metrics_meta_data).data
+
+    @extend_schema_field(VariablesMetaSerializer)
     def get_variables_meta(self, instance):
         try:
-            runvariables = instance.runvariables.get()
+            variables_meta = instance.variables_meta.get()
         except ObjectDoesNotExist:
-            return {
+            run_variables_meta = {
                 "count": 0,
                 "size": 0,
                 "variable_names": [],
                 "label_names": [],
             }
+        else:
+            # For the frontend we make sure that if labels 'source' and/or 'is_masked' are in the label_names
+            # dictionary, that we add them as the first label in the list.
+            label_names = []
+            if variables_meta.label_names:
+                label_names = list(filter(lambda x: x["name"] != "is_masked", variables_meta.label_names))
+                if len(label_names) != len(variables_meta.label_names):
+                    label_names = [{"name": "is_masked", "type": "tag"}] + label_names
+                label_names = list(filter(lambda x: x["name"] != "source", label_names))
+                if len(label_names) != len(variables_meta.label_names):
+                    label_names = [{"name": "source", "type": "string"}] + label_names
 
-        # For the frontend we make sure that if labels 'source' and/or 'is_masked' are in the label_names dictionary,
-        # that we add them as the first label in the list.
-        label_names = []
-        if runvariables.label_names:
-            label_names = list(filter(lambda x: x["name"] != "is_masked", runvariables.label_names))
-            if len(label_names) != len(runvariables.label_names):
-                label_names = [{"name": "is_masked", "type": "tag"}] + label_names
-            label_names = list(filter(lambda x: x["name"] != "source", label_names))
-            if len(label_names) != len(runvariables.label_names):
-                label_names = [{"name": "source", "type": "string"}] + label_names
+            run_variables_meta = {
+                "count": variables_meta.count,
+                "size": variables_meta.size,
+                "variable_names": variables_meta.variable_names or [],
+                "label_names": label_names,
+            }
 
-        return {
-            "count": runvariables.count,
-            "size": runvariables.size,
-            "variable_names": runvariables.variable_names or [],
-            "label_names": label_names,
-        }
+        return VariablesMetaSerializer(run_variables_meta).data
 
-    def get_duration(self, instance):
-        if instance.duration or instance.duration == 0:
-            return instance.duration
-
-        # Calculate the duration or return 0
-        if not instance.started:
-            return 0
-        if instance.finished:
-            return (instance.finished - instance.started).seconds
-        return (timezone.now() - instance.started).seconds
-
+    @extend_schema_field(EnvironmentSerializer)
     def get_environment(self, instance):
         environment = {
             "name": instance.environment_name,
-            "image": None,
+            "image": instance.run_image,
             "timezone": instance.timezone,
         }
-        if instance.run_image:
-            environment["image"] = instance.run_image.relation_to_json
-        return environment
+        # if instance.run_image:
+        # environment["image"] = RunImageRelationSerializer(instance.run_image).data
+        return EnvironmentSerializer(environment).data
 
-    def get_payload(self, instance):
-        try:
-            return instance.payload.relation_to_json
-        except AttributeError or ObjectDoesNotExist:
-            return None
-
-    def get_result(self, instance):
-        try:
-            return instance.result.relation_to_json
-        except AttributeError or ObjectDoesNotExist:
-            return None
-
-    def get_job(self, instance):
-        return instance.jobdef.relation_to_json
-
+    @extend_schema_field(ArtifactRelationSerializer)
     def get_artifact(self, instance):
         try:
             artifact = instance.artifact.first()
-            return artifact.relation_to_json
         except AttributeError or ObjectDoesNotExist:
-            return None
+            pass
+        else:
+            if artifact:
+                return ArtifactRelationSerializer(artifact).data
 
-    def get_package(self, instance):
-        if instance.package:
-            return instance.package.relation_to_json
         return None
-
-    def get_workspace(self, instance):
-        workspace = instance.jobdef.project.workspace
-        return workspace.relation_to_json
-
-    def get_project(self, instance):
-        project = instance.jobdef.project
-        return project.relation_to_json
-
-    def get_created_by(self, instance):
-        if instance.member:
-            return instance.member.relation_to_json_with_avatar
-        if instance.created_by:
-            return instance.created_by.relation_to_json
-        return None
-
-    def get_log(self, instance):
-        try:
-            return instance.output.relation_to_json
-        except ObjectDoesNotExist:
-            return None
 
     class Meta:
         model = Run
@@ -166,13 +175,61 @@ class RunSerializer(serializers.ModelSerializer):
         ]
 
 
-class RunUpdateSerializer(RunSerializer):
-    def update(self, instance, validated_data):
-        """ "
-        Allow updates on `name` and `description` only. Ignore other fields
-        """
-        instance.name = validated_data.get("name", instance.name)
-        instance.description = validated_data.get("description", instance.description)
-        instance.save(update_fields=["name", "description", "modified"])
-        instance.refresh_from_db()
-        return instance
+class RunStatusSerializer(serializers.ModelSerializer):
+    name = serializers.ReadOnlyField()
+    status = serializers.ReadOnlyField(source="get_status_external")
+    duration = serializers.IntegerField(read_only=True, source="get_duration")
+    created_by = MembershipRelationSerializer(read_only=True, source="member")
+    job = JobRelationSerializer(read_only=True, source="jobdef")
+    project = ProjectRelationSerializer(read_only=True, source="jobdef.project")
+    workspace = WorkspaceRelationSerializer(read_only=True, source="jobdef.project.workspace")
+    next_url = serializers.SerializerMethodField(allow_null=True)
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_next_url(self, instance):
+        request = self.context["request"]
+        url_base = f"{request.scheme}://{request.META['HTTP_HOST']}/v1/run/{instance.suuid}/"
+
+        if instance.is_finished:
+            try:
+                if instance.result:
+                    return url_base + "result/"
+            except ObjectDoesNotExist:
+                return None
+
+        return url_base + "status/"
+
+    class Meta:
+        model = Run
+        fields = [
+            "suuid",
+            "status",
+            "name",
+            "started",
+            "finished",
+            "duration",
+            "next_url",
+            "created_by",
+            "job",
+            "project",
+            "workspace",
+            "created",
+            "modified",
+        ]
+
+
+class RunRelationSerializer(serializers.ModelSerializer):
+    relation = serializers.SerializerMethodField()
+    suuid = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField(source="get_name")
+
+    def get_relation(self, instance) -> str:
+        return self.Meta.model.__name__.lower()
+
+    class Meta:
+        model = Run
+        fields = [
+            "relation",
+            "suuid",
+            "name",
+        ]

@@ -350,3 +350,7 @@ docker-compose.override.yml
 # pytest coverage reports
 .coverage
 cov.*
+
+# Temporary files
+*.tmp
+tmp/*

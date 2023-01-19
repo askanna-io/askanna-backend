@@ -14,85 +14,77 @@ class TestRunManifestAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-manifest",
-            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run1"].suuid,
+            },
         )
+
+    def test_manifest_as_askanna_admin(self):
+        """
+        We cannot get the manifest for a run as an AskAnna admin who is not a member of the workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_manifest_as_admin(self):
         """
         We can get the manifest for a run as an admin
         """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.content) > 0  # type: ignore
 
     def test_manifest_as_member(self):
         """
         We can get the manifest for a run as a member
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.content) > 0  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_manifest_as_nonmember(self):
+    def test_manifest_as_non_member(self):
         """
-        We can NOT get the manifest for a run as a non-member
+        We cannot get the manifest for a run as a non-member
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_manifest_as_anonymous(self):
         """
-        We can NOT get the manifest of a run as anonymous
+        We cannot get the manifest of a run as anonymous
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_manifest_as_member_no_config_found(self):
         """
         There is no askanna.yml found
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert "AskAnna could not find the file:" in str(response.content)
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("AskAnna could not find the file:", str(response.content))
-
-    def test_manifest_as_member_no_job_not_found(self):
+    def test_manifest_as_member_job_not_found(self):
         """
         The job is not found in askanna.yml
         """
         self.activate_user("member2")
-
         url = reverse(
             "run-manifest",
-            kwargs={"version": "v1", "suuid": self.runs["run3"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run3"].suuid,
+            },
         )
-
-        response = self.client.get(
-            url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("AskAnna could not start the job", str(response.content))
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert "AskAnna could not start the job" in str(response.content)
 
     def test_manifest_as_member_correct_job(self):
         """
@@ -102,12 +94,12 @@ class TestRunManifestAPI(BaseRunTest, APITestCase):
 
         url = reverse(
             "run-manifest",
-            kwargs={"version": "v1", "suuid": self.runs["run4"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run4"].suuid,
+            },
         )
 
-        response = self.client.get(
-            url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("python my_script.py", str(response.content))
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert "python my_script.py" in str(response.content)

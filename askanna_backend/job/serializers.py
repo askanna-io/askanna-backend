@@ -1,22 +1,38 @@
-from core.utils import get_setting_from_database
-from django.conf import settings
-from job.models import JobDef, JobPayload
+from drf_spectacular.utils import extend_schema_field
+from job.models import JobDef, JobPayload, RunImage
+from project.serializers import ProjectRelationSerializer
 from rest_framework import serializers
+from workspace.serializers import WorkspaceRelationSerializer
+
+
+class ScheduleSerializer(serializers.Serializer):
+    raw_definition = serializers.CharField()
+    cron_definition = serializers.CharField()
+    cron_timezone = serializers.CharField()
+    next_run = serializers.DateTimeField()
+    last_run = serializers.DateTimeField()
+
+
+class NotificationObjectSerializer(serializers.Serializer):
+    email = serializers.ListField(default=[], allow_null=True)
+
+
+class NotificationSerializer(serializers.Serializer):
+    all = NotificationObjectSerializer()
+    error = NotificationObjectSerializer()
 
 
 class JobSerializer(serializers.ModelSerializer):
-    workspace = serializers.SerializerMethodField("get_workspace")
-    project = serializers.SerializerMethodField("get_project")
-    environment = serializers.SerializerMethodField("get_environment")
-    schedules = serializers.SerializerMethodField("get_schedules")
+    environment = serializers.ReadOnlyField(source="get_environment_image")
+    timezone = serializers.ReadOnlyField()
+    schedules = serializers.SerializerMethodField("get_schedules", allow_null=True)
+    notifications = serializers.SerializerMethodField("get_notifications", allow_null=True)
+    project = ProjectRelationSerializer(read_only=True)
+    workspace = WorkspaceRelationSerializer(read_only=True, source="project.workspace")
 
-    notifications = serializers.SerializerMethodField("get_notifications")
-
+    @extend_schema_field(NotificationSerializer)
     def get_notifications(self, instance):
-        """
-        If notifications are configured we return them here
-        """
-        package = instance.project.packages.order_by("-created").first()
+        package = instance.project.packages.first()  # Sorting is handled in the queryset of the View
 
         if not package:
             return None
@@ -32,34 +48,11 @@ class JobSerializer(serializers.ModelSerializer):
 
         return None
 
-    def get_default_image(self, instance):
-        return get_setting_from_database(
-            name="RUNNER_DEFAULT_DOCKER_IMAGE",
-            default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
-        )
-
-    def get_workspace(self, instance):
-        return instance.project.workspace.relation_to_json
-
-    def get_project(self, instance):
-        return instance.project.relation_to_json
-
-    def get_environment(self, instance):
-        return instance.environment_image or self.get_default_image(instance)
-
+    @extend_schema_field(ScheduleSerializer(many=True))
     def get_schedules(self, instance):
-        schedules = instance.schedules.order_by("next_run")
+        schedules = instance.schedules.all()
         if schedules:
-            return [
-                {
-                    "raw_definition": schedule.raw_definition,
-                    "cron_definition": schedule.cron_definition,
-                    "cron_timezone": schedule.cron_timezone,
-                    "next_run": schedule.next_run,
-                    "last_run": schedule.last_run,
-                }
-                for schedule in schedules
-            ]
+            return [ScheduleSerializer(schedule).data for schedule in schedules]
         return None
 
     class Meta:
@@ -68,21 +61,36 @@ class JobSerializer(serializers.ModelSerializer):
             "suuid",
             "name",
             "description",
-            "workspace",
-            "project",
             "environment",
             "timezone",
             "schedules",
             "notifications",
+            "project",
+            "workspace",
             "created",
             "modified",
         ]
 
 
-class StartJobSerializer(serializers.ModelSerializer):
+class JobRelationSerializer(serializers.ModelSerializer):
+    relation = serializers.SerializerMethodField()
+    suuid = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
+
+    def get_relation(self, instance) -> str:
+        return self.Meta.model.__name__.lower()
+
     class Meta:
         model = JobDef
-        fields = "__all__"
+        fields = [
+            "relation",
+            "suuid",
+            "name",
+        ]
+
+
+class RequestJobRunSerializer(serializers.Serializer):
+    payload = serializers.JSONField(required=False, allow_null=True)
 
 
 class JobPayloadSerializer(serializers.ModelSerializer):
@@ -94,4 +102,46 @@ class JobPayloadSerializer(serializers.ModelSerializer):
             "lines",
             "created",
             "modified",
+        ]
+
+
+class JobPayloadRelationSerializer(serializers.ModelSerializer):
+    relation = serializers.SerializerMethodField()
+    suuid = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField(source="filename")
+    size = serializers.IntegerField(read_only=True)
+    lines = serializers.IntegerField(read_only=True)
+
+    def get_relation(self, instance) -> str:
+        return "payload"
+
+    class Meta:
+        model = JobPayload
+        fields = [
+            "relation",
+            "suuid",
+            "name",
+            "size",
+            "lines",
+        ]
+
+
+class RunImageRelationSerializer(serializers.ModelSerializer):
+    relation = serializers.SerializerMethodField()
+    suuid = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField(source="fullname")
+    tag = serializers.ReadOnlyField()
+    digest = serializers.ReadOnlyField()
+
+    def get_relation(self, instance) -> str:
+        return "image"
+
+    class Meta:
+        model = RunImage
+        fields = [
+            "relation",
+            "suuid",
+            "name",
+            "tag",
+            "digest",
         ]

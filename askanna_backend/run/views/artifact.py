@@ -1,17 +1,8 @@
 import os
 
-from core.permissions import (
-    ProjectMember,
-    ProjectNoMember,
-    PublicViewer,
-    RoleBasedPermission,
-)
-from core.views import (
-    BaseChunkedPartViewSet,
-    BaseUploadFinishMixin,
-    ObjectRoleMixin,
-    workspace_to_project_role,
-)
+from core.mixins import ObjectRoleMixin
+from core.permissions.role import RoleBasedPermission
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -35,12 +26,16 @@ from users.models import MSP_WORKSPACE, Membership
 
 @extend_schema_view(
     list=extend_schema(description="List artifacts for a run"),
-    create=extend_schema(description="Do a request to upload a new artifact"),
+    create=extend_schema(
+        description="Do a request to upload a new artifact",
+        request=None,
+        responses={201: RunArtifactSerializerForInsert},
+    ),
     retrieve=extend_schema(description="Get info from a specific artifact"),
 )
 class RunArtifactView(
     ObjectRoleMixin,
-    BaseUploadFinishMixin,
+    BaseUploadFinishViewSet,
     NestedViewSetMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -54,9 +49,9 @@ class RunArtifactView(
     queryset = RunArtifact.objects.all()
     lookup_field = "suuid"
     serializer_class = RunArtifactSerializer
-    permission_classes = [RoleBasedPermission]
 
-    RBAC_BY_ACTION = {
+    permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
         "create": ["project.run.create"],
         "finish_upload": ["project.run.create"],
         "list": ["project.run.list"],
@@ -74,31 +69,14 @@ class RunArtifactView(
     def get_object_project(self):
         return self.current_object.run.jobdef.project
 
-    def get_object_workspace(self):
-        return self.current_object.run.jobdef.project.workspace
-
-    def get_list_role(self, request, *args, **kwargs):
-        return PublicViewer, None
-
-    def get_create_role(self, request, *args, **kwargs):
-        # The role for creating an artifact is based on the url it is accesing
+    def get_parrent_roles(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
             run = Run.objects.get(suuid=parents.get("run__suuid"))
-            project = run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
-
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
-
-        return Membership.get_project_role(request.user, project)
+        return Membership.get_roles_for_project(request.user, run.jobdef.project)
 
     upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = artifact_upload_finish
@@ -192,9 +170,9 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
 
     queryset = ChunkedArtifactPart.objects.all()
     serializer_class = ChunkedRunArtifactPartSerializer
-    permission_classes = [RoleBasedPermission]
 
-    RBAC_BY_ACTION = {
+    permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
         "create": ["project.run.create"],
         "list": ["project.run.list"],
         "retrieve": ["project.run.list"],
@@ -211,34 +189,14 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     def get_object_project(self):
         return self.current_object.artifact.run.jobdef.project
 
-    def get_object_workspace(self):
-        return self.current_object.artifact.run.jobdef.project.workspace
-
-    def get_list_role(self, request, *args, **kwargs):
-        # always return ProjectMember for logged in users since the listing always shows objects based on membership
-        if request.user.is_anonymous:
-            return ProjectNoMember, None
-        return ProjectMember, None
-
-    def get_create_role(self, request, *args, **kwargs):
-        # The role for creating an artifact is based on the url it is accesing
+    def get_parrent_roles(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
             artifact = RunArtifact.objects.get(suuid=parents.get("artifact__suuid"))
-            project = artifact.run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
-
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
-
-        return Membership.get_project_role(request.user, project)
+        return Membership.get_roles_for_project(request.user, artifact.run.jobdef.project)
 
     def get_object(self):
         return self.get_object_without_permissioncheck()

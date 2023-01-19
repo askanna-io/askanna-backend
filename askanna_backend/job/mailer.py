@@ -1,19 +1,16 @@
 import json
+from typing import Optional
 
 import pytz
-from core.config import Job
+from core.config import Job as JobConfig
 from core.mail import send_email
-from core.utils import (
-    flatten,
-    get_setting_from_database,
-    is_valid_email,
-    parse_string,
-    pretty_time_delta,
-)
+from core.utils import flatten, is_valid_email, parse_string, pretty_time_delta
+from core.utils.config import get_setting_from_database
 from django.conf import settings
-from project.models import ProjectVariable
+from job.models import JobDef as Job
 from run.models import Run
 from users.models import Membership
+from variable.models import Variable
 
 
 def fill_in_mail_variable(string, variables):
@@ -23,10 +20,27 @@ def fill_in_mail_variable(string, variables):
 
 def send_run_notification(
     run_status: str,
-    run: Run,
-    job: Job,
-    extra_vars={},
+    job_config: JobConfig,
+    run: Optional[Run] = None,
+    job: Optional[Job] = None,
+    extra_vars: dict = {},
 ):
+    """Send a notification for a run or tasks related to running jobs
+
+    Args:
+        run_status (str): status of the run used to determine the notification level
+        job_config (JobConfig): job config to determine the notification receivers
+        run (Run, optional): run the notification should be send for (if not provided, job must be provided)
+        job (Job, optional): job used to fill in the variables (if not provided, run must be provided)
+        extra_vars (dict, optional): Extra variables. Defaults to {}.
+    """
+    assert run or job, "Either run or job must be provided"
+    if run and job:
+        assert run.jobdef == job, "The job used in the run is not the same as the job provided as argument."
+    elif run and not job:
+        job = run.jobdef
+    assert job, "Job must be set. Either via run or as argument."
+
     # determine the notification levels
     # info receivers receive all
     # warning receivers receive warning and error
@@ -46,44 +60,40 @@ def send_run_notification(
         "SCHEDULE_MISSED": "error",
     }
 
-    event_type = notification_levels.get(run_status)
-    notification_receivers = job.get_notifications(levels=notification_receivers_lookup.get(event_type))
+    event_type = notification_levels[run_status]
+    notification_receivers = job_config.get_notifications(levels=notification_receivers_lookup[event_type])
 
+    # inject external information to fill the variables
+    project_variables = Variable.objects.filter(project=job.project)
     vars = {}
-    if run:
-        # inject external information to fill the variables
-        project_variables = ProjectVariable.objects.filter(project=run.jobdef.project)
-        for variable in project_variables:
-            vars[variable.name] = variable.value
+    for variable in project_variables:
+        vars[variable.name] = variable.value
 
-        if run.payload and isinstance(run.payload.payload, dict):
-            # we have a valid dict from the payload
-            for k, v in run.payload.payload.items():
-                if isinstance(v, (list, dict)):
-                    # limit to 10.000 chars
-                    vars[k] = json.dumps(v)[:10000]
-                elif isinstance(v, (str)):
-                    # limit to 10.000 chars
-                    vars[k] = v[:10000]
-                else:
-                    # we have a bool or number
-                    vars[k] = v
-        # end of information injection
+    if run and run.payload and isinstance(run.payload.payload, dict):
+        # we have a valid dict from the payload
+        for k, v in run.payload.payload.items():
+            if isinstance(v, (list, dict)):
+                # limit to 10.000 chars
+                vars[k] = json.dumps(v)[:10000]
+            elif isinstance(v, (str)):
+                # limit to 10.000 chars
+                vars[k] = v[:10000]
+            else:
+                # we have a bool or number
+                vars[k] = v
 
     notification_receivers = flatten(list(map(lambda mail: fill_in_mail_variable(mail, vars), notification_receivers)))
 
     # send to workspace admins if this is defined
     if "workspace admins" in notification_receivers:
         # append the e-mail addresses of the workspace admins
-        workspace = run.jobdef.project.workspace
-        admins = Membership.members.admins().filter(object_uuid=workspace.uuid)
+        admins = Membership.members.admins().filter(object_uuid=job.project.workspace.uuid)
         for member in admins:
             notification_receivers.append(member.user.email)
 
     if "workspace members" in notification_receivers:
         # append the e-mail addresses of the workspace members
-        workspace = run.jobdef.project.workspace
-        members = Membership.members.members().filter(object_uuid=workspace.uuid)
+        members = Membership.members.members().filter(object_uuid=job.project.workspace.uuid)
         for member in members:
             notification_receivers.append(member.user.email)
 
@@ -145,7 +155,7 @@ def send_run_notification(
         else:
             run_finished = None
 
-        trigger = trigger_translation.get(run.trigger, "unknown")
+        trigger = trigger_translation.get(run.trigger, "Unknown")
 
         template_context.update(
             **{
@@ -171,7 +181,7 @@ def send_run_notification(
                 f"emails/notifications/{using_template}_subject.txt",
                 f"emails/notifications/{using_template}.txt",
                 f"emails/notifications/{using_template}.html",
-                from_email=from_email,
+                from_email=str(from_email),
                 to_email=email,
                 context=template_context,
             )

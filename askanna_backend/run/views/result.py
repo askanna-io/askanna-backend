@@ -1,12 +1,8 @@
 import os
 
-from core.permissions import RoleBasedPermission
-from core.views import (
-    BaseChunkedPartViewSet,
-    BaseUploadFinishMixin,
-    ObjectRoleMixin,
-    workspace_to_project_role,
-)
+from core.mixins import ObjectRoleMixin
+from core.permissions.role import RoleBasedPermission
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
@@ -24,8 +20,7 @@ class BaseRunResultCreateView(
     NestedViewSetMixin,
 ):
     permission_classes = [RoleBasedPermission]
-
-    RBAC_BY_ACTION = {
+    rbac_permissions_by_action = {
         "list": ["project.run.list"],
         "retrieve": ["project.run.list"],
         "create": ["project.run.create"],
@@ -34,32 +29,19 @@ class BaseRunResultCreateView(
     def get_object_project(self):
         return self.current_object.run.jobdef.project
 
-    def get_object_workspace(self):
-        return self.current_object.run.jobdef.project.workspace
-
-    def get_create_role(self, request, *args, **kwargs):
+    def get_parrent_roles(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
-            run = Run.objects.get(suuid=parents.get("run__suuid"))
-            project = run.jobdef.project
+            run = Run.objects.active().get(suuid=parents.get("run__suuid"))
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
-
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
-
-        return Membership.get_project_role(request.user, project)
+        return Membership.get_roles_for_project(request.user, run.jobdef.project)
 
 
 class RunResultCreateView(
     BaseRunResultCreateView,
-    BaseUploadFinishMixin,
+    BaseUploadFinishViewSet,
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -119,9 +101,9 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         "runresult__run__jobdef__project__workspace",
     )
     serializer_class = ChunkedRunResultPartSerializer
-    permission_classes = [RoleBasedPermission]
 
-    RBAC_BY_ACTION = {
+    permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
         "list": ["project.run.list"],
         "retrieve": ["project.run.list"],
         "create": ["project.run.create"],
@@ -153,25 +135,11 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     def get_object_project(self):
         return self.current_object.runresult.run.jobdef.project
 
-    def get_object_workspace(self):
-        return self.current_object.runresult.run.jobdef.project.workspace
-
-    def get_create_role(self, request, *args, **kwargs):
-        # The role for creating an artifact is based on the url it is accesing
+    def get_parrent_roles(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
             runresult = RunResult.objects.get(suuid=parents.get("runresult__suuid"))
-            project = runresult.run.jobdef.project
         except ObjectDoesNotExist:
             raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
-
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
-
-        return Membership.get_project_role(request.user, project)
+        return Membership.get_roles_for_project(request.user, runresult.run.jobdef.project)

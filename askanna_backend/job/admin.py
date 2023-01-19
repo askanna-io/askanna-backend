@@ -39,8 +39,11 @@ class JobDefAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
+        "uuid",
         "suuid",
+        "name",
         "project__suuid",
+        "project__workspace__suuid",
     ]
 
     def has_add_permission(self, request):
@@ -89,12 +92,14 @@ class JobPayloadAdmin(admin.ModelAdmin):
         "deleted",
     ]
     search_fields = [
+        "uuid",
         "suuid",
+        "jobdef__uuid",
         "jobdef__suuid",
     ]
 
     def project(self, obj):  # pragma: no cover
-        return obj.jobdef.project.get_name()
+        return obj.jobdef.project.name
 
     def has_add_permission(self, request):
         return False
@@ -121,23 +126,26 @@ class RunImageAdmin(admin.ModelAdmin):
         "name",
         "tag",
         "digest",
-        "cached_image",
         "modified",
         "created",
+        "deleted",
     ]
 
     list_display = [
         "name",
         "tag",
         "cached_image",
+        "modified",
         "created",
     ]
     date_hierarchy = "created"
     list_filter = [
+        "modified",
         "created",
         "deleted",
     ]
     search_fields = [
+        "uuid",
         "suuid",
         "name",
         "tag",
@@ -192,13 +200,20 @@ class ScheduledJobAdmin(admin.ModelAdmin):
         "created",
         "deleted",
     ]
-    search_fields = ["suuid", "job__suuid", "raw_definition", "cron_definition", "cron_timezone"]
+    search_fields = [
+        "uuid",
+        "suuid",
+        "job__suuid",
+        "raw_definition",
+        "cron_definition",
+        "cron_timezone",
+    ]
 
     def job_name(self, obj):  # pragma: no cover
-        return obj.job.get_name()
+        return obj.job.name
 
     def project_name(self, obj):  # pragma: no cover
-        return obj.job.project.get_name()
+        return obj.job.project.name
 
     def has_add_permission(self, request):
         return False

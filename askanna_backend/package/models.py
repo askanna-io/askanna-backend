@@ -6,7 +6,39 @@ from core.config import AskAnnaConfig
 from core.models import AuthorModel, BaseModel
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from package.signals import package_upload_finish
+
+
+class PackageQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(
+            deleted__isnull=True,
+            project__deleted__isnull=True,
+            project__workspace__deleted__isnull=True,
+        ).exclude(original_filename="")
+
+    def active_and_finished(self):
+        return self.active().filter(finished__isnull=False)
+
+    def inactive(self):
+        return self.filter(
+            Q(deleted__isnull=False) | Q(project__deleted__isnull=False) | Q(project__workspace__deleted__isnull=False)
+        )
+
+
+class PackageManager(models.Manager):
+    def get_queryset(self):
+        return PackageQuerySet(self.model, using=self._db)
+
+    def active(self):
+        return self.get_queryset().active()
+
+    def active_and_finished(self):
+        return self.get_queryset().active_and_finished()
+
+    def inactive(self):
+        return self.get_queryset().inactive()
 
 
 class Package(AuthorModel, BaseModel):
@@ -35,18 +67,12 @@ class Package(AuthorModel, BaseModel):
         db_index=True,
     )
 
+    objects = PackageManager()
+
     def __str__(self):
         if self.original_filename:
             return f"{self.original_filename} ({self.suuid})"
         return self.suuid
-
-    @property
-    def relation_to_json(self):
-        return {
-            "relation": "package",
-            "suuid": str(self.suuid),
-            "name": self.original_filename,
-        }
 
     @property
     def storage_location(self):

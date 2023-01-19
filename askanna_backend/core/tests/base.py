@@ -1,9 +1,11 @@
 import datetime
 import io
-import typing
 import uuid
 import zipfile
+from typing import Callable, Optional
 
+from django.db.models import signals
+from project.models import Project
 from rest_framework import status
 from users.models import (
     MSP_WORKSPACE,
@@ -13,15 +15,47 @@ from users.models import (
     User,
     UserProfile,
 )
+from workspace.listeners import install_demo_project_in_workspace
 from workspace.models import Workspace
 
 
 class BaseUserPopulation:
     def setUp(self):
-        super().setUp()
+        super().setUp()  # type: ignore
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
         self.workspace_a = Workspace.objects.create(name="test workspace_a")
         self.workspace_b = Workspace.objects.create(name="test workspace_b")
         self.workspace_c = Workspace.objects.create(name="test workspace_c", visibility="PUBLIC")
+
+        self.workspaces = {
+            "workspace_a": self.workspace_a,
+            "workspace_b": self.workspace_b,
+            "workspace_c": self.workspace_c,
+        }
+        self.projects = {
+            "project_a_wp_private_pr_private": Project.objects.create(
+                name="test project_a_1",
+                workspace=self.workspace_a,
+            ),
+            "project_a_wp_private_pr_public": Project.objects.create(
+                name="test project_a_2",
+                workspace=self.workspace_a,
+                visibility="PUBLIC",
+            ),
+            "project_b_wp_private_pr_private": Project.objects.create(
+                name="test project_b_1",
+                workspace=self.workspace_b,
+            ),
+            "project_c_wp_public_pr_private": Project.objects.create(
+                name="test project_c_1",
+                workspace=self.workspace_c,
+            ),
+            "project_c_wp_public_pr_public": Project.objects.create(
+                name="test project_c_2",
+                workspace=self.workspace_c,
+                visibility="PUBLIC",
+            ),
+        }
 
         self.users = {
             "anna": User.objects.create(
@@ -37,6 +71,8 @@ class BaseUserPopulation:
             ),
             "member": User.objects.create(  # nosec: B106
                 username="member",
+                name="member",
+                job_title="job title for member",
                 email="member@askanna.dev",
                 password="password-member",
             ),
@@ -53,6 +89,8 @@ class BaseUserPopulation:
             ),
             "member2": User.objects.create(  # nosec: B106
                 username="member2",
+                name="member2",
+                job_title="job title for member2",
                 email="member2@askanna.dev",
                 password="password-member2",
             ),
@@ -73,8 +111,6 @@ class BaseUserPopulation:
             ),
         }
         self.members = {
-            # anna user never has a profile to simulate askanna admin without
-            # an explicit access to workspaces and projects
             "anna": None,
             "admin": UserProfile.objects.create(
                 object_type=MSP_WORKSPACE,
@@ -165,6 +201,7 @@ class BaseUserPopulation:
                 role=WS_MEMBER,
                 name="name of member2 in membership",
                 job_title="job_title of member2 in membership",
+                use_global_profile=True,
             ),
             "member3": None,
             "member_inactive": UserProfile.objects.create(
@@ -183,41 +220,40 @@ class BaseUserPopulation:
         if username not in self.users.keys():
             raise ValueError(f"{username} is not part of the test population")
 
-        token = self.users.get(username).auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        token = self.users.get(username).auth_token  # type: ignore
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
     def tearDown(self):
-        """
-        Remove all the user instances we had setup for the test
-        """
-        super().tearDown()
-        for _, user in self.users.items():
+        super().tearDown()  # type: ignore
+        for user in self.users.values():
             user.delete()
+
+        for project in self.projects.values():
+            project.delete()
+
+        for workspace in self.workspaces.values():
+            workspace.delete()
 
 
 class BaseUploadTestMixin:
     def do_create_entry(self, create_url, filename, filesize):
-
         payload = {
             "filename": filename,
-            "project": self.runs["run1"].jobdef.project.suuid,  # project is only needed in package upload
+            "project_suuid": self.runs["run1"].jobdef.project.suuid,  # type: ignore
             "size": filesize,
         }
 
-        response = self.client.post(
+        response = self.client.post(  # type: ignore
             create_url,
             payload,
             format="json",
-            HTTP_HOST="testserver",
         )
-        try:
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        except AssertionError as e:
-            raise AssertionError(e)
+
+        assert response.status_code == status.HTTP_201_CREATED, AssertionError(response.status_code)
+
         return response.data.copy()
 
     def create_file_object(self, filename):
-
         file_buffer = io.BytesIO()
         file_buffer.name = filename
         with zipfile.ZipFile(file_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -227,16 +263,15 @@ class BaseUploadTestMixin:
             ]:
                 zip_file.writestr(file_name, data.getvalue())
         file_size = len(file_buffer.getvalue())
-        # reset pointer as it was never opened
         file_buffer.seek(0)
         return file_buffer, file_size
 
     def do_file_upload(
         self,
-        create_url: str = None,
-        create_chunk_url: typing.Callable[[dict], str] = None,
-        upload_chunk_url: typing.Callable[[dict, str], str] = None,
-        finish_upload_url: typing.Callable[[dict], str] = None,
+        create_url: Optional[str] = None,
+        create_chunk_url: Optional[Callable[[dict], str]] = None,
+        upload_chunk_url: Optional[Callable[[dict, str], str]] = None,
+        finish_upload_url: Optional[Callable[[dict], str]] = None,
         fileobjectname: str = "testartifact.zip",
     ):
         file_buffer, file_size = self.create_file_object(filename=fileobjectname)
@@ -260,14 +295,18 @@ class BaseUploadTestMixin:
                     "is_last": chunk_nr + 1 == number_of_chunks,
                 }
             )
-            req_chunk = self.client.post(
+
+            if not create_chunk_url:
+                raise ValueError("create_chunk_url is not set")
+
+            req_chunk = self.client.post(  # type: ignore
                 create_chunk_url(parent_object),
                 config,
                 format="json",
             )
-            self.assertEqual(req_chunk.status_code, status.HTTP_201_CREATED)
-            chunk_uuid = req_chunk.data.get("uuid")
+            assert req_chunk.status_code == status.HTTP_201_CREATED
 
+            chunk_uuid = req_chunk.data.get("uuid")
             chunkinfo = {
                 "resumableChunkSize": file_size,
                 "resumableTotalSize": file_size,
@@ -280,17 +319,18 @@ class BaseUploadTestMixin:
                 "resumableCurrentChunkSize": 1,
             }
             chunkinfo.update(**{"file": file_buffer})
-            chunk_upload_req = self.client.post(
+
+            if not upload_chunk_url:
+                raise ValueError("upload_chunk_url is not set")
+
+            chunk_upload_req = self.client.post(  # type: ignore
                 upload_chunk_url(parent_object, chunk_uuid),
                 chunkinfo,
                 format="multipart",
             )
-            try:
-                self.assertEqual(chunk_upload_req.status_code, status.HTTP_200_OK)
-            except AssertionError as e:
-                raise AssertionError(e)
+            assert chunk_upload_req.status_code == status.HTTP_200_OK
 
-        # finish uplaod
+        # finish upload
         final_call_payload = {
             "resumableChunkSize": file_size,
             "resumableTotalSize": file_size,
@@ -302,8 +342,12 @@ class BaseUploadTestMixin:
             "resumableChunkNumber": 1,
             "resumableCurrentChunkSize": 1,
         }
-        final_upload_req = self.client.post(
+
+        if not finish_upload_url:
+            raise ValueError("finish_upload_url is not set")
+
+        final_upload_req = self.client.post(  # type: ignore
             finish_upload_url(parent_object),
             data=final_call_payload,
         )
-        self.assertEqual(final_upload_req.status_code, status.HTTP_200_OK)
+        assert final_upload_req.status_code == status.HTTP_200_OK

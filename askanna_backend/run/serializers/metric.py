@@ -1,26 +1,19 @@
 from rest_framework import serializers
-from run.models import RunMetric, RunMetricRow
+from run.models import RunMetric, RunMetricMeta
+
+
+class RunMetricUpdateSerializer(serializers.ModelSerializer):
+    metrics = serializers.ListField(child=serializers.JSONField(), required=True)
+
+    class Meta:
+        model = RunMetricMeta
+        fields = ["metrics"]
 
 
 class RunMetricSerializer(serializers.ModelSerializer):
-    """Serializer for RunMetric model.
-    At this moment we take in as-is, no futher validation etc.
-    """
-
-    def to_representation(self, instance):
-        metrics = instance.metrics
-        return metrics
+    """Serializer for RunMetric model."""
 
     class Meta:
         model = RunMetric
-        fields = ["uuid", "suuid", "metrics"]
-        read_only_fields = ["uuid", "suuid"]
-
-
-class RunMetricRowSerializer(serializers.ModelSerializer):
-    """Serializer for RunMetricRow model."""
-
-    class Meta:
-        model = RunMetricRow
         fields = ["run_suuid", "metric", "label", "created"]
-        read_only_fields = ["run_suuid"]
+        read_only_fields = ["run_suuid", "created"]

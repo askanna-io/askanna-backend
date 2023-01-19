@@ -1,4 +1,3 @@
-"""Define tests for API of UserProfile."""
 import pytest
 from core.tests.base import BaseUserPopulation
 from django.urls import reverse
@@ -26,7 +25,7 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
 
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_list_as_admin(self):
         """
@@ -36,39 +35,40 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
 
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data["results"]), 3)
 
-        suuids = [r["suuid"] for r in response.json()]
+        suuids = [r["suuid"] for r in response.data["results"]]
         self.assertIn(str(self.workspace_a.suuid), suuids)
         self.assertIn(str(self.workspace_b.suuid), suuids)
 
-    def test_list_as_member_see_only_its_workspaces(self):
+    def test_list_as_member(self):
         """A member gets only workspaces it belongs to and public workspaces"""
         self.activate_user("member")
 
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data["results"]), 2)
 
-        suuids = [r["suuid"] for r in response.json()]
+        suuids = [r["suuid"] for r in response.data["results"]]
         self.assertIn(str(self.workspace_a.suuid), suuids)
 
-        for r in response.data:
+        for r in response.data["results"]:
             # make sure we have an "is_member" for each workspace
             self.assertFalse(r.get("is_member") is None)
 
-    def test_list_as_non_member_see_no_workspaces(self):
+    def test_list_as_non_member(self):
         """A user with no memberships see only public workspaces."""
         self.activate_user("non_member")
 
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
-    def test_list_as_nonymous_user_does_not_get_list_of_workspaces(self):
-        """A anonymous user has no access to workspace list."""
+    def test_list_as_anonymous_user_get_list_of_workspaces(self):
+        """A anonymous user has access to workspace list with public projects."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 1)
 
 
 class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
@@ -90,7 +90,7 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
         self.activate_user("anna")
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_admin(self):
         self.activate_user("admin")
@@ -104,17 +104,16 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_detail_as_workspaceviewer(self):
+    def test_detail_as_viewer(self):
         self.activate_user("member_wv")
-
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_detail_as_nonmember(self):
+    def test_detail_as_non_member(self):
         self.activate_user("non_member")
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_detail_as_anonymous(self):
         response = self.client.get(self.url)
@@ -122,7 +121,6 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
 
     def test_detail_as_member_invalid_workspace_uuid(self):
         self.activate_user("member")
-
         response = self.client.get(self.url_non_existing_workspace)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -157,15 +155,13 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         )
 
     def test_update_as_anna(self):
-        """
-        By default no update possible by askanna users
-        """
+        """By default no update possible by askanna users"""
         self.activate_user("anna")
 
         new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_admin(self):
         self.activate_user("admin")
@@ -224,13 +220,13 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_anonymous(self):
         new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
@@ -242,47 +238,37 @@ class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
         )
 
     def test_delete_as_anna(self):
-        """
-        By default no deletion possible by askanna users
-        """
+        """By default no deletion possible by askanna users"""
         self.activate_user("anna")
 
         response = self.client.delete(self.url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_as_admin(self):
-        """
-        Workspace members can delete a workspace
-        """
+        """Workspace members can delete a workspace"""
         self.activate_user("admin")
 
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_as_member(self):
-        """
-        Delete a workspace by a member is not possible
-        """
+        """Delete a workspace by a member is not possible"""
         self.activate_user("member")
 
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_as_non_member(self):
-        """
-        Non members cannot delete a workspace, also we cannot find the workspace at all
-        """
+        """Delete a workspace by a non member is not possible"""
         self.activate_user("non_member")
 
         response = self.client.delete(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_as_anonymous(self):
-        """
-        Anonymous users cannot delete a workspace
-        """
+        """Anonymous users cannot delete a workspace"""
         response = self.client.delete(self.url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class TestWorkspaceListWithFilterAPI(BaseWorkspace, APITestCase):
@@ -290,159 +276,61 @@ class TestWorkspaceListWithFilterAPI(BaseWorkspace, APITestCase):
         super().setUp()
         self.url = reverse("workspace-list", kwargs={"version": "v1"})
 
-    def test_list_as_anna(self):
-        """
-        By default Anna should only list public workspaces and cannot see
-        other workspaces
-        """
+    def test_list_as_askanna_admin(self):
+        """By default Anna should only list public workspaces and cannot see other workspaces"""
         self.activate_user("anna")
 
-        response = self.client.get(self.url, {"membership": "True"})
+        response = self.client.get(self.url, {"is_member": "true"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data["results"]), 0)
 
-        response = self.client.get(self.url, {"membership": "False"})
+        response = self.client.get(self.url, {"is_member": "false"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": 1})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-        response = self.client.get(self.url, {"membership": 0})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": "yes"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-        response = self.client.get(self.url, {"membership": "no"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_list_as_admin(self):
-        """
-        List the workspace as an admin of the workspace a, but also member of b
-        """
+        """List the workspace as an admin of the workspace a, but also member of b"""
         self.activate_user("admin")
 
-        response = self.client.get(self.url, {"membership": "True"})
+        response = self.client.get(self.url, {"is_member": "true"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data["results"]), 2)
 
-        response = self.client.get(self.url, {"membership": "False"})
+        response = self.client.get(self.url, {"is_member": "false"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
-        response = self.client.get(self.url, {"membership": 1})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-
-        response = self.client.get(self.url, {"membership": 0})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": "yes"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-
-        response = self.client.get(self.url, {"membership": "no"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        # also test ordering, only possible with test admin account as this has 3 workspaces to list all
-        response = self.client.get(self.url, {"ordering": "membership"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
-
-        response = self.client.get(self.url, {"ordering": "-membership"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
-
-        response = self.client.get(self.url, {"ordering": "-membership,-created"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
-
-    def test_list_as_member_see_only_its_workspaces(self):
+    def test_list_as_member(self):
         """A member gets only workspaces it belongs to and public workspaces"""
         self.activate_user("member")
 
-        response = self.client.get(self.url, {"membership": "True"})
+        response = self.client.get(self.url, {"is_member": "true"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
-        response = self.client.get(self.url, {"membership": "False"})
+        response = self.client.get(self.url, {"is_member": "false"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
-        response = self.client.get(self.url, {"membership": 1})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": 0})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": "yes"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": "no"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-    def test_list_as_non_member_see_no_workspaces(self):
-        """A user will only see public projects"""
+    def test_list_as_non_member(self):
+        """A user that is not a member of a workspace will only see public projects"""
         self.activate_user("non_member")
 
-        response = self.client.get(self.url, {"membership": "True"})
+        response = self.client.get(self.url, {"is_member": "true"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data["results"]), 0)
 
-        response = self.client.get(self.url, {"membership": "False"})
+        response = self.client.get(self.url, {"is_member": "false"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": 1})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-        response = self.client.get(self.url, {"membership": 0})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": "yes"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-        response = self.client.get(self.url, {"membership": "no"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_list_as_nonymous_user_does_not_get_list_of_workspaces(self):
         """A anonymous user will only see public project in the list."""
 
-        response = self.client.get(self.url, {"membership": "True"})
+        response = self.client.get(self.url, {"is_member": "True"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data["results"]), 0)
 
-        response = self.client.get(self.url, {"membership": "False"})
+        response = self.client.get(self.url, {"is_member": "False"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": 1})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-        response = self.client.get(self.url, {"membership": 0})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.url, {"membership": "yes"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-        response = self.client.get(self.url, {"membership": "no"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)

@@ -36,5 +36,5 @@ def settings(config, env):
             ],
             # Associate users to errors
             # https://docs.sentry.io/platforms/python/configuration/options/#send-default-pii
-            send_default_pii=True
+            send_default_pii=True,
         )

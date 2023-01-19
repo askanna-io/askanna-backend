@@ -34,9 +34,8 @@ class TestJobMailerUtils(unittest.TestCase):
 
 class TestSendNotification(BaseJobTestDef, APITestCase):
     def test_send_notification_mail_running(self):
-        run = self.runs.get("run4")
-
+        run = self.runs["run4"]
         package = run.package
-        configyml = package.get_askanna_config()
-        job_config = configyml.jobs.get(run.jobdef.name)
-        send_run_notification("IN_PROGRESS", run, job_config)
+        config_yml = package.get_askanna_config()
+        job_config = config_yml.jobs.get(run.jobdef.name)
+        send_run_notification("IN_PROGRESS", run=run, job_config=job_config)

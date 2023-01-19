@@ -4,6 +4,36 @@ import os
 from core.models import SlimBaseModel
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
+
+
+class PayloadQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(
+            deleted__isnull=True,
+            jobdef__deleted__isnull=True,
+            jobdef__project__deleted__isnull=True,
+            jobdef__project__workspace__deleted__isnull=True,
+        )
+
+    def inactive(self):
+        return self.filter(
+            Q(deleted__isnull=False)
+            | Q(jobdef__deleted__isnull=False)
+            | Q(jobdef__project__deleted__isnull=False)
+            | Q(jobdef__project__workspace__deleted__isnull=False)
+        )
+
+
+class PayloadManager(models.Manager):
+    def get_queryset(self):
+        return PayloadQuerySet(self.model, using=self._db)
+
+    def active(self):
+        return self.get_queryset().active()
+
+    def inactive(self):
+        return self.get_queryset().inactive()
 
 
 class JobPayload(SlimBaseModel):
@@ -11,7 +41,9 @@ class JobPayload(SlimBaseModel):
     Input for a Run
     """
 
-    jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid", related_name="payload")
+    jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, related_name="payload")
+
+    objects = PayloadManager()
 
     @property
     def stored_path(self):
@@ -54,19 +86,6 @@ class JobPayload(SlimBaseModel):
         os.makedirs(os.path.join(settings.PAYLOADS_ROOT, self.storage_location), exist_ok=True)
         with open(self.stored_path, "w") as f:
             f.write(stream.read())
-
-    @property
-    def relation_to_json(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "payload",
-            "suuid": self.suuid,
-            "name": self.filename,
-            "size": self.size,
-            "lines": self.lines,
-        }
 
     def prune(self):
         os.remove(self.stored_path)

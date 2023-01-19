@@ -1,1 +1,1 @@
-Error in scheduled job "{{ job.name }}" | "{{ project.get_name }}"
+Error in scheduled job "{{ job.name }}" | "{{ job.project.name }}"

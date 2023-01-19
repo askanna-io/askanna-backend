@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 
 import docker
 from core.container import (
@@ -8,22 +9,23 @@ from core.container import (
     RegistryContainerPullError,
     RegistryImageHelper,
 )
-from core.utils import get_setting_from_database, is_valid_timezone, parse_string
+from core.utils import parse_string
+from core.utils.config import get_setting_from_database
 from django.conf import settings
-from job.models import RunImage
-from project.models import ProjectVariable
-from run.models import Run, RunVariableRow
+from run.models import Run, RunVariable
+from variable.models import Variable
 
 from config.celery_app import app as celery_app
 
 
-def log_run_variables(variable_name, variable_value, project, job, run, masked, labels=[]):
+def log_run_variables(run, variable_name, variable_value, variable_is_masked=None, variable_labels=[]):
     """
     Log the variables used for the run
     """
     spec = {
-        "project_suuid": project.suuid,
-        "job_suuid": job.suuid,
+        "run": run,
+        "project_suuid": run.jobdef.project.suuid,
+        "job_suuid": run.jobdef.suuid,
         "run_suuid": run.suuid,
         "created": datetime.datetime.now(tz=datetime.timezone.utc),
         "variable": {
@@ -31,43 +33,42 @@ def log_run_variables(variable_name, variable_value, project, job, run, masked, 
             "value": variable_value,
             "type": "string",
         },
-        "label": labels,
+        "label": variable_labels,
     }
-    if masked is not None:
-        spec["is_masked"] = masked
-    RunVariableRow.objects.create(**spec)
+    if variable_is_masked is not None:
+        spec["is_masked"] = variable_is_masked
+    RunVariable.objects.create(**spec)
 
 
-def get_project_variables(project, job, run):
+def get_project_variables(run):
     # Get variables for this project / run
     project_variables = {}
-    for pv in ProjectVariable.objects.filter(project=project):
+    for pv in Variable.objects.filter(project=run.jobdef.project):
         project_variables[pv.name] = pv.value
 
         # log the project defined variables
         labels = [{"name": "source", "value": "project", "type": "string"}]
         is_masked = pv.is_masked
         if is_masked:
-            labels.append({"name": "is_masked", "value": None, "type": "tag"})
+            labels.append({"name": "is_masked", "value": None, "type": "tag"})  # type: ignore
         log_run_variables(
-            pv.name,
-            pv.get_value(show_masked=False),
-            project,
-            job,
-            run,
-            is_masked,
-            labels,
+            run=run,
+            variable_name=pv.name,
+            variable_value=pv.get_value(),
+            variable_is_masked=is_masked,
+            variable_labels=labels,
         )
     return project_variables
 
 
 @celery_app.task(bind=True, name="job.tasks.start_run")
 def start_run(self, run_uuid):
-    print(f"Received message to start run {run_uuid}")
+    logging.info(f"Received message to start run {run_uuid}")
 
     docker_debug_log = get_setting_from_database(
         name="DOCKER_DEBUG_LOG",
         default=False,
+        return_type=bool,
     )
 
     # First save current Celery id to the jobid field
@@ -80,18 +81,22 @@ def start_run(self, run_uuid):
     jd = run.jobdef
     pl = run.payload
     pr = jd.project
-    op = run.output
-    tv = run.runvariables.get()
+    op = run.output  # type: ignore
 
     package = run.package
-    askanna_config = package.get_askanna_config() if package else None
+    if not package:
+        op.log("Could not find code package", print_log=docker_debug_log)
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
+        return run.to_failed()
+
+    askanna_config = package.get_askanna_config()
     if not askanna_config:
         op.log("Could not find askanna.yml", print_log=docker_debug_log)
         op.log("", print_log=docker_debug_log)
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
 
-    global_timezone = is_valid_timezone(askanna_config.timezone, settings.TIME_ZONE)
     job_config = askanna_config.jobs.get(jd.name)
     if not job_config:
         op.log(f"Job `{jd.name}` was not found in askanna.yml:", print_log=docker_debug_log)
@@ -107,36 +112,20 @@ def start_run(self, run_uuid):
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
 
-    job_timezone = is_valid_timezone(job_config.timezone, global_timezone)
-    run.set_timezone(job_timezone)
+    run.set_timezone(job_config.timezone)
 
-    # log the variables set in this run
-    # Get variables for this project / run
-    project_variables = get_project_variables(project=pr, job=jd, run=run)
-
-    # configure hostname for this project docker container
-    hostname = pr.suuid
-
-    # run_token is the token of the user who started the run
-    run_token = run.created_by.auth_token.key
-
-    # get runner command (default do echo "askanna-runner for project {}")
-    runner_command = [
-        "/bin/sh",
-        "-c",
-        "askanna-run-utils get-run-manifest --output /dev/stdout | sh",
-    ]
+    # Get and log variables for this run
 
     worker_variables = {
-        "AA_TOKEN": run_token,
+        "TZ": job_config.timezone,
+        "LC_ALL": "C.UTF-8",
+        "LANG": "C.UTF-8",
+        "AA_TOKEN": run.created_by.auth_token.key,
         "AA_REMOTE": settings.ASKANNA_API_URL,
         "AA_RUN_SUUID": run.suuid,
         "AA_JOB_NAME": jd.name,
         "AA_PROJECT_SUUID": str(pr.suuid),
         "AA_PACKAGE_SUUID": str(package.suuid),
-        "TZ": job_timezone,
-        "LC_ALL": "C.UTF-8",
-        "LANG": "C.UTF-8",
     }
     if pl:
         # we have a payload, so set the payload
@@ -150,7 +139,15 @@ def start_run(self, run_uuid):
     for variable, value in worker_variables.items():
         # log the worker variables
         labels = [{"name": "source", "value": "worker", "type": "string"}]
-        log_run_variables(variable, value, pr, jd, run, masked=None, labels=labels)
+        log_run_variables(
+            run=run,
+            variable_name=variable,
+            variable_value=value,
+            variable_is_masked=None,
+            variable_labels=labels,
+        )
+
+    project_variables = get_project_variables(run=run)
 
     payload_variables = {}
     if pl and isinstance(pl.payload, dict):
@@ -169,10 +166,16 @@ def start_run(self, run_uuid):
     for variable, value in payload_variables.items():
         # log the payload variables
         labels = [{"name": "source", "value": "payload", "type": "string"}]
-        log_run_variables(variable, value, pr, jd, run, masked=None, labels=labels)
+        log_run_variables(
+            run=run,
+            variable_name=variable,
+            variable_value=value,
+            variable_is_masked=None,
+            variable_labels=labels,
+        )
 
     # update the meta of trackedvariables
-    tv.update_meta()
+    run.variables_meta.get().update_meta()
 
     # set environment variables
     env_variables = {}
@@ -183,8 +186,7 @@ def start_run(self, run_uuid):
     # start the run
     run.to_inprogress()
 
-    # start composing docker
-    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+    docker_client = docker.DockerClient(base_url="unix://var/run/docker.sock")
 
     # get image information to determine whether we need to pull this one
     job_image = parse_string(job_config.environment.image, env_variables)
@@ -198,70 +200,86 @@ def start_run(self, run_uuid):
         and parse_string(job_config.environment.credentials.password or "", env_variables)
         or None
     )
-    imagehelper = RegistryImageHelper(
-        client,
-        job_image,
+    image_helper = RegistryImageHelper(
+        client=docker_client,
+        image_path=job_image,
         username=job_image_username,
         password=job_image_password,
         logger=lambda x: op.log(message=x, print_log=docker_debug_log),
     )
-
     try:
-        imagehelper.login()
-        # get information about the image
-        imagehelper.info()
+        image_helper.get_image_info()
     except (RegistryAuthenticationError, RegistryContainerPullError):
         op.log("", print_log=docker_debug_log)
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
+    except Exception as e:
+        exception_message = f"Error while getting image information: {e}"
+
+        op.log(exception_message, print_log=docker_debug_log)
+        op.log("An error report has been created and send to the AskAnna admins", print_log=docker_debug_log)
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
+        run.to_failed()
+
+        raise Exception(exception_message)
 
     op.log("Preparing run environment", print_log=docker_debug_log)
-    op.log(f"Getting image {imagehelper.image_uri}", print_log=docker_debug_log)
-    op.log(
-        "Check AskAnna requirements and if not available, try to install them",
-        print_log=docker_debug_log,
-    )
+    op.log(f"Getting image {job_image}", print_log=docker_debug_log)
+    op.log("Check AskAnna requirements and if not available, try to install them", print_log=docker_debug_log)
 
+    logging.info(f"Get image: {job_image}")
     builder = ContainerImageBuilder(
-        client=client,
+        client=docker_client,
+        image_helper=image_helper,
+        image_dockerfile_path=str(settings.APPS_DIR.path("job/templates")),
+        image_dockerfile="custom_Dockerfile",
         logger=lambda x: op.log(message=x, print_log=docker_debug_log),
     )
     try:
-        run_image = builder.get_image(
-            repository=imagehelper.repository,
-            tag=imagehelper.image_tag,
-            digest=imagehelper.image_sha,
-            imagehelper=imagehelper,
-            model=RunImage,
-            docker_debug_log=docker_debug_log,
-            image_prefix=settings.ASKANNA_ENVIRONMENT,
-            image_template_path=str(settings.APPS_DIR.path("job/templates/")),
-        )
-    except (RegistryContainerPullError, docker.errors.DockerException):
+        run_image = builder.get_image()
+    except (RegistryContainerPullError, docker.errors.DockerException, TimeoutError):  # type: ignore
         op.log("", print_log=docker_debug_log)
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
+    except Exception as e:
+        exception_message = f"Error while preparing the run image: {e}"
+
+        op.log(exception_message, print_log=docker_debug_log)
+        op.log("An error report has been created and send to the AskAnna admins", print_log=docker_debug_log)
+        op.log("", print_log=docker_debug_log)
+        op.log("Run failed", print_log=docker_debug_log)
+        run.to_failed()
+
+        raise Exception(exception_message)
 
     op.log("All AskAnna requirements are available", print_log=docker_debug_log)
-    op.log("", print_log=docker_debug_log)  # left blank intentionally
+    op.log("", print_log=docker_debug_log)  # Left blank intentionally
 
-    # register that we are using this run_image
+    # Register that we are using this run_image
     run.set_run_image(run_image)
 
-    print("Starting image: ", job_image)
+    runner_command = [
+        "/bin/sh",
+        "-c",
+        "askanna-run-utils get-run-manifest --output /dev/stdout | sh",
+    ]
+
+    logging.info(f"Starting run {run.suuid} with image {job_image}")
     try:
-        container = client.containers.run(
-            run_image.cached_image,
-            runner_command,
+        container = docker_client.containers.run(
+            image=run_image.cached_image,
+            command=runner_command,
             environment=env_variables,
-            name="run_{run_suuid}".format(run_suuid=run.suuid),
+            name="aa-run-{run_suuid}".format(run_suuid=run.suuid),
             labels={
                 "run": run.suuid,
                 "project": pr.suuid,
                 "job": jd.suuid,
                 "askanna_environment": settings.ASKANNA_ENVIRONMENT,
             },
-            hostname=hostname,
+            privileged=False,
+            hostname=run.suuid,
             stdout=True,
             stderr=True,
             detach=True,
@@ -273,8 +291,7 @@ def start_run(self, run_uuid):
             cpu_period=10000,  # The length of a CPU period in microseconds.
             cpu_quota=40000,  # Microseconds of CPU time that the container can get in a CPU period.
         )
-    except (docker.errors.APIError, docker.errors.DockerException) as e:
-        print(e)
+    except (docker.errors.APIError, docker.errors.DockerException) as e:  # type: ignore
         op.log(
             f"Run could not be started because of run errors in the image {job_image}",
             print_log=docker_debug_log,
@@ -288,8 +305,8 @@ def start_run(self, run_uuid):
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
 
-    # logs = container.logs()
-    for idx, log in enumerate(container.logs(stream=True, timestamps=True)):
+    logline = []
+    for idx, log in enumerate(container.logs(stream=True, timestamps=True)):  # type: ignore
         logline = [idx] + log.decode("utf-8").split(sep=" ", maxsplit=1)
         logline[-1] = logline[-1].rstrip()
         op.log(message=logline[2], timestamp=logline[1], print_log=docker_debug_log)

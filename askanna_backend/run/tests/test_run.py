@@ -12,35 +12,33 @@ class TestRunModel(BaseRunTest, APITestCase):
     """
 
     def test_run_function__str__run_with_name(self):
-        self.assertEqual(str(self.runs["run1"]), f"run1 ({self.runs['run1'].suuid})")
+        assert str(self.runs["run1"]) == f"run1 ({self.runs['run1'].suuid})"
 
     def test_run_function__str__run_with_no_name(self):
-        self.assertEqual(str(self.runs["run7"]), str(self.runs["run7"].suuid))
+        assert str(self.runs["run7"]) == str(self.runs["run7"].suuid)
 
     def test_run_function_set_status(self):
-        self.assertEqual(self.runs["run7"].status, "FAILED")
+        assert self.runs["run7"].status == "FAILED"
         modified_before = self.runs["run7"].modified
 
         self.runs["run7"].set_status("COMPLETED")
-        self.assertEqual(self.runs["run7"].status, "COMPLETED")
-        self.assertGreater(self.runs["run7"].modified, modified_before)
+        assert self.runs["run7"].status == "COMPLETED"
+        assert self.runs["run7"].modified > modified_before
 
-        # Set status of run7 ack to failed
+        # Set status of run7 back to failed
         self.runs["run7"].set_status("FAILED")
 
     def test_run_function_set_finished(self):
-        self.assertIsNone(self.runs["run6"].finished)
-        self.assertIsNone(self.runs["run6"].duration)
+        assert self.runs["run6"].finished is None
+        assert self.runs["run6"].duration is None
         modified_before = self.runs["run6"].modified
 
         self.runs["run6"].set_finished()
-        self.assertIsNotNone(self.runs["run6"].finished)
-        self.assertIsNotNone(self.runs["run6"].duration)
-        self.assertGreater(self.runs["run6"].finished, self.runs["run6"].started)
-        self.assertGreater(self.runs["run6"].modified, modified_before)
-
+        assert self.runs["run6"].modified > modified_before
+        assert self.runs["run6"].finished is not None
+        assert self.runs["run6"].finished > self.runs["run6"].started
         duration = (self.runs["run6"].finished - self.runs["run6"].started).seconds
-        self.assertEqual(self.runs["run6"].duration, duration)
+        assert self.runs["run6"].duration == duration
 
 
 class TestRunListAPI(BaseRunTest, APITestCase):
@@ -55,212 +53,145 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             kwargs={"version": "v1"},
         )
 
+    def test_list_as_askanna_admin(self):
+        """
+        We can list runs as an AskAnna admion but only for public projects
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+        assert response.data["results"][0]["name"] == "run6"  # type: ignore
+
     def test_list_as_admin(self):
         """
         We can list runs as admin of a workspace
         """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 7)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 7  # type: ignore
 
     def test_list_as_member(self):
         """
         We can list runs as member of a workspace
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 5  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 5)
-
-    def test_list_as_nonmember(self):
+    def test_list_as_non_member(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as non-member but only for public projects
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+        assert response.data["results"][0]["name"] == "run6"  # type: ignore
 
     def test_list_as_anonymous(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as anonymous but only for public projects
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # we should only list run6 as this is in a public project
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0].get("name"), "run6")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+        assert response.data["results"][0]["name"] == "run6"  # type: ignore
 
-    def test_list_as_member_filter_by_job(self):
+    def test_list_as_member_filter_by_run(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as member and filter by run
         """
         self.activate_user("member")
-
-        filter_params = {"job": self.jobdef.suuid}
         response = self.client.get(
             self.url,
-            filter_params,
-            format="json",
+            {"run_suuid": self.runs["run1"].suuid},
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
-    def test_list_as_member_filter_by_jobs(self):
+    def test_list_as_member_filter_by_runs(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as member and filter by multiple runs
         """
         self.activate_user("member")
-
-        filter_params = {"job": ",".join([self.jobdef.suuid, self.jobdef2.suuid])}
         response = self.client.get(
             self.url,
-            filter_params,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
-
-    def test_list_as_member_filter_by_project(self):
-        """
-        We can list runs as member of a workspace
-        """
-        self.activate_user("member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 5)
-
-
-class TestJobRunListAPI(TestRunListAPI):
-    """
-    Test to list the runs of a job
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "job-run-list",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_jobdef__suuid": self.jobdef.suuid,
+            {
+                "run_suuid": ",".join(
+                    [
+                        self.runs["run1"].suuid,
+                        self.runs["run2"].suuid,
+                    ]
+                )
             },
         )
-
-    def test_list_as_admin(self):
-        """
-        We can list runs as admin of a workspace
-        """
-        self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
-
-    def test_list_as_member(self):
-        """
-        We can list runs as member of a workspace
-        """
-        self.activate_user("member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
-
-    def test_list_as_nonmember(self):
-        """
-        We can not list runs as non-member of a workspace
-        """
-        self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_list_as_anonymous(self):
-        """
-        Anonymous can only list public runs, so this one returns 0 runs
-        """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
 
     def test_list_as_member_filter_by_job(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as member and filter by job
         """
         self.activate_user("member")
-
-        filter_params = {"job": self.jobdef.suuid}
         response = self.client.get(
             self.url,
-            filter_params,
-            format="json",
+            {"job_suuid": self.jobdef.suuid},
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
     def test_list_as_member_filter_by_jobs(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as member and filter by multiple jobs
         """
         self.activate_user("member")
-
-        filter_params = {"job": ",".join([self.jobdef.suuid, self.jobdef2.suuid])}
         response = self.client.get(
             self.url,
-            filter_params,
-            format="json",
+            {
+                "job_suuid": ",".join(
+                    [
+                        self.jobdef.suuid,
+                        self.jobdef2.suuid,
+                    ]
+                )
+            },
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
     def test_list_as_member_filter_by_project(self):
         """
-        We can list runs as member of a workspace
+        We can list runs as member and filter by project
         """
         self.activate_user("member")
-
         response = self.client.get(
             self.url,
-            format="json",
+            {
+                "project_suuid": self.jobdef.project.suuid,
+            },
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
+
+    def test_list_as_member_filter_by_workspace(self):
+        """
+        We can list runs as member and filter by workspace
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "workspace_suuid": self.jobdef.project.workspace.suuid,
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
 
 class TestRunDetailAPI(BaseRunTest, APITestCase):
-
     """
     Test to get details of a run
     """
@@ -280,122 +211,98 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
             kwargs={"version": "v1", "suuid": self.runs["run3"].suuid},
         )
 
+    def test_detail_as_askanna_admin(self):
+        """
+        We cannot get details of a run as an AskAnna admin
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_detail_as_admin(self):
         """
         We can get details of a run as an admin
         """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
 
     def test_detail_as_member(self):
         """
         We can get details of a run as a member
         """
         self.activate_user("member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
 
     def test_detail_as_member_other_run(self):
         """
         We can get details of a run as a member
         """
         self.activate_user("member")
-
-        response = self.client.get(
-            self.url_run2,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run2"].suuid)
-        self.assertEqual(response.data.get("result", {}).get("name"), "someresult.txt")
-        self.assertEqual(response.data.get("result", {}).get("extension"), "txt")
+        response = self.client.get(self.url_run2)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run2"].suuid  # type: ignore
+        assert response.data["result"]["name"] == "someresult.txt"  # type: ignore
+        assert response.data["result"]["extension"] == "txt"  # type: ignore
 
     def test_detail_as_member_changed_membername(self):
         """
         We can get details of a run as a member
         """
         self.activate_user("member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
-        self.assertEqual(response.data.get("created_by").get("name"), "name of member in membership")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert response.data["created_by"]["name"] == "name of member in membership"  # type: ignore
 
         # now change membername to new membername
-        self.members.get("member").name = "new membername"
-        self.members.get("member").save()
+        self.members.get("member").name = "new membername"  # type: ignore
+        self.members.get("member").save()  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
-        self.assertEqual(response.data.get("created_by").get("name"), "new membername")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert response.data["created_by"]["name"] == "new membername"  # type: ignore
 
         # now change back new membername to membername
-        self.members.get("member").name = "membername"
-        self.members.get("member").save()
+        self.members.get("member").name = "membername"  # type: ignore
+        self.members.get("member").save()  # type: ignore
 
-    def test_detail_as_member_workspacemembername_different_in_other_workspace(self):
+    def test_detail_as_member_workspace_membername_different_in_other_workspace(self):
         """
         We can get details of a run as a member
         """
         self.activate_user("member2")
 
         # first visit 1st workspace
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
-        self.assertEqual(response.data.get("created_by").get("name"), "name of member in membership")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert response.data["created_by"]["name"] == "name of member in membership"  # type: ignore
 
         # then visit 2nd workspace
-        response = self.client.get(
-            self.url_other_workspace,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run3"].suuid)
-        self.assertEqual(response.data.get("created_by").get("name"), "member")
+        response = self.client.get(self.url_other_workspace)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run3"].suuid  # type: ignore
+        assert response.data["created_by"]["name"] == "member2"  # type: ignore
 
-    def test_detail_as_nonmember(self):
+    def test_detail_as_non_member(self):
         """
-        We can NOT get details of a run as non-member
+        We cannot get details of a run as non-member
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_detail_as_anonymous(self):
         """
-        We can NOT get details of a run as anonymous
+        We cannot get details of a run as anonymous
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestRunResultAPI(BaseRunTest, APITestCase):
@@ -407,45 +314,53 @@ class TestRunResultAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-result",
-            kwargs={"version": "v1", "suuid": self.runs["run2"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run2"].suuid,
+            },
         )
+
+    def test_retrieve_as_askanna_admin(self):
+        """
+        We cannot get the result for a run as an AskAnna admin
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_as_admin(self):
         """
         We can get the result for a run as an admin
         """
         self.activate_user("admin")
-
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
 
     def test_retrieve_as_member(self):
         """
         We can get the result for a run as a member
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
 
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_retrieve_as_nonmember(self):
+    def test_retrieve_as_non_member(self):
         """
-        We can NOT get the result for a run as a non-member
+        We cannot get the result for a run as a non-member
         """
         self.activate_user("non_member")
-
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_as_anonymous(self):
         """
-        We can NOT get the result of a jborun as anonymous
+        We cannot get the result of a run as anonymous
         """
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
+class TestRunChangeAPI(BaseRunTest, APITestCase):
     """
     Test whether we can change the name and description of the run object
     """
@@ -454,30 +369,33 @@ class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-detail",
-            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run1"].suuid,
+            },
         )
         self.url_run2 = reverse(
             "run-detail",
-            kwargs={"version": "v1", "suuid": self.runs["run2"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run2"].suuid,
+            },
         )
         self.url_other_workspace = reverse(
             "run-detail",
-            kwargs={"version": "v1", "suuid": self.runs["run3"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run3"].suuid,
+            },
         )
 
     def run_test(self):
-        initial_response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(initial_response.status_code, status.HTTP_200_OK)
-        self.assertTrue(initial_response.data.get("suuid") == self.runs["run1"].suuid)
-        self.assertEqual(initial_response.data.get("name"), self.runs["run1"].name)
-        self.assertEqual(
-            date_parse(initial_response.data.get("modified")),
-            self.runs["run1"].modified,
-        )
-        self.assertEqual(initial_response.data.get("description"), self.runs["run1"].description)
+        initial_response = self.client.get(self.url)
+        assert initial_response.status_code == status.HTTP_200_OK
+        assert initial_response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert initial_response.data["name"] == self.runs["run1"].name  # type: ignore
+        assert initial_response.data["description"] == self.runs["run1"].description  # type: ignore
+        assert date_parse(initial_response.data["modified"]) == self.runs["run1"].modified  # type: ignore
 
         response = self.client.patch(
             self.url,
@@ -487,34 +405,47 @@ class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get("suuid") == self.runs["run1"].suuid)
-        self.assertEqual(response.data.get("name"), "new name")
-        self.assertEqual(response.data.get("description"), "new description")
-        # the modified time of the run can be changed as changing name/description will update the
-        # modified field.
-        self.assertNotEqual(
-            date_parse(response.data.get("modified")),
-            self.runs["run1"].modified,
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert response.data["name"] == "new name"  # type: ignore
+        assert response.data["description"] == "new description"  # type: ignore
+        assert date_parse(response.data["modified"]) != self.runs["run1"].modified  # type: ignore
+
+        return True
+
+    def test_update_as_askanna_admin(self):
+        """
+        We cannot update name and detail of the run as an AskAnna admin
+        """
+        self.activate_user("anna")
+
+        response = self.client.patch(
+            self.url,
+            {
+                "name": "new name",
+                "description": "new description",
+            },
+            format="json",
         )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_as_admin(self):
         """
         We can update name and detail of the run as admin
         """
         self.activate_user("admin")
-        self.run_test()
+        assert self.run_test() is True
 
     def test_update_as_member(self):
         """
         We can update name and detail of the run as member
         """
         self.activate_user("member")
-        self.run_test()
+        assert self.run_test() is True
 
-    def test_update_as_nonmember(self):
+    def test_update_as_non_member(self):
         """
-        We can NOT update name and detail of the run as non-member
+        We cannot update name and detail of the run as non-member
         """
         self.activate_user("non_member")
 
@@ -526,7 +457,21 @@ class TestRunDetailUpdateAPI(BaseRunTest, APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_update_as_anonymous(self):
+        """
+        We cannot update name and detail of the run as anonymous
+        """
+        response = self.client.patch(
+            self.url,
+            {
+                "name": "new name",
+                "description": "new description",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestRunDeleteAPI(BaseRunTest, APITestCase):
@@ -538,73 +483,53 @@ class TestRunDeleteAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-detail",
-            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run1"].suuid,
+            },
         )
 
-    def is_deleted(self):
-        # is it deleted?
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    def run_test(self):
+        response = self.client.delete(self.url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        return True
 
     def test_delete_as_anna(self):
         """
-        AskAnna user by default don't have the permission to delete a run
+        AskAnna admin by default don't have the permission to delete a run
         """
         self.activate_user("anna")
-
-        response = self.client.delete(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.delete(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_delete_as_admin(self):
         """
         We can remove a run as an workspace admin
         """
         self.activate_user("admin")
-
-        response = self.client.delete(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.is_deleted()
+        assert self.run_test() is True
 
     def test_delete_as_member(self):
         """
-        we can remove a run as a member of an workspace
+        We can remove a run as a member of an workspace
         """
         self.activate_user("member")
+        assert self.run_test() is True
 
-        response = self.client.delete(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.is_deleted()
-
-    def test_delete_as_nonmember(self):
+    def test_delete_as_non_member(self):
         """
-        we cannot remove a run when we are not a member of the workspace
+        We cannot remove a run when we are not a member of the workspace
         """
         self.activate_user("non_member")
-
-        response = self.client.delete(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.delete(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_delete_as_anonymous(self):
         """
-        As anonoymous user we cannot remove anything
+        As anonoymous user we cannot remove a run
         """
-        response = self.client.delete(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.delete(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND

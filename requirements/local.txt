@@ -27,7 +27,5 @@ pre-commit~=2.20.0              # https://github.com/pre-commit/pre-commit
 # ---------------------------------------------------------------------------------
 django-cors-headers~=3.11.0     # https://github.com/adamchainz/django-cors-headers
 django-coverage-plugin~=2.0.3   # https://github.com/nedbat/django_coverage_plugin
-django-debug-toolbar~=3.2.0     # https://github.com/jazzband/django-debug-toolbar
 pytest-django~=4.5.2            # https://github.com/pytest-dev/pytest-django
-Werkzeug~=2.0.3                 # https://github.com/pallets/werkzeug
-watchdog~=2.1.9                 # https://github.com/gorakhargosh/watchdog
+Werkzeug[watchdog]~=2.0.3       # https://github.com/pallets/werkzeug

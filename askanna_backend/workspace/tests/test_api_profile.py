@@ -1,11 +1,12 @@
-"""Define tests for API of UserProfile."""
 import pytest
 from core.tests.base import BaseUserPopulation
+from django.db.models import signals
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
+from workspace.listeners import install_demo_project_in_workspace
 
 from ..models import Workspace
 
@@ -15,6 +16,7 @@ pytestmark = pytest.mark.django_db
 class TestProfileAPI(BaseUserPopulation, APITestCase):
     def setUp(self):
         super().setUp()
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
 
     def test_member_can_not_change_other_member_profile(self):
         """A profile can not be changed by a non owner."""
@@ -60,7 +62,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
 
         response = self.client.patch(
             url,
-            {"role": WS_ADMIN},
+            {"role_code": WS_ADMIN},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -217,7 +219,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
 
         response = self.client.patch(
             url,
-            {"role": WS_ADMIN},
+            {"role_code": WS_ADMIN},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -239,7 +241,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
 
         response = self.client.patch(
             url,
-            {"role": WS_ADMIN},
+            {"role_code": WS_ADMIN},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -260,7 +262,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
 
         response = self.client.patch(
             url,
-            {"role": WS_MEMBER},
+            {"role_code": WS_MEMBER},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -282,7 +284,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
 
         response = self.client.patch(
             url,
-            {"role": WS_MEMBER},
+            {"role_code": WS_MEMBER},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -303,13 +305,13 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
 
         response = self.client.patch(
             url,
-            {"role": WS_MEMBER},
+            {"role_code": WS_MEMBER},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_profile_requires_correct_workspace(self):
-        """The path to a profile requires the correct parent be given."""
+        """The path to a profile requires the correct parrent be given."""
         workspace_to_fail = Workspace.objects.create(name="workspace to fail")
 
         url = reverse(
@@ -324,10 +326,8 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
         response = self.client.get(
             url,
         )
-        # 401 is raised and not 404 as the permission check at the workspace level
-        # comes before than the loading of the profile.
-        # Since the user does not belong to the given workspace, it fails.
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retrieve_profile_as_anonymous_fails(self):
         """Anonymous users can not see profiles from a workspace."""
@@ -430,7 +430,7 @@ class TestProfileAPI(BaseUserPopulation, APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        suuids = [p["suuid"] for p in response.data]
+        suuids = [p["suuid"] for p in response.data["results"]]
         self.assertEqual(len(suuids), 6)
         self.assertNotIn(str(filtered_profile.pk), suuids)
         self.assertIn(str(self.members.get("member2").suuid), suuids)
@@ -475,7 +475,7 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
         response = self.client.get(
             url,
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_deleted_member_is_denied_access_to_edit_profile(self):
         """A user with a soft-deleted profile can not edit its own profile.
@@ -544,7 +544,7 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
         response = self.client.get(
             url,
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_deleted_admin_is_denied_access_to_edit_profile(self):
         """An admin with a soft-deleted profile can not edit its own profile.
@@ -581,6 +581,7 @@ class TestDeletedProfileAPI(BaseUserPopulation, APITestCase):
 class TestRemovingProfile(BaseUserPopulation, APITestCase):
     def setUp(self):
         super().setUp()
+        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
 
     def test_admin_can_remove_profile(self):
         """Admins of a workspace can remove a member from it."""

@@ -6,15 +6,12 @@ from workspace.models import Workspace
 class WorkspaceAdmin(admin.ModelAdmin):
     fields = [
         "suuid",
-        "status",
         "name",
         "description",
         "visibility",
         "created_by",
         "modified",
         "created",
-        "activate_date",
-        "deactivate_date",
         "deleted",
     ]
     readonly_fields = [
@@ -22,8 +19,6 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "created_by",
         "modified",
         "created",
-        "activate_date",
-        "deactivate_date",
         "deleted",
     ]
 
@@ -36,13 +31,13 @@ class WorkspaceAdmin(admin.ModelAdmin):
     ]
     date_hierarchy = "created"
     list_filter = [
-        "status",
         "visibility",
         "created",
         "modified",
         "deleted",
     ]
     search_fields = [
+        "uuid",
         "suuid",
         "name",
     ]

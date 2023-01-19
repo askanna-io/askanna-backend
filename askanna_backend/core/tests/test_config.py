@@ -2,77 +2,41 @@ import unittest
 
 import pytest
 from core.config import AskAnnaConfig
-from core.utils import get_config, get_config_from_string, get_setting_from_database
+from core.utils.config import get_setting_from_database
 from django.conf import settings
 
 pytestmark = pytest.mark.django_db
 
 
-class TestConfigLoader(unittest.TestCase):
-    def test_load_config_from_file(self):
-        """
-        Here we just test loading the config from a file, not judging on whether it is valid or not
-        """
-        filename = settings.TEST_RESOURCES_DIR.path("projects/project-001/askanna.yml")
-        self.assertEqual(
-            get_config(filename),
-            {
-                "a-non-job": "some random string",
-                "my-second-test-job": {
-                    "environment": {"image": "python:3-slim"},
-                    "job": ["python my_script.py"],
-                    "schedule": [
-                        "0 12 * * *",
-                        {"day": 5, "hour": 5, "month": 5},
-                        {"century": 2, "hour": 8},
-                        "some rubbish, no cron",
-                    ],
-                },
-                "my-test-job": {
-                    "job": ["python my_script.py"],
-                    "notifications": {"all": {"email": ["anna@askanna.io"]}},
-                },
-            },
-        )
-
-    def test_load_config_from_string(self):
-        askanna_yml = """
----
-my-test-job:
-  job:
-    - python my_script.py
-
-        """
-        self.assertEqual(
-            get_config_from_string(askanna_yml),
-            {"my-test-job": {"job": ["python my_script.py"]}},
-        )
-
-    def test_load_config_from_string_emptyconfig(self):
-        askanna_yml = """
-
-        """
-        self.assertEqual(
-            get_config_from_string(askanna_yml),
-            None,
-        )
-
-    def test_load_config_from_string_errorconfig(self):
-        askanna_yml = """
-asimov:
-  - "" > test {}
-        """
-        self.assertEqual(
-            get_config_from_string(askanna_yml),
-            None,
-        )
-
-
 class TestDatabaseSetting(unittest.TestCase):
     def test_get_setting_from_db(self):
-        self.assertEqual(get_setting_from_database("some-setting"), None)
-        self.assertEqual(get_setting_from_database("some-setting", False), False)
-        self.assertEqual(get_setting_from_database("some-setting", True), True)
+        assert get_setting_from_database("some-setting") is None
+        assert get_setting_from_database("some-setting", False) is False
+        assert get_setting_from_database("some-setting", True) is True
+        assert get_setting_from_database("some-setting", "some-value") == "some-value"
+
+    def test_get_setting_from_db_return_type_bool(self):
+        assert get_setting_from_database("some-setting", "True", return_type=bool) is True
+        assert get_setting_from_database("some-setting", 1, return_type=bool) is True
+        assert get_setting_from_database("some-setting", True, return_type=bool) is True
+        with pytest.raises(TypeError):
+            get_setting_from_database("some-setting", [True, False], return_type=bool)
+
+    def test_get_setting_from_db_return_type_int(self):
+        assert get_setting_from_database("some-setting", "1", return_type=int) == 1
+        assert get_setting_from_database("some-setting", 1, return_type=int) == 1
+        assert get_setting_from_database("some-setting", True, return_type=int) == 1
+        with pytest.raises(TypeError):
+            get_setting_from_database("some-setting", [1, 2], return_type=int)
+
+    def test_get_setting_from_db_return_type_str(self):
+        assert get_setting_from_database("some-setting", "1", return_type=str) == "1"
+
+    def test_get_actual_setting_from_db(self):
+        from core.models import Setting
+
+        Setting.objects.create(name="mock-some-setting", value="some-value")
+        assert get_setting_from_database("mock-some-setting", "another-default") == "some-value"
 
 
 class TestAskAnnaConfig(unittest.TestCase):

@@ -1,32 +1,25 @@
 from core.models import BaseModel
+from core.utils.config import get_setting_from_database
+from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class JobQuerySet(models.QuerySet):
-    def active_jobs(self):
+    def active(self):
         return self.filter(
             deleted__isnull=True,
             project__deleted__isnull=True,
             project__workspace__deleted__isnull=True,
         )
 
-    def inactive_jobs(self):
-        return self.filter(deleted__isnull=False)
-
-    def active(self):
-        """
-        Only active jobs
-        """
-        return self.active_jobs()
-
     def inactive(self):
-        """
-        Inactive jobs only
-        """
-        return self.inactive_jobs()
+        return self.filter(
+            Q(deleted__isnull=False) | Q(project__deleted__isnull=False) | Q(project__workspace__deleted__isnull=False)
+        )
 
 
-class ActiveJobManager(models.Manager):
+class JobManager(models.Manager):
     def get_queryset(self):
         return JobQuerySet(self.model, using=self._db)
 
@@ -38,14 +31,7 @@ class ActiveJobManager(models.Manager):
 
 
 class JobDef(BaseModel):
-    """
-    Consider this as the job registry storing the identity of the job itself.
-    """
-
-    objects = models.Manager()
-    jobs = ActiveJobManager()
-
-    project = models.ForeignKey("project.Project", on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(max_length=255, blank=False, null=False, db_index=True)
 
     environment_image = models.CharField(
         max_length=2048,
@@ -55,20 +41,28 @@ class JobDef(BaseModel):
     )
     timezone = models.CharField(max_length=256, default="UTC")
 
-    def get_name(self):
-        return self.name
+    project = models.ForeignKey("project.Project", on_delete=models.CASCADE, blank=True, null=True)
+
+    objects = JobManager()
 
     def __str__(self):
         return f"{self.name} ({self.suuid})"
 
     @property
-    def relation_to_json(self):
-        return {
-            "relation": "jobdef",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-        }
+    def default_environment_image(self) -> str:
+        return str(
+            get_setting_from_database(
+                name="RUNNER_DEFAULT_DOCKER_IMAGE",
+                default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
+            )
+        )
+
+    def get_environment_image(self) -> str:
+        return self.environment_image or self.default_environment_image
 
     class Meta:
         ordering = ["-created"]
         verbose_name = "Job definition"
+        indexes = [
+            models.Index(fields=["name", "created"]),
+        ]

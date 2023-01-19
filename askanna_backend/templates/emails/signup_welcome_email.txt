@@ -1,8 +1,8 @@
 You are ready to enjoy AskAnna!
 
-Thank you for creating an AskAnna account. Via this email we want to let you know that we have created your account and workspace. You can now sign in at AskAnna on https://{{ user.front_end_domain }}. Attached you can also find the accepted terms of use and data processing agreement.
+Thank you for creating an AskAnna account. Via this email we want to let you know that we have created your account and workspace. You can now sign in at AskAnna on {{ front_end_url }}. Attached you can also find the accepted terms of use and data processing agreement.
 
-Sign in at AskAnna: https://{{ user.front_end_domain }}
+Sign in at AskAnna: {{ front_end_url }}
 
 I did not create this account
 

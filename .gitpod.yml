@@ -35,7 +35,6 @@ tasks:
     init: |
       git lfs install && git lfs pull
       python -m venv .venv
-      pip install -r requirements-dev.txt
     command: |
       source .venv/bin/activate
       pip install -r requirements-dev.txt
@@ -51,6 +50,8 @@ tasks:
   - name: CLI & SDK
     before: |
       cd ../askanna-cli
+    init: |
+      python -m venv .venv
     command: |
       source .venv/bin/activate
       pip install -r requirements-dev.txt

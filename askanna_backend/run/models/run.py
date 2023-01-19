@@ -1,7 +1,7 @@
 from core.models import AuthorModel, BaseModel
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models.fields import DateTimeField
+from django.db.models import Q
 from django.db.transaction import on_commit
 from django.utils import timezone
 
@@ -16,31 +16,89 @@ RUN_STATUS = (
 )
 
 
+def get_status_external(status: str) -> str:
+    """Translate a status used in Run model to status used external
+
+    Args:
+        status (str): status used in Run model
+
+    Returns:
+        str: status used external
+    """
+
+    # If the status_mapping is updated, also update the mapping in run/views/run.py (annotated field 'status_external')
+    status_mapping = {
+        "SUBMITTED": "queued",
+        "PENDING": "queued",
+        "PAUSED": "paused",
+        "IN_PROGRESS": "running",
+        "SUCCESS": "finished",
+        "COMPLETED": "finished",
+        "FAILED": "failed",
+    }
+
+    return status_mapping[status]
+
+
+class RunQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(
+            deleted__isnull=True,
+            jobdef__deleted__isnull=True,
+            jobdef__project__deleted__isnull=True,
+            jobdef__project__workspace__deleted__isnull=True,
+        )
+
+    def inactive(self):
+        return self.filter(
+            Q(deleted__isnull=False)
+            | Q(jobdef__deleted__isnull=True)
+            | Q(jobdef__project__deleted__isnull=False)
+            | Q(jobdef__project__workspace__deleted__isnull=False)
+        )
+
+
+class RunManager(models.Manager):
+    def get_queryset(self):
+        return RunQuerySet(self.model, using=self._db)
+
+    def active(self):
+        return self.get_queryset().active()
+
+    def inactive(self):
+        return self.get_queryset().inactive()
+
+
 class Run(AuthorModel, BaseModel):
-    jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE, to_field="uuid")
+    name = models.CharField(max_length=255, blank=True, null=False, default="", db_index=True)
+
+    jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
 
     # Clarification, jobid holds the job-id of Celery
     jobid = models.CharField(max_length=120, blank=True, null=True, help_text="The job-id of the Celery run")
-    status = models.CharField(max_length=20, choices=RUN_STATUS)
+    status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
 
     trigger = models.CharField(max_length=20, blank=True, null=True, default="API")
-
     member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
 
     # Register the start and end of a run
-    started = DateTimeField(null=True, editable=False)
-    finished = DateTimeField(null=True, editable=False)
+    started = models.DateTimeField(null=True, editable=False)
+    finished = models.DateTimeField(null=True, editable=False)
     duration = models.PositiveIntegerField(
         null=True, blank=True, editable=False, help_text="Duration of the run in seconds"
     )
 
     environment_name = models.CharField(max_length=256, default="")
     timezone = models.CharField(max_length=256, default="UTC")
-
-    # the image where it was ran with
     run_image = models.ForeignKey("job.RunImage", on_delete=models.CASCADE, null=True)
+
+    objects = RunManager()
+
+    @property
+    def output(self):
+        return self.output
 
     @property
     def is_finished(self):
@@ -112,27 +170,25 @@ class Run(AuthorModel, BaseModel):
             return None
         return result
 
-    def get_name(self):
-        """
-        Return the name for short-serialisation
-        """
-        return None or self.name
+    def get_status_external(self) -> str:
+        return get_status_external(self.status)
+
+    def get_duration(self) -> int:
+        if self.is_finished and self.duration:
+            return self.duration
+        if self.started and self.finished:
+            return (self.finished - self.started).seconds
+        if self.started:
+            return (timezone.now() - self.started).seconds
+        return 0
 
     def __str__(self):
         if self.name:
             return f"{self.name} ({self.suuid})"
         return self.suuid
 
-    @property
-    def relation_to_json(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "run",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-        }
-
     class Meta:
         ordering = ["-created"]
+        indexes = [
+            models.Index(fields=["name", "created"]),
+        ]

@@ -1,378 +1,252 @@
-import random
-import string
-
-from core.permissions import RoleBasedPermission
-from core.views import SerializerByActionMixin
-from django.contrib.auth import get_user_model
+from core.mixins import (
+    ObjectRoleMixin,
+    PartialUpdateModelMixin,
+    UpdateModelWithoutPartialUpateMixin,
+)
+from core.permissions.role import RoleBasedPermission
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from project.models import Project
-from rest_framework.generics import DestroyAPIView, RetrieveAPIView, UpdateAPIView
-from rest_framework_extensions.mixins import NestedViewSetMixin
+from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
 from users.models import Membership
-from users.serializers import (
-    AvatarMeSerializer,
-    GlobalMeSerializer,
-    ObjectAvatarMeSerializer,
+from users.serializers.me import (
+    MeAvatarSerializer,
+    MeSerializer,
     ProjectMeSerializer,
-    UpdateMeSerializer,
-    UpdateObjectMeSerializer,
+    WorkspaceMeAvatarSerializer,
     WorkspaceMeSerializer,
 )
 from workspace.models import Workspace
 
-User = get_user_model()
 
-
-class BaseMeViewSet(
-    NestedViewSetMixin,
-    SerializerByActionMixin,
-    DestroyAPIView,
-    UpdateAPIView,
-    RetrieveAPIView,
+class MeMixin(
+    mixins.RetrieveModelMixin,
+    PartialUpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
 ):
-    serializer_class = GlobalMeSerializer
-    permission_classes = [RoleBasedPermission]
-    http_method_names = ["get", "patch", "delete"]
-
-    serializer_classes_by_action = {
-        "patch": UpdateMeSerializer,
-    }
-
-    RBAC_BY_ACTION = {
-        "get": [
-            "askanna.me",
-        ],
-        "delete": [
-            "askanna.member",
-        ],
-        "patch": [
-            "askanna.member",
-        ],
-    }
-
-    def get_object_role(self, request, *args, **kwargs):
-        return None
-
-    def initial(self, request, *args, **kwargs):
-        """
-        Here we do a pre-initial call which sets the role of the user
-        This was not possible in the standard Django middleware as DRF overwrites this with their own flow
-        """
-        # set the role and user_roles
-        request.role = User.get_role(request)
-        request.user_roles = [request.role]
-
-        if getattr(self, "get_object_role"):
-            object_role = self.get_object_role(request, *args, **kwargs)
-            if object_role:
-                request.user_roles.append(object_role)
-                request.object_role = object_role
-
-        super().initial(request, *args, **kwargs)
-
     def perform_destroy(self, instance):
-        """
-        We don't actually remove the user, we just mark it as deleted
-        """
-
-        # set all memberships inactive for this deleted user
-        for membership in Membership.objects.filter(user=instance):
-            # setting the membership to deleted will automaticly read `use_global_profile`
-            # to copy over some info from User object
-            membership.to_deleted()
-
         instance.to_deleted()
-        instance.is_active = False
-        instance.username = "deleted-user-" + "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=6)  # nosec: B311
-        )
 
-        instance.name = "deleted user"
-        instance.job_title = "deleted"
-        instance.email = "deleted@dev.null"
-        instance.save(
-            update_fields=[
-                "is_active",
-                "modified",
-                "name",
-                "email",
-                "username",
-                "job_title",
-            ]
-        )
+
+class AvatarMixin(
+    UpdateModelWithoutPartialUpateMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    def perform_destroy(self, instance):
+        instance.delete_avatar()
+
+    def update(self, request, *args, **kwargs):
+        super().update(request, *args, **kwargs)
+        return Response(status=status.HTTP_204_NO_CONTENT, data=None)
+
+
+class GlobalMeMixin(ObjectRoleMixin):
+    permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
+        "retrieve": ["askanna.me"],
+        "update": ["askanna.me.edit"],
+        "partial_update": ["askanna.me.edit"],
+        "destroy": ["askanna.me.remove"],
+    }
 
     def get_object(self):
         """
-        Always return the current user as a viewpoint
-        in the baseMeViewSet only
+        Return the current user as the object for this view. If the user is not active, raise HTTP status code 404.
         """
         user = self.request.user
         if user.is_anonymous or user.is_active:
             return user
-        # always raise a 404 when no active user is visiting this endpoint
         raise Http404
 
 
-class MeAvatarViewSet(
-    NestedViewSetMixin,
-    DestroyAPIView,
-    UpdateAPIView,
-):
-    serializer_class = AvatarMeSerializer
-    http_method_names = ["patch", "delete"]
-
+class WorkspaceMeMixin(ObjectRoleMixin):
     permission_classes = [RoleBasedPermission]
-
-    RBAC_BY_ACTION = {
-        "delete": [
-            "askanna.member",
-        ],
-        "patch": [
-            "askanna.member",
-        ],
+    rbac_permissions_by_action = {
+        "retrieve": ["workspace.me.view"],
+        "update": ["workspace.me.edit"],
+        "partial_update": ["workspace.me.edit"],
+        "destroy": ["workspace.me.remove"],
     }
-
-    def get_object_role(self, request, *args, **kwargs):
-        return None
-
-    def initial(self, request, *args, **kwargs):
-        """
-        Here we do a pre-initial call which sets the role of the user
-        This was not possible in the standard Django middleware as DRF overwrites this with their own flow
-        """
-        # set the role and user_roles
-        request.role = User.get_role(request)
-        request.user_roles = [request.role]
-        request.object_role = None
-
-        if getattr(self, "get_object_role"):
-            object_role = self.get_object_role(request, *args, **kwargs)
-            if object_role:
-                request.user_roles.append(object_role)
-                request.object_role = object_role
-
-        super().initial(request, *args, **kwargs)
-
-    def perform_destroy(self, instance):
-        """
-        We just delete the avatar, not the user
-        After we install the default avatar for the user
-        """
-        instance.prune()
-        instance.install_default_avatar()
-
-    def get_object(self):
-        """
-        Always return the current user as a viewpoint
-        in the baseMeViewSet only
-        """
-        user = self.request.user
-        # if user.is_anonymous or user.is_active: #disabled untill public projects
-        if user.is_active:
-            return user
-        # always raise a 404 when no active user is visiting this endpoint
-        raise Http404
-
-
-class ObjectMeViewSet(BaseMeViewSet):
-    serializer_class = WorkspaceMeSerializer
-
-    serializer_classes_by_action = {
-        "patch": UpdateObjectMeSerializer,
-    }
-
-    RBAC_BY_ACTION = {
-        "get": ["workspace.me.view", "project.me.view"],
-        "delete": ["workspace.me.remove"],
-        "patch": ["workspace.me.edit"],
-    }
-
-    def perform_destroy(self, instance):
-        """
-        We don't actually remove the membership, we just mark it as deleted
-
-        - if `use_global_profile` was True, copy the information over from Profile (done via to_deleted)
-        """
-        instance.to_deleted()
 
     def _default_membership_for_public(self):
-        # AskAnnaMember without this object membership
-        # or Anonymous users will get a dummy membership
-        guest_role = {
-            "PR": "PN",  # project guest
-            "WS": "WN",  # workspace guest
-        }
+        if self.request.user.is_anonymous:
+            return Membership(
+                **{
+                    "suuid": None,
+                    "user": None,
+                    "name": None,
+                    "job_title": None,
+                    "use_global_profile": None,
+                    "role": "WP",
+                }
+            )
+
         return Membership(
             **{
-                "name": "Guest",
-                "job_title": "Guest",
-                "role": guest_role.get(self.current_object_type, "AN"),  # default to PublicViewer
-                "user": None,
+                "suuid": None,
+                "user": self.request.user,
+                "use_global_profile": True,
+                "role": "WP",
             }
         )
 
     def get_object(self):
         """
-        Always return the current user's membership (WV, WM, WA, [PM, PA])
-        Anonymous or non-members will get a dummy Membership
-        At this point we have a valid and existing workspace/project to work with
-        So we need to check membership only
+        Return the request user's membership for the requested workspace. If the user does not have a membership and
+        the workspace visibility is PUBLIC, we return the default role WorkspacePublicViewer.
         """
-        user = self.request.user
-        if user.is_active:
+        if self.request.user.is_active:
             try:
-                membership = Membership.objects.get(
-                    user=user,
-                    object_uuid=self.current_object.uuid,
+                return Membership.objects.get(
+                    user=self.request.user,
+                    object_uuid=self.request_workspace.uuid,
                     deleted__isnull=True,
                 )
             except ObjectDoesNotExist:
-                if self.current_object.visibility == "PUBLIC":
-                    return self._default_membership_for_public()
-                raise Http404
-            return membership
+                pass
+
+        if self.request_workspace.visibility == "PRIVATE":
+            raise Http404
+
         return self._default_membership_for_public()
 
-    def get_object_role(self, request, *args, **kwargs):
-        """
-        To be executed before super().initial() in our custom initial
-        - Setting current_object to Project/Workspace
-        - Returning the role for the user for this request
-        """
-        object_role = None
-        self.current_object = None
-        self.current_object_type = kwargs.get("object_type")
+    def get_parrent_roles(self, request):
+        try:
+            self.request_workspace = Workspace.objects.get(suuid=self.kwargs.get("suuid"))
+        except ObjectDoesNotExist:
+            raise Http404
 
-        if kwargs.get("object_type") == "WS" and kwargs.get("suuid"):
-            try:
-                obj = Workspace.objects.get(suuid=kwargs.get("suuid"))
-            except ObjectDoesNotExist:
-                raise Http404
-            self.current_object = obj
-
-            if request.user.is_anonymous and self.current_object.visibility == "PRIVATE":
-                # when the workspace is PRIVATE, raise a 404 NOT FOUND
-                raise Http404
-
-            object_role, request.membership = Membership.get_workspace_role(request.user, obj)
-
-        if kwargs.get("object_type") == "PR" and kwargs.get("suuid"):
-            try:
-                obj = Project.objects.get(suuid=kwargs.get("suuid"))
-            except ObjectDoesNotExist:
-                raise Http404
-            self.current_object = obj
-
-            if request.user.is_anonymous and (
-                self.current_object.visibility == "PRIVATE" or self.current_object.workspace.visibility == "PRIVATE"
-            ):
-                # when the workspace or project is PRIVATE, raise a 404 NOT FOUND
-                raise Http404
-
-            object_role, request.membership = Membership.get_project_role(request.user, obj)
-            request.user_roles += Membership.get_roles_for_project(request.user, obj)
-
-        return object_role
+        return [self.get_workspace_role(request.user, self.request_workspace)]
 
 
-class ProjectMeViewSet(ObjectMeViewSet):
+@extend_schema_view(
+    retrieve=extend_schema(description="Get info from the authenticated account"),
+    partial_update=extend_schema(description="Update the authenticated account info"),
+    destroy=extend_schema(description="Remove the authenticated account from the platform"),
+)
+class MeViewSet(GlobalMeMixin, MeMixin):
+    serializer_class = MeSerializer
+
+
+@extend_schema_view(
+    retrieve=extend_schema(description="Get info from the authenticated account in relation to a workspace"),
+    partial_update=extend_schema(description="Update the authenticated account workspace's membership info"),
+    destroy=extend_schema(description="Remove the authenticated account workspace's membership"),
+)
+class WorkspaceMeViewSet(
+    WorkspaceMeMixin,
+    MeMixin,
+):
+    serializer_class = WorkspaceMeSerializer
+
+
+@extend_schema_view(
+    retrieve=extend_schema(description="Get info from the authenticated account in relation to a project"),
+)
+class ProjectMeViewSet(
+    ObjectRoleMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     serializer_class = ProjectMeSerializer
 
-    def get_object(self):
-        """
-        Always return the current user's membership (WV, WM, WA, [PM, PA])
-        Anonymous or non-members will get a dummy Membership
-        At this point we have a valid and existing workspace/project to work with
-        So we need to check membership only
-        """
-        user = self.request.user
-        if user.is_active:
-            try:
-                workspace_membership = Membership.objects.get(
-                    user=user,
-                    object_uuid=self.current_object.workspace.uuid,
-                    deleted__isnull=True,
-                )
-            except ObjectDoesNotExist:
-                workspace_membership = None
+    permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
+        "retrieve": ["project.me.view"],
+    }
 
-            try:
-                membership = Membership.objects.get(
-                    user=user,
-                    object_uuid=self.current_object.uuid,
-                    deleted__isnull=True,
-                )
-            except ObjectDoesNotExist:
-                if workspace_membership:
-                    return workspace_membership
-                if self.current_object.visibility == "PUBLIC":
-                    return self._default_membership_for_public()
-                raise Http404
-            return membership
-        return self._default_membership_for_public()
+    def _default_membership_for_public(self):
+        if self.request.user.is_anonymous:
+            return Membership(
+                **{
+                    "suuid": None,
+                    "user": None,
+                    "name": None,
+                    "job_title": None,
+                    "use_global_profile": None,
+                    "role": "PP",
+                }
+            )
 
-
-class ObjectAvatarMeViewSet(MeAvatarViewSet):
-    serializer_class = ObjectAvatarMeSerializer
-
-    def get_object_role(self, request, *args, **kwargs):
-        """
-        To be executed before super().initial() in our custom initial
-        - Setting current_object to Project/Workspace
-        """
-        object_role = None
-        self.current_object = None
-        self.current_object_type = kwargs.get("object_type")
-
-        if kwargs.get("object_type") == "WS" and kwargs.get("suuid"):
-            try:
-                obj = Workspace.objects.get(suuid=kwargs.get("suuid"))
-            except ObjectDoesNotExist:
-                raise Http404
-            self.current_object = obj
-            object_role, request.membership = Membership.get_workspace_role(request.user, obj)
-
-        if kwargs.get("object_type") == "PR" and kwargs.get("suuid"):
-            try:
-                obj = Project.objects.get(suuid=kwargs.get("suuid"))
-            except ObjectDoesNotExist:
-                raise Http404
-            self.current_object = obj
-            object_role, request.membership = Membership.get_project_role(request.user, obj)
-
-        return object_role
-
-    def get_object(self):
-        """
-        Always return the current user's membership (WV, WM, WA, [PM, PA])
-        Anonymous or non-members will get a dummy Membership
-        At this point we have a valid and existing workspace/project to work with
-        So we need to check membership only
-        """
-        user = self.request.user
-        if user.is_active:
-            try:
-                membership = Membership.objects.get(
-                    user=user,
-                    object_uuid=self.current_object.uuid,
-                    deleted__isnull=True,
-                )
-            except ObjectDoesNotExist:
-                raise Http404
-            return membership
-
-        # AskAnnaMember without this object membership
-        # or Anonymous users will get a dummy membership
-        guest_role = {
-            "PR": "PN",  # project guest
-            "WS": "WN",  # workspace guest
-        }
         return Membership(
             **{
-                "name": "Guest",
-                "job_title": "Guest",
-                "role": guest_role.get(self.current_object_type, "AN"),  # default to PublicViewer
-                "user": None,
+                "suuid": None,
+                "user": self.request.user,
+                "use_global_profile": True,
+                "role": "PP",
             }
         )
+
+    def get_object(self):
+        """
+        Return the request user's membership for the requested project. If the user does not have a membership and
+        the workspace & project visibility is PUBLIC, we return the default role ProjectPublicViewer.
+        """
+        if self.request.user.is_active:
+            try:
+                return Membership.objects.get(
+                    user=self.request.user,
+                    object_uuid=self.request_project.uuid,
+                    deleted__isnull=True,
+                )
+            except ObjectDoesNotExist:
+                pass
+
+            # In case user does not have project membership, but has workspace membership, we return that membership
+            try:
+                return Membership.objects.get(
+                    user=self.request.user,
+                    object_uuid=self.request_project.workspace.uuid,
+                    deleted__isnull=True,
+                )
+            except ObjectDoesNotExist:
+                pass
+
+        if self.request_project.visibility == "PRIVATE" or self.request_project.workspace.visibility == "PRIVATE":
+            raise Http404
+
+        return self._default_membership_for_public()
+
+    def get_parrent_roles(self, request):
+        try:
+            self.request_project = Project.objects.get(suuid=self.kwargs.get("suuid"))
+        except ObjectDoesNotExist:
+            raise Http404
+
+        return self.get_roles_for_project(request.user, self.request_project)
+
+
+@extend_schema_view(
+    update=extend_schema(description="Update the avatar of the authenticated account", responses={204: None}),
+    destroy=extend_schema(description="Remove the avatar of the authenticated account"),
+)
+class MeAvatarViewSet(
+    GlobalMeMixin,
+    AvatarMixin,
+):
+    serializer_class = MeAvatarSerializer
+    rbac_permissions_by_action = {
+        "update": ["askanna.me.edit"],
+        "destroy": ["askanna.me.edit"],
+    }
+
+
+@extend_schema_view(
+    update=extend_schema(
+        description="Update the avatar of the authenticated account workspace's membership", responses={204: None}
+    ),
+    destroy=extend_schema(description="Remove the avatar of the authenticated account workspace's membership"),
+)
+class WorkspaceMeAvatarViewSet(
+    WorkspaceMeMixin,
+    AvatarMixin,
+):
+    serializer_class = WorkspaceMeAvatarSerializer
+    rbac_permissions_by_action = {
+        "update": ["workspace.me.edit"],
+        "destroy": ["workspace.me.edit"],
+    }

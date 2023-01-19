@@ -1,6 +1,6 @@
 Run #{{ run.suuid|slice:":4" }} has {{ event_type }}
 
-Project:  {{run.jobdef.project.get_name}}
+Project:  {{run.jobdef.project.name}}
 Job:      {{run.jobdef.get_name}}
 Run:      {% if run.name %}{{ run.name }}{% else %}{{ run.suuid }}{% endif %} ({{ ui_url }}/{{ run.jobdef.project.workspace.suuid }}/project/{{ run.jobdef.project.suuid }}/jobs/{{ run.jobdef.suuid }}/runs/{{ run.suuid }}/overview)
 

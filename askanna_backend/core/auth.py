@@ -1,3 +1,4 @@
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 
 
@@ -16,3 +17,16 @@ class PassthroughAuthentication(BaseAuthentication):
 
     def authenticate_header(self, request):
         return "Passthrough"
+
+
+class PassthroughAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = "core.auth.PassthroughAuthentication"
+    name = "TokenAuthentication"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "Prefix the value with 'Token ' to authorize your requests",
+        }
