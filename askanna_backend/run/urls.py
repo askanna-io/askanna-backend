@@ -1,16 +1,14 @@
 from core.urls import router
-from django.conf.urls import include, re_path
-from job.urls import job_router
+from django.urls import include, re_path
 from job.views import JobPayloadView
 from run.views import (
     ChunkedArtifactViewSet,
     ChunkedJobResultViewSet,
-    JobRunView,
     RunArtifactView,
-    RunMetricRowView,
+    RunMetricUpdateView,
     RunMetricView,
     RunResultCreateView,
-    RunVariableRowView,
+    RunVariableUpdateView,
     RunVariableView,
     RunView,
 )
@@ -26,21 +24,21 @@ run_router.register(
 
 run_router.register(
     r"metric",
-    RunMetricRowView,
+    RunMetricUpdateView,
     basename="run-metric",
-    parents_query_lookups=["run_suuid"],
-)
-
-run_router.register(
-    r"variable",
-    RunVariableRowView,
-    basename="run-variable",
-    parents_query_lookups=["run_suuid"],
+    parents_query_lookups=["run__suuid"],
 )
 
 run_router.register(
     r"variable",
     RunVariableView,
+    basename="run-variable",
+    parents_query_lookups=["run__suuid"],
+)
+
+run_router.register(
+    r"variable",
+    RunVariableUpdateView,
     basename="run-variable",
     parents_query_lookups=["run__suuid"],
 )
@@ -78,24 +76,6 @@ result_router.register(
     parents_query_lookups=["runresult__run__suuid", "runresult__suuid"],
 )
 
-job_router.register(
-    r"run",
-    JobRunView,
-    basename="job-run",
-    parents_query_lookups=["jobdef__suuid"],
-)
-job_router.register(
-    r"metric",
-    RunMetricRowView,
-    basename="job-run-metric",
-    parents_query_lookups=["job_suuid"],
-)
-job_router.register(
-    r"variable_tracked",
-    RunVariableRowView,
-    basename="job-run-variable",
-    parents_query_lookups=["job_suuid"],
-)
 
 urlpatterns = [
     re_path(r"^(?P<version>(v1))/", include(router.urls)),

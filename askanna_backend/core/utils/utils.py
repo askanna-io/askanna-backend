@@ -12,37 +12,11 @@ import filetype
 import magic
 import pytz
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db.models.query import QuerySet
 from django.http import HttpResponse, StreamingHttpResponse
-from django.utils import timezone
 from jinja2 import Environment
 from rest_framework import status
-from yaml import load
-
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
-
-
-def get_config_from_string(config_yml: str) -> dict:
-    """
-    Given a yml string, load this into dict
-    """
-    try:
-        config = load(config_yml, Loader=Loader)
-    except:  # noqa
-        config = None
-    return config
-
-
-def get_config(filename: str) -> dict:
-    """
-    Given a filepath, load it and return the intepretated yml
-    """
-    return get_config_from_string(open(os.path.expanduser(filename), "r"))
 
 
 def parse_string(string, variables):
@@ -117,8 +91,6 @@ def parse_cron_schedule(schedule: list):
 
 
 # File mimetype detection logic
-
-
 def is_jsonfile(filepath) -> bool:
     """
     Determine whether we are dealing with a JSON file
@@ -132,28 +104,22 @@ def is_jsonfile(filepath) -> bool:
     return True
 
 
-def detect_file_mimetype(filepath):
+def detect_file_mimetype(filepath) -> str:
     """
-    Use libmagic to determine what file we find on `filepath`.
-    We return either None or the found mimetype
+    Use libmagic to determine what file we find on `filepath`. If the mimetype is text/plain, we do an additional check
+    to see if it is a JSON file. If so, we return application/json.
     """
-    detected_mimetype = None
 
-    try:
-        detected_mimetype = magic.from_file(filepath, mime=True)
-    except FileNotFoundError as e:
-        # something terrible happened, we stored the file but it cannot be found
-        raise e
+    detected_mimetype = magic.from_file(filepath, mime=True)
 
-    if detected_mimetype:
-        if detected_mimetype == "text/plain":
-            # try to detect JSON
-            if is_jsonfile(filepath):
-                detected_mimetype = "application/json"
-    else:
-        kind = filetype.guess(filepath)
-        if kind:
-            detected_mimetype = kind.mime
+    if not detected_mimetype:
+        filetype_guess = filetype.guess(filepath)
+        if filetype_guess:
+            detected_mimetype = filetype_guess.mime
+
+    if detected_mimetype and detected_mimetype == "text/plain":
+        if is_jsonfile(filepath):
+            detected_mimetype = "application/json"
 
     return detected_mimetype
 
@@ -169,23 +135,6 @@ def is_valid_timezone(timezone, default=settings.TIME_ZONE):
     return timezone
 
 
-# settings management
-def get_setting_from_database(name: str, default=None):
-    """
-    Retrieve configuration setting from database (if set)
-    Otherwise fall back to
-    """
-    # import model here because of circular import (models is also using .utils)
-    from core.models import Setting
-
-    try:
-        setting = Setting.objects.get(name=name)
-    except ObjectDoesNotExist:
-        return default
-    else:
-        return setting.value
-
-
 def is_valid_email(email):
     try:
         validate_email(email)
@@ -193,24 +142,6 @@ def is_valid_email(email):
         return False
     else:
         return True
-
-
-# object removal
-def remove_objects(queryset, ttl_hours: int = 1):
-    """
-    queryset: Queryset containing all objects, also the ones not to delete
-    ttl_hours: we only delete objects older than `ttl_hours` old.
-    """
-    if not isinstance(queryset, QuerySet):
-        raise Exception("Given queryset is not a Django Queryset")
-
-    remove_ttl = get_setting_from_database(name="OBJECT_REMOVAL_TTL_HOURS", default=ttl_hours)
-    remove_ttl_mins = int(float(remove_ttl) * 60.0)
-
-    older_than = timezone.now() - datetime.timedelta(minutes=remove_ttl_mins)
-
-    for obj in queryset.filter(deleted__lte=older_than):
-        obj.delete()
 
 
 def pretty_time_delta(seconds: int) -> str:
@@ -377,7 +308,7 @@ def get_files_and_directories_in_zip_file(zip_file_path: Union[str, os.PathLike]
             }
         )
 
-    return zip_files
+    return sorted(zip_files, key=lambda x: (x["type"].lower(), x["name"].lower()))
 
 
 # The 'RangeFileWrapper' class and method 'stream' is used to setup streaming of content via an REST API endpoint

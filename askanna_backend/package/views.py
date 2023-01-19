@@ -1,92 +1,56 @@
 import os
 
-from core.permissions import ProjectMember, ProjectNoMember, RoleBasedPermission
-from core.views import (
-    BaseChunkedPartViewSet,
-    BaseUploadFinishMixin,
-    ObjectRoleMixin,
-    SerializerByActionMixin,
-    workspace_to_project_role,
-)
+import django_filters
+from core.filters import filter_multiple
+from core.mixins import ObjectRoleMixin, SerializerByActionMixin
+from core.permissions.role import RoleBasedPermission
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
+from django.db.models import Case, Q, When
 from django.http import Http404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from package.models import ChunkedPackagePart, Package
-from package.serializers import (
-    ChunkedPackagePartSerializer,
-    PackageCreateSerializer,
-    PackageSerializer,
-    PackageSerializerDetail,
-)
 from package.signals import package_upload_finish
 from project.models import Project
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
-from rest_framework_extensions.mixins import NestedViewSetMixin
 from users.models import MSP_WORKSPACE, Membership
 
+from askanna_backend.package.serializers.chunked_package import (
+    ChunkedPackagePartSerializer,
+)
+from askanna_backend.package.serializers.package import (
+    PackageCreateSerializer,
+    PackageSerializer,
+    PackageSerializerWithFileList,
+)
 
-class PackageObjectRoleMixin:
-    def get_object_project(self):
-        return self.current_object.project
 
-    def get_object_workspace(self):
-        return self.current_object.project.workspace
-
-    def get_list_role(self, request, *args, **kwargs):
-        # always return ProjectMember for logged in users since the listing always shows objects based on membership
-        if request.user.is_anonymous:
-            return ProjectNoMember, None
-        return ProjectMember, None
-
-    def get_create_role(self, request, *args, **kwargs):
-        project_suuid = request.data.get("project")
-        try:
-            project = Project.objects.get(suuid=project_suuid)
-        except ObjectDoesNotExist:
-            raise Http404
-
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
-
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
-
-        return Membership.get_project_role(request.user, project)
-
-    def get_queryset(self):
-
-        """
-        Filter only the packages where the user has access to.
-        Meaning all packages within projects/workspaces the user has joined
-        Only for the list action, the limitation for other cases is covered with permissions
-        """
-        user = self.request.user
-        if user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-                .order_by("name")
-            )
-
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid")
-
-        return (
-            super()
-            .get_queryset()
-            .filter(
-                Q(project__workspace__pk__in=member_of_workspaces)
-                | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-            )
-        )
+class PackageFilterSet(django_filters.FilterSet):
+    project_suuid = django_filters.CharFilter(
+        field_name="project__suuid",
+        method=filter_multiple,
+        help_text="Filter packages on a project suuid or multiple project suuids via a comma seperated list.",
+    )
+    workspace_suuid = django_filters.CharFilter(
+        field_name="project__workspace__suuid",
+        method=filter_multiple,
+        help_text="Filter packages on a workspace suuid or multiple workspace suuids via a comma seperated list.",
+    )
+    created_by_suuid = django_filters.CharFilter(
+        field_name="member__suuid",
+        method=filter_multiple,
+        help_text="Filter packages on a created by suuid or multiple created by suuids via a comma seperated list.",
+    )
+    created_by_name = django_filters.CharFilter(
+        field_name="member_name",
+        lookup_expr="icontains",
+        help_text="Filter packages on a created by name.",
+    )
 
 
 @extend_schema_view(
@@ -95,10 +59,9 @@ class PackageObjectRoleMixin:
     retrieve=extend_schema(description="Get info from a specific package"),
 )
 class PackageViewSet(
-    PackageObjectRoleMixin,
     ObjectRoleMixin,
     SerializerByActionMixin,
-    BaseUploadFinishMixin,
+    BaseUploadFinishViewSet,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -108,39 +71,110 @@ class PackageViewSet(
     List all packages and allow to finish upload action
     """
 
-    queryset = Package.objects.exclude(original_filename="").select_related(
-        "project", "project__workspace", "created_by", "member", "member__user"
+    queryset = (
+        Package.objects.active()
+        .select_related("project", "project__workspace", "created_by", "member", "member__user")
+        .annotate(
+            member_name=Case(
+                When(member__use_global_profile=True, then="created_by__name"),
+                When(member__use_global_profile=False, then="member__name"),
+            ),
+        )
     )
     lookup_field = "suuid"
+    search_fields = ["suuid", "name", "original_filename"]
+    ordering_fields = [
+        "created",
+        "modified",
+        "name",
+        "filename",
+        "project.name",
+        "project.suuid",
+        "workspace.name",
+        "workspace.suuid",
+        "created_by.name",
+    ]
+    ordering_fields_aliases = {
+        "filename": "original_filename",
+        "workspace.name": "project__workspace__name",
+        "workspace.suuid": "project__workspace__suuid",
+        "created_by.name": "member_name",
+    }
+    filterset_class = PackageFilterSet
+
     serializer_class = PackageSerializer
+    serializer_class_by_action = {
+        "retrieve": PackageSerializerWithFileList,
+        "create": PackageCreateSerializer,
+    }
+
     permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
+        "list": ["project.code.list"],
+        "retrieve": ["project.code.list"],
+        "create": ["project.code.create"],
+        "finish_upload": ["project.code.create"],
+        "download": ["project.code.list"],
+    }
 
     upload_target_location = settings.PACKAGES_ROOT
     upload_finished_signal = package_upload_finish
     upload_finished_message = "package upload finished"
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        """
+        Return only values from projects where the user is member of or has access to because it's public.
+        """
+        user = self.request.user
+        if user.is_anonymous:
+            queryset = (
+                super()
+                .get_queryset()
+                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
+            )
+        else:
+            member_of_workspaces = user.memberships.filter(
+                object_type=MSP_WORKSPACE, deleted__isnull=True
+            ).values_list("object_uuid", flat=True)
+
+            queryset = (
+                super()
+                .get_queryset()
+                .filter(
+                    Q(project__workspace__pk__in=member_of_workspaces)
+                    | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
+                )
+            )
+
         if self.action == "finish_upload":
             return queryset.filter(finished__isnull=True)
         return queryset.filter(finished__isnull=False)
 
-    def get_serializer_class(self):
-        if self.action == "retrieve":
-            return PackageSerializerDetail
-        if self.action == "create":
-            return PackageCreateSerializer
-        return self.serializer_class
+    def get_object_project(self):
+        return self.current_object.project
 
-    RBAC_BY_ACTION = {
-        "list": ["project.code.list"],
-        "retrieve": ["project.code.list"],
-        "create": ["project.code.create"],
-        "finish_upload": ["project.code.create"],
-    }
+    def get_parrent_roles(self, request, *args, **kwargs):
+        """
+        The role for creating a package is based on the project and workspace. To create a package you need to be
+        authenticated.
+        For creating a package there is an indirect parent lookup because the project_suuid is part of the payload.
+        To get the parrent roles, we read the project SUUID from the payload and determine the user's role.
+        """
+        if self.action == "create":
+            if request.user.is_anonymous:
+                raise NotAuthenticated
+
+            project_suuid = request.data.get("project_suuid")
+            try:
+                project = Project.objects.active().get(suuid=project_suuid)
+            except Project.DoesNotExist:
+                raise Http404
+
+            return Membership.get_roles_for_project(request.user, project)
+
+        return []
 
     def get_upload_dir(self, obj):
-        # directory structure is containing the project-suuid
         directory = os.path.join(settings.UPLOAD_ROOT, "project", obj.project.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
@@ -190,7 +224,7 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     serializer_class = ChunkedPackagePartSerializer
     permission_classes = [RoleBasedPermission]
 
-    RBAC_BY_ACTION = {
+    rbac_permissions_by_action = {
         "list": ["project.code.list"],
         "retrieve": ["project.code.list"],
         "create": ["project.code.create"],
@@ -198,7 +232,6 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     }
 
     def get_upload_dir(self, chunkpart):
-        # directory structure is containing the project-suuid
         directory = os.path.join(settings.UPLOAD_ROOT, "project", chunkpart.package.project.suuid)
         if not os.path.isdir(directory):
             os.makedirs(directory, exist_ok=True)
@@ -207,32 +240,28 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
     def get_object_project(self):
         return self.current_object.package.project
 
-    def get_object_workspace(self):
-        return self.current_object.package.project.workspace
+    def get_parrent_roles(self, request, *args, **kwargs):
+        """
+        The role for creating a package chunk is based on the package.
+        For creating a package chunk there is an indirect parent lookup because the package is linked to the project.
+        To get the parrent roles, we get the project from the package and determine the user's role.
+        """
+        if self.action == "create":
+            if request.user.is_anonymous:
+                raise NotAuthenticated
 
-    def get_create_role(self, request, *args, **kwargs):
-        parents = self.get_parents_query_dict()
-        try:
-            package = Package.objects.get(suuid=parents.get("package__suuid"))
-            project = package.project
-        except ObjectDoesNotExist:
-            raise Http404
+            parents = self.get_parents_query_dict()
+            try:
+                package = Package.objects.get(suuid=parents.get("package__suuid"))
+                project = package.project
+            except ObjectDoesNotExist:
+                raise Http404
 
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
+            return Membership.get_roles_for_project(request.user, project)
 
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
-
-        return Membership.get_project_role(request.user, project)
+        return []
 
     def initial(self, request, *args, **kwargs):
-        """
-        Set and lookup external relation by default
-        """
         super().initial(request, *args, **kwargs)
         parents = self.get_parents_query_dict()
         suuid = parents.get("package__suuid")
@@ -245,42 +274,3 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
                 )
             }
         )
-
-
-class ProjectPackageViewSet(
-    NestedViewSetMixin, PackageObjectRoleMixin, ObjectRoleMixin, mixins.ListModelMixin, viewsets.GenericViewSet
-):
-    """List packages of a project"""
-
-    queryset = (
-        Package.objects.exclude(original_filename="")
-        .filter(finished__isnull=False)
-        .select_related("project", "project__workspace", "created_by", "member", "member__user")
-    )
-    lookup_field = "suuid"
-    serializer_class = PackageSerializer
-    permission_classes = [RoleBasedPermission]
-
-    RBAC_BY_ACTION = {
-        "list": ["project.code.list"],
-        "retrieve": ["project.code.list"],
-        "download": ["project.code.list"],
-    }
-
-    def get_list_role(self, request, *args, **kwargs):
-        # always return ProjectMember for logged in users since the listing always shows objects based on membership
-        parents = self.get_parents_query_dict()
-        try:
-            project = Project.objects.get(suuid=parents.get("project__suuid"))
-        except Project.DoesNotExist:
-            raise Http404
-        request.user_roles += Membership.get_roles_for_project(request.user, project)
-
-        if request.user.is_anonymous:
-            return ProjectNoMember, None
-        return ProjectMember, None
-
-    def get_serializer_class(self):
-        if self.action == "retrieve":
-            return PackageSerializerDetail
-        return self.serializer_class

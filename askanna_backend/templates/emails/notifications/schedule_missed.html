@@ -1,5 +1,5 @@
 {% extends "emails/notifications/base.html" %}
-{% block title %}Error | Scheduled job {{ job.name }} of {{run.jobdef.project.get_name}} didn't start
+{% block title %}Error | Scheduled job {{ job.name }} of {{job.project.name}} didn't start
 {% endblock title %}
 
 {% block content %}
@@ -105,9 +105,9 @@
                         " height="100%" valign="top" bgcolor="" role="module-content">
                         <div>
                           <div class="wrapper-value" style="font-family: inherit; text-align: inherit">
-                            <a href="{{ ui_url }}/{{ project.workspace.suuid }}/project/{{ project.suuid }}/"
+                            <a href="{{ ui_url }}/{{ job.project.workspace.suuid }}/project/{{ job.project.suuid }}/"
                               target="_blank"><span
-                                style="color: #5d3eb2; font-size: 18px">{{project.get_name}}</span></a>
+                                style="color: #5d3eb2; font-size: 18px">{{job.project.name}}</span></a>
                           </div>
                           <div></div>
                         </div>
@@ -182,7 +182,7 @@
                         " height="100%" valign="top" bgcolor="" role="module-content">
                         <div>
                           <div class="wrapper-value" style="font-family: inherit; text-align: inherit">
-                            <a href="{{ ui_url }}/{{ project.workspace.suuid }}/project/{{ project.suuid }}/jobs/{{ jobdef.suuid }}/overview"
+                            <a href="{{ ui_url }}/{{ job.project.workspace.suuid }}/project/{{ job.project.suuid }}/jobs/{{ job.suuid }}/overview"
                               target="_blank"><span style="color: #5d3eb2; font-size: 18px">{{job.name}}</span></a>
                           </div>
                           <div></div>
@@ -244,7 +244,7 @@
             margin: 0px;
             padding: 10px 15px;
           ">
-We are sorry to inform you that your scheduled job &quot;{{ job.name }}&quot; of &quot;{{ project.get_name }}&quot; could not start because of some issues on our side.
+We are sorry to inform you that your scheduled job &quot;{{ job.name }}&quot; of &quot;{{ job.project.name }}&quot; could not start because of some issues on our side.
 
 We will reschedule the job for the next scheduled run.
 </pre>

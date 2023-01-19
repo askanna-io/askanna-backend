@@ -4,175 +4,160 @@ import pytest
 from django.core import mail
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
 from users.models import PasswordResetLog
 
-from .base_tests import BaseUsers
+from .base_tests import BaseAccounts
 
 pytestmark = pytest.mark.django_db
 
 
-class TestResetPasswordAPI(BaseUsers, APITestCase):
-    """
-    Testing the reset password function for /rest-auth/password/reset/
-    """
+class TestResetPasswordAPI(BaseAccounts):
+    """Testing the reset password function for /auth/password/reset/"""
 
     def setUp(self):
+        super().setUp()
         self.url = reverse("rest_password_reset", kwargs={"version": "v1"})
-        self.status_url = reverse("token-status", kwargs={"version": "v1"})
+        self.status_url = reverse("rest_password_reset_token_status", kwargs={"version": "v1"})
 
     @pytest.fixture(autouse=True)
     def email_backend_setup(self, settings):
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
     def test_reset_existing_account(self):
-        """
-        Request a reset for an existing account
-        """
+        """Request a reset for an existing account"""
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end/",
+                "front_end_url": "http://front.end/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        invite_email = mail.outbox[0]
-        self.assertEqual(
-            invite_email.subject,
-            "Password reset instructions for your account on AskAnna",
-        )
-        self.assertEqual(invite_email.to, [self.users["user"].email])
-        self.assertEqual(invite_email.from_email, "AskAnna <support@askanna.io>")
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
 
-    def test_reset_existing_account_without_front_end_domain(self):
-        """
-        Request a reset for an existing account
-        """
+        invite_email = mail.outbox[0]
+        assert invite_email.subject == "Password reset instructions for your account on AskAnna"
+        assert invite_email.to == [self.users["user"].email]
+        assert invite_email.from_email == "AskAnna <support@askanna.io>"
+        assert "http://front.end/" in invite_email.body
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
+
+    def test_reset_existing_account_without_front_end_url(self):
+        """Request a reset for an existing account"""
         response = self.client.post(
             self.url,
-            {"email": self.users["user"].email},
+            {
+                "email": self.users["user"].email,
+            },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+
         invite_email = mail.outbox[0]
-        self.assertEqual(
-            invite_email.subject,
-            "Password reset instructions for your account on AskAnna",
-        )
-        self.assertEqual(invite_email.to, [self.users["user"].email])
-        self.assertEqual(invite_email.from_email, "AskAnna <support@askanna.io>")
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert invite_email.subject == "Password reset instructions for your account on AskAnna"
+        assert invite_email.to == [self.users["user"].email]
+        assert invite_email.from_email == "AskAnna <support@askanna.io>"
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
     def test_reset_nonexisting_account(self):
-        """
-        Request a reset for an existing account
-        """
+        """Request a reset for an existing account"""
         response = self.client.post(
             self.url,
-            {"email": "johndoe@askanna.space", "front_end_domain": "http://front.end/"},
+            {
+                "email": "johndoe@example.com",
+            },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 0)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 0
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
     def test_reset_invalid_email(self):
-        """
-        Request a reset for an invalid email
-        """
+        """Request a reset for an invalid email"""
         response = self.client.post(
             self.url,
-            {"email": "invalid@", "front_end_domain": "http://front.end/"},
+            {
+                "email": "invalid@",
+            },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 0)
-        self.assertTrue(response.data.get("email") == ["Enter a valid email address."])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert len(mail.outbox) == 0
+        assert response.data["email"] == ["Enter a valid email address."]  # type: ignore
 
-    def test_reset_invalid_email_empty(self):
-        """
-        Request a reset without specifying the email
-        Expect a bad request
-        """
+    def test_reset_email_empty(self):
+        """Request a reset without specifying the email"""
         response = self.client.post(
             self.url,
-            {"email": "", "front_end_domain": "http://front.end/"},
+            {
+                "email": "",
+            },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 0)
-        self.assertTrue(response.data.get("email") == ["This field may not be blank."])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert len(mail.outbox) == 0
+        assert response.data["email"] == ["This field may not be blank."]  # type: ignore
 
     def test_reset_invalid_email_absent(self):
-        """
-        Request a reset without specifying the email
-        Expect a bad request
-        """
+        """Request a reset without specifying the email"""
         response = self.client.post(
             self.url,
-            {"front_end_domain": "http://front.end/"},
+            {
+                "front_end_url": "http://front.end/",
+            },
             format="json",
         )
 
         self.assertTrue(len(mail.outbox) == 0)
-        self.assertTrue(response.data.get("email") == ["This field is required."])
+        self.assertTrue(response.data.get("email") == ["This field is required."])  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_reset_existing_account_checklog(self):
-        """
-        Request a reset for an existing account and check the password reset log
-        """
+        """Request a reset for an existing account and check the password reset log"""
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end.check/",
+                "front_end_url": "http://front.end.check/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
-        # check whether the request is logged
         prl = PasswordResetLog.objects.get(email=self.users["user"].email)
-        self.assertEqual(prl.front_end_domain, "front.end.check")
+        assert prl.front_end_domain == "front.end.check"
 
     def test_reset_existing_account_check_status(self):
-        """
-        Request a reset for an existing account and check the status of the resetrequest
-        """
+        """Request a reset for an existing account and check the status of the resetrequest"""
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end.statuscheck/",
+                "front_end_url": "http://front.end.statuscheck/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
         # check whether the request is logged
         prl = PasswordResetLog.objects.get(email=self.users["user"].email)
-        self.assertEqual(prl.front_end_domain, "front.end.statuscheck")
+        assert prl.front_end_domain == "front.end.statuscheck"
 
-        self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
-        self.assertEqual(invite_email.to, [self.users["user"].email])
+        assert invite_email.to == [self.users["user"].email]
 
         msg = invite_email.body
         invite_link = re.search(
@@ -181,44 +166,44 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")
-        uid = invite_link.group("uid")
+        token = invite_link.group("token")  # type: ignore
+        uid = invite_link.group("uid")  # type: ignore
 
-        self.assertEqual(invite_link.group("scheme"), "http")
-        self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
+        assert invite_link.group("scheme") == "http"  # type: ignore
+        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
 
         response = self.client.get(
             self.status_url,
-            {"token": token, "uid": uid},
+            {
+                "token": token,
+                "uid": uid,
+            },
         )
 
-        self.assertTrue(response.data.get("status") == "valid")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "valid"  # type: ignore
 
-    def test_reset_existing_account_check_status_incomplete_token(self):
-        """
-        Request a reset for an existing account and check the status of the resetrequest
-        """
+    def test_reset_existing_account_check_status_missing_token(self):
+        """Request a reset for an existing account and check the status of the reset request without token"""
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end.statuscheck/",
+                "front_end_url": "http://front.end.statuscheck/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
         # check whether the request is logged
         prl = PasswordResetLog.objects.get(email=self.users["user"].email)
-        self.assertEqual(prl.front_end_domain, "front.end.statuscheck")
+        assert prl.front_end_domain == "front.end.statuscheck"
 
-        self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
-        self.assertEqual(invite_email.to, [self.users["user"].email])
+        assert invite_email.to == [self.users["user"].email]
 
         msg = invite_email.body
         invite_link = re.search(
@@ -227,44 +212,43 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        # token = invite_link.group("token")
-        uid = invite_link.group("uid")
+        uid = invite_link.group("uid")  # type: ignore
 
-        self.assertEqual(invite_link.group("scheme"), "http")
-        self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
+        assert invite_link.group("scheme") == "http"  # type: ignore
+        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
 
         response = self.client.get(
             self.status_url,
-            {"token": "", "uid": uid},
+            {
+                "token": "",
+                "uid": uid,
+            },
         )
 
-        self.assertTrue(response.data.get("token") == ["This field may not be blank."])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["token"] == ["This field may not be blank."]  # type: ignore
 
-    def test_reset_existing_account_check_status_incomplete_uid(self):
-        """
-        Request a reset for an existing account and check the status of the resetrequest
-        """
+    def test_reset_existing_account_check_status_missing_uid(self):
+        """Request a reset for an existing account and check the status of the reset request without uid"""
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end.statuscheck/",
+                "front_end_url": "http://front.end.statuscheck/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
         # check whether the request is logged
         prl = PasswordResetLog.objects.get(email=self.users["user"].email)
-        self.assertEqual(prl.front_end_domain, "front.end.statuscheck")
+        assert prl.front_end_domain == "front.end.statuscheck"
 
-        self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
-        self.assertEqual(invite_email.to, [self.users["user"].email])
+        assert invite_email.to == [self.users["user"].email]
 
         msg = invite_email.body
         invite_link = re.search(
@@ -273,44 +257,42 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")
-        # uid = invite_link.group("uid")
+        token = invite_link.group("token")  # type: ignore
 
-        self.assertEqual(invite_link.group("scheme"), "http")
-        self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
+        assert invite_link.group("scheme") == "http"  # type: ignore
+        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
 
         response = self.client.get(
             self.status_url,
-            {"token": token, "uid": ""},
+            {
+                "token": token,
+                "uid": "",
+            },
         )
 
-        self.assertTrue(response.data.get("uid") == ["This field may not be blank."])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["uid"] == ["This field may not be blank."]  # type: ignore
 
     def test_reset_existing_account_check_status_invalid_token(self):
-        """
-        Request a reset for an existing account and check the status of the resetrequest
-        """
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end.statuscheck/",
+                "front_end_url": "http://front.end.statuscheck/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
         # check whether the request is logged
         prl = PasswordResetLog.objects.get(email=self.users["user"].email)
-        self.assertEqual(prl.front_end_domain, "front.end.statuscheck")
+        assert prl.front_end_domain == "front.end.statuscheck"
 
-        self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
-        self.assertEqual(invite_email.to, [self.users["user"].email])
+        assert invite_email.to == [self.users["user"].email]
 
         msg = invite_email.body
         invite_link = re.search(
@@ -319,45 +301,43 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        # token = invite_link.group("token")
-        uid = invite_link.group("uid")
+        uid = invite_link.group("uid")  # type: ignore
 
-        self.assertEqual(invite_link.group("scheme"), "http")
-        self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
+        assert invite_link.group("scheme") == "http"  # type: ignore
+        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
 
         response = self.client.get(
             self.status_url,
-            {"token": "someinvalidtoken", "uid": uid},
+            {
+                "token": "someinvalidtoken",
+                "uid": uid,
+            },
         )
 
-        self.assertTrue(response.data.get("status") == ["invalid"])
-        self.assertTrue(response.data.get("token") == ["Invalid value"])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["detail"][0] == "The User UID and token combination is invalid."  # type: ignore
+        assert response.data["status"][0] == "invalid"  # type: ignore
 
     def test_reset_existing_account_check_status_invalid_uid(self):
-        """
-        Request a reset for an existing account and check the status of the resetrequest
-        """
         response = self.client.post(
             self.url,
             {
                 "email": self.users["user"].email,
-                "front_end_domain": "http://front.end.statuscheck/",
+                "front_end_url": "https://front.end.statuscheck/",
             },
             format="json",
         )
 
-        self.assertTrue(len(mail.outbox) == 1)
-        self.assertTrue(response.data.get("detail") == "Password reset request has been processed.")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert response.data["detail"] == "Password reset request has been processed."  # type: ignore
 
-        # check whether the request is logged
+        # Check whether the request is logged
         prl = PasswordResetLog.objects.get(email=self.users["user"].email)
-        self.assertEqual(prl.front_end_domain, "front.end.statuscheck")
+        assert prl.front_end_domain == "front.end.statuscheck"
 
-        self.assertTrue(len(mail.outbox) == 1)
         invite_email = mail.outbox[0]
-        self.assertEqual(invite_email.to, [self.users["user"].email])
+        assert invite_email.to == [self.users["user"].email]
 
         msg = invite_email.body
         invite_link = re.search(
@@ -366,17 +346,19 @@ class TestResetPasswordAPI(BaseUsers, APITestCase):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")
-        # uid = invite_link.group("uid")
+        token = invite_link.group("token")  # type: ignore
 
-        self.assertEqual(invite_link.group("scheme"), "http")
-        self.assertEqual(invite_link.group("domain"), "front.end.statuscheck")
+        assert invite_link.group("scheme") == "https"  # type: ignore
+        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
 
         response = self.client.get(
             self.status_url,
-            {"token": token, "uid": "someinvaliduid"},
+            {
+                "token": token,
+                "uid": "someinvaliduid",
+            },
         )
 
-        self.assertTrue(response.data.get("status") == ["invalid"])
-        self.assertTrue(response.data.get("uid") == ["Invalid value"])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["uid"][0] == "User UID value is invalid."  # type: ignore
+        assert response.data["status"][0] == "invalid"  # type: ignore

@@ -24,53 +24,51 @@ class TestArtifactListAPI(BaseRunTest, APITestCase):
             },
         )
 
+    def test_list_as_askanna_admin(self):
+        """
+        We cannot list artifacts as an AskAnna admin who is not a member of the workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
+
     def test_list_as_admin(self):
         """
         We can list artifacts as admin of a workspace
         """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"][0]["suuid"] == self.artifact.suuid  # type: ignore
+        assert response.data["results"][0]["size"] == self.artifact.size  # type: ignore
 
     def test_list_as_member(self):
         """
         We can list artifacts as member of a workspace
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"][0]["suuid"] == self.artifact.suuid  # type: ignore
+        assert response.data["results"][0]["size"] == self.artifact.size  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_list_as_nonmember(self):
+    def test_list_as_non_member(self):
         """
-        We can NOT list artifacts as non-member of a workspace
-        Will get an empty list
+        We cannot list artifacts as non-member of a workspace
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
     def test_list_as_anonymous(self):
         """
-        We can NOT list artifacts as anonymous
+        We cannot list artifacts as anonymous
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
 
 class TestArtifactDetailAPI(BaseRunTest, APITestCase):
@@ -89,52 +87,48 @@ class TestArtifactDetailAPI(BaseRunTest, APITestCase):
             },
         )
 
+    def test_retrieve_as_askanna_admin(self):
+        """
+        We cannot get artifacts as an AskAnna admin who is not a member of a workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_retrieve_as_admin(self):
         """
         We can get artifacts as admin of a workspace
         """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.artifact.suuid  # type: ignore
+        assert response.data["size"] == self.artifact.size  # type: ignore
 
     def test_retrieve_as_member(self):
         """
         We can get artifacts as member of a workspace
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["suuid"] == self.artifact.suuid  # type: ignore
+        assert response.data["size"] == self.artifact.size  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_retrieve_as_nonmember(self):
+    def test_retrieve_as_non_member(self):
         """
-        We can NOT get artifacts as non-member of a workspace
+        We cannot get artifacts as non-member of a workspace
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_as_anonymous(self):
         """
-        We can NOT get artifacts as anonymous
+        We cannot get artifacts as anonymous
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase):
@@ -177,12 +171,7 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase)
             },
         )
 
-    def test_create_as_admin(self):
-        """
-        We can create artifacts as admin of a workspace
-        """
-        self.activate_user("admin")
-
+    def run_test(self):
         self.do_file_upload(
             create_url=self.url,
             create_chunk_url=self.create_chunk_url,
@@ -190,20 +179,30 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase)
             finish_upload_url=self.finish_upload_url,
             fileobjectname="test-artifact-admin.zip",
         )
+
+        return True
+
+    def test_create_as_askanna_admin(self):
+        """
+        AskAnna admins cannot create artifacts in workspace they are not a member of
+        """
+        self.activate_user("anna")
+        with self.assertRaises(AssertionError):
+            assert self.run_test() is False
+
+    def test_create_as_admin(self):
+        """
+        We can create artifacts as admin of a workspace
+        """
+        self.activate_user("admin")
+        assert self.run_test() is True
 
     def test_create_as_member(self):
         """
         We can create artifacts as admin of a workspace
         """
         self.activate_user("member")
-
-        self.do_file_upload(
-            create_url=self.url,
-            create_chunk_url=self.create_chunk_url,
-            upload_chunk_url=self.upload_chunk_url,
-            finish_upload_url=self.finish_upload_url,
-            fileobjectname="test-artifact-admin.zip",
-        )
+        assert self.run_test() is True
 
     def test_create_as_workspace_viewer(self):
         """
@@ -212,38 +211,19 @@ class TestArtifactCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase)
         self.activate_user("member_wv")
 
         with self.assertRaises(AssertionError):
-            self.do_file_upload(
-                create_url=self.url,
-                create_chunk_url=self.create_chunk_url,
-                upload_chunk_url=self.upload_chunk_url,
-                finish_upload_url=self.finish_upload_url,
-                fileobjectname="test-artifact-admin.zip",
-            )
+            assert self.run_test() is True
 
-    def test_create_as_nonmember(self):
+    def test_create_as_non_member(self):
         """
-        Non members cannot create artifacts
+        Non-members cannot create artifacts
         """
         self.activate_user("non_member")
-
         with self.assertRaises(AssertionError):
-            self.do_file_upload(
-                create_url=self.url,
-                create_chunk_url=self.create_chunk_url,
-                upload_chunk_url=self.upload_chunk_url,
-                finish_upload_url=self.finish_upload_url,
-                fileobjectname="test-artifact-admin.zip",
-            )
+            assert self.run_test() is False
 
     def test_create_as_anonymous(self):
         """
         Anonymous users cannot create artifacts
         """
         with self.assertRaises(AssertionError):
-            self.do_file_upload(
-                create_url=self.url,
-                create_chunk_url=self.create_chunk_url,
-                upload_chunk_url=self.upload_chunk_url,
-                finish_upload_url=self.finish_upload_url,
-                fileobjectname="test-artifact-admin.zip",
-            )
+            assert self.run_test() is False

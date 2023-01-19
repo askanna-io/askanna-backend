@@ -27,7 +27,7 @@ sys.path.insert(0, str(APPS_DIR))
 
 env = environ.Env()
 
-if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):
+if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):  # type: ignore
     # OS environment variables take precedence over variables from .env
     env.read_env(str(ROOT_DIR.path(".env")))
 
@@ -37,7 +37,10 @@ sys.path.insert(0, str(APPS_DIR))
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/stable/ref/settings/#debug
-DEBUG = env.bool("DJANGO_DEBUG", False)
+DEBUG = env.bool("DJANGO_DEBUG", False)  # type: ignore
+DEBUG_SQL = env.bool("DJANGO_DEBUG_SQL", False)  # type: ignore
+
+TEST = "test" in " ".join(sys.argv)
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -51,7 +54,7 @@ DATABASES = {
         "HOST": env.str("POSTGRES_HOST"),
         "PORT": env.str("POSTGRES_PORT"),
         "ATOMIC_REQUESTS": True,
-        "CONN_MAX_AGE": env.int("CONN_MAX_AGE", default=60),
+        "CONN_MAX_AGE": env.int("CONN_MAX_AGE", default=60),  # type: ignore
     },
 }
 
@@ -67,17 +70,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # APPS
 # ------------------------------------------------------------------------------
-INSTALLED_APPS = [
-    # AskAnna apps
-    "core",
-    "utils",
-    "users",
-    "workspace",
-    "project",
-    "package",
-    "job",
-    "run",
-    # Third party apps
+DJANGO_APPS = [
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.admin",
+]
+
+THIRD_PARTY_APPS = [
     "django_extensions",
     "django_filters",
     "django_celery_beat",
@@ -97,14 +99,20 @@ INSTALLED_APPS = [
     "health_check.contrib.celery_ping",
     "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
     "health_check.contrib.redis",
-    # Django apps
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django.contrib.admin",
 ]
+
+ASKANNA_APPS = [
+    "core",
+    "users",
+    "workspace",
+    "project",
+    "variable",
+    "package",
+    "job",
+    "run",
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + ASKANNA_APPS
 
 # MIDDLEWARE
 # ------------------------------------------------------------------------------
@@ -117,14 +125,11 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "core.middleware.TokenAuthenticationMiddleware",
+    "core.middleware.auth.TokenAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.logging.DebugSqlPrintMiddleware",
 ]
-
-if env.bool("DJANGO_DEBUG_DB", False):
-    print("Turn on dbconnection middleware")
-    MIDDLEWARE.append("core.middleware.DebugDBConnectionMiddleware")
 
 
 # TEMPLATES
@@ -148,7 +153,6 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-                "askanna_backend.utils.context_processors.settings_context",
             ],
         },
     }
@@ -163,11 +167,11 @@ FIXTURE_DIRS = (str(ROOT_DIR.path("fixtures")),)
 # ADMIN
 # ------------------------------------------------------------------------------
 # Django Admin URL path.
-ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
+ADMIN_URL = env.str("DJANGO_ADMIN_URL", default="admin/")  # type: ignore
 
 
 # Encrypted field settings
-FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")
+FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")  # type: ignore
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#test-runner
@@ -178,12 +182,12 @@ TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
 # CACHES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/stable/ref/settings/#caches
-if env("REDIS_URL", default=None):
-    REDIS_URL = env("REDIS_URL")
+if env.str("REDIS_URL", default=None):  # type: ignore
+    REDIS_URL = env.str("REDIS_URL")
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": env("REDIS_URL"),
+            "LOCATION": env.str("REDIS_URL"),
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
                 # Mimicing memcache behavior.
@@ -208,11 +212,11 @@ celery.settings(locals(), env)
 # ------------------------------------------------------------------------------
 # https://django-health-check.readthedocs.io/en/stable/settings.html
 HEALTH_CHECK = {
-    "DISK_USAGE_MAX": env.float("HEALTHCHECK_DISK_USAGE_MAX", 90),  # percent
-    "MEMORY_MIN": env.float("HEALTHCHECK_MEMORY_MIN", 100),  # in MB
+    "DISK_USAGE_MAX": env.float("HEALTHCHECK_DISK_USAGE_MAX", 90),  # type: ignore | percentage
+    "MEMORY_MIN": env.float("HEALTHCHECK_MEMORY_MIN", 100),  # type: ignore | MB
 }
 
-HEALTHCHECK_CELERY_QUEUE_TIMEOUT = env.float("HEALTHCHECK_CELERY_QUEUE_TIMEOUT", 3)  # seconds
+HEALTHCHECK_CELERY_QUEUE_TIMEOUT = env.float("HEALTHCHECK_CELERY_QUEUE_TIMEOUT", 3)  # type: ignore | seconds
 HEALTHCHECK_CELERY_RESULT_TIMEOUT = env.float(
     "HEALTHCHECK_CELERY_RESULT_TIMEOUT", HEALTHCHECK_CELERY_QUEUE_TIMEOUT + 1  # seconds
 )
@@ -226,9 +230,7 @@ HEALTHCHECK_CELERY_RESULT_TIMEOUT = env.float(
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {"format": "%(levelname)s %(asctime)s %(module)s " "%(process)d %(thread)d %(message)s"}
-    },
+    "formatters": {"verbose": {"format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"}},
     "handlers": {
         "console": {
             "level": "DEBUG",
@@ -237,24 +239,7 @@ LOGGING = {
         }
     },
     "root": {
-        "level": env.str("DJANGO_ROOT_LOGGING_LEVEL", default="INFO"),
+        "level": "INFO",
         "handlers": ["console"],
     },
 }
-
-
-if env.bool("DJANGO_DEBUG_TOOLBAR", default=False):
-    # django-debug-toolbar
-    # ------------------------------------------------------------------------------
-    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
-    INSTALLED_APPS += ["debug_toolbar"]
-    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
-
-    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
-    # https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
-    DEBUG_TOOLBAR_CONFIG = {
-        "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
-        "SHOW_TEMPLATE_CONTEXT": True,
-    }
-
-TEST = "test" in " ".join(sys.argv)

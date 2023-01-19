@@ -1,4 +1,3 @@
-"""Define tests for API of invitation workflow."""
 import pytest
 from django.core import mail
 from django.db.models import signals
@@ -15,7 +14,6 @@ from users.models import (
     User,
     UserProfile,
 )
-from users.serializers import PersonSerializer
 
 from ..listeners import install_demo_project_in_workspace
 from ..models import Workspace
@@ -69,10 +67,10 @@ class TestInviteAPI(APITestCase):
             use_global_profile=False,
         )
 
-    def test_retrieve_invite_as_anonymous(self):
+    def test_retrieve_invite_as_anonymous_with_token(self):
         """Anonymous users need to send the token to retrieve an invite."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-info",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -80,14 +78,15 @@ class TestInviteAPI(APITestCase):
             },
         )
 
-        response = self.client.get(url, {"token": PersonSerializer(self.invitation).generate_token()})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
+        response = self.client.get(url, {"token": self.invitation.generate_token()})
 
-    def test_retrieve_invite_as_anonymous_no_token(self):
+        assert response.status_code == status.HTTP_200_OK
+        assert {"suuid": self.invitation.suuid}.items() <= dict(response.data).items()  # type: ignore
+
+    def test_retrieve_invite_as_anonymous_without_token(self):
         """With no token, invites are not available to anonymous users."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-info",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -98,12 +97,13 @@ class TestInviteAPI(APITestCase):
         response = self.client.get(
             url,
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_retrieve_invite_with_token(self):
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_retrieve_invite_info_askanna_member_with_token(self):
         """Authenticated users can retrieve an invite with a valid token."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-info",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -112,16 +112,17 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.get(url, {"token": PersonSerializer(self.invitation).generate_token()})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
+        response = self.client.get(url, {"token": self.invitation.generate_token()})
 
-    def test_retrieve_invite_with_no_token_fails(self):
+        assert response.status_code == status.HTTP_200_OK
+        assert {"suuid": self.invitation.suuid}.items() <= dict(response.data).items()  # type: ignore
+
+    def test_retrieve_invite_info_askanna_member_without_token(self):
         """Authenticated need a token to retrieve an invite."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-info",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -130,17 +131,16 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.get(
-            url,
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response = self.client.get(url)
 
-    def test_retrieve_invite_as_member(self):
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_retrieve_invite_info_as_member(self):
         """A member can see existing invitations from a workspace."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-info",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -149,18 +149,17 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.get(
-            url,
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
+        response = self.client.get(url)
 
-    def test_retrieve_invite_as_admin(self):
+        assert response.status_code == status.HTTP_200_OK
+        assert {"suuid": self.invitation.suuid}.items() <= dict(response.data).items()  # type: ignore
+
+    def test_retrieve_invite_info_as_admin(self):
         """An admin can see existing invitations from a workspace."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-info",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -169,17 +168,16 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.get(
-            url,
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue({"suuid": self.invitation.suuid}.items() <= dict(response.data).items())
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert {"suuid": self.invitation.suuid}.items() <= dict(response.data).items()  # type: ignore
 
     def test_create_invite(self):
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -187,19 +185,20 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
             {"email": "anna_test@askanna.dev"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue({"email": "anna_test@askanna.dev"}.items() <= dict(response.data).items())
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert {"email": "anna_test@askanna.dev"}.items() <= dict(response.data).items()  # type: ignore
 
     def test_create_double_invite_not_possible(self):
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -207,14 +206,15 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
             {"email": "invited@example.com"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_cannot_invite_active_member(self):
         """An invitation to an email of an existing member can not be created."""
@@ -225,7 +225,7 @@ class TestInviteAPI(APITestCase):
         )
 
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -233,14 +233,15 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
             {"email": profile.user.email},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_can_invite_removed_member(self):
         """An invitation to an email of a soft-deleted profile can be created."""
@@ -252,7 +253,7 @@ class TestInviteAPI(APITestCase):
         )
 
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -260,14 +261,14 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
             {"email": profile.user.email},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        assert response.status_code == status.HTTP_201_CREATED
 
     def test_admin_can_revoke_invite(self):
         """Admins of a workspace can revoke an invitation."""
@@ -281,11 +282,12 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Invitation.objects.filter(uuid=self.invitation.uuid).exists())
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Invitation.objects.filter(uuid=self.invitation.uuid).exists()
 
     def test_member_can_revoke_invite(self):
         """Members of a workspace can revoke an invitation."""
@@ -299,13 +301,14 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Invitation.objects.filter(uuid=self.invitation.uuid).exists())
 
-    def test_non_member_can_not_revoke_invite(self):
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Invitation.objects.filter(uuid=self.invitation.uuid).exists()
+
+    def test_non_workspace_member_cannot_revoke_invite(self):
         """Non members of a workspace can not revoke an invitation."""
         url = reverse(
             "workspace-people-detail",
@@ -317,13 +320,14 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertTrue(Invitation.objects.filter(uuid=self.invitation.uuid).exists())
 
-    def test_admin_can_not_revoke_invitation_from_other_workspace(self):
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Invitation.objects.filter(uuid=self.invitation.uuid).exists()
+
+    def test_admin_cannot_revoke_invitation_from_other_workspace(self):
         """Revoking an invitation is limited to workspaces a user is member of."""
         extra_workspace = Workspace.objects.create(name="extra test workspace")
         extra_invitation = Invitation.objects.create(
@@ -342,17 +346,18 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertTrue(Invitation.objects.filter(uuid=self.invitation.uuid).exists())
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Invitation.objects.filter(uuid=self.invitation.uuid).exists()
 
     @override_settings(ASKANNA_INVITATION_VALID_HOURS=0)
     def test_invite_token_expired(self):
         """An expired token is not good for accepting an invitation."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -361,21 +366,21 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
-                "token": PersonSerializer(self.invitation).generate_token(),
+                "token": self.invitation.generate_token(),
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("token", response.data)
-        self.assertEqual(response.data["token"][0], "Token expired")
 
-    def test_create_invite_not_as_non_member(self):
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "token" in response.data  # type: ignore
+        assert response.data["token"][0] == "Token expired"  # type: ignore
+
+    def test_create_invite_as_non_member(self):
         url = reverse(
             "workspace-people-list",
             kwargs={
@@ -385,18 +390,19 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
             {"email": "anna_test@askanna.dev"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_create_invite_as_admin_admin_invite(self):
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_create_invite_for_admin_as_workspace_admin(self):
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -404,18 +410,22 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
-            {"email": "anna_test@askanna.dev", "role": "WA"},
+            {
+                "email": "anna_test@askanna.dev",
+                "role_code": "WA",
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_create_invite_as_member_not_admin_invite(self):
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_create_invite_for_admin_as_workspace_member(self):
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -423,19 +433,23 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
-            {"email": "anna_test@askanna.dev", "role": "WA"},
+            {
+                "email": "anna_test@askanna.dev",
+                "role_code": "WA",
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_accept_invite(self):
         """After accepting an invite, a new Profile exists."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -444,28 +458,26 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
-                "token": PersonSerializer(self.invitation).generate_token(),
+                "token": self.invitation.generate_token(),
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertQuerysetEqual(Invitation.objects.filter(pk=self.invitation.pk), [])
-
         profile = UserProfile.objects.get(pk=self.invitation.pk)
-        self.assertEqual(profile.user, self.users["user_a"])
-        self.assertEqual(profile.object_uuid, self.workspace.uuid)
 
-    def test_member_cannot_accept_invite(self):
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Invitation.objects.filter(pk=self.invitation.pk).exists()
+        assert profile.user == self.users["user_a"]
+        assert profile.object_uuid == self.workspace.uuid
+
+    def test_existing_workspace_member_cannot_accept_invite(self):
         """An existing member can not accept an invite to the same workspace."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -474,46 +486,18 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
-                "token": PersonSerializer(self.invitation).generate_token(),
+                "token": self.invitation.generate_token(),
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertIn("user", response.data)
-        self.assertEqual(response.data["user"][0], "User is already part of this workspace")
-
-    def test_accept_invite_wrong_status(self):
-        """
-        We cannot accept an invite when the status is not "invited" or "accepted"
-        """
-        url = reverse(
-            "workspace-people-detail",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_workspace__suuid": self.workspace.suuid,
-                "suuid": self.invitation.suuid,
-            },
-        )
-
-        token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-
-        response = self.client.patch(
-            url,
-            {
-                "status": "wrong-status",
-                "token": PersonSerializer(self.invitation).generate_token(),
-            },
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["detail"][0] == "Account is already member of this workspace"  # type: ignore
 
     def test_accept_invite_with_deleted_profile(self):
         """An invite can be accepted by a user with a soft-deleted profile."""
@@ -525,7 +509,7 @@ class TestInviteAPI(APITestCase):
         )
 
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -534,22 +518,16 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
-            url,
-            {
-                "status": "accepted",
-                "token": PersonSerializer(self.invitation).generate_token(),
-            },
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(url, {"token": self.invitation.generate_token()}, format="json")
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_accept_invite_requires_authentication(self):
         """An anonymous user can not accept an invite."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -557,17 +535,14 @@ class TestInviteAPI(APITestCase):
             },
         )
 
-        response = self.client.patch(
-            url,
-            {},
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.client.post(url, {}, format="json")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_accept_invite_token_validated(self):
         """A token error is returned on invalid token."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -576,24 +551,24 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
                 "token": "fake_token",
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("token", response.data)
-        self.assertEqual(response.data["token"][0], "Token is not valid")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "token" in response.data  # type: ignore
+        assert response.data["token"][0] == "Token is not valid"  # type: ignore
 
     def test_accept_invite_token_is_required(self):
         """A missing token error is returned when token is missing."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -602,23 +577,16 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
-            url,
-            {
-                "status": "accepted",
-            },
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("token", response.data)
-        self.assertEqual(response.data["token"][0], "Token is required when accepting invitation")
+        response = self.client.patch(url)
 
-    def test_accept_invite_fails_on_profile(self):
-        """Accepting an already accepted invitation (a Profile) fails."""
+        assert response.status_code, status.HTTP_400_BAD_REQUEST
+
+    def test_accept_accepted_invite(self):
+        """Accepting an already accepted invitation fails."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -627,24 +595,24 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
-                "token": PersonSerializer(self.member_profile).generate_token(),
+                "token": self.invitation.generate_token(),
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("token", response.data)
-        self.assertEqual(response.data["token"][0], "Token is already used")
 
-    def test_accept_invite_with_token_for_wrong_invitation_fails(self):
-        """Accepting an already accepted invitation (a Profile) fails."""
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "token" in response.data  # type: ignore
+        assert response.data["token"][0] == "Token is not valid"  # type: ignore
+
+    def test_accept_invite_with_token_for_wrong_invitation(self):
+        """Use token for wrong invitation fails."""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -659,25 +627,26 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
-                "token": PersonSerializer(to_fail_invitation).generate_token(),
+                "token": to_fail_invitation.generate_token(),
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("token", response.data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "token" in response.data  # type: ignore
+        assert response.data["token"][0] == "Token is not valid"  # type: ignore
 
     def test_accept_invite_for_wrong_workspace_fails(self):
         """The invitation must be for the correct workspace."""
         to_fail_workspace = Workspace.objects.create(name="will fail workspace")
 
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-accept",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": to_fail_workspace.suuid,
@@ -686,17 +655,17 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(
+        response = self.client.post(
             url,
             {
-                "status": "accepted",
-                "token": PersonSerializer(self.invitation).generate_token(),
+                "token": self.invitation.generate_token(),
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_list_limited_to_current_workspace(self):
         """Listing of people is correctly filtered to requested workspace."""
@@ -716,18 +685,18 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.get(
-            url,
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(url)
 
-        suuids = [p["suuid"] for p in response.data]
-        self.assertEqual(len(suuids), 4)
-        self.assertNotIn(str(filtered_invitation.suuid), suuids)
-        self.assertIn(str(self.invitation.suuid), suuids)
-        self.assertIn(str(self.member_profile.suuid), suuids)
+        assert response.status_code == status.HTTP_200_OK
+
+        suuids = [p["suuid"] for p in response.data["results"]]  # type: ignore
+
+        assert len(suuids) == 4
+        assert str(filtered_invitation.suuid) not in suuids
+        assert str(self.invitation.suuid) in suuids
+        assert str(self.member_profile.suuid) in suuids
 
     def test_invitation_data_is_not_writable(self):
         """Data from an invitation is read only once it has been created."""
@@ -741,17 +710,16 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.patch(
             url,
             {"email": "invalid", "object_uuid": "invalid", "object_type": "invalid"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["email"], "invited@example.com")
-        self.assertEqual(response.data["object_uuid"], str(self.workspace.uuid))
-        self.assertEqual(response.data["object_type"], MSP_WORKSPACE)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["workspace"]["suuid"] == str(self.workspace.suuid)  # type: ignore
 
     def test_non_member_can_not_modify_invitation(self):
         """An non member can not modify an invitation."""
@@ -765,15 +733,16 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["user_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.patch(url, {"email": "new@example.com"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_creating_invite_sends_invitation_email(self):
         """After creating an invitation, an invitation email is sent."""
         url = reverse(
-            "workspace-people-list",
+            "workspace-people-invite",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -781,24 +750,21 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["admin"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.post(
             url,
             {"email": "anna_test@askanna.dev"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertEqual(
-            mail.outbox[0].subject,
-            f"You’re invited to join {self.workspace.name} on AskAnna",
-        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert mail.outbox[0].subject == f"You’re invited to join {self.workspace.name} on AskAnna"
 
-    def test_modifying_invite_resends_invitation_email(self):
-        """After modifying an invitation, an invitation email is sent again."""
+    def test_resend_invitation_email(self):
+        """Resend an invitation email"""
         url = reverse(
-            "workspace-people-detail",
+            "workspace-people-invite-resend",
             kwargs={
                 "version": "v1",
                 "parent_lookup_workspace__suuid": self.workspace.suuid,
@@ -807,15 +773,12 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
-        response = self.client.patch(url, {"status": "invited"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(url)
 
-        self.assertEqual(
-            mail.outbox[0].subject,
-            f"You’re invited to join {self.workspace.name} on AskAnna",
-        )
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert mail.outbox[0].subject == f"You’re invited to join {self.workspace.name} on AskAnna"
 
     def test_modify_membership_name(self):
         """Change the name in the membership"""
@@ -829,7 +792,7 @@ class TestInviteAPI(APITestCase):
         )
 
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.patch(
             url,
@@ -838,9 +801,10 @@ class TestInviteAPI(APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("name", response.data)
-        self.assertEqual(response.data["name"], "new-name")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "name" in response.data  # type: ignore
+        assert response.data["name"] == "new-name"  # type: ignore
 
     def test_modify_membership_name_should_not_affect_other_workspace_profiles(self):
         """Change the name in the membership"""
@@ -862,7 +826,7 @@ class TestInviteAPI(APITestCase):
             },
         )
         token = self.users["member_a"].auth_token
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
 
         response = self.client.patch(
             url,
@@ -871,14 +835,16 @@ class TestInviteAPI(APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("name", response.data)
-        self.assertEqual(response.data["name"], "new-name")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "name" in response.data  # type: ignore
+        assert response.data["name"] == "new-name"  # type: ignore
 
         response = self.client.patch(
             url2,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("name", response.data)
-        self.assertEqual(response.data["name"], "name2")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "name" in response.data  # type: ignore
+        assert response.data["name"] == "name2"  # type: ignore

@@ -10,7 +10,8 @@ try:
 except ImportError:
     from yaml import Loader
 
-from core.utils import get_setting_from_database, is_valid_timezone, parse_cron_line
+from core.utils import is_valid_timezone, parse_cron_line
+from core.utils.config import get_setting_from_database
 
 
 class AskAnnaConfig:

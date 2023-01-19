@@ -54,96 +54,74 @@ class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase):
         )
 
     def check_retrieve_output(self):
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
 
         # also try the range request
-        response = self.client.get(self.url, format="json", HTTP_RANGE="bytes=5-60")
-        self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
+        response = self.client.get(self.url, HTTP_RANGE="bytes=5-60")
+        assert response.status_code == status.HTTP_206_PARTIAL_CONTENT
 
         # also try the range request for full file (larger than the file itself)
-        response = self.client.get(self.url, format="json", HTTP_RANGE="bytes=0-100000")
-        self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
+        response = self.client.get(self.url, HTTP_RANGE="bytes=0-100000")
+        assert response.status_code == status.HTTP_206_PARTIAL_CONTENT
 
         # no content check as the on the fly generated zipfile is always different
+
+    def run_test(self, user=None):
+        if user:
+            self.activate_user(user)
+
+        self.do_file_upload(
+            create_url=self.register_upload_url,
+            create_chunk_url=self.create_chunk_url,
+            upload_chunk_url=self.upload_chunk_url,
+            finish_upload_url=self.finish_upload_url,
+            fileobjectname="test-result-admin.zip",
+        )
+
+        self.check_retrieve_output()
+
+        return True
+
+    def test_create_as_askanna_admin(self):
+        """
+        AskAnna admins cannot create results
+        """
+        with self.assertRaises(AssertionError):
+            assert self.run_test(user="anna") is False
 
     def test_create_as_admin(self):
         """
         We can create result as admin of a workspace
         """
-        self.activate_user("admin")
-
-        self.do_file_upload(
-            create_url=self.register_upload_url,
-            create_chunk_url=self.create_chunk_url,
-            upload_chunk_url=self.upload_chunk_url,
-            finish_upload_url=self.finish_upload_url,
-            fileobjectname="test-result-admin.zip",
-        )
-        self.check_retrieve_output()
+        assert self.run_test(user="admin") is True
 
     def test_create_as_member(self):
         """
         We can create result as member of a workspace
         """
-        self.activate_user("member")
+        assert self.run_test(user="member") is True
 
-        self.do_file_upload(
-            create_url=self.register_upload_url,
-            create_chunk_url=self.create_chunk_url,
-            upload_chunk_url=self.upload_chunk_url,
-            finish_upload_url=self.finish_upload_url,
-            fileobjectname="test-result-admin.zip",
-        )
-        self.check_retrieve_output()
-
-    def test_create_as_workspace_viewer(self):
+    def test_create_as_viewer(self):
         """
         Workspace viewers cannot create result (cannot start run)
         """
-        self.activate_user("member_wv")
         with self.assertRaises(AssertionError):
-            self.do_file_upload(
-                create_url=self.register_upload_url,
-                create_chunk_url=self.create_chunk_url,
-                upload_chunk_url=self.upload_chunk_url,
-                finish_upload_url=self.finish_upload_url,
-                fileobjectname="test-result-admin.zip",
-            )
-            self.check_retrieve_output()
+            assert self.run_test(user="member_wv") is False
 
-    def test_create_as_nonmember(self):
+    def test_create_as_non_member(self):
         """
-        Non members cannot create results
+        Non-members cannot create results
         """
-        self.activate_user("non_member")
         with self.assertRaises(AssertionError):
-            self.do_file_upload(
-                create_url=self.register_upload_url,
-                create_chunk_url=self.create_chunk_url,
-                upload_chunk_url=self.upload_chunk_url,
-                finish_upload_url=self.finish_upload_url,
-                fileobjectname="test-result-admin.zip",
-            )
-            self.check_retrieve_output()
+            assert self.run_test(user="non_member") is False
 
     def test_create_as_anonymous(self):
         """
         Anonymous cannot create results
         """
         with self.assertRaises(AssertionError):
-            self.do_file_upload(
-                create_url=self.register_upload_url,
-                create_chunk_url=self.create_chunk_url,
-                upload_chunk_url=self.upload_chunk_url,
-                finish_upload_url=self.finish_upload_url,
-                fileobjectname="test-result-admin.zip",
-            )
-            self.check_retrieve_output()
+            assert self.run_test(user=None) is False
 
 
 class TestResultDetailAPI(BaseRunTest, APITestCase):
@@ -157,63 +135,53 @@ class TestResultDetailAPI(BaseRunTest, APITestCase):
             },
         )
 
+    def test_retrieve_as_askanna_admin(self):
+        """
+        We cannot retrieve the result as an AskAnna admin while not being a member of the workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_retrieve_as_admin(self):
         """
         We can retrieve the result as an admin of a workspace
         """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(b"".join(response.streaming_content), b"some result content")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert b"".join(response.streaming_content) == b"some result content"  # type: ignore
 
     def test_retrieve_as_member(self):
         """
         We can retrieve the result as a member of a workspace
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert b"".join(response.streaming_content) == b"some result content"  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(b"".join(response.streaming_content), b"some result content")
-
-    def test_retrieve_as_workspaceviewer(self):
+    def test_retrieve_as_viewer(self):
         """
-        We can retrieve the result as a member of a workspace as workspace viewer
+        We can retrieve the result as a viewer of a workspace
         """
         self.activate_user("member_wv")
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(b"".join(response.streaming_content), b"some result content")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert b"".join(response.streaming_content) == b"some result content"  # type: ignore
 
-    def test_retrieve_as_nonmember(self):
+    def test_retrieve_as_non_member(self):
         """
-        We can NOT retrieve the result when not beeing a member of the workspace
+        We cannot retrieve the result when not being a member of the workspace
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_as_anonymous(self):
         """
         We cannot get the result as anonymous user
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND

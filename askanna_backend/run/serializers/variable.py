@@ -1,24 +1,19 @@
 from rest_framework import serializers
-from run.models import RunVariable, RunVariableRow
+from run.models import RunVariable, RunVariableMeta
+
+
+class RunVariableUpdateSerializer(serializers.ModelSerializer):
+    variables = serializers.ListField(child=serializers.JSONField(), required=True)
+
+    class Meta:
+        model = RunVariableMeta
+        fields = ["variables"]
 
 
 class RunVariableSerializer(serializers.ModelSerializer):
-    """Serializer for RunVariables model."""
-
-    def to_representation(self, instance):
-        variables = instance.variables
-        return variables
+    """Serializer for RunVariable model."""
 
     class Meta:
         model = RunVariable
-        fields = ["uuid", "suuid", "variables"]
-        read_only_fields = ["uuid", "suuid"]
-
-
-class RunVariableRowSerializer(serializers.ModelSerializer):
-    """Serializer for RunVariableRow model."""
-
-    class Meta:
-        model = RunVariableRow
         fields = ["run_suuid", "variable", "label", "created"]
-        read_only_fields = ["run_suuid", "label", "created"]
+        read_only_fields = ["run_suuid", "created"]

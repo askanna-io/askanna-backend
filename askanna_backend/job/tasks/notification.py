@@ -1,3 +1,5 @@
+import logging
+
 from job.mailer import send_run_notification as do_send_notification
 from job.models import JobDef
 from package.models import Package
@@ -8,48 +10,46 @@ from config.celery_app import app as celery_app
 
 @celery_app.task(bind=True, name="job.tasks.send_run_notification")
 def send_run_notification(self, run_uuid):
-    print(f"Received message to send notifications for run {run_uuid}")
-
-    # get the run
+    # Get the run
     run = Run.objects.get(pk=run_uuid)
+    logging.info(f"Received message to send notifications for run {run.suuid}")
 
     package = run.package
-    configyml = package.get_askanna_config()
-    if configyml is None:
-        # we could not parse the config
+    config_yml = package.get_askanna_config()
+    if config_yml is None:
+        logging.warn(f"Cannot send notifcations. No job config found for run {run.suuid}.")
         return
 
-    job_config = configyml.jobs.get(run.jobdef.name)
+    job_config = config_yml.jobs.get(run.jobdef.name)
     if job_config and job_config.notifications:
         # only send notifications when notifications are configured
         # for this job and globally (infered in the job notifications)
-        do_send_notification(run.status, run=run, job=job_config)
+        do_send_notification(run.status, run=run, job_config=job_config)
+    else:
+        logging.info(f"No notifications configured for run {run.suuid}.")
 
 
 @celery_app.task(bind=True, name="job.tasks.send_missed_schedule_notification")
 def send_missed_schedule_notification(self, job_uuid):
-    print(f"Received message to send notifications for missed schedule {job_uuid}")
-
-    # get the job
+    # Get the job
     job = JobDef.objects.get(pk=job_uuid)
+    logging.info(f"Received message to send notifications for missed schedule for job {job.suuid}")
 
-    # get latest package for the job
+    # Get latest package for the job
     # Fetch the latest package found in the job.project
-    package = Package.objects.filter(finished__isnull=False).filter(project=job.project).order_by("-created").first()
-    configyml = package.get_askanna_config()
-    if configyml is None:
-        # we could not parse the config
+    package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created").first()
+    if package is None:
+        logging.warn(f"Cannot send notifcations. No package found for job {job.suuid}.")
+        return
+    config_yml = package.get_askanna_config()
+    if config_yml is None:
+        logging.warn(f"Cannot send notifcations. No config found for job {job.suuid}.")
         return
 
-    job_config = configyml.jobs.get(job.name)
+    job_config = config_yml.jobs.get(job.name)
     if job_config and job_config.notifications:
         # only send notifications when notifications are configured
         # for this job and globally (infered in the job notifications)
-        do_send_notification(
-            "SCHEDULE_MISSED",
-            job=job_config,
-            extra_vars={
-                "project": job.project,
-                "jobdef": job,
-            },
-        )
+        do_send_notification("SCHEDULE_MISSED", job=job, job_config=job_config)
+    else:
+        logging.info(f"No notifications configured for job {job.suuid}.")

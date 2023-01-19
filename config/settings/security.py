@@ -70,12 +70,12 @@ def settings(config, env):
         config.CORS_ALLOW_HEADERS = list(default_headers) + ["askanna-agent", "askanna-agent-version"]
 
     if config.DEBUG:
-        # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
+        # https://docs.djangoproject.com/en/stable/ref/settings/#internal-ips
         internal_ips = env.list("DJANGO_INTERNAL_IPS", default=["127.0.0.1"])
-        if env("USE_DOCKER") == "yes":
+        if env.bool("USE_DOCKER", False):
             import socket
 
-            hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+            _, _, ips = socket.gethostbyname_ex(socket.gethostname())
             internal_ips += [ip[:-1] + "1" for ip in ips]
 
         config.INTERNAL_IPS = IpNetworks(internal_ips)

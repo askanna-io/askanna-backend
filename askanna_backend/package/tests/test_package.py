@@ -8,10 +8,6 @@ pytestmark = pytest.mark.django_db
 
 
 class TestPackageList(BaseJobTestDef, APITestCase):
-    """
-    Test on listing packages
-    """
-
     def setUp(self):
         super().setUp()
         self.url = reverse(
@@ -21,197 +17,174 @@ class TestPackageList(BaseJobTestDef, APITestCase):
             },
         )
 
-    def test_list_as_anna(self):
-        """
-        Package listing is not possible for anna as anna is not part of any workspace/project
-        """
+    def test_list_as_askanna_admin(self):
         self.activate_user("anna")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
     def test_list_as_admin(self):
-        """
-        We can list package as admin of a workspace
-        """
         self.activate_user("admin")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
     def test_list_as_member(self):
-        """
-        We can list packages as member of a workspace
-        """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-
-    def test_list_as_nonmember(self):
-        """
-        As non member we can only list "public" packages
-        """
+    def test_list_as_non_member(self):
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
     def test_list_as_anonymous(self):
         """
         Anonymous can only list packages from public projects
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
 
-class ProjectTestPackageList(TestPackageList):
-    """
-    Test on listing packages
-    """
-
+class TestProjectPackageList(BaseJobTestDef, APITestCase):
     def setUp(self):
         super().setUp()
         self.url = reverse(
-            "project-package-list",
+            "package-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__suuid": self.project.suuid,
             },
         )
 
-    def test_list_as_admin(self):
-        """
-        We can list package as admin of a workspace
-        """
-        self.activate_user("admin")
-
+    def test_list_as_askanna_admin(self):
+        self.activate_user("anna")
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
+
+    def test_list_as_admin(self):
+        self.activate_user("admin")
+        response = self.client.get(
+            self.url,
+            {
+                "project_suuid": self.project.suuid,
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
     def test_list_as_member(self):
-        """
-        We can list packages as member of a workspace
-        """
         self.activate_user("member")
-
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
-    def test_list_as_nonmember(self):
-        """
-        We cannot list packages as nonmember of a workspace
-        """
+    def test_list_as_non_member(self):
         self.activate_user("non_member")
-
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
     def test_list_as_anonymous(self):
-        """
-        Anonymous cannot list packages from private project
-        """
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
 
-class ProjectPublicTestPackageList(TestPackageList):
-    """
-    Test on listing packages
-    """
-
+class TestPublicProjectPackageList(BaseJobTestDef, APITestCase):
     def setUp(self):
         super().setUp()
         self.url = reverse(
-            "project-package-list",
+            "package-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_project__suuid": self.project3.suuid,
             },
         )
 
-    def test_list_as_admin(self):
-        """
-        We can list package as admin of a public workspace
-        """
-        self.activate_user("admin")
-
+    def test_list_as_askanna_admin(self):
+        self.activate_user("anna")
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project3.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
-        self.assertEqual(len(response.data), 1)
+    def test_list_as_admin(self):
+        self.activate_user("admin")
+        response = self.client.get(
+            self.url,
+            {
+                "project_suuid": self.project3.suuid,
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
     def test_list_as_member(self):
-        """
-        We can list packages as member of a workspace
-        """
         self.activate_user("member")
-
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project3.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
-    def test_list_as_nonmember(self):
-        """
-        We cannot list packages as nonmember of a workspace
-        """
+    def test_list_as_non_member(self):
         self.activate_user("non_member")
-
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project3.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
 
     def test_list_as_anonymous(self):
-        """
-        We cannot list packages as member of a workspace
-        """
         response = self.client.get(
             self.url,
+            {
+                "project_suuid": self.project3.suuid,
+            },
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore

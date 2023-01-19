@@ -7,7 +7,14 @@ from django.utils import timezone
 from job.models import JobDef, RunImage
 from package.models import Package
 from project.models import Project
-from run.models import Run, RunArtifact, RunLog, RunMetric, RunResult, RunVariable
+from run.models import (
+    Run,
+    RunArtifact,
+    RunLog,
+    RunMetricMeta,
+    RunResult,
+    RunVariableMeta,
+)
 
 tracked_variables_response_good = [
     {
@@ -292,7 +299,7 @@ class BaseRunTest(BaseUserPopulation):
                 jobdef=self.jobdef3,  # link faulty job on purpose to test on error not found in askanna.yml
                 status="IN_PROGRESS",
                 created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
+                member=self.members_workspace2.get("member2"),
                 run_image=self.run_image,
             ),
             "run4": Run.objects.create(
@@ -339,13 +346,13 @@ class BaseRunTest(BaseUserPopulation):
         }
 
         self.runmetrics = {
-            "run1": RunMetric.objects.create(run=self.runs["run1"], metrics=metric_response_good, count=4),
-            "run2": RunMetric.objects.create(run=self.runs["run2"], metrics=metric_response_bad, count=2),
-            "run3": RunMetric.objects.create(run=self.runs["run3"], metrics=metric_response_bad, count=2),
-            "run6": RunMetric.objects.create(
+            "run1": RunMetricMeta.objects.create(run=self.runs["run1"], metrics=metric_response_good, count=4),
+            "run2": RunMetricMeta.objects.create(run=self.runs["run2"], metrics=metric_response_bad, count=2),
+            "run3": RunMetricMeta.objects.create(run=self.runs["run3"], metrics=metric_response_bad, count=2),
+            "run6": RunMetricMeta.objects.create(
                 run=self.runs["run6"], metrics=metric_response_good_small_no_label, count=4
             ),
-            "run7": RunMetric.objects.create(run=self.runs["run7"], metrics=[]),
+            "run7": RunMetricMeta.objects.create(run=self.runs["run7"], metrics=[]),
         }
 
         self.runlog = {
@@ -355,7 +362,7 @@ class BaseRunTest(BaseUserPopulation):
             "run5": RunLog.objects.get(run=self.runs.get("run5")),
         }
 
-        self.runlog["run1"].stdout = [
+        self.runlog["run1"].stdout = [  # type: ignore
             [1, datetime.datetime.utcnow().isoformat(), "some test stdout 1"],
             [2, datetime.datetime.utcnow().isoformat(), "some test stdout 2"],
             [3, datetime.datetime.utcnow().isoformat(), "some test stdout 3"],
@@ -363,7 +370,7 @@ class BaseRunTest(BaseUserPopulation):
             [5, datetime.datetime.utcnow().isoformat(), "some test stdout 5"],
             [6, datetime.datetime.utcnow().isoformat(), "some test stdout 6"],
         ]
-        self.runlog["run2"].stdout = [
+        self.runlog["run2"].stdout = [  # type: ignore
             [1, datetime.datetime.utcnow().isoformat(), "some test stdout 1"],
             [2, datetime.datetime.utcnow().isoformat(), "some test stdout 2"],
             [3, datetime.datetime.utcnow().isoformat(), "some test stdout 3"],
@@ -374,25 +381,25 @@ class BaseRunTest(BaseUserPopulation):
         self.runlog["run1"].save(update_fields=["stdout"])
         self.runlog["run2"].save(update_fields=["stdout"])
 
-        self.runlog.get("run3").log("some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat())
-        self.runlog.get("run3").log("some test stdout 2")
-        self.runlog.get("run3").log("some test stdout 3")
-        self.runlog.get("run3").log("some test stdout 4", print_log=True)
-        self.runlog.get("run3").log("some test stdout 5", print_log=True)
-        self.runlog.get("run3").log("some test stdout 6", print_log=True)
-        self.runlog.get("run3").log("some test stdout 7", print_log=True)
-        self.runlog.get("run3").log("some test stdout 8", print_log=True)
-        self.runlog.get("run3").log("some test stdout 9", print_log=True)
+        self.runlog["run3"].log("some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat())
+        self.runlog["run3"].log("some test stdout 2")
+        self.runlog["run3"].log("some test stdout 3")
+        self.runlog["run3"].log("some test stdout 4")
+        self.runlog["run3"].log("some test stdout 5")
+        self.runlog["run3"].log("some test stdout 6")
+        self.runlog["run3"].log("some test stdout 7")
+        self.runlog["run3"].log("some test stdout 8")
+        self.runlog["run3"].log("some test stdout 9")
 
-        self.runlog.get("run5").log("some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat())
-        self.runlog.get("run5").log("some test stdout 2")
-        self.runlog.get("run5").log("some test stdout 3")
-        self.runlog.get("run5").log("some test stdout 4", print_log=True)
-        self.runlog.get("run5").log("some test stdout 5", print_log=True)
-        self.runlog.get("run5").log("some test stdout 6", print_log=True)
-        self.runlog.get("run5").log("some test stdout 7", print_log=True)
-        self.runlog.get("run5").log("some test stdout 8", print_log=True)
-        self.runlog.get("run5").log("some test stdout 9", print_log=True)
+        self.runlog["run5"].log("some test stdout 1", timestamp=datetime.datetime.utcnow().isoformat())
+        self.runlog["run5"].log("some test stdout 2")
+        self.runlog["run5"].log("some test stdout 3")
+        self.runlog["run5"].log("some test stdout 4")
+        self.runlog["run5"].log("some test stdout 5")
+        self.runlog["run5"].log("some test stdout 6")
+        self.runlog["run5"].log("some test stdout 7")
+        self.runlog["run5"].log("some test stdout 8")
+        self.runlog["run5"].log("some test stdout 9")
 
         self.runresults = {
             "run2": RunResult.objects.create(
@@ -403,11 +410,11 @@ class BaseRunTest(BaseUserPopulation):
         self.runresults["run2"].write(io.BytesIO(b"some result content"))
 
         self.tracked_variables = {
-            "run1": RunVariable.objects.get(run=self.runs["run1"]),
-            "run2": RunVariable.objects.get(run=self.runs["run2"]),
-            "run3": RunVariable.objects.get(run=self.runs["run3"]),
-            "run6": RunVariable.objects.get(run=self.runs["run6"]),
-            "run7": RunVariable.objects.get(run=self.runs["run7"]),
+            "run1": RunVariableMeta.objects.get(run=self.runs["run1"]),
+            "run2": RunVariableMeta.objects.get(run=self.runs["run2"]),
+            "run3": RunVariableMeta.objects.get(run=self.runs["run3"]),
+            "run6": RunVariableMeta.objects.get(run=self.runs["run6"]),
+            "run7": RunVariableMeta.objects.get(run=self.runs["run7"]),
         }
         self.tracked_variables["run1"].variables = tracked_variables_response_good
         self.tracked_variables["run2"].variables = tracked_variables_response_good

@@ -11,10 +11,11 @@ def settings(config, _env):
             "core.auth.PassthroughAuthentication",
         ],
         "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
-        "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+        "DEFAULT_PAGINATION_CLASS": "askanna_backend.core.pagination.CursorPagination",
         "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
         "DEFAULT_FILTER_BACKENDS": [
-            "rest_framework.filters.OrderingFilter",
+            "askanna_backend.core.filters.OrderingFilter",
+            "rest_framework.filters.SearchFilter",
             "django_filters.rest_framework.DjangoFilterBackend",
         ],
         "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -47,19 +48,4 @@ def settings(config, _env):
             "displayRequestDuration": True,
             "docExpansion": "none",
         },
-        "APPEND_COMPONENTS": {
-            "securitySchemes": {
-                "Token": {
-                    "type": "apiKey",
-                    "in": "header",
-                    "name": "Authorization",
-                    "description": 'Prefix the value with "Token " to authorize your requests',
-                }
-            }
-        },
-        "SECURITY": [
-            {
-                "Token": [],
-            }
-        ],
     }

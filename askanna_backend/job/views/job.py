@@ -1,48 +1,104 @@
-from core.permissions import ProjectMember, ProjectNoMember, RoleBasedPermission
-from core.views import ObjectRoleMixin, workspace_to_project_role
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
-from django.http import Http404
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from job.models import JobDef
-from job.serializers import JobSerializer
-from project.models import Project
-from rest_framework import mixins, viewsets
-from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.models import MSP_WORKSPACE, Membership
+import io
+import json
+
+import django_filters
+from core.const import ALLOWED_API_AGENTS
+from core.filters import filter_multiple
+from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
+from core.permissions.role import RoleBasedPermission
+from django.db.models import Prefetch, Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    extend_schema,
+    extend_schema_view,
+)
+from job.models import JobDef, JobPayload, ScheduledJob
+from job.serializers import JobSerializer, RequestJobRunSerializer
+from package.models import Package
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ParseError
+from rest_framework.response import Response
+from run.models import Run
+from run.serializers.run import RunStatusSerializer
+from users.models import MSP_WORKSPACE
 
 
-class JobObjectRoleMixin:
-    def get_object_workspace(self):
-        return self.current_object.project.workspace
+class JobFilterSet(django_filters.FilterSet):
+    project_suuid = django_filters.CharFilter(
+        field_name="project__suuid",
+        method=filter_multiple,
+        help_text="Filter jobs on a project suuid or multiple project suuids via a comma seperated list.",
+    )
+    workspace_suuid = django_filters.CharFilter(
+        field_name="project__workspace__suuid",
+        method=filter_multiple,
+        help_text="Filter jobs on a workspace suuid or multiple workspace suuids via a comma seperated list.",
+    )
 
-    def get_object_project(self):
-        return self.current_object.project
 
-    def get_workspace_role(self, user, *args, **kwargs):
-        return Membership.get_workspace_role(user, self.get_object_workspace())
+@extend_schema_view(
+    list=extend_schema(description="List the jobs you have access to"),
+    retrieve=extend_schema(description="Get info from a specific job"),
+    partial_update=extend_schema(description="Update a job"),
+    destroy=extend_schema(description="Remove a job"),
+)
+class JobView(
+    ObjectRoleMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    PartialUpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = (
+        JobDef.objects.active()
+        .select_related("project", "project__workspace")
+        .prefetch_related(
+            Prefetch("schedules", queryset=ScheduledJob.objects.order_by("next_run")),
+            Prefetch("project__packages", queryset=Package.objects.active_and_finished().order_by("-created")),
+        )
+    )
+    lookup_field = "suuid"
+    search_fields = ["suuid", "name"]
+    ordering_fields = [
+        "created",
+        "modified",
+        "name",
+        "project.name",
+        "project.suuid",
+        "workspace.name",
+        "workspace.suuid",
+    ]
+    ordering_fields_aliases = {
+        "workspace.name": "project__workspace__name",
+        "workspace.suuid": "project__workspace__suuid",
+    }
+    filterset_class = JobFilterSet
 
-    def get_list_role(self, request, *args, **kwargs):
-        # always return ProjectMember for logged in users since the listing always shows objects based on membership
-        if request.user.is_anonymous:
-            return ProjectNoMember, None
-        return ProjectMember, None
+    serializer_class = JobSerializer
+
+    permission_classes = [RoleBasedPermission]
+    rbac_permissions_by_action = {
+        "list": ["project.job.list"],
+        "retrieve": ["project.job.list"],
+        "destroy": ["project.job.remove"],
+        "partial_update": ["project.job.edit"],
+        "new_run": ["project.run.create"],
+    }
 
     def get_queryset(self):
         """
-        For listings return only values from projects
-        where the current user had access to
-        meaning also beeing part of a certain workspace
-        or the project and workspace are public
+        Return only values from projects where the user is member of or has access to because it's public.
         """
         user = self.request.user
-
         if user.is_anonymous:
             return (
                 super()
                 .get_queryset()
                 .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-                .order_by("name")
             )
 
         member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
@@ -51,90 +107,102 @@ class JobObjectRoleMixin:
             super()
             .get_queryset()
             .filter(
-                Q(project__workspace__in=member_of_workspaces)
+                Q(project__workspace__pk__in=member_of_workspaces)
                 | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
 
-
-@extend_schema_view(
-    list=extend_schema(description="List the jobs you have access to"),
-    retrieve=extend_schema(description="Get info from a specific job"),
-    update=extend_schema(description="Update a job"),
-    partial_update=extend_schema(description="Update a job"),
-    destroy=extend_schema(description="Remove a job"),
-)
-class JobView(
-    JobObjectRoleMixin,
-    ObjectRoleMixin,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
-    queryset = JobDef.jobs.active()
-    lookup_field = "suuid"
-    serializer_class = JobSerializer
-    permission_classes = [RoleBasedPermission]
-
-    RBAC_BY_ACTION = {
-        "list": ["project.job.list"],
-        "retrieve": ["project.job.list"],
-        "create": ["project.job.create"],
-        "destroy": ["project.job.remove"],
-        "update": ["project.job.edit"],
-        "partial_update": ["project.job.edit"],
-    }
+    def get_object_project(self):
+        return self.current_object.project
 
     def perform_destroy(self, instance):
-        """
-        We don't actually remove the model, we just mark it as deleted
-        """
         instance.to_deleted()
 
+    @extend_schema(
+        description="Start a new run for a job",
+        parameters=[
+            OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Name of the run"),
+            OpenApiParameter(
+                "description", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Description of the run"
+            ),
+        ],
+        examples=[
+            OpenApiExample(
+                "JSON data payload",
+                description="An example of an optional JSON data payload",
+                value={"data": {"foo": "bar"}},
+                request_only=True,
+            ),
+        ],
+        request=RequestJobRunSerializer,
+        responses={201: RunStatusSerializer},
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        name="Request new job run",
+        serializer_class=RequestJobRunSerializer,
+        url_path="run/request/batch",
+        queryset=JobDef.objects.active().select_related("project", "project__workspace"),
+    )
+    def new_run(self, request, suuid, **kwargs):
+        job = self.get_object()
+        payload = self.handle_payload(request=request, job=job)
 
-@extend_schema_view(
-    list=extend_schema(description="List the jobs for a project you have access to"),
-)
-class ProjectJobViewSet(
-    JobObjectRoleMixin,
-    ObjectRoleMixin,
-    NestedViewSetMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet,
-):
-    """
-    This is a duplicated viewset like `JobActionView` but ReadOnly version
-    """
+        # Fetch the latest package found in the job.project
+        package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created").first()
 
-    queryset = JobDef.jobs.active().select_related("project", "project__workspace")
-    lookup_field = "suuid"
-    serializer_class = JobSerializer
-    permission_classes = [RoleBasedPermission]
+        run = Run.objects.create(
+            name=request.query_params.get("name", ""),
+            description=request.query_params.get("description", ""),
+            jobdef=job,
+            payload=payload,
+            package=package,
+            trigger=self.get_trigger_source(request),
+            created_by=request.user,
+        )
 
-    RBAC_BY_ACTION = {
-        "list": ["project.job.list"],
-        "retrieve": ["project.job.list"],
-    }
+        # Return the run information
+        serializer = RunStatusSerializer(run, context={"request": request})
 
-    def get_list_role(self, request, *args, **kwargs):
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def handle_payload(self, request, job, **kwargs):
         """
-        Get list permision based on the project_suuid from the url
+        Asses incoming payload, it can be the case that there is no payload given and we don't create a payload
         """
-        project_suuid = kwargs.get("parent_lookup_project__suuid")
+        size = int(request.headers.get("content-length", 0))
+        if size == 0:
+            return None
+
+        # Validate whether request.data is really a JSON structure
         try:
-            project = Project.objects.get(suuid=project_suuid)
-        except ObjectDoesNotExist:
-            raise Http404
+            assert isinstance(request.data, (dict, list))
+        except AssertionError:
+            raise ParseError(
+                detail={
+                    "payload": ["The JSON data payload is not valid, please check and try again"],
+                },
+            )
 
-        workspace_role, request.membership = Membership.get_workspace_role(request.user, project.workspace)
-        request.user_roles.append(workspace_role)
-        request.object_role = workspace_role
+        # Create new JobPayload
+        json_string = json.dumps(request.data)
+        lines = 0
+        try:
+            lines = len(json.dumps(request.data, indent=1).splitlines())
+        except Exception:  # nosec: B110
+            pass
 
-        # try setting a project role based on workspace role
-        if workspace_to_project_role(workspace_role) is not None:
-            inherited_role = workspace_to_project_role(workspace_role)
-            request.user_roles.append(inherited_role)
+        job_payload = JobPayload.objects.create(jobdef=job, size=size, lines=lines, owner=request.user)
+        job_payload.write(io.StringIO(json_string))
 
-        return Membership.get_project_role(request.user, project)
+        return job_payload
+
+    def get_trigger_source(self, request) -> str:
+        """
+        Determine the source of the API call by looking at the `askanna-agent` header.
+        If this header is not set, we assume that the request is a regular API call.
+        """
+        source = request.headers.get("askanna-agent", "api").upper()
+        # If the source is not in the allowed list, we know the API is used directly and we set the trigger to API
+        return source if source in ALLOWED_API_AGENTS else "API"

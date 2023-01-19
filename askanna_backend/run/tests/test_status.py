@@ -14,52 +14,66 @@ class TestRunStatusAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-status",
-            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run1"].suuid,
+            },
         )
+
+    def test_retrieve_as_askanna_admin(self):
+        """
+        We cannot get the status for a run as an AskAnna admin who is not a member of the workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_as_admin(self):
         """
         We can get the status for a run as an admin
         """
         self.activate_user("admin")
-
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "finished"  # type: ignore
+        assert response.data["duration"] == 50646  # type: ignore
 
     def test_retrieve_as_member(self):
         """
         We can get the status for a run as a member
         """
         self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "finished"  # type: ignore
+        assert response.data["duration"] == 50646  # type: ignore
 
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_retrieve_as_nonmember(self):
+    def test_retrieve_as_non_member(self):
         """
-        We can NOT get the status for a run as a non-member
+        We cannot get the status for a run as a non-member
         """
         self.activate_user("non_member")
-
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_as_anonymous(self):
         """
-        We can NOT get the status of a jborun as anonymous
+        We cannot get the status of a run as anonymous
         """
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_retrieve_as_member_run_finished(self):
-        """
-        We can get the status for a run as a member
-        The run is finished so we expect the duration to be fixed
-        """
-        self.activate_user("member")
-
-        response = self.client.get(self.url, format="json", HTTP_HOST="testserver")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # this is the fictive number of duration we set in the test
-        # otherwise we would expect something else if it kept counting
-        self.assertEqual(response.data.get("duration"), 50646)
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND

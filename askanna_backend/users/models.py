@@ -1,25 +1,34 @@
+from __future__ import annotations
+
 import datetime
 import os
-import typing
+from typing import List, Optional, Type, Union
 
 from core.models import SlimBaseForAuthModel, SlimBaseModel
-from core.permissions import (
+from core.permissions.askanna_roles import (
     AskAnnaAdmin,
     AskAnnaMember,
+    AskAnnaPublicViewer,
     ProjectAdmin,
     ProjectMember,
     ProjectNoMember,
-    PublicViewer,
+    ProjectPublicViewer,
+    ProjectViewer,
     WorkspaceAdmin,
     WorkspaceMember,
     WorkspaceNoMember,
+    WorkspacePublicViewer,
     WorkspaceViewer,
+    get_role_class,
 )
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.core import signing
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from project.models import Project
 from users.signals import avatar_changed_signal
+from workspace.models import Workspace
 
 
 class BaseAvatarModel:
@@ -45,6 +54,7 @@ class BaseAvatarModel:
         And install default avatar
         """
         self.prune()
+        self.install_default_avatar()
 
     def stored_path_with_name(self, name) -> str:
         filename = "avatar_{}_{}.png".format(self.uuid.hex, name)
@@ -107,6 +117,7 @@ class BaseAvatarModel:
         timestamp = datetime.datetime.timestamp(self.modified)
         return "{location}?{timestamp}".format(location=location, timestamp=timestamp)
 
+    @property
     def avatar_cdn_locations(self) -> dict:
         return dict(
             zip(
@@ -120,57 +131,77 @@ class BaseAvatarModel:
 
 
 class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
+    email = models.EmailField("Email address", blank=False)
+    name = models.CharField("Name of User", blank=False, max_length=255)
+    job_title = models.CharField("Job title", blank=True, default="", max_length=255)
 
-    # First Name and Last Name do not cover name patterns
-    # around the globe.
+    # First and last name do not cover name patterns around the glob and are removed from the AbstractUser model
+    first_name = None
+    last_name = None
 
-    name = models.CharField("Name of User", blank=True, max_length=255)
-    job_title = models.CharField("Job title", blank=True, max_length=255)
-    front_end_domain = models.CharField(max_length=1024, null=True, default=None)
+    objects = UserManager()
 
-    def get_name(self):
-        return self.name or self.username or self.suuid
+    @property
+    def memberships(self):
+        return self.memberships
+
+    @property
+    def auth_token(self):
+        return self.auth_token
 
     @classmethod
-    def get_role(self, request):
-        # defaulting the role to `PublicViewer` when no match is found
+    def get_role(cls, request):  # TODO: rename to get_askanna_role
+        """
+        Defaulting the role to `AskAnnaPublicViewer` when no match is found
         # key: is_anonymous, is_active, is_superuser
-        roles = {
-            (1, 0, 0): PublicViewer,
-            (0, 1, 1): AskAnnaAdmin,
+        """
+        user_role_mapping = {
+            (1, 0, 0): AskAnnaPublicViewer,
             (0, 1, 0): AskAnnaMember,
+            (0, 1, 1): AskAnnaAdmin,
         }
-        return roles.get(
+
+        return user_role_mapping.get(
             (
                 request.user.is_anonymous,
                 request.user.is_active,
                 request.user.is_superuser,
             ),
-            PublicViewer,
+            AskAnnaPublicViewer,
         )
 
-    @property
-    def relation_to_json_with_avatar(self):
+    def to_deleted(self):
         """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "user",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-            "avatar": self.avatar_cdn_locations(),
-        }
+        We don't actually remove the user, we mark it as deleted and we remove the confidential info such as
+        username and email.
 
-    @property
-    def relation_to_json(self):
+        Note: if the user has active workspace memberships, these memberships are not deleted. The memberships will be
+        marked as deleted. If a membership was using the global profile, then the profile will be copied over to the
+        membership before removing the user.
         """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "user",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-        }
+        for membership in self.memberships.filter(deleted__isnull=True):
+            membership.to_deleted()
+
+        self.delete_avatar()
+        self.auth_token.delete()
+
+        self.is_active = False
+        self.username = f"deleted-user-{self.suuid}"
+        self.email = f"deleted-user-{self.suuid}@dev.null"
+        self.name = "deleted user"
+        self.job_title = ""
+        self.save(
+            update_fields=[
+                "is_active",
+                "username",
+                "email",
+                "name",
+                "job_title",
+                "modified",
+            ]
+        )
+
+        super().to_deleted()
 
 
 MSP_PROJECT = "PR"
@@ -223,13 +254,9 @@ class Membership(BaseAvatarModel, SlimBaseModel):
 
     """
 
-    objects = models.Manager()
-    members = ActiveMemberManager()
-
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
     role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
-    job_title = models.CharField("Job title", blank=True, max_length=255)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
@@ -238,144 +265,167 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         blank=True,
         null=True,
     )
-    name = models.CharField("Name of User", blank=True, max_length=255)
+
     use_global_profile = models.BooleanField(
         "Use AskAnna profile",
         default=True,
-        help_text="Use information from the global AskAnna profile",
+        help_text="Use information from the global user account",
     )
+    name = models.CharField("Name", blank=True, max_length=255)
+    job_title = models.CharField("Job title", blank=True, max_length=255)
 
-    def get_role(self):
-        mapping = {
-            "WA": WorkspaceAdmin,
-            "WM": WorkspaceMember,
-            "WV": WorkspaceViewer,
-            "PA": ProjectAdmin,
-            "PM": ProjectMember,
-            "AN": PublicViewer,
-        }
-        return mapping.get(self.role, PublicViewer)
+    objects = models.Manager()
+    members = ActiveMemberManager()
+
+    @property
+    def workspace(self):
+        if self.object_type == MSP_WORKSPACE:
+            return Workspace.objects.get(uuid=self.object_uuid)
+
+    def get_status(self):
+        if self.user and not self.deleted:
+            return "active"
+        if self.deleted:
+            return "deleted"
+        if getattr(self, "invitation", None):
+            return "invited"
+        return "blocked"
+
+    def get_role(
+        self,
+    ) -> Union[
+        Type[WorkspaceAdmin],
+        Type[WorkspaceMember],
+        Type[WorkspaceViewer],
+        Type[ProjectAdmin],
+        Type[ProjectMember],
+        Type[ProjectViewer],
+    ]:
+        return get_role_class(self.role)
 
     @classmethod
-    def get_roles_for_project(cls, user, project) -> typing.List:
-        roles = []
-        workspace_role, _ = cls.get_workspace_role(user, project.workspace)
-        project_role, _ = cls.get_project_role(user, project)
+    def get_roles_for_project(
+        cls, user, project
+    ) -> List[
+        Union[
+            Type[ProjectAdmin],
+            Type[ProjectMember],
+            Type[ProjectViewer],
+            Type[ProjectNoMember],
+            Type[ProjectPublicViewer],
+            Type[WorkspaceAdmin],
+            Type[WorkspaceMember],
+            Type[WorkspaceViewer],
+            Type[WorkspaceNoMember],
+            Type[WorkspacePublicViewer],
+        ]
+    ]:
+        workspace_role = cls.get_workspace_role(user, project.workspace)
+        project_role = cls.get_project_role(user, project)
         roles = [workspace_role, project_role]
-        if workspace_role.code == "WA":
+
+        if workspace_role.code == "WA" and ProjectAdmin not in roles:
             roles.append(ProjectAdmin)
-        if workspace_role.code == "WM":
+        elif workspace_role.code == "WM" and ProjectMember not in roles:
             roles.append(ProjectMember)
+        elif workspace_role.code == "WV" and ProjectViewer not in roles:
+            roles.append(ProjectViewer)
+
+        # Clean up the roles list. If multiple Project roles are present, remove the "lower" ones.
+        if ProjectNoMember in roles and any(r in roles for r in [ProjectAdmin, ProjectMember, ProjectViewer]):
+            roles.remove(ProjectNoMember)
+        if ProjectAdmin in roles and ProjectMember in roles:
+            roles.remove(ProjectMember)
+        if ProjectAdmin in roles and ProjectViewer in roles:
+            roles.remove(ProjectViewer)
+        if ProjectMember in roles and ProjectViewer in roles:
+            roles.remove(ProjectViewer)
+
         return roles
 
     @classmethod
-    def get_project_role(cls, user, project=None):
-        if (user.is_anonymous or not user.is_active) and (
-            project.visibility == "PRIVATE" or project.workspace.visibility == "PRIVATE"
-        ):
-            return ProjectNoMember, None
-
-        if (user.is_anonymous or not user.is_active) and (
-            project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC"
-        ):
-            return PublicViewer, None
-
+    def get_project_membership(cls, user, project: Project) -> Optional[Membership]:
         try:
             membership = cls.objects.get(
                 object_uuid=str(project.uuid),
                 object_type="PR",
                 user=user,
-                deleted__isnull=True,  # don't retrieve invalid memberships
+                deleted__isnull=True,
             )
         except ObjectDoesNotExist:
-            # we have an AskAnnaMember/AskAnnaAdmin but no membership
-            if project.visibility == "PUBLIC":
-                return PublicViewer, None
-            return ProjectNoMember, None
-
-        return membership.get_role(), membership
+            return None
+        else:
+            return membership
 
     @classmethod
-    def get_workspace_role(cls, user, workspace=None):
-        # this method is used in the `.initial` method in ViewSets of:
-        # - workspace
-        # - project
-        # - job
-        # - run
-        # - run-releted objects
-        # defaulting the membershiprole to `WorkspaceNoMember` when no match is found
+    def get_project_role(
+        cls, user, project: Project
+    ) -> Union[
+        Type[ProjectAdmin], Type[ProjectMember], Type[ProjectViewer], Type[ProjectNoMember], Type[ProjectPublicViewer]
+    ]:
+        if (user.is_anonymous or not user.is_active) and (
+            project.visibility == "PRIVATE" or project.workspace.visibility == "PRIVATE"
+        ):
+            return ProjectNoMember
 
-        if (user.is_anonymous or not user.is_active) and workspace.visibility == "PRIVATE":
-            return WorkspaceNoMember, None
-        if (user.is_anonymous or not user.is_active) and workspace.visibility == "PUBLIC":
-            return PublicViewer, None
+        if (user.is_anonymous or not user.is_active) and (
+            project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC"
+        ):
+            return ProjectPublicViewer
 
+        membership = cls.get_project_membership(user, project)
+        if membership:
+            return membership.get_role()
+        elif project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC":
+            return ProjectPublicViewer
+
+        return ProjectNoMember
+
+    @classmethod
+    def get_workspace_membership(cls, user, workspace: Workspace) -> Optional[Membership]:
         try:
             membership = cls.objects.get(
                 object_uuid=str(workspace.uuid),
                 object_type="WS",
                 user=user,
-                deleted__isnull=True,  # don't retrieve invalid memberships
+                deleted__isnull=True,
             )
         except ObjectDoesNotExist:
-            # we have an AskAnnaMember/AskAnnaAdmin but no membership
-            if workspace.visibility == "PUBLIC":
-                # this overrides, when the workspace is set to public, the user
-                # without a membership becomes PublicViewer
-                return PublicViewer, None
-            return WorkspaceNoMember, None
+            return None
+        else:
+            return membership
 
-        return membership.get_role(), membership
+    @classmethod
+    def get_workspace_role(
+        cls, user, workspace: Workspace
+    ) -> Union[
+        Type[WorkspaceAdmin],
+        Type[WorkspaceMember],
+        Type[WorkspaceViewer],
+        Type[WorkspaceNoMember],
+        Type[WorkspacePublicViewer],
+    ]:
+        if (user.is_anonymous or not user.is_active) and workspace.visibility == "PRIVATE":
+            return WorkspaceNoMember
+        if (user.is_anonymous or not user.is_active) and workspace.visibility == "PUBLIC":
+            return WorkspacePublicViewer
+
+        membership = cls.get_workspace_membership(user, workspace)
+        if membership:
+            return membership.get_role()
+        elif workspace.visibility == "PUBLIC":
+            return WorkspacePublicViewer
+
+        return WorkspaceNoMember
 
     def get_role_serialized(self):
         """
         Role to be exposed to the outside
         """
-        roles = {
-            "WA": WorkspaceAdmin,
-            "WV": WorkspaceViewer,
-            "WM": WorkspaceMember,
-            "PA": ProjectAdmin,
-            "PM": ProjectMember,
-        }
-        role = roles.get(self.role, PublicViewer)
+        role = self.get_role()
         return {
             "code": role.code,
             "name": role.name,
-        }
-
-    def get_status(self):
-        if self.user:
-            return "accepted"
-        return "invited"
-
-    @property
-    def relation_to_json_with_avatar(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "membership",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-            "job_title": self.get_job_title(),
-            "role": self.get_role_serialized(),
-            "status": self.get_status(),
-            "avatar": self.get_avatar(),
-        }
-
-    @property
-    def relation_to_json(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "membership",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-            "job_title": self.get_job_title(),
-            "role": self.get_role_serialized(),
-            "status": self.get_status(),
         }
 
     def __str__(self):
@@ -386,18 +436,10 @@ class Membership(BaseAvatarModel, SlimBaseModel):
     def get_name(self):
         """
         Get name, respecting the `use_global_profile` setting
-        FIXME: in Membership.get_name we omit the `use_global_profile=False` when:
-        - Membership.name is ""/None
-        - User.get_name() is returned instead (introducing a tertiary fallback)
-        In the future get this fallbacks straight and explainable.
         """
         if self.use_global_profile and self.user:
-            return self.user.get_name()
-        if self.name:
-            return self.name
-        if self.user:
-            return self.user.get_name()
-        return ""  # no name set
+            return self.user.name
+        return self.name
 
     def get_job_title(self):
         """
@@ -412,21 +454,21 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         Get avatar, respecting the `use_global_profile` setting
         """
         if self.use_global_profile and self.user:
-            return self.user.avatar_cdn_locations()
-        return self.avatar_cdn_locations()
+            return self.user.avatar_cdn_locations
+        return self.avatar_cdn_locations
 
     def to_deleted(self):
-        super().to_deleted()
-
-        if self.use_global_profile:
-            # make snapshot of the membership profile if
-            # we use_global_profile.
-            self.name = self.user.get_name()
+        if self.use_global_profile and self.user:
+            # If use_global_profile is True, then make a copy of the global profile to the membership profile.
+            self.name = self.user.name
             self.job_title = self.user.job_title
             self.use_global_profile = False
-            # copy the avatar from the user to membership
+            self.save(update_fields=["name", "job_title", "use_global_profile", "modified"])
+
+            # Copy the avatar from the user to membership
             self.write(open(self.user.stored_path, "rb"))
-            self.save(update_fields=["name", "job_title", "use_global_profile"])
+
+        super().to_deleted()
 
     class Meta:
         ordering = ["-created"]
@@ -434,15 +476,20 @@ class Membership(BaseAvatarModel, SlimBaseModel):
 
 
 class UserProfile(Membership):
-    """For now, the userprofile contains the same information as the Membership.
-    This UserProfile model extends the Membership model"""
+    """For now, the UserProfile extends the Membership model and contains the same information as the Membership."""
 
     pass
 
 
 class Invitation(Membership):
     email = models.EmailField(blank=False)
-    front_end_url = models.URLField()
+
+    @property
+    def token_signer(self):
+        return signing.TimestampSigner()
+
+    def generate_token(self):
+        return self.token_signer.sign(self.suuid)
 
 
 class PasswordResetLog(SlimBaseModel):

@@ -64,7 +64,7 @@ def handle_log_password_reset(sender, signal, users, request, domain, email, **k
 
 
 @receiver(user_created_signal)
-def create_workspace_after_signup(sender, user, request, workspace_name, **kwargs):
+def create_workspace_after_signup(sender, user, workspace_name, **kwargs):
     """
     Create a workspace after the user is created
     When workspace_name is not given, then do not create a workspace for the new user
@@ -74,7 +74,7 @@ def create_workspace_after_signup(sender, user, request, workspace_name, **kwarg
 
 
 @receiver(user_created_signal)
-def send_welcome_email_after_registration(sender, user, request, workspace_name, **kwargs):
+def send_welcome_email_after_registration(sender, user, front_end_url, *args, **kwargs):
     """
     After an user account is created, we send a welcome e-mail
     """
@@ -85,10 +85,13 @@ def send_welcome_email_after_registration(sender, user, request, workspace_name,
     from_email = "AskAnna <support@askanna.io>"
     to_email = "{} <{}>".format(user.name, user.email)
 
+    front_end_url = front_end_url.rstrip("/") + "/"
+
     context = {
         "user": user,
+        "front_end_url": front_end_url,
     }
-    # add the attachments
+
     terms_of_use_dir = settings.RESOURCES_DIR.path("terms_and_conditions")
     attachments = [
         terms_of_use_dir.path("European Model Form for Withdrawal - AskAnna - 20201202.pdf"),
@@ -108,7 +111,7 @@ def send_welcome_email_after_registration(sender, user, request, workspace_name,
 
 
 @receiver(email_changed_signal)
-def send_email_changed(sender, user, request, old_email, **kwargs):
+def send_email_changed(sender, user, old_email, **kwargs):
     """
     We send an e-mail to confirm the e-mail change
     """
@@ -134,7 +137,7 @@ def send_email_changed(sender, user, request, old_email, **kwargs):
 
 
 @receiver(password_changed_signal)
-def send_password_changed(sender, user, request, **kwargs):
+def send_password_changed(sender, user, **kwargs):
     """
     We send an e-mail to confirm the password change
     """

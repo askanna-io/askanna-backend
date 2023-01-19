@@ -1,43 +1,42 @@
-from core.permissions import ProjectMember, ProjectNoMember, RoleBasedPermission
-from core.views import ObjectRoleMixin
+from core.filters import OrderingFilter
+from core.mixins import ObjectRoleMixin
+from core.permissions.role import RoleBasedPermission
 from django.db.models import Q
+from django.http import Http404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from job.models import JobPayload
 from job.serializers import JobPayloadSerializer
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from users.models import MSP_WORKSPACE
+from run.models import Run
+from users.models import MSP_WORKSPACE, Membership
 
 
 class JobPayloadView(
     ObjectRoleMixin,
     NestedViewSetMixin,
-    viewsets.ReadOnlyModelViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
 ):
     """List payloads"""
 
-    queryset = JobPayload.objects.filter(jobdef__deleted__isnull=True)
+    queryset = JobPayload.objects.active()
     lookup_field = "suuid"
     serializer_class = JobPayloadSerializer
     permission_classes = [RoleBasedPermission]
+    filter_backends = [OrderingFilter]
+    ordering_fields = [
+        "created",
+        "modified",
+    ]
 
-    RBAC_BY_ACTION = {
+    rbac_permissions_by_action = {
         "list": ["project.run.list"],
         "retrieve": ["project.run.list"],
-        "get_partial": ["project.run.list"],
     }
-
-    def get_list_role(self, request, *args, **kwargs):
-        # always return ProjectMember for logged in users since the listing always shows objects based on membership
-        if request.user.is_anonymous:
-            return ProjectNoMember, None
-        return ProjectMember, None
-
-    def get_object_project(self):
-        return self.current_object.jobdef.project
-
-    def get_object_workspace(self):
-        return self.current_object.jobdef.project.workspace
 
     def get_queryset(self):
         """
@@ -64,8 +63,19 @@ class JobPayloadView(
             )
         )
 
-    # overwrite the default view and serializer for detail page
-    # We will retrieve the original sent payload from the filesystem and serve as JSON
+    def get_object_project(self):
+        return self.current_object.jobdef.project
+
+    def get_parrent_roles(self, request, *args, **kwargs):
+        run_suuid = self.kwargs["parent_lookup_run__suuid"]
+        try:
+            run = Run.objects.active().get(suuid=run_suuid)
+        except Run.DoesNotExist:
+            raise Http404
+
+        return Membership.get_roles_for_project(request.user, run.jobdef.project)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def retrieve(self, request, *args, **kwargs):
         """Get the payload content
 
@@ -77,4 +87,4 @@ class JobPayloadView(
         if instance:
             return Response(instance.payload)
 
-        return Response({"message_type": "error", "message": "Payload was not found"}, status=404)
+        return Response({"detail": "Payload was not found"}, status=404)

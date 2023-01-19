@@ -11,7 +11,7 @@ from .base import BaseJobTestDef
 
 class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
     """
-    Test schedules in JobDef
+    Test schedules in JobDef response
 
     In this test we solely test on whether the schedules are listed in the job definition
     """
@@ -20,7 +20,10 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
         super().setUp()
         self.url = reverse(
             "job-detail",
-            kwargs={"version": "v1", "suuid": self.jobdef.suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.jobdef.suuid,
+            },
         )
 
     def add_schedules_to_job(self, job=None, definitions=[], current_dt=datetime.datetime.now(tz=pytz.UTC)):
@@ -34,20 +37,17 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
             )
             scheduled_job.update_next(current_dt=current_dt)
 
-    def test_empty_schedules_in_jobresponse(self):
+    def test_empty_schedules_in_job_response(self):
         self.activate_user("member")
 
         self.add_schedules_to_job(self.jobdef, definitions=[])
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
+        response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data.get("suuid") == self.jobdef.suuid
-        assert response.data.get("schedules") is None
+        assert response.data["suuid"] == self.jobdef.suuid  # type: ignore
+        assert response.data["schedules"] is None  # type: ignore
 
-    def test_some_schedules_in_jobresponse(self):
+    def test_schedules_in_job_response(self):
         self.activate_user("member")
 
         self.add_schedules_to_job(
@@ -77,26 +77,23 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
             ),
         )
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
+        response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data.get("suuid") == self.jobdef.suuid
-        assert len(response.data.get("schedules")) == 2
-        assert response.data.get("schedules") == [
+        assert response.data["suuid"] == self.jobdef.suuid  # type: ignore
+        assert len(response.data["schedules"]) == 2  # type: ignore
+        assert response.data.get("schedules") == [  # type: ignore
             {
-                "last_run": None,
-                "next_run": datetime.datetime(2021, 4, 12, 18, 10, tzinfo=pytz.UTC),
+                "raw_definition": "*/10 * * * *",
                 "cron_definition": "*/10 * * * *",
                 "cron_timezone": "Europe/Amsterdam",
-                "raw_definition": "*/10 * * * *",
+                "next_run": "2021-04-12T18:10:00Z",
+                "last_run": None,
             },
             {
-                "last_run": None,
-                "next_run": datetime.datetime(2021, 4, 13, 16, 0, tzinfo=pytz.UTC),
+                "raw_definition": "@midnight",
                 "cron_definition": "0 0 * * *",
                 "cron_timezone": "Asia/Hong_Kong",
-                "raw_definition": "@midnight",
+                "next_run": "2021-04-13T16:00:00Z",
+                "last_run": None,
             },
         ]

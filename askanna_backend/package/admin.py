@@ -2,6 +2,28 @@ from django.contrib import admin
 from package.models import ChunkedPackagePart, Package
 
 
+class ChunkedPackageInline(admin.TabularInline):
+    model = ChunkedPackagePart
+    fields = [
+        "uuid",
+        "filename",
+        "size",
+        "file_no",
+        "is_last",
+        "package",
+        "created_at",
+        "deleted_at",
+    ]
+    readonly_fields = fields
+    ordering = ["created_at"]
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
     list_display = [
@@ -25,6 +47,9 @@ class PackageAdmin(admin.ModelAdmin):
     search_fields = [
         "uuid",
         "suuid",
+        "name",
+        "description",
+        "original_filename",
         "project__suuid",
         "project__name",
     ]
@@ -54,48 +79,7 @@ class PackageAdmin(admin.ModelAdmin):
         "finished",
         "deleted",
     ]
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(ChunkedPackagePart)
-class ChunkedPackagePartAdmin(admin.ModelAdmin):
-    list_display = [
-        "uuid",
-        "filename",
-        "package",
-        "created_at",
-    ]
-    list_display_links = [
-        "uuid",
-        "filename",
-    ]
-    date_hierarchy = "created_at"
-    list_filter = (
-        "is_last",
-        "created_at",
-        "deleted_at",
-    )
-    search_fields = [
-        "uuid",
-        "package__uuid",
-        "package__suuid",
-        "package__original_filename",
-    ]
-    fields = [
-        "filename",
-        "size",
-        "file_no",
-        "is_last",
-        "package",
-        "created_at",
-        "deleted_at",
-    ]
-    readonly_fields = fields
+    inlines = [ChunkedPackageInline]
 
     def has_add_permission(self, request):
         return False

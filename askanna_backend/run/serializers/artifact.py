@@ -1,42 +1,29 @@
 from core.serializers import BaseArchiveDetailSerializer
+from job.serializers import JobRelationSerializer
+from project.serializers import ProjectRelationSerializer
 from rest_framework import serializers
-from run.models import (
-    ChunkedRunArtifactPart,
-    ChunkedRunResultPart,
-    RunArtifact,
-    RunResult,
-)
+from run.models import ChunkedRunArtifactPart, RunArtifact
+from run.serializers.run import RunRelationSerializer
+from workspace.serializers import WorkspaceRelationSerializer
 
 
 class RunArtifactSerializer(serializers.ModelSerializer):
-    workspace = serializers.SerializerMethodField("get_workspace")
-    project = serializers.SerializerMethodField("get_project")
-    job = serializers.SerializerMethodField("get_job")
-    run = serializers.SerializerMethodField("get_run")
-
-    def get_workspace(self, instance):
-        return instance.run.jobdef.project.workspace.relation_to_json
-
-    def get_project(self, instance):
-        return instance.run.jobdef.project.relation_to_json
-
-    def get_job(self, instance):
-        return instance.run.jobdef.relation_to_json
-
-    def get_run(self, instance):
-        return instance.run.relation_to_json
+    run = RunRelationSerializer(read_only=True)
+    job = JobRelationSerializer(read_only=True, source="run.jobdef")
+    project = ProjectRelationSerializer(read_only=True, source="run.jobdef.project")
+    workspace = WorkspaceRelationSerializer(read_only=True, source="run.jobdef.project.workspace")
 
     class Meta:
         model = RunArtifact
         fields = [
             "suuid",
-            "workspace",
-            "project",
-            "job",
-            "run",
             "size",
             "count_dir",
             "count_files",
+            "run",
+            "job",
+            "project",
+            "workspace",
             "created",
             "modified",
         ]
@@ -47,16 +34,16 @@ class RunArtifactSerializerDetail(RunArtifactSerializer, BaseArchiveDetailSerial
         model = RunArtifact
         fields = [
             "suuid",
-            "workspace",
-            "project",
-            "job",
-            "run",
             "size",
             "count_dir",
             "count_files",
-            "cdn_base_url",
+            "run",
+            "job",
+            "project",
+            "workspace",
             "created",
             "modified",
+            "cdn_base_url",
             "files",
         ]
 
@@ -75,19 +62,4 @@ class RunArtifactSerializerForInsert(serializers.ModelSerializer):
 class ChunkedRunArtifactPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChunkedRunArtifactPart
-        fields = "__all__"
-
-
-class RunResultSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RunResult
-        exclude = [
-            "uuid",
-            "deleted",
-        ]
-
-
-class ChunkedRunResultPartSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChunkedRunResultPart
         fields = "__all__"

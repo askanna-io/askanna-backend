@@ -1,25 +1,17 @@
 from core.urls import router
-from django.conf.urls import include, re_path
-from package.views import (
-    ChunkedPackagePartViewSet,
-    PackageViewSet,
-    ProjectPackageViewSet,
-)
-from project.urls import project_router
+from django.conf.urls import include
+from django.urls import re_path
+from package.views import ChunkedPackagePartViewSet, PackageViewSet
 
-package_router = router.register(r"package", PackageViewSet)
-
-project_router.register(
+package_router = router.register(
     r"package",
-    ProjectPackageViewSet,
-    "project-package",
-    parents_query_lookups=["project__suuid"],
+    PackageViewSet,
+    basename="package",
 )
-
 package_router.register(
     r"packagechunk",
     ChunkedPackagePartViewSet,
-    "package-packagechunk",
+    basename="package-packagechunk",
     parents_query_lookups=["package__suuid"],
 )
 

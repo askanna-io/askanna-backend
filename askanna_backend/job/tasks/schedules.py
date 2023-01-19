@@ -49,9 +49,7 @@ def launch_scheduled_jobs():
         job__project__workspace__deleted__isnull=True,
     ):
         jobdef = job.job
-        package = (
-            Package.objects.filter(finished__isnull=False).filter(project=jobdef.project).order_by("-created").first()
-        )
+        package = Package.objects.active_and_finished().filter(project=jobdef.project).order_by("-created").first()
 
         # create new run and this will automaticly scheduled
         Run.objects.create(

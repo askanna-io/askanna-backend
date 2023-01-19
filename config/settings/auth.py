@@ -30,11 +30,12 @@ def settings(config, env):
     # https://docs.djangoproject.com/en/stable/topics/auth/passwords/#password-validation
     config.AUTH_PASSWORD_VALIDATORS = [
         {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-        {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+        {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 10}},
         {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
         {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
     ]
 
     config.REST_AUTH_SERIALIZERS = {
-        "USER_DETAILS_SERIALIZER": "users.serializers.UserSerializer",
+        "LOGIN_SERIALIZER": "users.serializers.user.LoginSerializer",
+        "USER_DETAILS_SERIALIZER": "users.serializers.user.UserSerializer",
     }

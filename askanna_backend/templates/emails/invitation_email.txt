@@ -3,7 +3,7 @@ JOIN THE WORKSPACE {{ workspace_name }} ON ASKANNA
 You are invited to join the workspace {{ workspace_name }} on Askanna. You can accept the invitation via the join link below.
 
 JOIN {{ workspace_name }}:
-{{web_ui_url}}/join/{{token}}/workspace/{{workspace_suuid}}/people/{{people_suuid}}
+{{web_ui_url}}/join/{{token}}/workspace/{{workspace_suuid}}/people/{{people_suuid}}/
 
 
 What's AskAnna?

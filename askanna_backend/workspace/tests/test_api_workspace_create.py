@@ -1,4 +1,3 @@
-"""Define tests for API of UserProfile."""
 import pytest
 from core.tests.base import BaseUserPopulation
 from django.urls import reverse

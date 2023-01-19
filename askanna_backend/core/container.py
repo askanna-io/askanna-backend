@@ -1,11 +1,13 @@
 import datetime
+import logging
 import time
-import typing
+from typing import Callable, Optional, Tuple
 
 import docker
 import redis
-
-from config.settings.main import env
+from django.conf import settings
+from django.db import IntegrityError
+from job.models import RunImage
 
 
 class RegistryAuthenticationError(Exception):
@@ -34,46 +36,55 @@ class RegistryImageHelper:
     def __init__(
         self,
         client: docker.DockerClient,
-        image_uri: str,
-        username: str = None,
-        password: str = None,
-        logger: typing.Callable[[str], None] = lambda x: x,
+        image_path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        logger: Callable[[str], None] = lambda x: None,
         *args,
         **kwargs,
     ):
-        self.client = client
-        self.image_uri = image_uri
-        self.repository, self.image_tag = docker.utils.parse_repository_tag(image_uri)
-        self.registry, self.repo_name = docker.auth.resolve_repository_name(self.repository)
+        self.image_path = image_path
+        self.image_repository, self.image_tag = docker.utils.parse_repository_tag(self.image_path)  # type: ignore
+        if not self.image_tag:
+            self.image_tag = ""
+        self.image_registry, self.image_repo_name = docker.auth.resolve_repository_name(  # type: ignore
+            self.image_repository
+        )
+
         self.username = username
         self.password = password
+
+        self.client = client
+
         self.logger = logger
+
         self.userinfo = None
-        self.imageinfo = None
+        if self.credentials:
+            self.login()
+        self.image_info = None
 
     def login(self):
         """
         Authenticate to the registry
         """
-        auth_config = {"registry": self.registry, "reauth": True}
-        if self.username and not self.userinfo:
+        auth_config = {"registry": self.image_registry, "reauth": True}
+        if self.credentials and not self.userinfo:
             auth_config.update(**self.credentials)
             try:
                 loginresponse = self.client.login(**auth_config)
-            except docker.errors.APIError as e:
-                self.logger(f"Could not pull image: {self.image_uri}")
-                self.logger(f"Credentials are not correct to login onto {self.registry}")
-                print(e.explanation)
-                raise RegistryAuthenticationError(f"Credentials are not correct to login onto {self.registry}")
+            except docker.errors.APIError as e:  # type: ignore
+                message = f"Credentials are not correct to log in onto {self.image_registry}"
+                logging.info(message)
+                logging.info(get_descriptive_docker_error(e.explanation))
+                self.logger(message)
+                raise RegistryAuthenticationError(message)
             except Exception as e:
-                print("-" * 30)
-                print(e)
-                print("-" * 30)
-
-                self.logger(f"Could not pull image: {self.image_uri}")
-                raise RegistryAuthenticationError(f"Could not authenticate onto {self.registry}")
+                message = f"Could not authenticate onto: {self.image_registry}"
+                logging.info(message)
+                logging.info(e)
+                self.logger(message)
+                raise RegistryAuthenticationError(message)
             else:
-                # store the loginresponse for later useage
                 self.userinfo = loginresponse
 
     @property
@@ -82,54 +93,39 @@ class RegistryImageHelper:
             return {"username": self.username, "password": self.password}
         return {}
 
-    def info(self) -> docker.models.images.RegistryData:
+    def get_image_info(self) -> docker.models.images.RegistryData:  # type: ignore
         """
         Get information about the image, may require authentication
         We will always authenticate first before getting information if username and password is set
         """
-        if self.credentials and not self.userinfo:
+        if not self.image_info:
             self.login()
 
-        if not self.imageinfo:
             try:
-                self.imageinfo = self.client.images.get_registry_data(self.image_uri, auth_config=self.credentials)
-            except docker.errors.APIError as e:
-                self.logger(f"Could not pull image: {self.image_uri}")
+                self.image_info = self.client.images.get_registry_data(self.image_path, auth_config=self.credentials)
+            except docker.errors.APIError as e:  # type: ignore
+                message = f"Could not pull image: {self.image_path}"
+                logging.info(message)
+                logging.info(get_descriptive_docker_error(e.explanation))
+                self.logger(message)
                 self.logger(get_descriptive_docker_error(e.explanation))
-                print(e.explanation)
-                raise RegistryContainerPullError(f"Could not pull image: {self.image_uri}")
-        return self.imageinfo
+                raise RegistryContainerPullError(message)
+
+        return self.image_info
 
     @property
-    def id(self) -> str:
-        return self.info().attrs.get("Id")
+    def image_digest(self) -> str:
+        return self.get_image_info().id
 
     @property
-    def image_sha(self) -> str:
-        return self.info().attrs.get("Descriptor", {}).get("digest")
-
-    @property
-    def short_id(self) -> str:
-        """
-        Unique identifier for the containerimage
-        """
-        return self.info().short_id
-
-    @property
-    def short_id_nosha(self) -> str:
-        """
-        Unique identifier for the containerimage
-        """
-        return self.short_id.replace("sha256:", "")
+    def image_short_id(self) -> str:
+        return self.get_image_info().short_id.replace("sha256:", "")
 
     def pull(self, log=False):
-        """
-        Pull the image
-        """
-        # just call the `.info()` once to setup auth
-        self.info()
+        self.login()
+
         pull_spec = {
-            "repository": self.image_uri,
+            "repository": self.image_path,
             "stream": True,
             "decode": True,
         }
@@ -137,19 +133,21 @@ class RegistryImageHelper:
             pull_spec.update(**{"auth_config": self.credentials})
 
         try:
-            print("Try pulling", self.image_uri)
+            logging.info(f"Pulling image: {self.image_path}")
             image = self.client.api.pull(**pull_spec)
-        except (docker.errors.NotFound, docker.errors.APIError) as e:
-            self.logger(f"Could not pull image: {self.image_uri}")
+        except (docker.errors.NotFound, docker.errors.APIError) as e:  # type: ignore
+            message = f"Could not pull image: {self.image_path}"
+            logging.info(message)
+            logging.info(get_descriptive_docker_error(e.explanation))
+            self.logger(message)
             self.logger(get_descriptive_docker_error(e.explanation))
-            print(e.explanation)
-            raise RegistryContainerPullError(f"Image not found: {self.image_uri}")
+            raise RegistryContainerPullError(message)
         except Exception as e:
-            print("-" * 30)
-            print(e)
-            print("-" * 30)
-            self.logger(f"Could not pull image: {self.image_uri}")
-            raise RegistryContainerPullError(f"Could not pull image: {self.image_uri}")
+            message = f"Could not pull image: {self.image_path}"
+            logging.info(message)
+            logging.info(e)
+            self.logger(message)
+            raise RegistryContainerPullError(message)
         else:
             if log:
                 map(lambda line: self.logger(line.get("status")), image)
@@ -159,12 +157,19 @@ class ContainerImageBuilder:
     def __init__(
         self,
         client: docker.DockerClient,
-        logger: typing.Callable[[str], None] = lambda x: x,
+        image_helper: RegistryImageHelper,
+        image_prefix: str = settings.ASKANNA_ENVIRONMENT,
+        image_dockerfile_path: str = str(settings.APPS_DIR.path("templates")),
+        image_dockerfile: str = "Dockerfile",
+        logger: Callable[[str], None] = lambda x: None,
     ) -> None:
+        self.image_helper = image_helper
+        self.image_prefix = image_prefix
+        self.image_dockerfile_path = image_dockerfile_path
+        self.image_dockerfile = image_dockerfile
         self.client = client
         self.logger = logger
-        self.redis_url = env("REDIS_URL")
-        self.redis = redis.Redis.from_url(self.redis_url)
+        self.redis = redis.Redis.from_url(settings.REDIS_URL)
 
     def get_build_lock(self, run_image):
         return self.redis.get(run_image.suuid)
@@ -176,96 +181,104 @@ class ContainerImageBuilder:
     def remove_build_lock(self, run_image):
         return self.redis.delete(run_image.suuid)
 
-    def get_image(
-        self,
-        repository,
-        tag,
-        digest,
-        imagehelper,
-        model=None,
-        docker_debug_log=False,
-        image_prefix="review",
-        image_template_path="templates/",
-    ):
-        if not model:
-            raise RuntimeError("No model specified to lookup the RunImage")
+    def wait_for_build_lock(self, run_image: RunImage, timeout: int = 300):
+        timeout_stamp = time.time() + timeout
+        while self.get_build_lock(run_image) is not None:
+            time.sleep(1)
+            if time.time() > timeout_stamp:
+                message = f"Timeout while waiting for image '{run_image.name}' to be built by another run."
+                logging.warning(message)
+                self.logger(message)
+                self.logger(
+                    "The image is currently being built by another run. We waited for 5 minutes, but it did not "
+                    "finish. You can try again later or contact support if this problem persists."
+                )
+                raise TimeoutError(message)
 
-        # rule:
-        # Can we find the image_short_id in db?
-        #   yes: set runner_image to prebuild_image name
-        #   no: pull and build
-        run_image, _created = model.objects.get_or_create(
-            **{
-                "name": repository,
-                "tag": tag,
-                "digest": digest,
-            }
+    def get_image_object(self, name: str, tag: str, digest: str) -> Tuple[RunImage, bool]:
+        try:
+            run_image, created = RunImage.objects.get_or_create(name=name, tag=tag, digest=digest)
+        except RunImage.MultipleObjectsReturned:
+            run_image = RunImage.objects.filter(name=name, tag=tag, digest=digest).order_by("-created").first()
+            created = False
+            logging.warning(
+                "Multiple objects returned for RunImage, using the most recent one. More info:\n"
+                f"  name: {name}\n"
+                f"  tag: {tag}\n"
+                f"  digest: {digest}"
+            )
+        except IntegrityError:
+            # If the image was created in another run, we could get an IntegrityError. In that case, we try to get the
+            # image from the database.
+            run_image = RunImage.objects.get(name=name, tag=tag, digest=digest)
+            created = False
+
+        if not run_image:
+            # This should never happen, but just in case a final check if we have a run_image
+            raise RunImage.DoesNotExist
+
+        return run_image, created
+
+    def image_exist(self, image: str) -> bool:
+        """Check if an image is available locally."""
+        try:
+            self.client.images.get(image)
+        except docker.errors.ImageNotFound:  # type: ignore
+            return False
+        else:
+            return True
+
+    def get_image(self) -> RunImage:
+        """Get an image from the registry or build it if it does not exist locally."""
+        run_image, created = self.get_image_object(
+            name=self.image_helper.image_repository,
+            tag=self.image_helper.image_tag,
+            digest=self.image_helper.image_digest,
         )
 
-        if not _created and not run_image.cached_image:
-            # the image was created in another run, wait for it
-            while self.get_build_lock(run_image) is not None:
-                time.sleep(5.0)
-            # retrieve newest information from the database
+        if not created and not run_image.cached_image and self.get_build_lock(run_image) is not None:
+            # The image was created in another run, wait for it during 5 minutes. Else, raise an error.
+            self.wait_for_build_lock(run_image)
             run_image.refresh_from_db()
 
-        if _created or not run_image.cached_image:
-            self.set_build_lock(run_image)
-            # this is a new image
-            # pull image first
-            # might raise `RegistryContainerPullError`
-            imagehelper.pull(log=docker_debug_log)
+        if run_image.cached_image and not self.image_exist(run_image.cached_image):
+            logging.info(f"Cached image {run_image.cached_image} not found. A trigger to rebuild the image is set.")
+            run_image.unset_cached_image()
 
-            # build the new image
-            # tag into askanna repo
-            repository_name = f"{image_prefix}-aa-{run_image.suuid}".lower()
-            repository_tag = imagehelper.short_id_nosha
-            askanna_repository_image_version_name = f"{repository_name}:{repository_tag}"
+        if created or not run_image.cached_image:
+            logging.info(f"Building image {self.image_helper.image_path}")
+            run_image = self.build_image(run_image=run_image)
 
-            try:
-                image, buildlog = self.build(
-                    from_image=f"{imagehelper.repository}@{imagehelper.image_sha}",
-                    tag=askanna_repository_image_version_name,
-                    template_path=image_template_path,
-                    dockerfile="custom_Dockerfile",
-                )
-            except docker.errors.DockerException as e:
-                self.logger(f"Run could not be started because of run errors in the image {imagehelper.repository}")
-                self.logger(e.msg)
-                self.logger("Please follow the instructions on https://docs.askanna.io/ to build your own image.")
-                raise e
-
-            run_image.cached_image = askanna_repository_image_version_name
-            run_image.save(update_fields=["cached_image"])
-            # we just created the image with the following short_id:
-            print(image.short_id)
-            self.remove_build_lock(run_image)
-
-            if docker_debug_log:
-                # log the build steps into the log, only in DEBUG mode
-                map(lambda x: self.logger(x.get("stream")), buildlog)
         return run_image
 
-    def build(
-        self,
-        from_image=None,
-        tag=None,
-        template_path=None,
-        dockerfile=None,
-    ) -> None:
+    def build_image(self, run_image: RunImage):
+        self.set_build_lock(run_image)
 
-        image, buildlog = self.client.images.build(
-            **{
-                "path": template_path,
-                "dockerfile": dockerfile,
-                "pull": True,
-                "tag": tag,
-                "rm": True,
-                # Always remove intermediate containers, even after unsuccessful builds
-                "forcerm": True,
-                "buildargs": {
-                    "IMAGE": from_image,
-                },
-            }
-        )
-        return image, buildlog
+        from_image = f"{self.image_helper.image_repository}@{self.image_helper.image_digest}"
+
+        repository_name = f"aa-{self.image_prefix}-{run_image.suuid}".lower()
+        repository_tag = self.image_helper.image_short_id
+        askanna_repository_image = f"{repository_name}:{repository_tag}"
+
+        try:
+            image, _ = self.client.images.build(  # type: ignore
+                path=self.image_dockerfile_path,
+                dockerfile=self.image_dockerfile,
+                pull=True,
+                tag=askanna_repository_image,
+                rm=True,
+                forcerm=True,
+                buildargs={"IMAGE": from_image},
+            )
+        except docker.errors.DockerException as e:  # type: ignore
+            self.logger(f"Preparing the run image with image '{self.image_helper.image_repository}' failed:")
+            self.logger(e.msg)
+            self.logger("Please follow the instructions on https://docs.askanna.io/ to build your own image.")
+            raise e
+        else:
+            run_image.set_cached_image(askanna_repository_image)
+            logging.info(f"Image {askanna_repository_image} built and cached. Image digest: {image.short_id}")
+        finally:
+            self.remove_build_lock(run_image)
+
+        return run_image

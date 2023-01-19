@@ -10,10 +10,10 @@ from run.models import (
     Run,
     RunArtifact,
     RunLog,
-    RunMetric,
+    RunMetricMeta,
     RunResult,
     RunVariable,
-    RunVariableRow,
+    RunVariableMeta,
 )
 from run.signals import artifact_upload_finish, result_upload_finish
 from users.models import MSP_WORKSPACE
@@ -25,7 +25,6 @@ from config.celery_app import app as celery_app
 def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
     """
     After saving the result, determine the mime-type of the file using python-magic
-    and custom logic to determine specific filetypes
     """
     detected_mimetype = detect_file_mimetype(obj.stored_path)
     if detect_file_mimetype:
@@ -108,7 +107,7 @@ def post_run_deduplicate_metrics(sender, instance, created, **kwargs):
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_metrics",
                 args=None,
-                kwargs={"run_suuid": instance.suuid},
+                kwargs={"run_uuid": instance.uuid},
             )
         )
 
@@ -123,7 +122,7 @@ def post_run_deduplicate_variables(sender, instance, created, **kwargs):
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_variables",
                 args=None,
-                kwargs={"run_suuid": instance.suuid},
+                kwargs={"run_uuid": instance.uuid},
             )
         )
 
@@ -134,7 +133,7 @@ def create_runvariable(sender, instance, created, **kwargs):
     Create intermediate model to store variables for a run
     """
     if created:
-        RunVariable.objects.create(**{"run": instance})
+        RunVariableMeta.objects.create(**{"run": instance})
 
 
 @receiver(pre_save, sender=Run)
@@ -144,21 +143,21 @@ def add_member_to_run(sender, instance, **kwargs):
     membership for it. We know this by job->project->workspace.
     """
     if not instance.member:
-        # first lookup which member this could be based on workspace
-        in_workspace = instance.jobdef.project.workspace
-        member_query = instance.created_by.memberships.filter(
-            object_uuid=in_workspace.uuid,
-            object_type=MSP_WORKSPACE,
-            deleted__isnull=True,
+        workspace = instance.jobdef.project.workspace
+        membership = (
+            instance.created_by.memberships.filter(
+                object_uuid=workspace.uuid,
+                object_type=MSP_WORKSPACE,
+                deleted__isnull=True,
+            )
+            .order_by("-created")
+            .first()
         )
-        if member_query.exists():
-            # get the membership out of it
-            membership = member_query.first()
-            if membership:
-                instance.member = membership
+        if membership:
+            instance.member = membership
 
 
-@receiver(post_save, sender=RunMetric)
+@receiver(post_save, sender=RunMetricMeta)
 def extract_meta_from_metric(sender, instance, created, **kwargs):
     """
     After saving metrics, we want to update the run metric meta information
@@ -170,13 +169,12 @@ def extract_meta_from_metric(sender, instance, created, **kwargs):
     on_commit(
         lambda: celery_app.send_task(
             "run.tasks.extract_run_metric_meta",
-            args=None,
-            kwargs={"metrics_uuid": instance.uuid},
+            kwargs={"metric_meta_uuid": instance.uuid},
         )
     )
 
 
-@receiver(post_save, sender=RunMetric)
+@receiver(post_save, sender=RunMetricMeta)
 def move_metrics_to_rows(sender, instance, created, **kwargs):
     """
     After saving metric, we save the individual rows to a new table which allows us to query the metrics
@@ -188,23 +186,22 @@ def move_metrics_to_rows(sender, instance, created, **kwargs):
     if settings.TEST:
         from run.tasks import move_metrics_to_rows
 
-        move_metrics_to_rows(**{"metrics_uuid": instance.uuid})
+        move_metrics_to_rows(**{"metric_meta_uuid": instance.uuid})
     else:
         on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.move_metrics_to_rows",
-                args=None,
-                kwargs={"metrics_uuid": instance.uuid},
+                kwargs={"metric_meta_uuid": instance.uuid},
             )
         )
 
 
-@receiver(pre_delete, sender=RunMetric)
+@receiver(pre_delete, sender=RunMetricMeta)
 def delete_runmetric(sender, instance, **kwargs):
     instance.prune()
 
 
-@receiver(post_save, sender=RunVariable)
+@receiver(post_save, sender=RunVariableMeta)
 def extract_meta_from_variable(sender, instance, created, **kwargs):
     """
     After saving tracked variables, we want to update the run variable meta information
@@ -217,12 +214,12 @@ def extract_meta_from_variable(sender, instance, created, **kwargs):
         lambda: celery_app.send_task(
             "run.tasks.extract_run_variable_meta",
             args=None,
-            kwargs={"variables_uuid": instance.uuid},
+            kwargs={"variable_meta_uuid": instance.uuid},
         )
     )
 
 
-@receiver(post_save, sender=RunVariable)
+@receiver(post_save, sender=RunVariableMeta)
 def move_variables_to_rows(sender, instance, created, **kwargs):
     """
     After saving variables, we save the individual rows to
@@ -235,21 +232,21 @@ def move_variables_to_rows(sender, instance, created, **kwargs):
     if settings.TEST:
         from run.tasks import move_variables_to_rows
 
-        move_variables_to_rows(**{"variables_uuid": instance.uuid})
+        move_variables_to_rows(**{"variable_meta_uuid": instance.uuid})
     else:
         on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.move_variables_to_rows",
                 args=None,
-                kwargs={"variables_uuid": instance.uuid},
+                kwargs={"variable_meta_uuid": instance.uuid},
             )
         )
 
 
-@receiver(pre_save, sender=RunVariableRow)
+@receiver(pre_save, sender=RunVariable)
 def mask_secret_variables(sender, instance, **kwargs):
     """
-    Only operate on RunVariableRow which are not yet marked as is_masked
+    Only operate on RunVariable which are not yet marked as is_masked
     We check this before actually saving to the database, giving us a chance
     to modify this
 
@@ -275,6 +272,6 @@ def mask_secret_variables(sender, instance, **kwargs):
                 instance.label.append({"name": "is_masked", "value": None, "type": "tag"})
 
 
-@receiver(pre_delete, sender=RunVariable)
+@receiver(pre_delete, sender=RunVariableMeta)
 def delete_runvariable(sender, instance, **kwargs):
     instance.prune()

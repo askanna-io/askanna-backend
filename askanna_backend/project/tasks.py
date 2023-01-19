@@ -1,4 +1,4 @@
-from core.utils import remove_objects
+from core.utils.maintenance import remove_objects
 from project.models import Project
 
 from config.celery_app import app as celery_app

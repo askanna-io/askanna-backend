@@ -28,25 +28,11 @@ class RunArtifact(ArtifactModelMixin, SlimBaseModel):
     def get_full_path(self):
         return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location, self.filename)
 
-    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, to_field="uuid", related_name="artifact")
+    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="artifact")
 
     size = models.PositiveIntegerField(editable=False, default=0)
     count_dir = models.PositiveIntegerField(editable=False, default=0)
     count_files = models.PositiveIntegerField(editable=False, default=0)
-
-    @property
-    def relation_to_json(self):
-        """
-        Used for the serializer to trace back to this instance
-        """
-        return {
-            "relation": "artifact",
-            "suuid": self.suuid,
-            "name": self.get_name(),
-            "size": self.size,
-            "count_dir": self.count_dir,
-            "count_files": self.count_files,
-        }
 
     class Meta:
         db_table = "run_artifact"

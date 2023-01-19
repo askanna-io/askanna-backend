@@ -10,7 +10,7 @@ from django.utils import timezone
 from run.utils import get_unique_names_with_data_type
 
 
-class RunMetric(ArtifactModelMixin, SlimBaseModel):
+class RunMetricMeta(ArtifactModelMixin, SlimBaseModel):
     """Store metrics for a Run"""
 
     filetype = "runmetrics"
@@ -31,7 +31,7 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
     def get_full_path(self):
         return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location, self.filename)
 
-    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, to_field="uuid", related_name="metrics")
+    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="metrics_meta")
 
     @property
     def metrics(self):
@@ -73,14 +73,14 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
         super().prune()
 
         # also remove the rows of metrics attached to this object
-        RunMetricRow.objects.filter(run_suuid=self.suuid).delete()
+        RunMetricRow.objects.filter(run__suuid=self.suuid).delete()
 
     def update_meta(self):
         """
         Update the meta information metric_names and label_names
         """
-        runmetrics = RunMetricRow.objects.filter(run_suuid=self.suuid)
-        if not runmetrics:
+        run_metrics = RunMetricRow.objects.filter(run__suuid=self.suuid)
+        if not run_metrics:
             return
 
         def compose_response(instance, metric):
@@ -92,12 +92,12 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
             }
             return var
 
-        self.count = len(runmetrics)
-        self.size = len(json.dumps([compose_response(self, v) for v in runmetrics]).encode("utf-8"))
+        self.count = len(run_metrics)
+        self.size = len(json.dumps([compose_response(self, v) for v in run_metrics]).encode("utf-8"))
 
         all_metric_names = []
         all_label_names = []
-        for metric in runmetrics:
+        for metric in run_metrics:
             all_metric_names.append(
                 {
                     "name": metric.metric.get("name"),
@@ -116,7 +116,9 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
                         }
                     )
 
-        unique_metric_names = get_unique_names_with_data_type(all_metric_names)
+        unique_metric_names = None
+        if all_metric_names:
+            unique_metric_names = get_unique_names_with_data_type(all_metric_names)
         self.metric_names = unique_metric_names
 
         unique_label_names = None
@@ -127,19 +129,20 @@ class RunMetric(ArtifactModelMixin, SlimBaseModel):
         self.save(update_fields=["count", "size", "metric_names", "label_names"])
 
     class Meta:
-        db_table = "run_metric"
+        db_table = "run_metric_meta"
         ordering = ["-created"]
 
 
+# TODO: Rename to RunMetric after release v0.21.0
 class RunMetricRow(SlimBaseModel):
     """
     Tracked Metrics of a Run
     """
 
-    # We keep hard references to the project/job/run suuid because this model doesn't have hard relations to the other
-    # database models
-    #
-    # project_suuid and job_suuid should not be exposed
+    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="metrics")
+
+    # We keep hard references to the project/job/run suuid because historically this model had no hard relations
+    # to the other database models
     project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     job_suuid = models.CharField(max_length=32, db_index=True, editable=False)
     run_suuid = models.CharField(max_length=32, db_index=True, editable=False)
@@ -159,10 +162,8 @@ class RunMetricRow(SlimBaseModel):
     created = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        db_table = "run_metricrow"
+        db_table = "run_metric_row"
         ordering = ["-created"]
-        verbose_name = "Run metric row"
-        verbose_name_plural = "Run metrics rows"
         indexes = [
             GinIndex(
                 name="runmetric_metric_json_idx",

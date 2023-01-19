@@ -4,7 +4,7 @@ import uuid as _uuid
 from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
-from django_extensions.db.models import ActivatorModel, TimeStampedModel
+from django_extensions.db.models import TimeStampedModel
 
 from .utils.suuid import create_suuid
 
@@ -17,6 +17,9 @@ class DeletedModel(models.Model):
     deleted = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
 
     def to_deleted(self):
+        if self.deleted:
+            return
+
         self.deleted = timezone.now()
         self.save(update_fields=["deleted"])
 
@@ -31,7 +34,7 @@ class DescriptionModel(models.Model):
     An abstract base class model that provides a description field.
     """
 
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=False, default="")
 
     class Meta:
         abstract = True
@@ -73,7 +76,7 @@ class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
 class SlimBaseForAuthModel(SlimBaseModel):
 
-    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4)
+    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
 
     class Meta:
         abstract = True
@@ -83,11 +86,6 @@ class BaseModel(NameDescriptionModel, SlimBaseModel):
     class Meta:
         abstract = True
         ordering = ["-modified"]
-
-
-class ActivatedModel(ActivatorModel, BaseModel):
-    class Meta:
-        abstract = True
 
 
 class AuthorModel(models.Model):

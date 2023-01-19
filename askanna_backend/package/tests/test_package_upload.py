@@ -1,3 +1,4 @@
+import pytest
 from core.tests.base import BaseUploadTestMixin
 from django.urls import reverse
 from job.tests.base import BaseJobTestDef
@@ -41,13 +42,12 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
             },
         )
 
-    def test_create_as_anna(self):
+    def test_create_as_askanna_admin(self):
         """
-        Anna cannot upload because of non-membership
+        An AskAnna admin cannot upload because of non-membership
         """
         self.activate_user("anna")
-
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError) as excinfo:
             self.do_file_upload(
                 create_url=self.create_url,
                 create_chunk_url=self.create_chunk_url,
@@ -56,12 +56,13 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
                 fileobjectname="test-package-admin.zip",
             )
 
+        assert "403" == str(excinfo.value)
+
     def test_create_as_admin(self):
         """
         We can create packages as admin of a workspace
         """
         self.activate_user("admin")
-
         self.do_file_upload(
             create_url=self.create_url,
             create_chunk_url=self.create_chunk_url,
@@ -75,7 +76,6 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
         We can create packages as a regular user of a workspace
         """
         self.activate_user("member")
-
         self.do_file_upload(
             create_url=self.create_url,
             create_chunk_url=self.create_chunk_url,
@@ -84,13 +84,12 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
             fileobjectname="test-package-admin.zip",
         )
 
-    def test_create_as_nonmember(self):
+    def test_create_as_non_member(self):
         """
-        We can create packages as non nember of a workspace, failing the test
+        We cannot create packages as non nember of a workspace
         """
         self.activate_user("non_member")
-
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError) as excinfo:
             self.do_file_upload(
                 create_url=self.create_url,
                 create_chunk_url=self.create_chunk_url,
@@ -98,12 +97,13 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
                 finish_upload_url=self.finish_upload_url,
                 fileobjectname="test-package-admin.zip",
             )
+        assert "403" == str(excinfo.value)
 
     def test_create_as_anonymous(self):
         """
-        Anonymous user just get the error
+        We cannot create packages as an anonymous viewer
         """
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError) as excinfo:
             self.do_file_upload(
                 create_url=self.create_url,
                 create_chunk_url=self.create_chunk_url,
@@ -111,3 +111,4 @@ class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCas
                 finish_upload_url=self.finish_upload_url,
                 fileobjectname="test-package-admin.zip",
             )
+        assert "401" == str(excinfo.value)

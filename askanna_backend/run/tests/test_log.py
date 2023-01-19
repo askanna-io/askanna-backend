@@ -14,8 +14,19 @@ class TestRunLogAPI(BaseRunTest, APITestCase):
         super().setUp()
         self.url = reverse(
             "run-log",
-            kwargs={"version": "v1", "suuid": self.runs["run1"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run1"].suuid,
+            },
         )
+
+    def test_log_as_askanna_admin(self):
+        """
+        We cannot get the log for a run as an AskAnna admin who is not a member of the workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_log_as_admin(self):
         """
@@ -23,51 +34,38 @@ class TestRunLogAPI(BaseRunTest, APITestCase):
         """
         self.activate_user("admin")
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url, HTTP_HOST="testserver")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == self.runlog["run1"].stdout  # type: ignore
 
     def test_log_as_member(self):
         """
         We can get the log for a run as a member
         """
         self.activate_user("member")
+        response = self.client.get(self.url, HTTP_HOST="testserver")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == self.runlog["run1"].stdout  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_log_as_nonmember(self):
+    def test_log_as_non_member(self):
         """
-        We can NOT get the log for a run as a non-member
+        We cannot get the log for a run as a non-member
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_log_as_anonymous(self):
         """
-        We can NOT get the log of a run as anonymous
+        We cannot get the log of a run as anonymous
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-class TestMoreRunLogAPI(BaseRunTest, APITestCase):
-
+class TestRunLogLimitAPI(BaseRunTest, APITestCase):
     """
-    More tests to get the log of a Run
+    More tests to get the log of a run and tests the limit parameter
     """
 
     def setUp(self):
@@ -85,99 +83,100 @@ class TestMoreRunLogAPI(BaseRunTest, APITestCase):
             kwargs={"version": "v1", "suuid": self.runs["run5"].suuid},
         )
 
+    def test_log_as_askanna_admin(self):
+        """
+        We cannot get the log for a run as an AskAnna admin who is not a member of the workspace
+        """
+        self.activate_user("anna")
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_log_as_admin(self):
         """
         We can get the log for a run as an admin
         """
         self.activate_user("admin")
-
         response = self.client.get(
             self.url,
-            format="json",
+            HTTP_HOST="testserver",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == self.runlog["run1"].stdout  # type: ignore
 
     def test_log_as_member(self):
         """
         We can get the log for a run as a member
         """
         self.activate_user("member")
-
         response = self.client.get(
             self.url,
-            format="json",
+            HTTP_HOST="testserver",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == self.runlog["run1"].stdout  # type: ignore
 
-    def test_log_as_nonmember(self):
+    def test_log_as_non_member(self):
         """
-        We can NOT get the log for a run as a non-member
+        We cannot get the log for a run as a non-member
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_log_as_anonymous(self):
         """
         We can NOT get the log of a run as anonymous user
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_log_as_member_partial(self):
         """
-        We can get the log for a run as a member but partial log
+        We can get the log for a run as a member with offset and limit
         """
         self.activate_user("member")
-
-        query_params = {"offset": 1, "limit": 2}
-
         response = self.client.get(
             self.url,
-            query_params,
-            format="json",
+            {
+                "offset": 1,
+                "limit": 2,
+            },
             HTTP_HOST="testserver",
         )
-        self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
-        self.assertEqual(len(response.data.get("results")), 2)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == self.runlog["run1"].stdout[1:3]  # type: ignore
 
-    def test_log_as_member_partial_full(self):
+    def test_log_as_member_limit_full(self):
         """
-        We can get the log for a run as a member but partial full
+        We can get the log for a run as a member with limit set to -1 to get full log
         """
         self.activate_user("member")
-
-        query_params = {"offset": 0, "limit": 1000}
-
         response = self.client.get(
             self.url2,
-            query_params,
-            format="json",
+            {
+                "offset": 0,
+                "limit": -1,
+            },
             HTTP_HOST="testserver",
         )
-        self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
-        self.assertEqual(len(response.data.get("results")), 6)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == self.runlog["run2"].stdout  # type: ignore
 
     def test_log_as_member_while_running(self):
         """
         We can get the log for a run as a member while running
         """
         self.activate_user("member")
-
-        query_params = {"offset": 5, "limit": 5}
-
         response = self.client.get(
             self.url3,
-            query_params,
-            format="json",
+            {
+                "offset": 5,
+                "limit": 5,
+            },
             HTTP_HOST="testserver",
         )
-        self.assertEqual(response.status_code, status.HTTP_206_PARTIAL_CONTENT)
-        self.assertEqual(len(response.data.get("results")), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore

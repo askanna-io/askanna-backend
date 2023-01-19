@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from run.models import Run, RunVariable, RunVariableRow
+from run.models import Run, RunVariable, RunVariableMeta
 from run.tasks.variable import post_run_deduplicate_variables
 
 from .base import (
@@ -16,61 +16,60 @@ class TestRunVariableModel(BaseRunTest, APITestCase):
     Test RunVariable model functions
     """
 
-    def test_runvariables_function_load_from_file(self):
-        self.assertEqual(self.tracked_variables["run1"].load_from_file(), tracked_variables_response_good)
+    def test_run_variables_function_load_from_file(self):
+        assert self.tracked_variables["run1"].load_from_file() == tracked_variables_response_good
 
-    def test_runvariables_function_update_meta_no_metrics_and_no_labels(self):
+    def test_run_variables_function_update_meta_no_metrics_and_no_labels(self):
         modified_before = self.tracked_variables["run7"].modified
         self.tracked_variables["run7"].update_meta()
-        self.assertEqual(self.tracked_variables["run7"].modified, modified_before)
+        assert self.tracked_variables["run7"].modified == modified_before
+        assert self.tracked_variables["run7"].count == 0
+        assert self.tracked_variables["run7"].size == 0
+        assert self.tracked_variables["run7"].variable_names is None
+        assert self.tracked_variables["run7"].label_names is None
 
-        self.assertEqual(self.tracked_variables["run7"].count, 0)
-        self.assertEqual(self.tracked_variables["run7"].size, 0)
-        self.assertIsNone(self.tracked_variables["run7"].variable_names)
-        self.assertIsNone(self.tracked_variables["run7"].label_names)
-
-    def test_runvariables_function_update_meta(self):
+    def test_run_variables_function_update_meta(self):
         modified_before_1 = self.tracked_variables["run7"].modified
         self.tracked_variables["run7"].update_meta()
-        self.assertEqual(self.tracked_variables["run7"].modified, modified_before_1)
-
-        self.assertEqual(self.tracked_variables["run7"].count, 0)
-        self.assertEqual(self.tracked_variables["run7"].size, 0)
-        self.assertIsNone(self.tracked_variables["run7"].variable_names)
-        self.assertIsNone(self.tracked_variables["run7"].label_names)
+        assert self.tracked_variables["run7"].modified == modified_before_1
+        assert self.tracked_variables["run7"].count == 0
+        assert self.tracked_variables["run7"].size == 0
+        assert self.tracked_variables["run7"].variable_names is None
+        assert self.tracked_variables["run7"].label_names is None
 
         self.tracked_variables["run7"].variables = tracked_variables_response_good
         self.tracked_variables["run7"].save()
 
         modified_before_2 = self.tracked_variables["run7"].modified
         self.tracked_variables["run7"].update_meta()
-        self.assertEqual(self.tracked_variables["run7"].modified, modified_before_2)
+        assert self.tracked_variables["run7"].modified == modified_before_2
+        assert self.tracked_variables["run7"].count == 4
+        assert self.tracked_variables["run7"].size == 1198
 
-        self.assertEqual(self.tracked_variables["run7"].count, 4)
-        self.assertEqual(self.tracked_variables["run7"].size, 1198)
         expected_variable_names = [
             {"name": "Accuracy", "type": "integer", "count": 2},
             {"name": "Quality", "type": "string", "count": 2},
         ]
-        self.assertEqual(len(self.tracked_variables["run7"].variable_names), 2)
-        self.assertIn(self.tracked_variables["run7"].variable_names[0], expected_variable_names)
-        self.assertIn(self.tracked_variables["run7"].variable_names[1], expected_variable_names)
+        assert len(self.tracked_variables["run7"].variable_names) == 2  # type: ignore
+        assert self.tracked_variables["run7"].variable_names[0] in expected_variable_names  # type: ignore
+        assert self.tracked_variables["run7"].variable_names[1] in expected_variable_names  # type: ignore
+
         expected_label_names = [
             {"name": "city", "type": "string"},
             {"name": "product", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ]
-        self.assertEqual(len(self.tracked_variables["run7"].label_names), 3)
-        self.assertIn(self.tracked_variables["run7"].label_names[0], expected_label_names)
-        self.assertIn(self.tracked_variables["run7"].label_names[1], expected_label_names)
-        self.assertIn(self.tracked_variables["run7"].label_names[2], expected_label_names)
+        assert len(self.tracked_variables["run7"].label_names) == 3  # type: ignore
+        assert self.tracked_variables["run7"].label_names[0] in expected_label_names  # type: ignore
+        assert self.tracked_variables["run7"].label_names[1] in expected_label_names  # type: ignore
+        assert self.tracked_variables["run7"].label_names[2] in expected_label_names  # type: ignore
 
-    def test_runvariables_function_update_meta_no_labels(self):
+    def test_run_variables_function_update_meta_no_labels(self):
         self.tracked_variables["run6"].update_meta()
-        self.assertEqual(self.tracked_variables["run6"].count, 2)
-        self.assertEqual(self.tracked_variables["run6"].size, 338)
-        self.assertIsNotNone(self.tracked_variables["run6"].variable_names)
-        self.assertIsNone(self.tracked_variables["run6"].label_names)
+        assert self.tracked_variables["run6"].count == 2
+        assert self.tracked_variables["run6"].size == 338
+        assert self.tracked_variables["run6"].variable_names is not None
+        assert self.tracked_variables["run6"].label_names is None
 
 
 class TestTrackedVariablesListAPI(BaseRunTest, APITestCase):
@@ -84,9 +83,19 @@ class TestTrackedVariablesListAPI(BaseRunTest, APITestCase):
             "run-variable-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run_suuid": self.tracked_variables.get("run1").suuid,
+                "parent_lookup_run__suuid": self.tracked_variables["run1"].suuid,
             },
         )
+
+    def test_list_as_askanna_admin(self):
+        """
+        We can list tracked variables as AskAnna admin,
+        but response will be empty because of not having access to this workspace.
+        """
+        self.activate_user("anna")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
     def test_list_as_admin(self):
         """
@@ -94,103 +103,90 @@ class TestTrackedVariablesListAPI(BaseRunTest, APITestCase):
         """
         self.activate_user("admin")
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
     def test_list_as_member(self):
         """
         We can list trackedvariables as member of a workspace
         """
         self.activate_user("member")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
-
-    def test_list_as_nonmember(self):
+    def test_list_as_non_member(self):
         """
-        We can list trackedvariables as nonmember of a workspace,
+        We can list tracked variables as non_member of a workspace,
         but response will be empty because of not having access to this workspace.
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
     def test_list_as_anonymous(self):
         """
-        Anonymous user can list run variables from public projects only
-        Not from this run (private project)
+        We can list tracked variables as anonymous,
+        but response will be empty because of not having access to this workspace.
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
-    def test_list_as_member_order_by_variablename(self):
+    def test_list_as_member_order_by_variable_name(self):
         """
-        We get detail trackedvariables as member of a workspace,
-        but request the trackedvariables to be returned in reversed sort on name
+        We get detail tracked variables as member of a workspace and order them by variable name
         """
         self.activate_user("member")
 
         response = self.client.get(
-            self.url + "?ordering=-variable.name",
-            format="json",
+            self.url,
+            {
+                "order_by": "variable.name",
+            },
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
-        response = self.client.get(
-            self.url + "?ordering=variable.name",
-            format="json",
+        response_reversed = self.client.get(
+            self.url,
+            {
+                "order_by": "-variable.name",
+            },
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response_reversed.status_code == status.HTTP_200_OK
+        assert len(response_reversed.data["results"]) == 4  # type: ignore
 
-    def test_list_as_member_filter_variablename(self):
+        assert (
+            response.data["results"][0]["variable"]["name"]  # type: ignore
+            == response_reversed.data["results"][3]["variable"]["name"]  # type: ignore
+        )
+
+    def test_list_as_member_filter_variable_name(self):
         """
         We test the filter by variable name
         """
         self.activate_user("member")
-
-        query_params = {"variable_name": "Accuracy"}
-
         response = self.client.get(
             self.url,
-            query_params,
-            format="json",
+            {"variable_name": "Accuracy"},
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
 
-    def test_list_as_variable_filter_labelname(self):
+    def test_list_as_variable_filter_label_name(self):
         """
         We test the filter by label name
         """
         self.activate_user("member")
-
-        query_params = {"label_name": "product"}
-
         response = self.client.get(
             self.url,
-            query_params,
-            format="json",
+            {"label_name": "product"},
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
 
 
 class TestTrackedVariablesPublicProjectListAPI(BaseRunTest, APITestCase):
@@ -204,31 +200,26 @@ class TestTrackedVariablesPublicProjectListAPI(BaseRunTest, APITestCase):
             "run-variable-list",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run_suuid": self.tracked_variables.get("run6").suuid,
+                "parent_lookup_run__suuid": self.tracked_variables["run6"].suuid,
             },
         )
 
-    def test_list_as_nonmember(self):
+    def test_list_as_non_member(self):
         """
         Public project run variables are listable by anyone
         """
         self.activate_user("non_member")
-
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
 
     def test_list_as_anonymous(self):
         """
         Public project run variables are listable by anyone
         """
-        response = self.client.get(
-            self.url,
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
 
 
 class TestVariablesUpdateAPI(BaseRunTest, APITestCase):
@@ -242,51 +233,60 @@ class TestVariablesUpdateAPI(BaseRunTest, APITestCase):
             "run-variable-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__suuid": self.tracked_variables.get("run1").suuid,
-                "run__suuid": self.tracked_variables.get("run1").suuid,
+                "parent_lookup_run__suuid": self.tracked_variables["run1"].suuid,
+                "run__suuid": self.tracked_variables["run1"].suuid,
             },
         )
+
+    def test_update_as_askanna_admin(self):
+        """
+        We cannot update variables as AskAnna admin that is not member of a workspace
+        """
+        self.activate_user("anna")
+        response = self.client.patch(
+            self.url,
+            {"variables": variable_response_good_small},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_as_admin(self):
         """
         We update variables as admin of a workspace
         """
         self.activate_user("admin")
-
         response = self.client.patch(
             self.url,
             {"variables": variable_response_good_small},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, variable_response_good_small)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data is None  # type: ignore
 
     def test_update_as_member(self):
         """
         We update variables as member of a workspace
         """
         self.activate_user("member")
-
         response = self.client.patch(
             self.url,
             {"variables": variable_response_good_small},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, variable_response_good_small)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data is None  # type: ignore
 
-    def test_update_as_nonmember(self):
+    def test_update_as_non_member(self):
         """
-        We cannot update variables as nonmember of a workspace
+        We cannot update variables as non-member of a workspace
         """
         self.activate_user("non_member")
-
         response = self.client.patch(
             self.url,
             {"variables": variable_response_good_small},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_as_anonymous(self):
         """
@@ -294,9 +294,10 @@ class TestVariablesUpdateAPI(BaseRunTest, APITestCase):
         """
         response = self.client.patch(
             self.url,
+            {"variables": variable_response_good_small},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
@@ -329,43 +330,42 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
             },
         ]
 
-        self.run_variables_deduplicate = RunVariable.objects.get(run=self.run_deduplicate)
+        self.run_variables_deduplicate = RunVariableMeta.objects.get(run=self.run_deduplicate)
         self.run_variables_deduplicate.variables = self.variables_to_test_deduplicate
         self.run_variables_deduplicate.save()
 
     def test_run_variables_deduplicate(self):
         #  Count variables before adding duplicates
-        variables = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
-        self.assertEqual(len(variables), 2)
-        variable_record = RunVariable.objects.get(uuid=self.run_variables_deduplicate.uuid)
-        self.assertEqual(variable_record.count, 2)
+        variables = RunVariable.objects.filter(run=self.run_deduplicate)
+        assert len(variables) == 2
+        variable_record = RunVariableMeta.objects.get(uuid=self.run_variables_deduplicate.uuid)
+        assert variable_record.count == 2
 
         # Add duplicate variables
         for variable in self.variables_to_test_deduplicate:
-            RunVariableRow.objects.create(
+            RunVariable.objects.create(
                 project_suuid=self.run_deduplicate.jobdef.project.suuid,
                 job_suuid=self.run_deduplicate.jobdef.suuid,
                 run_suuid=self.run_deduplicate.suuid,
+                run=self.run_deduplicate,
                 variable=variable["variable"],
                 label=variable["label"],
                 created=variable["created"],
             )
         self.run_variables_deduplicate.update_meta()
 
-        variables_with_duplicates = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
-        self.assertEqual(len(variables_with_duplicates), 4)
-        variable_record_with_duplicates = RunVariable.objects.get(uuid=self.run_variables_deduplicate.uuid)
-        self.assertEqual(variable_record_with_duplicates.count, 4)
+        variables_with_duplicates = RunVariable.objects.filter(run=self.run_deduplicate)
+        assert len(variables_with_duplicates) == 4
+        variable_record_with_duplicates = RunVariableMeta.objects.get(uuid=self.run_variables_deduplicate.uuid)
+        assert variable_record_with_duplicates.count == 4
 
-        # Dedepulicate run metric records
-        post_run_deduplicate_variables(self.run_deduplicate.suuid)
+        # Dedepulicate run variable records
+        post_run_deduplicate_variables(run_uuid=self.run_deduplicate.uuid)
 
-        variables_after_deduplicates = RunVariableRow.objects.filter(run_suuid=self.run_deduplicate.suuid)
-        self.assertEqual(len(variables_after_deduplicates), 2)
-
-        # Deduplicate should also update the main metrics count
-        variable_record_after_deduplicate = RunVariable.objects.get(uuid=self.run_variables_deduplicate.uuid)
-        self.assertEqual(variable_record_after_deduplicate.count, 2)
+        variables_after_deduplicates = RunVariable.objects.filter(run=self.run_deduplicate)
+        assert len(variables_after_deduplicates) == 2
+        variable_record_after_deduplicate = RunVariableMeta.objects.get(uuid=self.run_variables_deduplicate.uuid)
+        assert variable_record_after_deduplicate.count == 2
 
     def tearDown(self):
         super().tearDown()
