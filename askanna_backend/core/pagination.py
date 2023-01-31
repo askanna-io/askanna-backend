@@ -373,7 +373,8 @@ class CursorPagination(pagination.CursorPagination):
             attr = instance[field_name]
         elif "__" in field_name:
             attr = self._get_position_from_nested_instance(instance, field_name)
-        else:
+
+        if not "attr" in locals() or attr is None:
             attr = getattr(instance, field_name)
 
         return str(attr)
@@ -381,7 +382,10 @@ class CursorPagination(pagination.CursorPagination):
     def _get_position_from_nested_instance(self, instance, field_name):
         for i in range(len(field_name.split("__")) - 1):
             instance = getattr(instance, field_name.split("__")[i])
-            attr = getattr(instance, field_name.split("__")[i + 1])
+            try:
+                attr = getattr(instance, field_name.split("__")[i + 1])
+            except AttributeError:
+                return None
 
         return attr  # type: ignore
 
