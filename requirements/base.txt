@@ -43,8 +43,3 @@ django-timezone-field~=5.0.0  # for celery beat | https://github.com/mfogel/djan
 # ----------------------------------------------------------------------------------------------------
 python-magic~=0.4.27          # http://github.com/ahupp/python-magic
 filetype~=1.2.0               # https://github.com/h2non/filetype.py
-
-# Maintenance
-# ----------------------------------------------------------------------------------------------------
-django-rename-app ~= 0.1.5   # Temp for rename users app to accounts
-                             # https://github.com/odwyersoftware/django-rename-app

@@ -4,7 +4,6 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-python manage.py rename_app users account
 python manage.py migrate --noinput
 
 python manage.py install_askanna_create_project
