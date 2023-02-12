@@ -1,6 +1,7 @@
 import os
 from zipfile import ZipFile
 
+from account.models import MSP_WORKSPACE
 from core.config import AskAnnaConfig
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -9,7 +10,6 @@ from django.dispatch import receiver
 from job.models import JobDef, ScheduledJob
 from package.models import Package
 from package.signals import package_upload_finish
-from users.models import MSP_WORKSPACE
 
 
 @receiver(package_upload_finish)

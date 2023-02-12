@@ -1,5 +1,6 @@
 import os
 
+from account.models import MSP_WORKSPACE, Membership
 from core.mixins import ObjectRoleMixin
 from core.permissions.role import RoleBasedPermission
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
@@ -21,7 +22,6 @@ from run.serializers import (
     RunArtifactSerializerForInsert,
 )
 from run.signals import artifact_upload_finish
-from users.models import MSP_WORKSPACE, Membership
 
 
 @extend_schema_view(

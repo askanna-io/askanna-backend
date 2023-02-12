@@ -9,10 +9,10 @@ urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # Authentication support over Django DRF
-    re_path(r"^(?P<version>(v1))/auth/", include("users.rest_auth_urls")),
+    re_path(r"^(?P<version>(v1))/auth/", include("account.rest_auth_urls")),
     # API Urls
     path("", include("core.urls")),
-    path("", include("users.urls")),
+    path("", include("account.urls")),
     path("", include("workspace.urls")),
     path("", include("project.urls")),
     path("", include("variable.urls")),

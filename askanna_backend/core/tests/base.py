@@ -4,10 +4,7 @@ import uuid
 import zipfile
 from typing import Callable, Optional
 
-from django.db.models import signals
-from project.models import Project
-from rest_framework import status
-from users.models import (
+from account.models import (
     MSP_WORKSPACE,
     WS_ADMIN,
     WS_MEMBER,
@@ -15,6 +12,9 @@ from users.models import (
     User,
     UserProfile,
 )
+from django.db.models import signals
+from project.models import Project
+from rest_framework import status
 from workspace.listeners import install_demo_project_in_workspace
 from workspace.models import Workspace
 

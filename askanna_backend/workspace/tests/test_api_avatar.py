@@ -1,9 +1,9 @@
 import pytest
+from account.models import MSP_WORKSPACE, Invitation
 from core.tests.base import BaseUserPopulation
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from users.models import MSP_WORKSPACE, Invitation
 
 pytestmark = pytest.mark.django_db
 

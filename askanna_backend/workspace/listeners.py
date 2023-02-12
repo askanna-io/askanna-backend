@@ -1,6 +1,6 @@
+from account.models import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from users.models import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
 from workspace.models import Workspace
 
 

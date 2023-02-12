@@ -1,11 +1,11 @@
 import django_filters
+from account.models import MSP_WORKSPACE, Membership
 from core.filters import case_insensitive
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions.role import RoleBasedPermission
 from django.db.models import BooleanField, Exists, OuterRef, Q, Value
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
-from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
 

@@ -59,7 +59,7 @@ class JobPayload(SlimBaseModel):
 
     size = models.PositiveIntegerField(editable=False, default=0)
     lines = models.PositiveIntegerField(editable=False, default=0)
-    owner = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
+    owner = models.ForeignKey("account.User", on_delete=models.SET_NULL, null=True)
 
     @property
     def payload(self):

@@ -1,3 +1,4 @@
+from account.models import MSP_WORKSPACE, Membership
 from core.filters import filter_array, filter_multiple
 from core.mixins import ObjectRoleMixin, UpdateModelWithoutPartialUpateMixin
 from core.permissions.role import RoleBasedPermission
@@ -11,7 +12,6 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from run.models import Run, RunMetric, RunMetricMeta
 from run.serializers.metric import RunMetricSerializer, RunMetricUpdateSerializer
-from users.models import MSP_WORKSPACE, Membership
 
 
 class RunMetricObjectMixin(ObjectRoleMixin):

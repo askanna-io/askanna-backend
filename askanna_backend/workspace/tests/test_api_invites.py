@@ -1,12 +1,5 @@
 import pytest
-from django.core import mail
-from django.db.models import signals
-from django.test import override_settings
-from django.urls import reverse
-from django.utils import timezone
-from rest_framework import status
-from rest_framework.test import APITestCase
-from users.models import (
+from account.models import (
     MSP_WORKSPACE,
     WS_ADMIN,
     WS_MEMBER,
@@ -14,6 +7,13 @@ from users.models import (
     User,
     UserProfile,
 )
+from django.core import mail
+from django.db.models import signals
+from django.test import override_settings
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from ..listeners import install_demo_project_in_workspace
 from ..models import Workspace

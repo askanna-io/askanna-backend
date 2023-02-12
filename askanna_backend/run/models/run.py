@@ -81,7 +81,7 @@ class Run(AuthorModel, BaseModel):
     status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
 
     trigger = models.CharField(max_length=20, blank=True, null=True, default="API")
-    member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
+    member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     # Register the start and end of a run
     started = models.DateTimeField(null=True, editable=False)

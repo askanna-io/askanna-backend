@@ -2,6 +2,7 @@ import io
 import json
 
 import django_filters
+from account.models import MSP_WORKSPACE
 from core.const import ALLOWED_API_AGENTS
 from core.filters import filter_multiple
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
@@ -23,7 +24,6 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from run.models import Run
 from run.serializers.run import RunStatusSerializer
-from users.models import MSP_WORKSPACE
 
 
 class JobFilterSet(django_filters.FilterSet):

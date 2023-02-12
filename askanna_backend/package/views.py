@@ -1,6 +1,7 @@
 import os
 
 import django_filters
+from account.models import MSP_WORKSPACE, Membership
 from core.filters import filter_multiple
 from core.mixins import ObjectRoleMixin, SerializerByActionMixin
 from core.permissions.role import RoleBasedPermission
@@ -18,7 +19,6 @@ from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
-from users.models import MSP_WORKSPACE, Membership
 
 from askanna_backend.package.serializers.chunked_package import (
     ChunkedPackagePartSerializer,

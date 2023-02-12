@@ -1,9 +1,9 @@
 import io
 from unittest import mock
 
+from account.models import User
 from django.test import override_settings
 from rest_framework.test import APITestCase
-from users.models import User
 
 
 class SqlPrintMiddlewareTest(APITestCase):

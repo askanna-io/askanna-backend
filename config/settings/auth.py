@@ -13,7 +13,7 @@ def settings(config, env):
         "django.contrib.auth.backends.ModelBackend",
     ]
     # https://docs.djangoproject.com/en/stable/ref/settings/#auth-user-model
-    config.AUTH_USER_MODEL = "users.User"
+    config.AUTH_USER_MODEL = "account.User"
     # https://docs.djangoproject.com/en/stable/ref/settings/#login-redirect-url
     config.LOGIN_REDIRECT_URL = "/"
 
@@ -36,6 +36,6 @@ def settings(config, env):
     ]
 
     config.REST_AUTH_SERIALIZERS = {
-        "LOGIN_SERIALIZER": "users.serializers.user.LoginSerializer",
-        "USER_DETAILS_SERIALIZER": "users.serializers.user.UserSerializer",
+        "LOGIN_SERIALIZER": "account.serializers.user.LoginSerializer",
+        "USER_DETAILS_SERIALIZER": "account.serializers.user.UserSerializer",
     }

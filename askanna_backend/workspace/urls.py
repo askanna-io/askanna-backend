@@ -1,8 +1,8 @@
+from account.views.me import WorkspaceMeAvatarViewSet, WorkspaceMeViewSet
+from account.views.people import PeopleViewSet
 from core.urls import router
 from django.conf.urls import include
 from django.urls import re_path
-from users.views.me import WorkspaceMeAvatarViewSet, WorkspaceMeViewSet
-from users.views.people import PeopleViewSet
 from workspace.views import WorkspaceViewSet
 
 workspace_router = router.register(

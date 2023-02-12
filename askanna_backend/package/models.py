@@ -54,7 +54,7 @@ class Package(AuthorModel, BaseModel):
     )
     size = models.IntegerField(help_text="Size of this package in bytes")
 
-    member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
+    member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     # Store when it was finished uploading
     finished = models.DateTimeField(
