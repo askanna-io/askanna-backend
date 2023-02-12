@@ -99,11 +99,13 @@ THIRD_PARTY_APPS = [
     "health_check.contrib.celery_ping",
     "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
     "health_check.contrib.redis",
+    # Temporary to rename users to accounts
+    "django_rename_app",
 ]
 
 ASKANNA_APPS = [
     "core",
-    "users",
+    "account",
     "workspace",
     "project",
     "variable",

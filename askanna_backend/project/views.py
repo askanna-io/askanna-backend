@@ -1,4 +1,5 @@
 import django_filters
+from account.models import MSP_WORKSPACE, Membership
 from core.filters import case_insensitive, filter_multiple
 from core.mixins import (
     ObjectRoleMixin,
@@ -13,7 +14,6 @@ from project.models import Project
 from project.serializers import ProjectCreateSerializer, ProjectSerializer
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotAuthenticated
-from users.models import MSP_WORKSPACE, Membership
 from workspace.models import Workspace
 
 

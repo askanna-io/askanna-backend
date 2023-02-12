@@ -1,3 +1,7 @@
+from account.serializers.people import (
+    MembershipRelationSerializer,
+    MembershipWithAvatarRelationSerializer,
+)
 from django.core.exceptions import ObjectDoesNotExist
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
@@ -13,10 +17,6 @@ from run.models import Run
 from run.serializers.artifact_relation import ArtifactRelationSerializer
 from run.serializers.log import LogRelationSerializer
 from run.serializers.result import ResultRelationSerializer
-from users.serializers.people import (
-    MembershipRelationSerializer,
-    MembershipWithAvatarRelationSerializer,
-)
 from workspace.serializers import WorkspaceRelationSerializer
 
 

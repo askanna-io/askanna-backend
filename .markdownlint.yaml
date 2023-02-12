@@ -1,0 +1,6 @@
+default: true
+
+MD013:
+  line_length: 119
+  tables: false
+  code_blocks: false

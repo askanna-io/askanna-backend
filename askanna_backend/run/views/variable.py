@@ -1,3 +1,4 @@
+from account.models import MSP_WORKSPACE, Membership
 from core.filters import filter_array, filter_multiple
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions.role import RoleBasedPermission
@@ -10,7 +11,6 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from run.models import Run, RunVariable, RunVariableMeta
 from run.serializers.variable import RunVariableSerializer, RunVariableUpdateSerializer
-from users.models import MSP_WORKSPACE, Membership
 
 
 class RunVariableObjectMixin(ObjectRoleMixin):

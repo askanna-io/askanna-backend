@@ -1,5 +1,6 @@
 import os
 
+from account.models import MSP_WORKSPACE
 from core.filters import filter_multiple
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions.role import RoleBasedPermission
@@ -17,7 +18,6 @@ from rest_framework.response import Response
 from run.models import RedisLogQueue
 from run.models.run import Run, get_status_external
 from run.serializers.run import RunSerializer, RunStatusSerializer
-from users.models import MSP_WORKSPACE
 
 
 class RunFilterSet(FilterSet):

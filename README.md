@@ -20,13 +20,15 @@ variables.
 Using Docker to run locally requires the least effort and when development for the `askanna-backend` is not your primary
 goal, we advise you to do this setup.
 
-First make sure you have Docker installed on your system: https://docs.docker.com/engine/install/
+First make sure you have Docker installed on your system:
+[https://docs.docker.com/engine/install/](https://docs.docker.com/engine/install/)
 
-Consult this guide to install Docker CE on your Ubuntu sytem: https://docs.docker.com/install/linux/docker-ce/ubuntu/
+Consult this guide to install Docker CE on your Ubuntu sytem:
+[https://docs.docker.com/install/linux/docker-ce/ubuntu/](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 
 Additionally we have a setup which uses Docker Compose to launch the whole stack of Docker images. This requires
 `docker-compose` to be installed. Please follow the guide to install this on your system:
-https://docs.docker.com/compose/install/
+[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
 
 ### Run via Docker
 
@@ -92,7 +94,7 @@ This will remove all volumes which where created for `askanna-backend` to run.
 
 ## Basic commands
 
-### Setting up your users
+### Setting up your account
 
 To create a **superuser account**, use this command:
 
@@ -101,10 +103,10 @@ python manage.py createsuperuser
 ```
 
 When you logged in as super user, you can also create a normal user via the Django admin:
-http://localhost:8000/admin/users/user/add/
+[http://localhost:8000/admin/account/user/add/](http://localhost:8000/admin/account/user/add/)
 
 **Tip:** for convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox
-(or similar), so that you can see how the site behaves for both kinds of users.
+(or similar), so that you can see how the site behaves for both kinds of accounts.
 
 **Hint:** when you run the application via Docker Compose, you need to setup a terminal session to the Docker
 container:
@@ -155,7 +157,7 @@ To monitor what's going on in the Celery worker, you can use [Flower](https://fl
 user & password are set in your Django environment file `.env.django` with the variables `CELERY_FLOWER_USER` and
 `CELERY_FLOWER_PASSWORD`.
 
-When you develop locally, you can open Flower via: http://localhost:5555
+When you develop locally, you can open Flower via: [http://localhost:5555](http://localhost:5555)
 
 ### Sentry
 

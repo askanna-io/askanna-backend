@@ -1,6 +1,7 @@
 import os
 from zipfile import ZipFile
 
+from account.models import MSP_WORKSPACE
 from core.utils import detect_file_mimetype, get_files_and_directories_in_zip_file
 from django.conf import settings
 from django.db.models.signals import post_save, pre_delete, pre_save
@@ -16,7 +17,6 @@ from run.models import (
     RunVariableMeta,
 )
 from run.signals import artifact_upload_finish, result_upload_finish
-from users.models import MSP_WORKSPACE
 
 from config.celery_app import app as celery_app
 

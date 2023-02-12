@@ -19,7 +19,7 @@ class ScheduledJob(SlimBaseModel):
     cron_definition = models.CharField(max_length=128)
     cron_timezone = models.CharField(max_length=64)
 
-    member = models.ForeignKey("users.Membership", on_delete=models.CASCADE, null=True)
+    member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     last_run = models.DateTimeField(null=True, help_text="The last run of this scheduled job")
     next_run = models.DateTimeField(

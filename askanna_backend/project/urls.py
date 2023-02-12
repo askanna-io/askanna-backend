@@ -1,8 +1,8 @@
+from account.views.me import ProjectMeViewSet
 from core.urls import router
 from django.conf.urls import include
 from django.urls import re_path
 from project.views import ProjectView
-from users.views.me import ProjectMeViewSet
 
 project_router = router.register(r"project", ProjectView, basename="project")
 

@@ -1,3 +1,4 @@
+from account.models import MSP_WORKSPACE, Membership
 from core.filters import OrderingFilter
 from core.mixins import ObjectRoleMixin
 from core.permissions.role import RoleBasedPermission
@@ -11,7 +12,6 @@ from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from run.models import Run
-from users.models import MSP_WORKSPACE, Membership
 
 
 class JobPayloadView(

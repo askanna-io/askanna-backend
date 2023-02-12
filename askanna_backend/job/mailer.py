@@ -2,6 +2,7 @@ import json
 from typing import Optional
 
 import pytz
+from account.models import Membership
 from core.config import Job as JobConfig
 from core.mail import send_email
 from core.utils import flatten, is_valid_email, parse_string, pretty_time_delta
@@ -9,7 +10,6 @@ from core.utils.config import get_setting_from_database
 from django.conf import settings
 from job.models import JobDef as Job
 from run.models import Run
-from users.models import Membership
 from variable.models import Variable
 
 

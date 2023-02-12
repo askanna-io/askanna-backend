@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("job", "__first__"),
         ("package", "__first__"),
-        ("users", "0002_alter_user_id"),
+        ("account", "0002_alter_user_id"),
     ]
 
     operations = [
@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                         (
                             "member",
                             models.ForeignKey(
-                                null=True, on_delete=django.db.models.deletion.CASCADE, to="users.membership"
+                                null=True, on_delete=django.db.models.deletion.CASCADE, to="account.membership"
                             ),
                         ),
                         (

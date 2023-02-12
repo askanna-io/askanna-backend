@@ -1,5 +1,6 @@
 import os
 
+from account.models import Membership
 from core.mixins import ObjectRoleMixin
 from core.permissions.role import RoleBasedPermission
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
@@ -12,7 +13,6 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from run.models import ChunkedRunResultPart, Run, RunResult
 from run.serializers import ChunkedRunResultPartSerializer, RunResultSerializer
 from run.signals import result_upload_finish
-from users.models import Membership
 
 
 class BaseRunResultCreateView(

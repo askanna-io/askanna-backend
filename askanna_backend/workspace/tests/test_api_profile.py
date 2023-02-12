@@ -1,11 +1,11 @@
 import pytest
+from account.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
 from core.tests.base import BaseUserPopulation
 from django.db.models import signals
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-from users.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
 from workspace.listeners import install_demo_project_in_workspace
 
 from ..models import Workspace
