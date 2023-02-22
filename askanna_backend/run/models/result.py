@@ -79,7 +79,7 @@ class RunResult(BaseModel):
 
     class Meta:
         db_table = "run_result"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
 class ChunkedRunResultPart(SlimBaseModel):
@@ -91,6 +91,6 @@ class ChunkedRunResultPart(SlimBaseModel):
     runresult = models.ForeignKey("RunResult", on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         verbose_name = "Run result chunk"
         verbose_name_plural = "Run result chunks"

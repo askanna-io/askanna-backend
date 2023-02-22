@@ -11,16 +11,16 @@ class JobDefAdmin(admin.ModelAdmin):
         "description",
         "environment_image",
         "timezone",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
         "environment_image",
         "timezone",
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
     ]
     raw_id_fields = [
         "project",
@@ -30,13 +30,13 @@ class JobDefAdmin(admin.ModelAdmin):
         "suuid",
         "name",
         "project",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -61,16 +61,16 @@ class JobPayloadAdmin(admin.ModelAdmin):
         "lines",
         "size",
         "owner",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
         "lines",
         "size",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
     raw_id_fields = [
         "jobdef",
@@ -84,12 +84,12 @@ class JobPayloadAdmin(admin.ModelAdmin):
         "size",
         "lines",
         "owner",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -117,32 +117,32 @@ class RunImageAdmin(admin.ModelAdmin):
         "description",
         "digest",
         "cached_image",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
         "name",
         "tag",
         "digest",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
 
     list_display = [
         "name",
         "tag",
         "cached_image",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -166,16 +166,16 @@ class ScheduledJobAdmin(admin.ModelAdmin):
         "raw_definition",
         "cron_definition",
         "cron_timezone",
-        "last_run",
-        "next_run",
-        "modified",
-        "created",
-        "deleted",
+        "last_run_at",
+        "next_run_at",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
     raw_id_fields = [
         "job",
@@ -189,16 +189,16 @@ class ScheduledJobAdmin(admin.ModelAdmin):
         "raw_definition",
         "cron_definition",
         "cron_timezone",
-        "last_run",
-        "next_run",
-        "created",
+        "last_run_at",
+        "next_run_at",
+        "created_at",
     ]
-    date_hierarchy = "next_run"
+    date_hierarchy = "next_run_at"
     list_filter = [
-        "last_run",
-        "next_run",
-        "created",
-        "deleted",
+        "last_run_at",
+        "next_run_at",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",

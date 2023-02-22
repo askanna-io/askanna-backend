@@ -9,8 +9,8 @@ class ScheduleSerializer(serializers.Serializer):
     raw_definition = serializers.CharField()
     cron_definition = serializers.CharField()
     cron_timezone = serializers.CharField()
-    next_run = serializers.DateTimeField()
-    last_run = serializers.DateTimeField()
+    next_run_at = serializers.DateTimeField()
+    last_run_at = serializers.DateTimeField()
 
 
 class NotificationObjectSerializer(serializers.Serializer):
@@ -67,8 +67,8 @@ class JobSerializer(serializers.ModelSerializer):
             "notifications",
             "project",
             "workspace",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 
@@ -100,8 +100,8 @@ class JobPayloadSerializer(serializers.ModelSerializer):
             "suuid",
             "size",
             "lines",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 

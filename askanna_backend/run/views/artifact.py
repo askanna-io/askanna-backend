@@ -120,9 +120,13 @@ class RunArtifactView(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["size"]
         instance_obj.size = resume_obj.size
-        instance_obj.save(update_fields=update_fields)
+        instance_obj.save(
+            update_fields=[
+                "size",
+                "modified_at",
+            ]
+        )
 
     # overwrite create row, we need to add the run
     def create(self, request, *args, **kwargs):

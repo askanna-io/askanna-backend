@@ -7,7 +7,7 @@ class RunResultSerializer(serializers.ModelSerializer):
         model = RunResult
         exclude = [
             "uuid",
-            "deleted",
+            "deleted_at",
         ]
 
 

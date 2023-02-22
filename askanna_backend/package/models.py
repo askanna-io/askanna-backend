@@ -13,17 +13,19 @@ from package.signals import package_upload_finish
 class PackageQuerySet(models.QuerySet):
     def active(self):
         return self.filter(
-            deleted__isnull=True,
-            project__deleted__isnull=True,
-            project__workspace__deleted__isnull=True,
+            deleted_at__isnull=True,
+            project__deleted_at__isnull=True,
+            project__workspace__deleted_at__isnull=True,
         ).exclude(original_filename="")
 
     def active_and_finished(self):
-        return self.active().filter(finished__isnull=False)
+        return self.active().filter(finished_at__isnull=False)
 
     def inactive(self):
         return self.filter(
-            Q(deleted__isnull=False) | Q(project__deleted__isnull=False) | Q(project__workspace__deleted__isnull=False)
+            Q(deleted_at__isnull=False)
+            | Q(project__deleted_at__isnull=False)
+            | Q(project__workspace__deleted_at__isnull=False)
         )
 
 
@@ -57,13 +59,13 @@ class Package(AuthorModel, BaseModel):
     member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     # Store when it was finished uploading
-    finished = models.DateTimeField(
-        "Finished upload",
+    finished_at = models.DateTimeField(
+        "Finished upload at",
         blank=True,
         auto_now_add=False,
         auto_now=False,
         null=True,
-        help_text="Time when upload of this package was finished",
+        help_text="Date and time when upload of this package was finished",
         db_index=True,
     )
 
@@ -142,7 +144,7 @@ class Package(AuthorModel, BaseModel):
         return AskAnnaConfig.from_stream(open(askanna_yml, "r"))
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
 class ChunkedPackagePart(models.Model):

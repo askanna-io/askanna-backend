@@ -30,7 +30,7 @@ def is_email_active_in_object_membership(email: str, object_uuid: str) -> bool:
 
     return (
         Membership.objects.filter(
-            Q(invitation__email__iexact=email) | (Q(user__email__iexact=email, deleted__isnull=True))
+            Q(invitation__email__iexact=email) | (Q(user__email__iexact=email, deleted_at__isnull=True))
         )
         .filter(object_uuid=object_uuid)
         .exists()
@@ -70,7 +70,15 @@ class PeopleSerializer(serializers.ModelSerializer):
         if "role_code" in validated_data:
             instance.role = validated_data["role_code"]
 
-        instance.save(update_fields=["use_global_profile", "name", "job_title", "role", "modified"])
+        instance.save(
+            update_fields=[
+                "use_global_profile",
+                "name",
+                "job_title",
+                "role",
+                "modified_at",
+            ]
+        )
 
         return instance
 
@@ -143,7 +151,7 @@ class InviteSerializer(serializers.Serializer):
             object_type=data["object_type"],
             object_uuid=data["object_uuid"],
             user=self.context.get("request").user,
-            deleted__isnull=True,
+            deleted_at__isnull=True,
         )
         if current_user_role.role != "WA":
             raise serializers.ValidationError({"role": ["You are not allowed to set an invite role to admin."]})
@@ -248,7 +256,7 @@ class AcceptInviteSerializer(serializers.Serializer):
             .filter(
                 user=user,
                 object_uuid=self.instance.object_uuid,
-                deleted__isnull=True,
+                deleted_at__isnull=True,
             )
             .exists()
         ):

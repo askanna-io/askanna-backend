@@ -12,15 +12,15 @@ from config.celery_app import app as celery_app
 def fix_missed_scheduledjobs():
     """
     Fix edgecases where we didnt' ran a job, maybe because of system outage
-    Select scheduled jobs which next_run is in the past (at least 1 minute older than now)
+    Select scheduled jobs which next_run_at is in the past (at least 1 minute older than now)
     Update them with `.update_next()`
     """
     now = datetime.datetime.now(tz=datetime.timezone.utc).replace(second=0, microsecond=0)
     for job in ScheduledJob.objects.filter(
-        next_run__lt=now - datetime.timedelta(minutes=1),
-        job__deleted__isnull=True,
-        job__project__deleted__isnull=True,
-        job__project__workspace__deleted__isnull=True,
+        next_run_at__lt=now - datetime.timedelta(minutes=1),
+        job__deleted_at__isnull=True,
+        job__project__deleted_at__isnull=True,
+        job__project__workspace__deleted_at__isnull=True,
     ):
         job.update_next()
 
@@ -42,14 +42,14 @@ def launch_scheduled_jobs():
     """
     now = datetime.datetime.now(tz=datetime.timezone.utc).replace(second=0, microsecond=0)
     for job in ScheduledJob.objects.filter(
-        next_run__gte=now,
-        next_run__lt=now + datetime.timedelta(minutes=1),
-        job__deleted__isnull=True,
-        job__project__deleted__isnull=True,
-        job__project__workspace__deleted__isnull=True,
+        next_run_at__gte=now,
+        next_run_at__lt=now + datetime.timedelta(minutes=1),
+        job__deleted_at__isnull=True,
+        job__project__deleted_at__isnull=True,
+        job__project__workspace__deleted_at__isnull=True,
     ):
         jobdef = job.job
-        package = Package.objects.active_and_finished().filter(project=jobdef.project).order_by("-created").first()
+        package = Package.objects.active_and_finished().filter(project=jobdef.project).order_by("-created_at").first()
 
         # create new run and this will automaticly scheduled
         Run.objects.create(

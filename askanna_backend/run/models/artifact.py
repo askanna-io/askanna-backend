@@ -36,7 +36,7 @@ class RunArtifact(ArtifactModelMixin, SlimBaseModel):
 
     class Meta:
         db_table = "run_artifact"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
 class ChunkedRunArtifactPart(SlimBaseModel):
@@ -48,6 +48,6 @@ class ChunkedRunArtifactPart(SlimBaseModel):
     artifact = models.ForeignKey("RunArtifact", on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         verbose_name = "Run artifact chunk"
         verbose_name_plural = "Run artifacts chunks"

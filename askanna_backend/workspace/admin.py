@@ -10,16 +10,16 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "description",
         "visibility",
         "created_by",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
         "created_by",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
 
     list_display = [
@@ -27,14 +27,14 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "name",
         "visibility",
         "created_by",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
         "visibility",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",

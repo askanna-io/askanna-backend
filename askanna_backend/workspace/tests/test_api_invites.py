@@ -249,7 +249,7 @@ class TestInviteAPI(APITestCase):
             object_type=MSP_WORKSPACE,
             object_uuid=self.workspace.uuid,
             user=self.users["user_a"],
-            deleted=timezone.now(),
+            deleted_at=timezone.now(),
         )
 
         url = reverse(
@@ -505,7 +505,7 @@ class TestInviteAPI(APITestCase):
             object_type=MSP_WORKSPACE,
             object_uuid=self.workspace.uuid,
             user=self.users["user_a"],
-            deleted=timezone.now(),
+            deleted_at=timezone.now(),
         )
 
         url = reverse(

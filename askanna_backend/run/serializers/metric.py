@@ -15,5 +15,5 @@ class RunMetricSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RunMetric
-        fields = ["run_suuid", "metric", "label", "created"]
-        read_only_fields = ["run_suuid", "created"]
+        fields = ["run_suuid", "metric", "label", "created_at"]
+        read_only_fields = ["run_suuid", "created_at"]

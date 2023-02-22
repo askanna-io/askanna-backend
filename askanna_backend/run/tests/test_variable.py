@@ -20,18 +20,18 @@ class TestRunVariableModel(BaseRunTest, APITestCase):
         assert self.tracked_variables["run1"].load_from_file() == tracked_variables_response_good
 
     def test_run_variables_function_update_meta_no_metrics_and_no_labels(self):
-        modified_before = self.tracked_variables["run7"].modified
+        modified_at_before = self.tracked_variables["run7"].modified_at
         self.tracked_variables["run7"].update_meta()
-        assert self.tracked_variables["run7"].modified == modified_before
+        assert self.tracked_variables["run7"].modified_at == modified_at_before
         assert self.tracked_variables["run7"].count == 0
         assert self.tracked_variables["run7"].size == 0
         assert self.tracked_variables["run7"].variable_names is None
         assert self.tracked_variables["run7"].label_names is None
 
     def test_run_variables_function_update_meta(self):
-        modified_before_1 = self.tracked_variables["run7"].modified
+        modified_at_before_1 = self.tracked_variables["run7"].modified_at
         self.tracked_variables["run7"].update_meta()
-        assert self.tracked_variables["run7"].modified == modified_before_1
+        assert self.tracked_variables["run7"].modified_at == modified_at_before_1
         assert self.tracked_variables["run7"].count == 0
         assert self.tracked_variables["run7"].size == 0
         assert self.tracked_variables["run7"].variable_names is None
@@ -40,11 +40,11 @@ class TestRunVariableModel(BaseRunTest, APITestCase):
         self.tracked_variables["run7"].variables = tracked_variables_response_good
         self.tracked_variables["run7"].save()
 
-        modified_before_2 = self.tracked_variables["run7"].modified
+        modified_at_before_2 = self.tracked_variables["run7"].modified_at
         self.tracked_variables["run7"].update_meta()
-        assert self.tracked_variables["run7"].modified == modified_before_2
+        assert self.tracked_variables["run7"].modified_at > modified_at_before_2
         assert self.tracked_variables["run7"].count == 4
-        assert self.tracked_variables["run7"].size == 1198
+        assert self.tracked_variables["run7"].size == 1210
 
         expected_variable_names = [
             {"name": "Accuracy", "type": "integer", "count": 2},
@@ -67,7 +67,7 @@ class TestRunVariableModel(BaseRunTest, APITestCase):
     def test_run_variables_function_update_meta_no_labels(self):
         self.tracked_variables["run6"].update_meta()
         assert self.tracked_variables["run6"].count == 2
-        assert self.tracked_variables["run6"].size == 338
+        assert self.tracked_variables["run6"].size == 344
         assert self.tracked_variables["run6"].variable_names is not None
         assert self.tracked_variables["run6"].label_names is None
 
@@ -320,13 +320,13 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
                 "run_suuid": self.run_deduplicate.suuid,
                 "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
                 "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
-                "created": "2021-02-14T12:00:01.123456+00:00",
+                "created_at": "2021-02-14T12:00:01.123456+00:00",
             },
             {
                 "run_suuid": self.run_deduplicate.suuid,
                 "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
                 "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-                "created": "2021-02-14T12:00:01.123456+00:00",
+                "created_at": "2021-02-14T12:00:01.123456+00:00",
             },
         ]
 
@@ -350,7 +350,7 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
                 run=self.run_deduplicate,
                 variable=variable["variable"],
                 label=variable["label"],
-                created=variable["created"],
+                created_at=variable["created_at"],
             )
         self.run_variables_deduplicate.update_meta()
 

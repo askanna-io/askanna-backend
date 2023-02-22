@@ -74,7 +74,7 @@ class RunVariableView(
     search_fields = ["variable__name"]
     serializer_class = RunVariableSerializer
     ordering_fields = [
-        "created",
+        "created_at",
         "variable.name",
         "variable.value",
         "variable.type",

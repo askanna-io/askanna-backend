@@ -16,18 +16,18 @@ class TestRunMetricModel(BaseRunTest, APITestCase):
         assert self.runmetrics["run1"].load_from_file() == metric_response_good
 
     def test_runmetrics_function_update_meta_no_metrics_and_no_labels(self):
-        modified_before = self.runmetrics["run7"].modified
+        modified_at_before = self.runmetrics["run7"].modified_at
         self.runmetrics["run7"].update_meta()
-        assert self.runmetrics["run7"].modified == modified_before
+        assert self.runmetrics["run7"].modified_at == modified_at_before
         assert self.runmetrics["run7"].count == 0
         assert self.runmetrics["run7"].size == 0
         assert self.runmetrics["run7"].metric_names is None
         assert self.runmetrics["run7"].label_names is None
 
     def test_runmetrics_function_update_meta(self):
-        modified_before_1 = self.runmetrics["run7"].modified
+        modified_at_before_1 = self.runmetrics["run7"].modified_at
         self.runmetrics["run7"].update_meta()
-        assert self.runmetrics["run7"].modified == modified_before_1
+        assert self.runmetrics["run7"].modified_at == modified_at_before_1
         assert self.runmetrics["run7"].count == 0
         assert self.runmetrics["run7"].size == 0
         assert self.runmetrics["run7"].metric_names is None
@@ -36,11 +36,11 @@ class TestRunMetricModel(BaseRunTest, APITestCase):
         self.runmetrics["run7"].metrics = metric_response_good
         self.runmetrics["run7"].save()
 
-        modified_before_2 = self.runmetrics["run7"].modified
+        modified_at_before_2 = self.runmetrics["run7"].modified_at
         self.runmetrics["run7"].update_meta()
-        assert self.runmetrics["run7"].modified == modified_before_2
+        assert self.runmetrics["run7"].modified_at > modified_at_before_2
         assert self.runmetrics["run7"].count == 4
-        assert self.runmetrics["run7"].size == 1190
+        assert self.runmetrics["run7"].size == 1202
 
         expected_metric_names = [
             {"name": "Accuracy", "type": "integer", "count": 2},
@@ -63,7 +63,7 @@ class TestRunMetricModel(BaseRunTest, APITestCase):
     def test_runmetrics_function_update_meta_no_labels(self):
         self.runmetrics["run6"].update_meta()
         assert self.runmetrics["run6"].count == 2
-        assert self.runmetrics["run6"].size == 334
+        assert self.runmetrics["run6"].size == 340
         assert self.runmetrics["run6"].metric_names is not None
         assert self.runmetrics["run6"].label_names is None
 
@@ -315,13 +315,13 @@ class TestRunMetricDeduplicate(BaseRunTest, APITestCase):
                 "run_suuid": self.run_deduplicate.suuid,
                 "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
                 "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
-                "created": "2021-02-14T12:00:01.123456+00:00",
+                "created_at": "2021-02-14T12:00:01.123456+00:00",
             },
             {
                 "run_suuid": self.run_deduplicate.suuid,
                 "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
                 "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-                "created": "2021-02-14T12:00:01.123456+00:00",
+                "created_at": "2021-02-14T12:00:01.123456+00:00",
             },
         ]
 
@@ -345,7 +345,7 @@ class TestRunMetricDeduplicate(BaseRunTest, APITestCase):
                 run=self.run_deduplicate,
                 metric=metric["metric"],
                 label=metric["label"],
-                created=metric["created"],
+                created_at=metric["created_at"],
             )
         self.run_metrics_deduplicate.update_meta()
 

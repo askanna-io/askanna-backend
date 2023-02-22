@@ -104,7 +104,7 @@ class WorkspaceMeMixin(ObjectRoleMixin):
                 return Membership.objects.get(
                     user=self.request.user,
                     object_uuid=self.request_workspace.uuid,
-                    deleted__isnull=True,
+                    deleted_at__isnull=True,
                 )
             except ObjectDoesNotExist:
                 pass
@@ -191,7 +191,7 @@ class ProjectMeViewSet(
                 return Membership.objects.get(
                     user=self.request.user,
                     object_uuid=self.request_project.uuid,
-                    deleted__isnull=True,
+                    deleted_at__isnull=True,
                 )
             except ObjectDoesNotExist:
                 pass
@@ -201,7 +201,7 @@ class ProjectMeViewSet(
                 return Membership.objects.get(
                     user=self.request.user,
                     object_uuid=self.request_project.workspace.uuid,
-                    deleted__isnull=True,
+                    deleted_at__isnull=True,
                 )
             except ObjectDoesNotExist:
                 pass

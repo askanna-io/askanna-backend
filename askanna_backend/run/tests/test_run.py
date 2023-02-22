@@ -19,25 +19,25 @@ class TestRunModel(BaseRunTest, APITestCase):
 
     def test_run_function_set_status(self):
         assert self.runs["run7"].status == "FAILED"
-        modified_before = self.runs["run7"].modified
+        modified_at_before = self.runs["run7"].modified_at
 
         self.runs["run7"].set_status("COMPLETED")
         assert self.runs["run7"].status == "COMPLETED"
-        assert self.runs["run7"].modified > modified_before
+        assert self.runs["run7"].modified_at > modified_at_before
 
         # Set status of run7 back to failed
         self.runs["run7"].set_status("FAILED")
 
-    def test_run_function_set_finished(self):
-        assert self.runs["run6"].finished is None
+    def test_run_function_set_finished_at(self):
+        assert self.runs["run6"].finished_at is None
         assert self.runs["run6"].duration is None
-        modified_before = self.runs["run6"].modified
+        modified_at_before = self.runs["run6"].modified_at
 
-        self.runs["run6"].set_finished()
-        assert self.runs["run6"].modified > modified_before
-        assert self.runs["run6"].finished is not None
-        assert self.runs["run6"].finished > self.runs["run6"].started
-        duration = (self.runs["run6"].finished - self.runs["run6"].started).seconds
+        self.runs["run6"].set_finished_at()
+        assert self.runs["run6"].modified_at > modified_at_before
+        assert self.runs["run6"].finished_at is not None
+        assert self.runs["run6"].finished_at > self.runs["run6"].started_at
+        duration = (self.runs["run6"].finished_at - self.runs["run6"].started_at).seconds
         assert self.runs["run6"].duration == duration
 
 
@@ -395,7 +395,7 @@ class TestRunChangeAPI(BaseRunTest, APITestCase):
         assert initial_response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
         assert initial_response.data["name"] == self.runs["run1"].name  # type: ignore
         assert initial_response.data["description"] == self.runs["run1"].description  # type: ignore
-        assert date_parse(initial_response.data["modified"]) == self.runs["run1"].modified  # type: ignore
+        assert date_parse(initial_response.data["modified_at"]) == self.runs["run1"].modified_at  # type: ignore
 
         response = self.client.patch(
             self.url,
@@ -409,7 +409,7 @@ class TestRunChangeAPI(BaseRunTest, APITestCase):
         assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
         assert response.data["name"] == "new name"  # type: ignore
         assert response.data["description"] == "new description"  # type: ignore
-        assert date_parse(response.data["modified"]) != self.runs["run1"].modified  # type: ignore
+        assert date_parse(response.data["modified_at"]) != self.runs["run1"].modified_at  # type: ignore
 
         return True
 

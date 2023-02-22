@@ -32,14 +32,24 @@ class RunLog(SlimBaseModel):
 
     def save_stdout(self):
         self.stdout = self.logqueue.get()
-        self.save(update_fields=["stdout"])
+        self.save(
+            update_fields=[
+                "stdout",
+                "modified_at",
+            ]
+        )
 
         # remove the queue after saving
         self.logqueue.remove()
 
     def save_exitcode(self, exit_code=0):
         self.exit_code = exit_code
-        self.save(update_fields=["exit_code"])
+        self.save(
+            update_fields=[
+                "exit_code",
+                "modified_at",
+            ]
+        )
 
     @property
     def lines(self):
@@ -67,7 +77,7 @@ class RunLog(SlimBaseModel):
 
     class Meta:
         db_table = "run_log"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
 class RedisLogQueue:

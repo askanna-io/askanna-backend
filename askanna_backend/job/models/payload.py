@@ -10,18 +10,18 @@ from django.db.models import Q
 class PayloadQuerySet(models.QuerySet):
     def active(self):
         return self.filter(
-            deleted__isnull=True,
-            jobdef__deleted__isnull=True,
-            jobdef__project__deleted__isnull=True,
-            jobdef__project__workspace__deleted__isnull=True,
+            deleted_at__isnull=True,
+            jobdef__deleted_at__isnull=True,
+            jobdef__project__deleted_at__isnull=True,
+            jobdef__project__workspace__deleted_at__isnull=True,
         )
 
     def inactive(self):
         return self.filter(
-            Q(deleted__isnull=False)
-            | Q(jobdef__deleted__isnull=False)
-            | Q(jobdef__project__deleted__isnull=False)
-            | Q(jobdef__project__workspace__deleted__isnull=False)
+            Q(deleted_at__isnull=False)
+            | Q(jobdef__deleted_at__isnull=False)
+            | Q(jobdef__project__deleted_at__isnull=False)
+            | Q(jobdef__project__workspace__deleted_at__isnull=False)
         )
 
 
@@ -91,4 +91,4 @@ class JobPayload(SlimBaseModel):
         os.remove(self.stored_path)
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]

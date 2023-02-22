@@ -4,26 +4,48 @@ import uuid as _uuid
 from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
-from django_extensions.db.models import TimeStampedModel
+from django_extensions.db.fields import CreationDateTimeField, ModificationDateTimeField
 
 from .utils.suuid import create_suuid
 
 
 class DeletedModel(models.Model):
     """
-    Defines an additional field to registere when the model is deleted
+    DeletedModel is an abstract base class model that provides a field to registere when the model is (soft-)deleted
     """
 
-    deleted = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
+    deleted_at = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
 
     def to_deleted(self):
-        if self.deleted:
+        if self.deleted_at:
             return
 
-        self.deleted = timezone.now()
-        self.save(update_fields=["deleted"])
+        self.deleted_at = timezone.now()
+        self.save(
+            update_fields=[
+                "deleted_at",
+                "modified_at",
+            ]
+        )
 
     class Meta:
+        abstract = True
+
+
+class TimeStampedModel(models.Model):
+    """
+    TimeStampedModel is an abstract base class model that provides self-managed "created_at" and "modified_at" fields.
+    """
+
+    created_at = CreationDateTimeField()
+    modified_at = ModificationDateTimeField()
+
+    def save(self, **kwargs):
+        self.update_modified = kwargs.pop("update_modified", getattr(self, "update_modified", True))
+        super().save(**kwargs)
+
+    class Meta:
+        get_latest_by = "modified_at"
         abstract = True
 
 
@@ -59,7 +81,6 @@ class NameDescriptionModel(NameModel, DescriptionModel):
 
 
 class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
-
     uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
     suuid = models.CharField(max_length=32, unique=True, editable=False, verbose_name="SUUID")
 
@@ -75,7 +96,6 @@ class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
 
 class SlimBaseForAuthModel(SlimBaseModel):
-
     uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
 
     class Meta:
@@ -85,7 +105,7 @@ class SlimBaseForAuthModel(SlimBaseModel):
 class BaseModel(NameDescriptionModel, SlimBaseModel):
     class Meta:
         abstract = True
-        ordering = ["-modified"]
+        ordering = ["-modified_at"]
 
 
 class AuthorModel(models.Model):

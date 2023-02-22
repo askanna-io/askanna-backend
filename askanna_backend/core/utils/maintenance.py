@@ -19,5 +19,5 @@ def remove_objects(queryset, ttl_hours: int = 1):
 
     older_than = timezone.now() - datetime.timedelta(minutes=remove_ttl_mins)
 
-    for obj in queryset.filter(deleted__lte=older_than):
+    for obj in queryset.filter(deleted_at__lte=older_than):
         obj.delete()

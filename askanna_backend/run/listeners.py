@@ -28,9 +28,13 @@ def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
     """
     detected_mimetype = detect_file_mimetype(obj.stored_path)
     if detect_file_mimetype:
-        update_fields = ["mime_type"]
         obj.mime_type = detected_mimetype
-        obj.save(update_fields=update_fields)
+        obj.save(
+            update_fields=[
+                "mime_type",
+                "modified_at",
+            ]
+        )
 
 
 @receiver(artifact_upload_finish)
@@ -49,7 +53,13 @@ def handle_upload(sender, signal, postheaders, obj, **kwargs):
     zip_list = get_files_and_directories_in_zip_file(source_path)
     obj.count_dir = sum(map(lambda x: x["type"] == "directory", zip_list))
     obj.count_files = sum(map(lambda x: x["type"] == "file", zip_list))
-    obj.save(update_fields=["count_dir", "count_files"])
+    obj.save(
+        update_fields=[
+            "count_dir",
+            "count_files",
+            "modified_at",
+        ]
+    )
 
     with ZipFile(source_path, mode="r") as zip_file:
         zip_file.extractall(path=target_path)
@@ -148,9 +158,9 @@ def add_member_to_run(sender, instance, **kwargs):
             instance.created_by.memberships.filter(
                 object_uuid=workspace.uuid,
                 object_type=MSP_WORKSPACE,
-                deleted__isnull=True,
+                deleted_at__isnull=True,
             )
-            .order_by("-created")
+            .order_by("-created_at")
             .first()
         )
         if membership:

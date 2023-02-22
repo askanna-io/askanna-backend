@@ -88,7 +88,7 @@ class RunMetricMeta(ArtifactModelMixin, SlimBaseModel):
                 "run_suuid": instance.suuid,
                 "metric": metric.metric,
                 "label": metric.label,
-                "created": metric.created.isoformat(),
+                "created_at": metric.created_at.isoformat(),
             }
             return var
 
@@ -126,11 +126,19 @@ class RunMetricMeta(ArtifactModelMixin, SlimBaseModel):
             unique_label_names = get_unique_names_with_data_type(all_label_names)
         self.label_names = unique_label_names
 
-        self.save(update_fields=["count", "size", "metric_names", "label_names"])
+        self.save(
+            update_fields=[
+                "count",
+                "size",
+                "metric_names",
+                "label_names",
+                "modified_at",
+            ]
+        )
 
     class Meta:
         db_table = "run_metric_meta"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
 # TODO: Rename to RunMetric after release v0.21.0
@@ -141,6 +149,7 @@ class RunMetricRow(SlimBaseModel):
 
     run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="metrics")
 
+    # TODO: remove these fields after release v0.21.0
     # We keep hard references to the project/job/run suuid because historically this model had no hard relations
     # to the other database models
     project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
@@ -158,12 +167,12 @@ class RunMetricRow(SlimBaseModel):
         help_text="JSON field as list with multiple objects which are labels",
     )
 
-    # Redefine the created field, we want this to be overwritabe and with other default
-    created = models.DateTimeField(default=timezone.now)
+    # Redefine the created_at field, we want this to be overwritabe and with other default
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "run_metric_row"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         indexes = [
             GinIndex(
                 name="runmetric_metric_json_idx",

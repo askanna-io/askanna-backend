@@ -16,7 +16,7 @@ from rest_framework.pagination import _positive_int
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
 
-Cursor = namedtuple("Cursor", ["position", "created", "offset", "reverse"])
+Cursor = namedtuple("Cursor", ["position", "created_at", "offset", "reverse"])
 Position = namedtuple("Position", ["value", "is_reversed", "attr", "type_is_char"])
 
 
@@ -26,22 +26,22 @@ class CursorPagination(pagination.CursorPagination):
     - https://www.django-rest-framework.org/api-guide/pagination/
     - https://github.com/encode/django-rest-framework/blob/master/rest_framework/pagination.py
 
-    In our implementation we add created to the ordering as an alternative for the offset. The Django REST Framework
+    In our implementation we add created_at to the ordering as an alternative for the offset. The Django REST Framework
     CursorPagination uses only offset in case there are multiple values with the same cursor position.
 
     With our implementation it is possible to also order by and paginate on a field such as 'name' where we expect
     many values with the same 'name'. In this case we should keep in mind that we might need to add additional indexes
     on the database table to get a good performance of the queries.
 
-    For CursorPagination we always apply ordering. The default ordering is '-created'. The ordering applied is case
+    For CursorPagination we always apply ordering. The default ordering is '-created_at'. The ordering applied is case
     insensitive.
     """
 
     page_size = 25
     max_page_size = 100
     page_size_query_param = "page_size"
-    ordering = "-created"
-    ordering_fields = ["created", "modified"]
+    ordering = "-created_at"
+    ordering_fields = ["created_at", "modified_at"]
 
     def get_default_page_size(self, view):
         """
@@ -87,9 +87,9 @@ class CursorPagination(pagination.CursorPagination):
         self.count = self.get_count(queryset)
 
         self.ordering = self.get_ordering(request, queryset, view)
-        if "created" not in self.ordering and "-created" not in self.ordering:
+        if "created_at" not in self.ordering and "-created_at" not in self.ordering:
             ordering_list = list(self.ordering)
-            ordering_list.append("-created")
+            ordering_list.append("-created_at")
             self.ordering = tuple(ordering_list)
 
         self.cursor = self.decode_cursor(request)
@@ -103,7 +103,7 @@ class CursorPagination(pagination.CursorPagination):
                     attr=position_attr,
                     type_is_char=field_is_of_type_char(queryset.model, position_attr),
                 ),
-                created=None,
+                created_at=None,
                 offset=0,
                 reverse=False,
             )
@@ -119,7 +119,7 @@ class CursorPagination(pagination.CursorPagination):
             )
 
         # If we have a cursor, filter the queryset based on the cursor.
-        if self.cursor.position.value is not None or self.cursor.created is not None:
+        if self.cursor.position.value is not None or self.cursor.created_at is not None:
             queryset = self.filter_cursor_queryset(queryset)
 
         # If we have an offset cursor then offset the entire page by that amount. We also always fetch an extra item
@@ -131,11 +131,11 @@ class CursorPagination(pagination.CursorPagination):
         if len(results) > len(self.page):
             has_following_position = True
             following_position = self._get_position_from_instance(results[-1])
-            following_created = results[-1].created
+            following_created_at = results[-1].created_at
         else:
             has_following_position = False
             following_position = None
-            following_created = None
+            following_created_at = None
 
         if self.cursor.reverse:
             # If we have a reverse queryset, then the query ordering was in reverse so we need to reverse the items
@@ -144,27 +144,27 @@ class CursorPagination(pagination.CursorPagination):
 
             # Determine next and previous positions for reverse cursors.
             self.has_next = (
-                self.cursor.position.value is not None or self.cursor.created is not None or self.cursor.offset != 0
+                self.cursor.position.value is not None or self.cursor.created_at is not None or self.cursor.offset != 0
             )
             self.has_previous = has_following_position
             if self.has_next:
                 self.next_position = self.cursor.position.value
-                self.next_created = self.cursor.created
+                self.next__at = self.cursor.created_at
             if self.has_previous:
                 self.previous_position = following_position
-                self.previous_created = following_created
+                self.previous_created_at = following_created_at
         else:
             # Determine next and previous positions for forward cursors.
             self.has_next = has_following_position
             self.has_previous = (
-                self.cursor.position.value is not None or self.cursor.created is not None or self.cursor.offset != 0
+                self.cursor.position.value is not None or self.cursor.created_at is not None or self.cursor.offset != 0
             )
             if self.has_next:
                 self.next_position = following_position
-                self.next_created = following_created
+                self.next_created_at = following_created_at
             if self.has_previous:
                 self.previous_position = self.cursor.position.value
-                self.previous_created = self.cursor.created
+                self.previous_created_at = self.cursor.created_at
 
         return self.page
 
@@ -206,7 +206,7 @@ class CursorPagination(pagination.CursorPagination):
         1.  The position is not unique and can contain 'null' values.
         2.  Ordering the position ascending and position containing 'null' values, we assume that the 'null' values
             are at the end of the list.
-        3.  The created field has no 'null' values.
+        3.  The created_at field has no 'null' values.
 
         When to include 'null' values in the filter:
             The position can contain 'null' values. The get these values we need to include the 'null' values in the
@@ -221,22 +221,22 @@ class CursorPagination(pagination.CursorPagination):
         assert self.cursor is not None, "The cursor bust be set before filtering the queryset."
         position_value = None if self.cursor.position.value == "None" else self.cursor.position.value
 
-        created_is_reversed = None
-        if self.cursor.created:
+        created_at_is_reversed = None
+        if self.cursor.created_at:
             for i, order_item in enumerate(self.ordering):
-                if i > 0 and order_item in {"created", "-created"}:
-                    created_is_reversed = order_item.startswith("-")
+                if i > 0 and order_item in {"created_at", "-created_at"}:
+                    created_at_is_reversed = order_item.startswith("-")
                     break
 
-            if created_is_reversed is None:
-                raise ValueError("'created' or '-created' is not in the ordering. The cursor requires this.")
+            if created_at_is_reversed is None:
+                raise ValueError("'created_at' or '-created_at' is not in the ordering. The cursor requires this.")
 
-        if position_value is None and self.cursor.created is None:
+        if position_value is None and self.cursor.created_at is None:
             raise ValueError(
-                "Cursor position and created are both 'None'. If position is 'None' then created should be set."
+                "Cursor position and created_at are both 'None'. If position is 'None' then created_at should be set."
             )
 
-        if self.cursor.created is None:
+        if self.cursor.created_at is None:
             if self.cursor.reverse != self.cursor.position.is_reversed:
                 if self.cursor.position.type_is_char is True:
                     queryset = queryset.filter(lower_position__lt=Lower(Value(position_value)))
@@ -254,73 +254,81 @@ class CursorPagination(pagination.CursorPagination):
                         | Q(**{self.cursor.position.attr + "__isnull": True})
                     )
         else:
-            if self.cursor.reverse != created_is_reversed:
+            if self.cursor.reverse != created_at_is_reversed:
                 if position_value and self.cursor.reverse != self.cursor.position.is_reversed:
                     if self.cursor.position.type_is_char is True:
                         queryset = queryset.filter(
                             Q(lower_position__lt=Lower(Value(position_value)))
-                            | Q(lower_position=Lower(Value(position_value)), created__lt=self.cursor.created)
+                            | Q(lower_position=Lower(Value(position_value)), created_at__lt=self.cursor.created_at)
                         )
                     else:
                         queryset = queryset.filter(
                             Q(**{self.cursor.position.attr + "__lt": position_value})
-                            | Q(**{self.cursor.position.attr: position_value, "created__lt": self.cursor.created})
+                            | Q(
+                                **{self.cursor.position.attr: position_value, "created_at__lt": self.cursor.created_at}
+                            )
                         )
                 elif position_value:
                     if self.cursor.position.type_is_char is True:
                         queryset = queryset.filter(
                             Q(lower_position__gt=Lower(Value(position_value)))
-                            | Q(lower_position=Lower(Value(position_value)), created__lt=self.cursor.created)
+                            | Q(lower_position=Lower(Value(position_value)), created_at__lt=self.cursor.created_at)
                             | Q(**{self.cursor.position.attr + "__isnull": True})
                         )
                     else:
                         queryset = queryset.filter(
                             Q(**{self.cursor.position.attr + "__gt": position_value})
-                            | Q(**{self.cursor.position.attr: position_value, "created__lt": self.cursor.created})
+                            | Q(
+                                **{self.cursor.position.attr: position_value, "created_at__lt": self.cursor.created_at}
+                            )
                             | Q(**{self.cursor.position.attr + "__isnull": True})
                         )
                 elif self.cursor.reverse != self.cursor.position.is_reversed:
                     queryset = queryset.filter(
                         Q(**{self.cursor.position.attr + "__isnull": False})
-                        | Q(**{self.cursor.position.attr + "__isnull": True, "created__lt": self.cursor.created})
+                        | Q(**{self.cursor.position.attr + "__isnull": True, "created_at__lt": self.cursor.created_at})
                     )
                 else:
                     queryset = queryset.filter(
-                        Q(**{self.cursor.position.attr + "__isnull": True, "created__lt": self.cursor.created})
+                        Q(**{self.cursor.position.attr + "__isnull": True, "created_at__lt": self.cursor.created_at})
                     )
             else:
                 if position_value and self.cursor.reverse != self.cursor.position.is_reversed:
                     if self.cursor.position.type_is_char is True:
                         queryset = queryset.filter(
                             Q(lower_position__lt=Lower(Value(position_value)))
-                            | Q(lower_position=Lower(Value(position_value)), created__gt=self.cursor.created)
+                            | Q(lower_position=Lower(Value(position_value)), created_at__gt=self.cursor.created_at)
                         )
                     else:
                         queryset = queryset.filter(
                             Q(**{self.cursor.position.attr + "__lt": position_value})
-                            | Q(**{self.cursor.position.attr: position_value, "created__gt": self.cursor.created})
+                            | Q(
+                                **{self.cursor.position.attr: position_value, "created_at__gt": self.cursor.created_at}
+                            )
                         )
                 elif position_value:
                     if self.cursor.position.type_is_char is True:
                         queryset = queryset.filter(
                             Q(lower_position__gt=Lower(Value(position_value)))
-                            | Q(lower_position=Lower(Value(position_value)), created__gt=self.cursor.created)
+                            | Q(lower_position=Lower(Value(position_value)), created_at__gt=self.cursor.created_at)
                             | Q(**{self.cursor.position.attr + "__isnull": True})
                         )
                     else:
                         queryset = queryset.filter(
                             Q(**{self.cursor.position.attr + "__gt": position_value})
-                            | Q(**{self.cursor.position.attr: position_value, "created__gt": self.cursor.created})
+                            | Q(
+                                **{self.cursor.position.attr: position_value, "created_at__gt": self.cursor.created_at}
+                            )
                             | Q(**{self.cursor.position.attr + "__isnull": True})
                         )
                 elif self.cursor.reverse != self.cursor.position.is_reversed:
                     queryset = queryset.filter(
                         Q(**{self.cursor.position.attr + "__isnull": False})
-                        | Q(**{self.cursor.position.attr + "__isnull": True, "created__gt": self.cursor.created})
+                        | Q(**{self.cursor.position.attr + "__isnull": True, "created_at__gt": self.cursor.created_at})
                     )
                 else:
                     queryset = queryset.filter(
-                        Q(**{self.cursor.position.attr + "__isnull": True, "created__gt": self.cursor.created})
+                        Q(**{self.cursor.position.attr + "__isnull": True, "created_at__gt": self.cursor.created_at})
                     )
 
         return queryset
@@ -350,7 +358,7 @@ class CursorPagination(pagination.CursorPagination):
         ), f"Invalid ordering. Expected string, list or tuple, but got {type(ordering).__name__}"
         assert "__" not in ordering, (
             "Cursor pagination does not support double underscore lookups for orderings. Orderings should be an "
-            "unchanging, unique or nearly-unique field on the model, such as '-created' or 'pk'."
+            "unchanging, unique or nearly-unique field on the model, such as '-created_at' or 'pk'."
         )
 
         if isinstance(ordering, str):
@@ -398,12 +406,12 @@ class CursorPagination(pagination.CursorPagination):
             # If we're reversing direction and we have an offset cursor then we cannot use the first position we find
             # as a marker.
             compare_position = self._get_position_from_instance(self.page[-1])
-            compare_created = self.page[-1].created
+            compare_created_at = self.page[-1].created_at
         else:
             compare_position = str(self.next_position)
-            compare_created = self.next_created
+            compare_created_at = self.next_created_at
 
-        created = None
+        created_at = None
         offset = 0
 
         has_item_with_unique_cursor = False
@@ -414,25 +422,25 @@ class CursorPagination(pagination.CursorPagination):
                 # We can use this position as our marker.
                 has_item_with_unique_cursor = True
                 if position == "None":
-                    created = item.created
+                    created_at = item.created_at
                 break
 
             compare_position = position
 
-            if self.ordering[0].lstrip("-") != "created":
-                # If the page is first ordered by created, then created is equal to position. It does not add value to
-                # also check and set the created value as part of the cursor.
-                created = item.created
-                if created != compare_created:
-                    # The item in this position and the item following it have different created. We can use this
+            if self.ordering[0].lstrip("-") != "created_at":
+                # If the page is first ordered by created_at, then created_at is equal to position. It does not add
+                # value to also check and set the created_at value as part of the cursor.
+                created_at = item.created_at
+                if created_at != compare_created_at:
+                    # The item in this position and the item following it have different created_at. We can use this
                     # position as our marker.
                     has_item_with_unique_cursor = True
                     break
 
-                compare_created = created
+                compare_created_at = created_at
 
-            # The item in this position has the same position and created as the item following it, we can't use it as
-            # a marker position, so increment the offset and keep seeking to the previous item.
+            # The item in this position has the same position and created_at as the item following it, we can't use it
+            # as a marker position, so increment the offset and keep seeking to the previous item.
             offset += 1
 
         if self.page and not has_item_with_unique_cursor:
@@ -441,23 +449,23 @@ class CursorPagination(pagination.CursorPagination):
                 # We are on the first page.
                 # Our cursor will have an offset equal to the page size, but no position to filter against yet.
                 position = None
-                created = None
+                created_at = None
                 offset = self.page_size
             elif self.cursor.reverse:
                 # The change in direction will introduce a paging artifact, where we end up skipping forward a few
                 # extra items.
                 position = self.previous_position
-                created = self.previous_created
+                created_at = self.previous_created_at
                 offset = 0
             else:
-                # Use the position and created from the existing cursor and increment it's offset by the page size.
+                # Use the position and created_at from the existing cursor and increment it's offset by the page size.
                 position = self.previous_position
-                created = self.previous_created
+                created_at = self.previous_created_at
                 offset = self.cursor.offset + self.page_size
 
         if not self.page:
             position = self.next_position
-            created = self.next_created
+            created_at = self.next_created_at
 
         cursor = Cursor(
             position=Position(
@@ -466,7 +474,7 @@ class CursorPagination(pagination.CursorPagination):
                 attr=self.cursor.position.attr,
                 type_is_char=self.cursor.position.type_is_char,
             ),
-            created=created,
+            created_at=created_at,
             offset=offset,
             reverse=False,
         )
@@ -482,12 +490,12 @@ class CursorPagination(pagination.CursorPagination):
             # If we're reversing direction and we have an offset cursor then we cannot use the first position we find
             # as a marker.
             compare_position = self._get_position_from_instance(self.page[0])
-            compare_created = self.page[0].created
+            compare_created_at = self.page[0].created_at
         else:
             compare_position = str(self.previous_position)
-            compare_created = self.previous_created
+            compare_created_at = self.previous_created_at
 
-        created = None
+        created_at = None
         offset = 0
 
         has_item_with_unique_cursor = False
@@ -498,22 +506,22 @@ class CursorPagination(pagination.CursorPagination):
                 # We can use this position as our marker.
                 has_item_with_unique_cursor = True
                 if position == "None":
-                    created = item.created
+                    created_at = item.created_at
                 break
 
             compare_position = position
 
-            if self.ordering[0].lstrip("-") != "created":
-                # If the page is first ordered by created, then created is equal to position. It does not add value to
-                # also check and set the created value as part of the cursor.
-                created = item.created
-                if created != compare_created:
-                    # The item in this position and the item following it have different created.
+            if self.ordering[0].lstrip("-") != "created_at":
+                # If the page is first ordered by created_at, then created_at is equal to position. It does not add
+                # value to also check and set the created_at value as part of the cursor.
+                created_at = item.created_at
+                if created_at != compare_created_at:
+                    # The item in this position and the item following it have different created_at.
                     # We can use this position as our marker.
                     has_item_with_unique_cursor = True
                     break
 
-                compare_created = created
+                compare_created_at = created_at
 
             # The item in this position has the same position as the item following it, we can't use it as a marker
             # position, so increment the offset and keep seeking to the previous item.
@@ -525,23 +533,23 @@ class CursorPagination(pagination.CursorPagination):
                 # We are on the final page.
                 # Our cursor will have an offset equal to the page size, but no position to filter against yet.
                 position = None
-                created = None
+                created_at = None
                 offset = self.page_size
             elif self.cursor.reverse:
                 # Use the position from the existing cursor and increment it's offset by the page size.
                 position = self.next_position
-                created = self.next_created
+                created_at = self.next_created_at
                 offset = self.cursor.offset + self.page_size
             else:
                 # The change in direction will introduce a paging artifact, where we end up skipping back a few
                 # extra items.
                 position = self.next_position
-                created = self.next_created
+                created_at = self.next_created_at
                 offset = 0
 
         if not self.page:
             position = self.previous_position
-            created = self.previous_created
+            created_at = self.previous_created_at
 
         cursor = Cursor(
             position=Position(
@@ -550,7 +558,7 @@ class CursorPagination(pagination.CursorPagination):
                 attr=self.cursor.position.attr,
                 type_is_char=self.cursor.position.type_is_char,
             ),
-            created=created,
+            created_at=created_at,
             offset=offset,
             reverse=True,
         )
@@ -576,7 +584,7 @@ class CursorPagination(pagination.CursorPagination):
             position_type_is_char = query_dict.get("pc", [None])[0]
             position_type_is_char = bool(int(position_type_is_char)) if position_type_is_char else None
 
-            created = query_dict.get("c", [None])[0]
+            created_at = query_dict.get("c", [None])[0]
 
             offset = query_dict.get("o", ["0"])[0]
             offset = _positive_int(offset, cutoff=self.offset_cutoff)
@@ -593,7 +601,7 @@ class CursorPagination(pagination.CursorPagination):
                 attr=position_attr,
                 type_is_char=position_type_is_char,
             ),
-            created=created,
+            created_at=created_at,
             offset=offset,
             reverse=reverse,
         )
@@ -611,8 +619,8 @@ class CursorPagination(pagination.CursorPagination):
             query_dict["pa"] = cursor.position.attr
         if cursor.position.type_is_char is not None:
             query_dict["pc"] = "1" if cursor.position.type_is_char else "0"
-        if cursor.created is not None:
-            query_dict["c"] = cursor.created
+        if cursor.created_at is not None:
+            query_dict["c"] = cursor.created_at
         if cursor.offset != 0:
             query_dict["o"] = str(cursor.offset)
         if cursor.reverse:

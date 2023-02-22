@@ -52,8 +52,8 @@ class VariableView(
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
         "name",
         "is_masked",
         "project.suuid",
@@ -117,7 +117,7 @@ class VariableView(
                 .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted__isnull=True).values_list(
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
             "object_uuid", flat=True
         )
 

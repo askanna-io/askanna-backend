@@ -7,14 +7,14 @@ class VariableAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "project")}),
         ("Variable info", {"fields": ("name", "is_masked")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
         "project",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     raw_id_fields = [
         "project",
@@ -25,13 +25,13 @@ class VariableAdmin(admin.ModelAdmin):
         "project",
         "name",
         "is_masked",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
         "is_masked",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",

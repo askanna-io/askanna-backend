@@ -7,14 +7,14 @@ class ProjectAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "workspace", "created_by")}),
         ("Project info", {"fields": ("name", "description", "visibility")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
         "created_by",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     raw_id_fields = [
         "workspace",
@@ -26,18 +26,18 @@ class ProjectAdmin(admin.ModelAdmin):
         "visibility",
         "workspace",
         "created_by",
-        "created",
+        "created_at",
     ]
     list_display_links = (
         "suuid",
         "name",
     )
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
         "visibility",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",

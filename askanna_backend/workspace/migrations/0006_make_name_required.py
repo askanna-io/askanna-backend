@@ -5,22 +5,11 @@ from workspace.models import Workspace
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("workspace", "0005_remove_translation"),
     ]
 
-    def forwards_func(apps, schema_editor):
-        for workspace in Workspace.objects.filter(name__isnull=True):
-            if not workspace.name:
-                workspace.name = workspace.suuid
-                workspace.save()
-
-    def reverse_func(apps, schema_editor):
-        pass
-
     operations = [
-        migrations.RunPython(forwards_func, reverse_func),
         migrations.AlterField(
             model_name="workspace",
             name="name",

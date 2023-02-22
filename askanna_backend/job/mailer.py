@@ -140,20 +140,20 @@ def send_run_notification(
         else:
             log = []
 
-        if run.created:
-            run_created = run.created.astimezone(tz=pytz.timezone(job.timezone))
+        if run.created_at:
+            run_created_at = run.created_at.astimezone(tz=pytz.timezone(job.timezone))
         else:
-            run_created = None
+            run_created_at = None
 
-        if run.started:
-            run_started = run.started.astimezone(tz=pytz.timezone(job.timezone))
+        if run.started_at:
+            run_started_at = run.started_at.astimezone(tz=pytz.timezone(job.timezone))
         else:
-            run_started = None
+            run_started_at = None
 
-        if run.finished:
-            run_finished = run.finished.astimezone(tz=pytz.timezone(job.timezone))
+        if run.finished_at:
+            run_finished_at = run.finished_at.astimezone(tz=pytz.timezone(job.timezone))
         else:
-            run_finished = None
+            run_finished_at = None
 
         trigger = trigger_translation.get(run.trigger, "Unknown")
 
@@ -163,9 +163,9 @@ def send_run_notification(
                 "result": run.get_result(),
                 "log": log,
                 "duration_humanized": duration_humanized,
-                "run_created": run_created,
-                "run_started": run_started,
-                "run_finished": run_finished,
+                "run_created_at": run_created_at,
+                "run_started_at": run_started_at,
+                "run_finished_at": run_finished_at,
                 "trigger": trigger,
             }
         )

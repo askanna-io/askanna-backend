@@ -42,14 +42,14 @@ def clean_containers_after_run():
         if not container.name.startswith("run_"):
             continue
         state = container.attrs.get("State")
-        finished = state.get("FinishedAt")
+        finished_at = state.get("FinishedAt")
         labels = container.attrs.get("Config", {}).get("Labels", {})
         askanna_environment = labels.get("askanna_environment")
         if settings.ASKANNA_ENVIRONMENT != askanna_environment:
             continue
 
-        if finished:
-            finished_dt = parser.isoparse(finished)
+        if finished_at:
+            finished_dt = parser.isoparse(finished_at)
             age = datetime.datetime.now(tz=datetime.timezone.utc) - finished_dt
             if age > datetime.timedelta(minutes=delete_after_minutes):
                 print("Removing container", container.name)
@@ -67,7 +67,7 @@ def delete_jobs():
     """
     remove_objects(
         JobDef.objects.filter(
-            project__deleted__isnull=True,
-            project__workspace__deleted__isnull=True,
+            project__deleted_at__isnull=True,
+            project__workspace__deleted_at__isnull=True,
         )
     )

@@ -29,8 +29,8 @@ class JobPayloadView(
     permission_classes = [RoleBasedPermission]
     filter_backends = [OrderingFilter]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
     ]
 
     rbac_permissions_by_action = {

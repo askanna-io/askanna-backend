@@ -154,8 +154,8 @@ class RunSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "status",
-            "started",
-            "finished",
+            "started_at",
+            "finished_at",
             "duration",
             "trigger",
             "created_by",
@@ -170,8 +170,8 @@ class RunSerializer(serializers.ModelSerializer):
             "job",
             "project",
             "workspace",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 
@@ -205,16 +205,16 @@ class RunStatusSerializer(serializers.ModelSerializer):
             "suuid",
             "status",
             "name",
-            "started",
-            "finished",
+            "started_at",
+            "finished_at",
             "duration",
             "next_url",
             "created_by",
             "job",
             "project",
             "workspace",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 

@@ -6,10 +6,10 @@ from django.db.models import Q
 
 class ProjectQuerySet(models.QuerySet):
     def active(self):
-        return self.filter(deleted__isnull=True, workspace__deleted__isnull=True)
+        return self.filter(deleted_at__isnull=True, workspace__deleted_at__isnull=True)
 
     def inactive(self):
-        return self.filter(Q(deleted__isnull=False) | Q(workspace__deleted__isnull=False))
+        return self.filter(Q(deleted_at__isnull=False) | Q(workspace__deleted_at__isnull=False))
 
 
 class ProjectManager(models.Manager):
@@ -40,10 +40,10 @@ class Project(AuthorModel, BaseModel):
 
     @property
     def last_created_package(self):
-        return self.packages.active_and_finished().order_by("-created").first()
+        return self.packages.active_and_finished().order_by("-created_at").first()
 
     class Meta:
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["name", "created"]),
+            models.Index(fields=["name", "created_at"]),
         ]

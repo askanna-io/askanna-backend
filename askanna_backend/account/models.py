@@ -32,7 +32,6 @@ from workspace.models import Workspace
 
 
 class BaseAvatarModel:
-
     avatar_specs = {
         "icon": (60, 60),
         "small": (120, 120),
@@ -114,7 +113,7 @@ class BaseAvatarModel:
         return "{BASE_URL}/files/avatars/{LOCATION}".format(BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=location)
 
     def append_timestamp_to_url(self, location: str) -> str:
-        timestamp = datetime.datetime.timestamp(self.modified)
+        timestamp = datetime.datetime.timestamp(self.modified_at)
         return "{location}?{timestamp}".format(location=location, timestamp=timestamp)
 
     @property
@@ -179,7 +178,7 @@ class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
         marked as deleted. If a membership was using the global profile, then the profile will be copied over to the
         membership before removing the user.
         """
-        for membership in self.memberships.filter(deleted__isnull=True):
+        for membership in self.memberships.filter(deleted_at__isnull=True):
             membership.to_deleted()
 
         self.delete_avatar()
@@ -197,7 +196,7 @@ class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
                 "email",
                 "name",
                 "job_title",
-                "modified",
+                "modified_at",
             ]
         )
 
@@ -215,7 +214,7 @@ ROLES = ((WS_VIEWER, "viewer"), (WS_MEMBER, "member"), (WS_ADMIN, "admin"))
 
 class MemberQuerySet(models.QuerySet):
     def active_members(self):
-        return self.filter(deleted__isnull=True)
+        return self.filter(deleted_at__isnull=True)
 
     def admins(self):
         return self.active_members().filter(role=WS_ADMIN)
@@ -283,9 +282,9 @@ class Membership(BaseAvatarModel, SlimBaseModel):
             return Workspace.objects.get(uuid=self.object_uuid)
 
     def get_status(self):
-        if self.user and not self.deleted:
+        if self.user and not self.deleted_at:
             return "active"
-        if self.deleted:
+        if self.deleted_at:
             return "deleted"
         if getattr(self, "invitation", None):
             return "invited"
@@ -350,7 +349,7 @@ class Membership(BaseAvatarModel, SlimBaseModel):
                 object_uuid=str(project.uuid),
                 object_type="PR",
                 user=user,
-                deleted__isnull=True,
+                deleted_at__isnull=True,
             )
         except ObjectDoesNotExist:
             return None
@@ -388,7 +387,7 @@ class Membership(BaseAvatarModel, SlimBaseModel):
                 object_uuid=str(workspace.uuid),
                 object_type="WS",
                 user=user,
-                deleted__isnull=True,
+                deleted_at__isnull=True,
             )
         except ObjectDoesNotExist:
             return None
@@ -463,7 +462,14 @@ class Membership(BaseAvatarModel, SlimBaseModel):
             self.name = self.user.name
             self.job_title = self.user.job_title
             self.use_global_profile = False
-            self.save(update_fields=["name", "job_title", "use_global_profile", "modified"])
+            self.save(
+                update_fields=[
+                    "name",
+                    "job_title",
+                    "use_global_profile",
+                    "modified_at",
+                ]
+            )
 
             # Copy the avatar from the user to membership
             self.write(open(self.user.stored_path, "rb"))
@@ -471,8 +477,8 @@ class Membership(BaseAvatarModel, SlimBaseModel):
         super().to_deleted()
 
     class Meta:
-        ordering = ["-created"]
-        unique_together = [["user", "object_uuid", "object_type", "deleted"]]
+        ordering = ["-created_at"]
+        unique_together = [["user", "object_uuid", "object_type", "deleted_at"]]
 
 
 class UserProfile(Membership):
@@ -501,4 +507,4 @@ class PasswordResetLog(SlimBaseModel):
     meta = models.JSONField(null=True, default=None)
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]

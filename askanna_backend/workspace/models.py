@@ -5,10 +5,10 @@ from django.db import models
 
 class WorkspaceQuerySet(models.QuerySet):
     def active(self):
-        return self.filter(deleted__isnull=True)
+        return self.filter(deleted_at__isnull=True)
 
     def inactive(self):
-        return self.filter(deleted__isnull=False)
+        return self.filter(deleted_at__isnull=False)
 
 
 class WorkspaceManager(models.Manager):
@@ -36,5 +36,5 @@ class Workspace(AuthorModel, BaseModel):
     class Meta:
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["name", "created"]),
+            models.Index(fields=["name", "created_at"]),
         ]

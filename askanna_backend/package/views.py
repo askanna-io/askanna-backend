@@ -84,8 +84,8 @@ class PackageViewSet(
     lookup_field = "suuid"
     search_fields = ["suuid", "name", "original_filename"]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
         "name",
         "filename",
         "project.name",
@@ -134,7 +134,7 @@ class PackageViewSet(
             )
         else:
             member_of_workspaces = user.memberships.filter(
-                object_type=MSP_WORKSPACE, deleted__isnull=True
+                object_type=MSP_WORKSPACE, deleted_at__isnull=True
             ).values_list("object_uuid", flat=True)
 
             queryset = (
@@ -147,8 +147,8 @@ class PackageViewSet(
             )
 
         if self.action == "finish_upload":
-            return queryset.filter(finished__isnull=True)
-        return queryset.filter(finished__isnull=False)
+            return queryset.filter(finished_at__isnull=True)
+        return queryset.filter(finished_at__isnull=False)
 
     def get_object_project(self):
         return self.current_object.project
@@ -187,11 +187,17 @@ class PackageViewSet(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+        # TODO: check if we need to update member here
         # we specify the "member" also in the update_fields
         # because this will be updated later in a listener
-        instance_obj.finished = timezone.now()
-        update_fields = ["member", "finished"]
-        instance_obj.save(update_fields=update_fields)
+        instance_obj.finished_at = timezone.now()
+        instance_obj.save(
+            update_fields=[
+                "member",
+                "finished_at",
+                "modified_at",
+            ]
+        )
 
     @action(detail=True, methods=["get"])
     def download(self, request, **kwargs):

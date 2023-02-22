@@ -95,8 +95,8 @@ class RunView(
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
         "name",
         "job.name",
         "job.suuid",
