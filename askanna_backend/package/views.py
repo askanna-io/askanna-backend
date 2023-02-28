@@ -187,9 +187,9 @@ class PackageViewSet(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        # TODO: check if we need to update member here
         # we specify the "member" also in the update_fields
         # because this will be updated later in a listener
+        # TODO move adding member to the serializer i.s.o. a listener
         instance_obj.finished_at = timezone.now()
         instance_obj.save(
             update_fields=[
