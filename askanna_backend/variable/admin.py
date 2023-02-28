@@ -7,7 +7,7 @@ class VariableAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "project")}),
         ("Variable info", {"fields": ("name", "is_masked")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",

@@ -5,11 +5,12 @@ from project.models import Project
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {"fields": ("suuid", "workspace", "created_by")}),
+        (None, {"fields": ("uuid", "suuid", "workspace", "created_by")}),
         ("Project info", {"fields": ("name", "description", "visibility")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
+        "uuid",
         "suuid",
         "created_by",
         "modified_at",

@@ -53,12 +53,18 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = ["created_at", "modified_at", "deleted_at", "is_active", "is_superuser", "is_staff"]
 
     fieldsets = (
-        (None, {"fields": ("username",)}),
+        (None, {"fields": ("suuid", "username")}),
         ("Personal info", {"fields": ("email", "name", "job_title")}),
         ("User status", {"fields": ("is_active", "is_staff", "is_superuser")}),
-        ("Important dates", {"fields": ("last_login", "modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("last_login", "modified_at", "created_at", "deleted_at")}),
     )
-    readonly_fields = ["suuid", "last_login", "modified_at", "created_at", "deleted_at"]
+    readonly_fields = [
+        "suuid",
+        "last_login",
+        "modified_at",
+        "created_at",
+        "deleted_at",
+    ]
 
     inlines = [MembershipInline]
 
@@ -89,7 +95,7 @@ class MembershipAdmin(admin.ModelAdmin):
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("user", "object_type", "object_uuid", "role")}),
         ("User profile", {"fields": ("use_global_profile", "name", "job_title")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -140,7 +146,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("user", "object_type", "object_uuid", "role")}),
         ("User profile", {"fields": ("use_global_profile", "name", "job_title")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -176,7 +182,7 @@ class InvitationAdmin(admin.ModelAdmin):
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("object_type", "object_uuid", "role")}),
         ("Invite info", {"fields": ("email", "front_end_url")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -230,7 +236,7 @@ class PasswordResetLogAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid",)}),
         ("Reset info", {"fields": ("email", "front_end_domain", "remote_ip", "remote_host", "meta")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "uuid",

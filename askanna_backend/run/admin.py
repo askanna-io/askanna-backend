@@ -16,29 +16,14 @@ from run.models import (
 
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
-    fields = [
-        "suuid",
-        "jobdef",
-        "jobid",
-        "status",
-        "trigger",
-        "started_at",
-        "finished_at",
-        "duration",
-        "name",
-        "description",
-        "package",
-        "created_by",
-        "member",
-        "payload",
-        "environment_name",
-        "run_image",
-        "timezone",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
+    fieldsets = (
+        (None, {"fields": ("uuid", "suuid", "jobdef", "created_by", "member")}),
+        ("Run info", {"fields": ("name", "description", "status", "jobid", "duration")}),
+        ("Metadata", {"fields": ("package", "trigger", "payload", "environment_name", "run_image", "timezone")}),
+        ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
+    )
     readonly_fields = [
+        "uuid",
         "suuid",
         "jobid",
         "trigger",
@@ -313,7 +298,7 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "run", "job_name", "project_name", "workspace_name")}),
         ("Metrics meta", {"fields": ("count", "size", "metric_names", "label_names")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -374,7 +359,7 @@ class RunMetricAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("run", "job_name", "project_name", "workspace_name")}),
         ("Metric", {"fields": ("metric", "label")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "run",
@@ -437,7 +422,7 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "run", "job_name", "project_name", "workspace_name")}),
         ("Variables meta", {"fields": ("count", "size", "variable_names", "label_names")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -500,7 +485,7 @@ class RunVariableAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("run", "job_name", "project_name", "workspace_name")}),
         ("Metric", {"fields": ("variable", "is_masked", "label")}),
-        ("Important dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "run",

@@ -4,17 +4,13 @@ from workspace.models import Workspace
 
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
-    fields = [
-        "suuid",
-        "name",
-        "description",
-        "visibility",
-        "created_by",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
+    fieldsets = (
+        (None, {"fields": ("uuid", "suuid", "created_by")}),
+        ("Workspace info", {"fields": ("name", "description", "visibility")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+    )
     readonly_fields = [
+        "uuid",
         "suuid",
         "created_by",
         "modified_at",
