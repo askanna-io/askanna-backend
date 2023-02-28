@@ -14,9 +14,4 @@ class Command(BaseCommand):
             setting, created = Setting.objects.get_or_create(name=setting_name)
             if created:
                 setting.value = default_value
-                setting.save(
-                    update_fields=[
-                        "value",
-                        "modified_at",
-                    ]
-                )
+                setting.save(update_fields=["value"])
