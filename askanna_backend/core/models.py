@@ -1,10 +1,10 @@
 import os
 import uuid as _uuid
 
+from core.fields import CreationDateTimeField, ModificationDateTimeField
 from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
-from django_extensions.db.fields import CreationDateTimeField, ModificationDateTimeField
 
 from .utils.suuid import create_suuid
 
