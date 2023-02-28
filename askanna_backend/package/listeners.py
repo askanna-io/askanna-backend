@@ -13,7 +13,7 @@ from package.signals import package_upload_finish
 
 
 @receiver(package_upload_finish)
-def package_upload_101_extract_zip(sender, signal, postheaders, obj, **kwargs):
+def package_upload_extract_zip(sender, signal, postheaders, obj, **kwargs):
     # extract from package_root to blob_root under the package uuid
     # this is for the fileview
     target_location = settings.BLOB_ROOT
@@ -25,9 +25,8 @@ def package_upload_101_extract_zip(sender, signal, postheaders, obj, **kwargs):
         zippackage.extractall(path=target_path)
 
 
-# TODO: check why this is named 102
 @receiver(package_upload_finish)
-def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
+def package_upload_extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     """
     Extract jobs defined in the askanna.yml (if set)
 
@@ -52,8 +51,8 @@ def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders,
     # parse the askannaconfig
     configyml = AskAnnaConfig.from_stream(askanna_yml)
     if configyml is None:
-        # FIXME: we could not parse the config, report somewhere
         return
+
     project = obj.project
 
     # create or find jobdef for each found jobs
