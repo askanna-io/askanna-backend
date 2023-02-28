@@ -3,7 +3,7 @@ import uuid
 from typing import Union
 
 from core.config import AskAnnaConfig
-from core.models import AuthorModel, BaseModel
+from core.models import AuthorModel, NameDescriptionBaseModel
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -43,7 +43,7 @@ class PackageManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Package(AuthorModel, BaseModel):
+class Package(AuthorModel, NameDescriptionBaseModel):
     original_filename = models.CharField(max_length=1000, default="")
 
     project = models.ForeignKey(

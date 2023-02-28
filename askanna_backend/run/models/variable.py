@@ -2,7 +2,7 @@ import io
 import json
 import os
 
-from core.models import ArtifactModelMixin, SlimBaseModel
+from core.models import ArtifactModelMixin, BaseModel
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
@@ -10,7 +10,7 @@ from django.utils import timezone
 from run.utils import get_unique_names_with_data_type
 
 
-class RunVariableMeta(ArtifactModelMixin, SlimBaseModel):
+class RunVariableMeta(ArtifactModelMixin, BaseModel):
     """Store variables for a Run"""
 
     filetype = "runvariables"
@@ -142,7 +142,7 @@ class RunVariableMeta(ArtifactModelMixin, SlimBaseModel):
 
 
 # TODO: Rename to RunVariable after release v0.21.0
-class RunVariableRow(SlimBaseModel):
+class RunVariableRow(BaseModel):
     """
     Tracked Variables of a Run
     """

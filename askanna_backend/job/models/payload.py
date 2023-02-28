@@ -1,7 +1,7 @@
 import json
 import os
 
-from core.models import SlimBaseModel
+from core.models import BaseModel
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -36,7 +36,7 @@ class PayloadManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class JobPayload(SlimBaseModel):
+class JobPayload(BaseModel):
     """
     Input for a Run
     """

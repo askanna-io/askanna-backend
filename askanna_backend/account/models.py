@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import datetime
 import os
+import uuid as _uuid
 from typing import List, Optional, Type, Union
 
 from account.signals import avatar_changed_signal
-from core.models import SlimBaseForAuthModel, SlimBaseModel
+from core.models import BaseModel
 from core.permissions.askanna_roles import (
     AskAnnaAdmin,
     AskAnnaMember,
@@ -129,7 +130,9 @@ class BaseAvatarModel:
         )
 
 
-class User(BaseAvatarModel, SlimBaseForAuthModel, AbstractUser):
+class User(BaseAvatarModel, BaseModel, AbstractUser):
+    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
+
     email = models.EmailField("Email address", blank=False)
     name = models.CharField("Name of User", blank=False, max_length=255)
     job_title = models.CharField("Job title", blank=True, default="", max_length=255)
@@ -243,7 +246,7 @@ class ActiveMemberManager(models.Manager):
         return self.get_queryset().members()
 
 
-class Membership(BaseAvatarModel, SlimBaseModel):
+class Membership(BaseAvatarModel, BaseModel):
     """
     Membership holds the relation between
     - workspace vs user
@@ -498,7 +501,7 @@ class Invitation(Membership):
         return self.token_signer.sign(self.suuid)
 
 
-class PasswordResetLog(SlimBaseModel):
+class PasswordResetLog(BaseModel):
     email = models.EmailField()
     user = models.ForeignKey("account.User", blank=True, null=True, default=None, on_delete=models.SET_NULL)
     remote_ip = models.GenericIPAddressField("Remote IP", null=True)

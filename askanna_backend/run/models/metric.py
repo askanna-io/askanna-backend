@@ -2,7 +2,7 @@ import io
 import json
 import os
 
-from core.models import ArtifactModelMixin, SlimBaseModel
+from core.models import ArtifactModelMixin, BaseModel
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
@@ -10,7 +10,7 @@ from django.utils import timezone
 from run.utils import get_unique_names_with_data_type
 
 
-class RunMetricMeta(ArtifactModelMixin, SlimBaseModel):
+class RunMetricMeta(ArtifactModelMixin, BaseModel):
     """Store metrics for a Run"""
 
     filetype = "runmetrics"
@@ -142,7 +142,7 @@ class RunMetricMeta(ArtifactModelMixin, SlimBaseModel):
 
 
 # TODO: Rename to RunMetric after release v0.21.0
-class RunMetricRow(SlimBaseModel):
+class RunMetricRow(BaseModel):
     """
     Tracked Metrics of a Run
     """

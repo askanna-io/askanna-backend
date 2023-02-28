@@ -2,11 +2,11 @@ import datetime
 
 import croniter
 import pytz
-from core.models import SlimBaseModel
+from core.models import BaseModel
 from django.db import models
 
 
-class ScheduledJob(SlimBaseModel):
+class ScheduledJob(BaseModel):
     job = models.ForeignKey(
         "job.JobDef",
         on_delete=models.CASCADE,

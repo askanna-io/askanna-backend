@@ -1,4 +1,4 @@
-from core.models import SlimBaseModel
+from core.models import BaseModel
 from django.db import models
 from django.db.models import Q
 from django_cryptography.fields import encrypt
@@ -29,7 +29,7 @@ class VariableManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Variable(SlimBaseModel):
+class Variable(BaseModel):
     """Model to store Variables that can be used for runnings jobs"""
 
     name = models.CharField(max_length=128)

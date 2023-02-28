@@ -1,5 +1,5 @@
 from core.const import VISIBLITY
-from core.models import AuthorModel, BaseModel
+from core.models import AuthorModel, NameDescriptionBaseModel
 from django.db import models
 from django.db.models import Q
 
@@ -23,7 +23,7 @@ class ProjectManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Project(AuthorModel, BaseModel):
+class Project(AuthorModel, NameDescriptionBaseModel):
     """A project resembles an organisation with code, jobs, runs artifacts"""
 
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True, default="New project")

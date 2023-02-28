@@ -1,4 +1,4 @@
-from core.models import AuthorModel, BaseModel
+from core.models import AuthorModel, NameDescriptionBaseModel
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
@@ -69,7 +69,7 @@ class RunManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Run(AuthorModel, BaseModel):
+class Run(AuthorModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=True, null=False, default="", db_index=True)
 
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)

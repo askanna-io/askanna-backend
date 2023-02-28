@@ -1,4 +1,4 @@
-from core.models import BaseModel
+from core.models import NameDescriptionBaseModel
 from core.utils.config import get_setting_from_database
 from django.conf import settings
 from django.db import models
@@ -32,7 +32,7 @@ class JobManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class JobDef(BaseModel):
+class JobDef(NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True)
 
     environment_image = models.CharField(

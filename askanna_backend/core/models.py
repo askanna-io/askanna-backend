@@ -9,12 +9,37 @@ from django_cryptography.fields import encrypt
 from .utils.suuid import create_suuid
 
 
-class DeletedModel(models.Model):
+class BaseModel(models.Model):
     """
-    DeletedModel is an abstract base class model that provides a field to registere when the model is (soft-)deleted
+    BaseModel is an abstract base class model that provides the fields:
+     - uuid
+     - suuid
+     - created_at
+     - modified_at
+     - deleted_at
+
+    "created_at" and "modified_at" are self-managed fields that are automatically set to the current date/time when the
+    model is created or updated.
+
+    "deleted_at" is used to mark the model as deleted, but not actually delete it from the database.
     """
 
+    uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
+    suuid = models.CharField(max_length=32, unique=True, editable=False, verbose_name="SUUID")
+
+    created_at = CreationDateTimeField()
+    modified_at = ModificationDateTimeField()
+
     deleted_at = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.uuid:
+            self.uuid = _uuid.uuid4()
+        if not self.suuid and self.uuid:
+            self.suuid = create_suuid(uuid=self.uuid)
+
+        self.update_modified = kwargs.pop("update_modified", getattr(self, "update_modified", True))
+        super().save(*args, **kwargs)
 
     def to_deleted(self):
         if self.deleted_at:
@@ -30,82 +55,27 @@ class DeletedModel(models.Model):
 
     class Meta:
         abstract = True
-
-
-class TimeStampedModel(models.Model):
-    """
-    TimeStampedModel is an abstract base class model that provides self-managed "created_at" and "modified_at" fields.
-    """
-
-    created_at = CreationDateTimeField()
-    modified_at = ModificationDateTimeField()
-
-    def save(self, **kwargs):
-        self.update_modified = kwargs.pop("update_modified", getattr(self, "update_modified", True))
-        super().save(**kwargs)
-
-    class Meta:
         get_latest_by = "modified_at"
-        abstract = True
+        ordering = ["-modified_at"]
 
 
-class DescriptionModel(models.Model):
+class NameDescriptionBaseModel(BaseModel):
     """
-    DescriptionModel
-
-    An abstract base class model that provides a description field.
+    NameDescriptionBaseModel is an abstract base class model that provides the fields:
+     - uuid
+     - suuid
+     - name
+     - description
+     - created_at
+     - modified_at
+     - deleted_at
     """
 
+    name = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=False, default="")
 
     class Meta:
         abstract = True
-
-
-class NameModel(models.Model):
-    """
-    NameModel
-
-    An abstract base class model that provides a name field.
-    """
-
-    name = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        abstract = True
-
-
-class NameDescriptionModel(NameModel, DescriptionModel):
-    class Meta:
-        abstract = True
-
-
-class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
-    uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
-    suuid = models.CharField(max_length=32, unique=True, editable=False, verbose_name="SUUID")
-
-    def save(self, *args, **kwargs):
-        if not self.uuid:
-            self.uuid = _uuid.uuid4()
-        if not self.suuid and self.uuid:
-            self.suuid = create_suuid(uuid=self.uuid)
-        super().save(*args, **kwargs)
-
-    class Meta:
-        abstract = True
-
-
-class SlimBaseForAuthModel(SlimBaseModel):
-    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
-
-    class Meta:
-        abstract = True
-
-
-class BaseModel(NameDescriptionModel, SlimBaseModel):
-    class Meta:
-        abstract = True
-        ordering = ["-modified_at"]
 
 
 class AuthorModel(models.Model):
@@ -173,6 +143,6 @@ class ArtifactModelMixin:
             pass
 
 
-class Setting(SlimBaseModel):
+class Setting(BaseModel):
     name = models.CharField(max_length=32, blank=True, unique=True)
     value = encrypt(models.TextField(default=None, blank=True, null=True))

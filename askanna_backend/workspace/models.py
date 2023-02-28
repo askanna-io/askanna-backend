@@ -1,5 +1,5 @@
 from core.const import VISIBLITY
-from core.models import AuthorModel, BaseModel
+from core.models import AuthorModel, NameDescriptionBaseModel
 from django.db import models
 
 
@@ -22,7 +22,7 @@ class WorkspaceManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Workspace(AuthorModel, BaseModel):
+class Workspace(AuthorModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True, default="New workspace")
     visibility = models.CharField(max_length=10, choices=VISIBLITY, default="PRIVATE", db_index=True)
 

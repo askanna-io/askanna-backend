@@ -1,8 +1,8 @@
-from core.models import BaseModel
+from core.models import NameDescriptionBaseModel
 from django.db import models
 
 
-class RunImage(BaseModel):
+class RunImage(NameDescriptionBaseModel):
     """
     Store information about the Images we use for the runs
     """
