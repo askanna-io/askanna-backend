@@ -32,17 +32,17 @@ class PackageAdmin(admin.ModelAdmin):
         "size",
         "project",
         "created_by",
-        "created",
+        "created_at",
     ]
     list_display_links = (
         "suuid",
         "original_filename",
     )
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = (
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     )
     search_fields = [
         "uuid",
@@ -62,10 +62,10 @@ class PackageAdmin(admin.ModelAdmin):
         "project",
         "created_by",
         "member",
-        "modified",
-        "created",
-        "finished",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "finished_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
@@ -74,10 +74,10 @@ class PackageAdmin(admin.ModelAdmin):
         "project",
         "created_by",
         "member",
-        "modified",
-        "created",
-        "finished",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "finished_at",
+        "deleted_at",
     ]
     inlines = [ChunkedPackageInline]
 

@@ -7,22 +7,11 @@ from account.models import User
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("account", "0004_uuid_and_suuid_field_config"),
     ]
 
-    def forwards_func(apps, schema_editor):
-        for user in User.objects.filter(name__isnull=True):
-            if not user.name:
-                user.name = user.email.split("@")[0]
-                user.save()
-
-    def reverse_func(apps, schema_editor):
-        pass
-
     operations = [
-        migrations.RunPython(forwards_func, reverse_func),
         migrations.AlterModelManagers(
             name="user",
             managers=[

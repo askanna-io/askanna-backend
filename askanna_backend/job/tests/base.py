@@ -33,7 +33,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package.write(
             open(
@@ -48,7 +48,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage2",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package2.write(
             open(
@@ -63,7 +63,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage3",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package3.write(
             open(
@@ -79,7 +79,7 @@ class BaseJobTestDef(BaseUserPopulation):
             size=1,
             name="TestPackage4",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package4.write(
             open(
@@ -166,7 +166,7 @@ class BaseJobTestDef(BaseUserPopulation):
                 created_by=self.users.get("member"),
                 member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
-                started=timezone.now(),
+                started_at=timezone.now(),
             ),
             "run7": Run.objects.create(
                 name="",

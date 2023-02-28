@@ -1,14 +1,14 @@
 from core.const import VISIBLITY
-from core.models import AuthorModel, BaseModel
+from core.models import AuthorModel, NameDescriptionBaseModel
 from django.db import models
 
 
 class WorkspaceQuerySet(models.QuerySet):
     def active(self):
-        return self.filter(deleted__isnull=True)
+        return self.filter(deleted_at__isnull=True)
 
     def inactive(self):
-        return self.filter(deleted__isnull=False)
+        return self.filter(deleted_at__isnull=False)
 
 
 class WorkspaceManager(models.Manager):
@@ -22,7 +22,7 @@ class WorkspaceManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Workspace(AuthorModel, BaseModel):
+class Workspace(AuthorModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True, default="New workspace")
     visibility = models.CharField(max_length=10, choices=VISIBLITY, default="PRIVATE", db_index=True)
 
@@ -36,5 +36,5 @@ class Workspace(AuthorModel, BaseModel):
     class Meta:
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["name", "created"]),
+            models.Index(fields=["name", "created_at"]),
         ]

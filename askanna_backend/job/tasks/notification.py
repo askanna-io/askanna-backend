@@ -37,7 +37,7 @@ def send_missed_schedule_notification(self, job_uuid):
 
     # Get latest package for the job
     # Fetch the latest package found in the job.project
-    package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created").first()
+    package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created_at").first()
     if package is None:
         logging.warn(f"Cannot send notifcations. No package found for job {job.suuid}.")
         return

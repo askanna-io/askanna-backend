@@ -601,7 +601,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertGreater(
-            UserProfile.objects.filter(uuid=self.members.get("admin2").uuid).first().deleted,
+            UserProfile.objects.filter(uuid=self.members.get("admin2").uuid).first().deleted_at,
             before_delete,
         )
 
@@ -621,7 +621,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("member").uuid).first().deleted)
+        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("member").uuid).first().deleted_at)
 
     def test_non_member_cannot_remove_profile(self):
         """Non members of a workspace cannot remove profiles from it."""
@@ -639,7 +639,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("member").uuid).first().deleted)
+        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("member").uuid).first().deleted_at)
 
     def test_admin_cannot_remove_profiles_from_other_workspace(self):
         """Removing a profile is limited to workspaces an admin is member of."""
@@ -665,7 +665,7 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(UserProfile.objects.filter(uuid=extra_profile.uuid).first().deleted)
+        self.assertIsNone(UserProfile.objects.filter(uuid=extra_profile.uuid).first().deleted_at)
 
     def test_admin_cannot_remove_self_profile(self):
         """An admin an not remove its own profile from a workspace."""
@@ -683,4 +683,4 @@ class TestRemovingProfile(BaseUserPopulation, APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("admin").uuid).first().deleted)
+        self.assertIsNone(UserProfile.objects.filter(uuid=self.members.get("admin").uuid).first().deleted_at)

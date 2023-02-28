@@ -35,8 +35,8 @@ def filter_array(queryset, name, value):
 
 class OrderingFilter(BaseOrderingFilter):
     ordering_param = "order_by"
-    ordering = "-created"
-    ordering_fields = ["created", "modified"]
+    ordering = "-created_at"
+    ordering_fields = ["created_at", "modified_at"]
     ordering_description = (
         "Order the list by one or more fields from the available values. Use a minus sign to "
         "reverse the order. When order by multiple fields, separate them with a comma."

@@ -441,7 +441,7 @@ class TestProjectListWithFilterAPI(BaseProjectTest):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 7  # type: ignore
 
-        response = self.client.get(self.url, {"order_by": "-is_member,-created"})
+        response = self.client.get(self.url, {"order_by": "-is_member,-created_at"})
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 7  # type: ignore
 

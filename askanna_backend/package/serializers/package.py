@@ -24,8 +24,8 @@ class PackageSerializer(serializers.ModelSerializer):
             "workspace",
             "project",
             "created_by",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 
@@ -41,8 +41,8 @@ class PackageSerializerWithFileList(PackageSerializer, BaseArchiveDetailSerializ
             "workspace",
             "project",
             "created_by",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
             "cdn_base_url",
             "files",
         ]

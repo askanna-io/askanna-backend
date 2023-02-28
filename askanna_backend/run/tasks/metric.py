@@ -21,7 +21,7 @@ def move_metrics_to_rows(self, metric_meta_uuid):
     RunMetric.objects.filter(run=run_metric_meta.run).delete()
 
     for metric in run_metric_meta.metrics:
-        metric["created"] = datetime.datetime.fromisoformat(metric["created"])
+        metric["created_at"] = datetime.datetime.fromisoformat(metric["created_at"])
         metric["project_suuid"] = run_metric_meta.run.jobdef.project.suuid
         metric["job_suuid"] = run_metric_meta.run.jobdef.suuid
         metric["run_suuid"] = run_metric_meta.run.suuid
@@ -37,13 +37,13 @@ def post_run_deduplicate_metrics(self, run_uuid):
     """
     Remove double run metrics if any
     """
-    metrics = RunMetric.objects.filter(run__pk=run_uuid).order_by("created", "metric")
+    metrics = RunMetric.objects.filter(run__pk=run_uuid).order_by("created_at", "metric")
     last_metric = None
     for metric in metrics:
         if last_metric and (
             metric.metric == last_metric.metric
             and metric.label == last_metric.label
-            and metric.created == last_metric.created
+            and metric.created_at == last_metric.created_at
         ):
             metric.delete()
         last_metric = metric

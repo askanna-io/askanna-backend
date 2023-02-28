@@ -47,7 +47,7 @@ class RunResultCreateView(
 ):
     """Do a request to upload a new result"""
 
-    queryset = RunResult.objects.filter(run__deleted__isnull=True)
+    queryset = RunResult.objects.filter(run__deleted_at__isnull=True)
     lookup_field = "suuid"
     serializer_class = RunResultSerializer
 
@@ -88,9 +88,13 @@ class RunResultCreateView(
         return os.path.join(self.upload_target_location, obj.storage_location)
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        update_fields = ["size"]
         instance_obj.size = resume_obj.size
-        instance_obj.save(update_fields=update_fields)
+        instance_obj.save(
+            update_fields=[
+                "size",
+                "modified_at",
+            ]
+        )
 
 
 class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):

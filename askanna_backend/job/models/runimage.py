@@ -1,8 +1,8 @@
-from core.models import BaseModel
+from core.models import NameDescriptionBaseModel
 from django.db import models
 
 
-class RunImage(BaseModel):
+class RunImage(NameDescriptionBaseModel):
     """
     Store information about the Images we use for the runs
     """
@@ -24,12 +24,22 @@ class RunImage(BaseModel):
 
     def set_cached_image(self, cached_image):
         self.cached_image = cached_image
-        self.save(update_fields=["cached_image", "modified"])
+        self.save(
+            update_fields=[
+                "cached_image",
+                "modified_at",
+            ]
+        )
 
     def unset_cached_image(self):
         self.cached_image = ""
-        self.save(update_fields=["cached_image", "modified"])
+        self.save(
+            update_fields=[
+                "cached_image",
+                "modified_at",
+            ]
+        )
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         unique_together = ["name", "tag", "digest"]

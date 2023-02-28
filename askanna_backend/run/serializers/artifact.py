@@ -24,8 +24,8 @@ class RunArtifactSerializer(serializers.ModelSerializer):
             "job",
             "project",
             "workspace",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 
@@ -41,8 +41,8 @@ class RunArtifactSerializerDetail(RunArtifactSerializer, BaseArchiveDetailSerial
             "job",
             "project",
             "workspace",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
             "cdn_base_url",
             "files",
         ]
@@ -55,7 +55,7 @@ class RunArtifactSerializerForInsert(serializers.ModelSerializer):
             "suuid",
             "run",
             "size",
-            "created",
+            "created_at",
         ]
 
 

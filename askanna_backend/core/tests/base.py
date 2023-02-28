@@ -166,7 +166,7 @@ class BaseUserPopulation:
                 name="name of admin_inactive in membership",
                 job_title="job_title of admin_inactive in membership",
                 use_global_profile=False,
-                deleted=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
             ),
             "member_inactive": UserProfile.objects.create(
                 object_type=MSP_WORKSPACE,
@@ -176,7 +176,7 @@ class BaseUserPopulation:
                 name="name of member_inactive in membership",
                 job_title="job_title of member_inactive in membership",
                 use_global_profile=False,
-                deleted=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
             ),
         }
         self.members_workspace2 = {
@@ -212,7 +212,7 @@ class BaseUserPopulation:
                 name="name of member_inactive in membership",
                 job_title="job_title of member_inactive in membership",
                 use_global_profile=False,
-                deleted=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
             ),
         }
 

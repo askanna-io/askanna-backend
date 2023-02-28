@@ -1,4 +1,4 @@
-from core.models import SlimBaseModel
+from core.models import BaseModel
 from django.db import models
 from django.db.models import Q
 from django_cryptography.fields import encrypt
@@ -7,12 +7,14 @@ from django_cryptography.fields import encrypt
 class VariableQuerySet(models.QuerySet):
     def active(self):
         return self.filter(
-            deleted__isnull=True, project__deleted__isnull=True, project__workspace__deleted__isnull=True
+            deleted_at__isnull=True, project__deleted_at__isnull=True, project__workspace__deleted_at__isnull=True
         )
 
     def inactive(self):
         return self.filter(
-            Q(deleted__isnull=False) | Q(project__deleted__isnull=True) | Q(project__workspace__deleted__isnull=False)
+            Q(deleted_at__isnull=False)
+            | Q(project__deleted_at__isnull=True)
+            | Q(project__workspace__deleted_at__isnull=False)
         )
 
 
@@ -27,7 +29,7 @@ class VariableManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Variable(SlimBaseModel):
+class Variable(BaseModel):
     """Model to store Variables that can be used for runnings jobs"""
 
     name = models.CharField(max_length=128)
@@ -49,4 +51,4 @@ class Variable(SlimBaseModel):
         return self.value
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]

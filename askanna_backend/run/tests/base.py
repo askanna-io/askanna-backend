@@ -25,7 +25,7 @@ tracked_variables_response_good = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -34,7 +34,7 @@ tracked_variables_response_good = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -43,7 +43,7 @@ tracked_variables_response_good = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -53,7 +53,7 @@ tracked_variables_response_good = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 variable_response_good_small = [
@@ -61,13 +61,13 @@ variable_response_good_small = [
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 variable_response_good_small_no_label = [
@@ -75,13 +75,13 @@ variable_response_good_small_no_label = [
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "variable": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "variable": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 
@@ -94,7 +94,7 @@ metric_response_good = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -103,7 +103,7 @@ metric_response_good = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -112,7 +112,7 @@ metric_response_good = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -122,7 +122,7 @@ metric_response_good = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "type": "boolean"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 metric_response_good_small = [
@@ -130,13 +130,13 @@ metric_response_good_small = [
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [{"name": "city", "value": "Amsterdam", "type": "string"}],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [{"name": "city", "value": "Rotterdam", "type": "string"}],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 metric_response_good_small_no_label = [
@@ -144,13 +144,13 @@ metric_response_good_small_no_label = [
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.623", "type": "integer"},
         "label": [],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
         "metric": {"name": "Accuracy", "value": "0.876", "type": "integer"},
         "label": [],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 metric_response_bad = [
@@ -161,7 +161,7 @@ metric_response_bad = [
             {"name": "city", "value": "Rotterdam", "type": "string"},
             {"name": "product", "value": "TV", "type": "string"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
     {
         "run_suuid": "aaaa-cccc-eeee-zzzz",
@@ -171,7 +171,7 @@ metric_response_bad = [
             {"name": "product", "value": "TV", "type": "string"},
             {"name": "Missing data", "value": "null"},
         ],
-        "created": "2021-02-14T12:00:01.123456+00:00",
+        "created_at": "2021-02-14T12:00:01.123456+00:00",
     },
 ]
 
@@ -198,7 +198,7 @@ class BaseRunTest(BaseUserPopulation):
             size=1,
             name="TestPackage",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package.write(
             open(
@@ -213,7 +213,7 @@ class BaseRunTest(BaseUserPopulation):
             size=1,
             name="TestPackage2",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package2.write(
             open(
@@ -228,7 +228,7 @@ class BaseRunTest(BaseUserPopulation):
             size=1,
             name="TestPackage3",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package3.write(
             open(
@@ -244,7 +244,7 @@ class BaseRunTest(BaseUserPopulation):
             size=1,
             name="TestPackage4",
             created_by=self.users.get("member"),
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         self.package4.write(
             open(
@@ -331,7 +331,7 @@ class BaseRunTest(BaseUserPopulation):
                 created_by=self.users.get("member"),
                 member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
-                started=timezone.now(),
+                started_at=timezone.now(),
             ),
             "run7": Run.objects.create(
                 name="",

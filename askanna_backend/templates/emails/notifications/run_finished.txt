@@ -4,7 +4,7 @@ Project:  {{run.jobdef.project.name}}
 Job:      {{run.jobdef.get_name}}
 Run:      {% if run.name %}{{ run.name }}{% else %}{{ run.suuid }}{% endif %} ({{ ui_url }}/{{ run.jobdef.project.workspace.suuid }}/project/{{ run.jobdef.project.suuid }}/jobs/{{ run.jobdef.suuid }}/runs/{{ run.suuid }}/overview)
 
-Date:     {{ run_finished|date:"F d, Y, h:i:s a e" }}
+Date:     {{ run_finished_at | date:"F d, Y, h:i:s a e" }}
 Duration: {{ duration_humanized }}
 
 By:       {{ run.member.get_name }}

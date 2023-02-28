@@ -2,7 +2,7 @@ import io
 import json
 import os
 
-from core.models import ArtifactModelMixin, SlimBaseModel
+from core.models import ArtifactModelMixin, BaseModel
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
@@ -10,7 +10,7 @@ from django.utils import timezone
 from run.utils import get_unique_names_with_data_type
 
 
-class RunVariableMeta(ArtifactModelMixin, SlimBaseModel):
+class RunVariableMeta(ArtifactModelMixin, BaseModel):
     """Store variables for a Run"""
 
     filetype = "runvariables"
@@ -88,7 +88,7 @@ class RunVariableMeta(ArtifactModelMixin, SlimBaseModel):
                 "run_suuid": instance.suuid,
                 "variable": variable.variable,
                 "label": variable.label,
-                "created": variable.created.isoformat(),
+                "created_at": variable.created_at.isoformat(),
             }
             return var
 
@@ -126,21 +126,30 @@ class RunVariableMeta(ArtifactModelMixin, SlimBaseModel):
             unique_label_names = get_unique_names_with_data_type(all_label_names)
         self.label_names = unique_label_names
 
-        self.save(update_fields=["count", "size", "variable_names", "label_names"])
+        self.save(
+            update_fields=[
+                "count",
+                "size",
+                "variable_names",
+                "label_names",
+                "modified_at",
+            ]
+        )
 
     class Meta:
         db_table = "run_variable_meta"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
 # TODO: Rename to RunVariable after release v0.21.0
-class RunVariableRow(SlimBaseModel):
+class RunVariableRow(BaseModel):
     """
     Tracked Variables of a Run
     """
 
     run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="variables")
 
+    # TODO: remove these fields after release v0.21.0
     # We keep hard references to the project/job/run suuid because historically this model had no hard relations
     # to the other database models
     project_suuid = models.CharField(max_length=32, db_index=True, editable=False)
@@ -159,12 +168,12 @@ class RunVariableRow(SlimBaseModel):
         help_text="JSON field as list with multiple objects which are labels",
     )
 
-    # Redefine the created field, we want this to be overwritabe and with other default
-    created = models.DateTimeField(default=timezone.now, db_index=True)
+    # Redefine the created_at field, we want this to be overwritabe and with other default
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
 
     class Meta:
         db_table = "run_variable_row"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         indexes = [
             GinIndex(
                 name="runvariable_variable_json_idx",

@@ -34,8 +34,8 @@ class VariableSerializer(serializers.ModelSerializer):
             "is_masked",
             "project",
             "workspace",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
 
 

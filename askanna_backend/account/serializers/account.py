@@ -184,5 +184,5 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "last_login",
-            "modified",
+            "modified_at",
         ]

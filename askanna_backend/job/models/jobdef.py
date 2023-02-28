@@ -1,4 +1,4 @@
-from core.models import BaseModel
+from core.models import NameDescriptionBaseModel
 from core.utils.config import get_setting_from_database
 from django.conf import settings
 from django.db import models
@@ -8,14 +8,16 @@ from django.db.models import Q
 class JobQuerySet(models.QuerySet):
     def active(self):
         return self.filter(
-            deleted__isnull=True,
-            project__deleted__isnull=True,
-            project__workspace__deleted__isnull=True,
+            deleted_at__isnull=True,
+            project__deleted_at__isnull=True,
+            project__workspace__deleted_at__isnull=True,
         )
 
     def inactive(self):
         return self.filter(
-            Q(deleted__isnull=False) | Q(project__deleted__isnull=False) | Q(project__workspace__deleted__isnull=False)
+            Q(deleted_at__isnull=False)
+            | Q(project__deleted_at__isnull=False)
+            | Q(project__workspace__deleted_at__isnull=False)
         )
 
 
@@ -30,7 +32,7 @@ class JobManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class JobDef(BaseModel):
+class JobDef(NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True)
 
     environment_image = models.CharField(
@@ -61,8 +63,8 @@ class JobDef(BaseModel):
         return self.environment_image or self.default_environment_image
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         verbose_name = "Job definition"
         indexes = [
-            models.Index(fields=["name", "created"]),
+            models.Index(fields=["name", "created_at"]),
         ]

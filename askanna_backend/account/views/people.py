@@ -112,8 +112,8 @@ class PeopleViewSet(
         .select_related("user", "invitation")
         .annotate(
             status=Case(
-                When(user__isnull=False, deleted__isnull=True, then=Value("active")),
-                When(deleted__isnull=False, then=Value("deleted")),
+                When(user__isnull=False, deleted_at__isnull=True, then=Value("active")),
+                When(deleted_at__isnull=False, then=Value("deleted")),
                 When(invitation__isnull=False, then=Value("invited")),
                 default=Value("blocked"),
             ),
@@ -131,8 +131,8 @@ class PeopleViewSet(
     lookup_field = "suuid"
     search_fields = ["suuid", "member_name", "user__email", "invitation__email"]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
         "name",
         "job_title",
         "status",

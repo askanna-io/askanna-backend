@@ -35,7 +35,13 @@ class MeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)
         instance.job_title = validated_data.get("job_title", instance.job_title)
-        instance.save(update_fields=["name", "job_title", "modified"])
+        instance.save(
+            update_fields=[
+                "name",
+                "job_title",
+                "modified_at",
+            ]
+        )
         return instance
 
     class Meta:
@@ -86,7 +92,14 @@ class ObjectMeSerializer(MeSerializer):
         instance.name = validated_data.get("name", instance.name)
         instance.job_title = validated_data.get("job_title", instance.job_title)
         instance.use_global_profile = validated_data.get("use_global_profile", instance.use_global_profile)
-        instance.save(update_fields=["name", "job_title", "use_global_profile", "modified"])
+        instance.save(
+            update_fields=[
+                "name",
+                "job_title",
+                "use_global_profile",
+                "modified_at",
+            ]
+        )
         return instance
 
     class Meta:
@@ -148,7 +161,7 @@ class AvatarSerializer(serializers.ModelSerializer):
             avatar = self.validated_data.get("avatar")
             if avatar:
                 self.instance.write(io.BytesIO(avatar))
-                self.instance.save(update_fields=["modified"])
+                self.instance.save(update_fields=["modified_at"])
         super().save()
 
     class Meta:

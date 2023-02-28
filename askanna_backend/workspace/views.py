@@ -39,7 +39,7 @@ class WorkspaceViewSet(
     serializer_class = WorkspaceSerializer
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
-    ordering_fields = ["created", "modified", "name", "visibility", "is_member"]
+    ordering_fields = ["created_at", "modified_at", "name", "visibility", "is_member"]
     filterset_class = WorkspaceFilterSet
 
     permission_classes = [RoleBasedPermission]
@@ -59,11 +59,11 @@ class WorkspaceViewSet(
         if user.is_anonymous:
             return super().get_queryset().filter(visibility="PUBLIC").annotate(is_member=Value(False, BooleanField()))
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted__isnull=True).values_list(
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
             "object_uuid"
         )
 
-        memberships = Membership.objects.filter(user=user, deleted__isnull=True, object_uuid=OuterRef("pk"))
+        memberships = Membership.objects.filter(user=user, deleted_at__isnull=True, object_uuid=OuterRef("pk"))
 
         return (
             super()

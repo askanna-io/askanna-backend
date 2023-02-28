@@ -86,14 +86,14 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
                 "raw_definition": "*/10 * * * *",
                 "cron_definition": "*/10 * * * *",
                 "cron_timezone": "Europe/Amsterdam",
-                "next_run": "2021-04-12T18:10:00Z",
-                "last_run": None,
+                "next_run_at": "2021-04-12T18:10:00Z",
+                "last_run_at": None,
             },
             {
                 "raw_definition": "@midnight",
                 "cron_definition": "0 0 * * *",
                 "cron_timezone": "Asia/Hong_Kong",
-                "next_run": "2021-04-13T16:00:00Z",
-                "last_run": None,
+                "next_run_at": "2021-04-13T16:00:00Z",
+                "last_run_at": None,
             },
         ]

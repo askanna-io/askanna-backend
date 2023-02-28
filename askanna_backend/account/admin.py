@@ -18,17 +18,17 @@ class MembershipInline(admin.TabularInline):
         "object_type",
         "object_uuid",
         "role",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
         "object_type",
         "object_uuid",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
-    ordering = ["-created"]
+    ordering = ["-created_at"]
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -43,22 +43,28 @@ class UserAdmin(admin.ModelAdmin):
         "suuid",
         "username",
         "name",
-        "created",
+        "created_at",
         "is_active",
         "is_superuser",
     ]
     search_fields = ["name", "email", "username", "uuid", "suuid"]
-    ordering = ("-created",)
-    date_hierarchy = "created"
-    list_filter = ["created", "modified", "deleted", "is_active", "is_superuser", "is_staff"]
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_filter = ["created_at", "modified_at", "deleted_at", "is_active", "is_superuser", "is_staff"]
 
     fieldsets = (
-        (None, {"fields": ("username",)}),
+        (None, {"fields": ("suuid", "username")}),
         ("Personal info", {"fields": ("email", "name", "job_title")}),
         ("User status", {"fields": ("is_active", "is_staff", "is_superuser")}),
-        ("Important dates", {"fields": ("last_login", "modified", "created", "deleted")}),
+        ("Dates", {"fields": ("last_login", "modified_at", "created_at", "deleted_at")}),
     )
-    readonly_fields = ["suuid", "last_login", "modified", "created", "deleted"]
+    readonly_fields = [
+        "suuid",
+        "last_login",
+        "modified_at",
+        "created_at",
+        "deleted_at",
+    ]
 
     inlines = [MembershipInline]
 
@@ -77,25 +83,25 @@ class MembershipAdmin(admin.ModelAdmin):
         "object_type",
         "object_uuid",
         "role",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = ["uuid", "suuid", "user__email", "user__name", "user__suuid"]
-    ordering = ("-created",)
-    date_hierarchy = "created"
-    list_filter = ("created", "modified", "deleted", "role", "object_type")
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_filter = ("created_at", "modified_at", "deleted_at", "role", "object_type")
 
     fieldsets = (
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("user", "object_type", "object_uuid", "role")}),
         ("User profile", {"fields": ("use_global_profile", "name", "job_title")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
         "user",
         "object_type",
         "object_uuid",
@@ -128,25 +134,25 @@ class UserProfileAdmin(admin.ModelAdmin):
         "object_uuid",
         "name",
         "job_title",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = ["uuid", "suuid", "user__email", "user__name", "user__suuid"]
-    ordering = ("-created",)
-    date_hierarchy = "created"
-    list_filter = ("created", "modified", "deleted")
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_filter = ("created_at", "modified_at", "deleted_at")
 
     fieldsets = (
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("user", "object_type", "object_uuid", "role")}),
         ("User profile", {"fields": ("use_global_profile", "name", "job_title")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     ]
     raw_id_fields = ["user"]
 
@@ -162,13 +168,13 @@ class InvitationAdmin(admin.ModelAdmin):
         "object_type",
         "object_uuid",
         "role",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = ["uuid", "suuid", "email"]
-    ordering = ("-created",)
-    date_hierarchy = "created"
-    list_filter = ("created", "modified", "deleted")
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_filter = ("created_at", "modified_at", "deleted_at")
 
     actions = ["resend_invitation"]
 
@@ -176,13 +182,13 @@ class InvitationAdmin(admin.ModelAdmin):
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("object_type", "object_uuid", "role")}),
         ("Invite info", {"fields": ("email", "front_end_url")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
     ]
 
     def resend_invitation(self, request, queryset):
@@ -220,24 +226,24 @@ class PasswordResetLogAdmin(admin.ModelAdmin):
         "front_end_domain",
         "remote_ip",
         "remote_host",
-        "created",
+        "created_at",
     ]
     search_fields = ["uuid", "email", "remote_ip", "user__email", "user__name", "user__suuid"]
-    ordering = ("-created",)
-    date_hierarchy = "created"
-    list_filter = ("created", "modified", "deleted")
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_filter = ("created_at", "modified_at", "deleted_at")
 
     fieldsets = (
         (None, {"fields": ("suuid",)}),
         ("Reset info", {"fields": ("email", "front_end_domain", "remote_ip", "remote_host", "meta")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "uuid",
         "suuid",
-        "created",
-        "modified",
-        "deleted",
+        "created_at",
+        "modified_at",
+        "deleted_at",
         "email",
         "front_end_domain",
         "remote_ip",

@@ -115,7 +115,7 @@ class TestWorkspaceMeDelete(BaseWorkspaceMe):
 
         # Reload the details of the membership
         self.member_profile.refresh_from_db()
-        assert self.member_profile.deleted is not None
+        assert self.member_profile.deleted_at is not None
 
         # The following values are coming from the global user and should be copied to membership
         assert self.member_profile.name == "user"

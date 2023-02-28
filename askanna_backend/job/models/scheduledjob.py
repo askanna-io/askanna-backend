@@ -2,11 +2,11 @@ import datetime
 
 import croniter
 import pytz
-from core.models import SlimBaseModel
+from core.models import BaseModel
 from django.db import models
 
 
-class ScheduledJob(SlimBaseModel):
+class ScheduledJob(BaseModel):
     job = models.ForeignKey(
         "job.JobDef",
         on_delete=models.CASCADE,
@@ -21,15 +21,20 @@ class ScheduledJob(SlimBaseModel):
 
     member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
-    last_run = models.DateTimeField(null=True, help_text="The last run of this scheduled job")
-    next_run = models.DateTimeField(
+    last_run_at = models.DateTimeField(null=True, help_text="The last run of this scheduled job")
+    next_run_at = models.DateTimeField(
         null=True,
         help_text="We store the datetime with timzone in UTC of the next run to be queried on",
     )
 
     def update_last(self, timestamp=datetime.datetime.now(tz=pytz.UTC)):
-        self.last_run = timestamp
-        self.save(update_fields=["last_run"])
+        self.last_run_at = timestamp
+        self.save(
+            update_fields=[
+                "last_run_at",
+                "modified_at",
+            ]
+        )
 
     def update_next(self, current_dt=None):
         timezoned_now = current_dt or datetime.datetime.now(tz=pytz.UTC)
@@ -37,8 +42,12 @@ class ScheduledJob(SlimBaseModel):
         timezoned_now = timezoned_now.astimezone(tz=pytz.timezone(self.cron_timezone))
 
         it = croniter.croniter(self.cron_definition, timezoned_now)
-        next_run = it.get_next(ret_type=datetime.datetime)
-        next_run_in_utc = next_run.astimezone(tz=pytz.UTC)
+        next_run_at = it.get_next(ret_type=datetime.datetime)
 
-        self.next_run = next_run_in_utc
-        self.save(update_fields=["next_run"])
+        self.next_run_at = next_run_at.astimezone(tz=pytz.UTC)
+        self.save(
+            update_fields=[
+                "next_run_at",
+                "modified_at",
+            ]
+        )

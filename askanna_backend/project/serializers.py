@@ -38,8 +38,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             "created_by",
             "is_member",
             "permission",
-            "created",
-            "modified",
+            "created_at",
+            "modified_at",
         ]
         extra_kwargs = {
             "name": {

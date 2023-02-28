@@ -337,7 +337,7 @@ class TestVariableChangeAPI(BaseProjectVariable):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "newname"  # type: ignore
         assert response.data["value"] == "newvalue"  # type: ignore
-        assert response.data["created"] != response.data["modified"]  # type: ignore
+        assert response.data["created_at"] != response.data["modified_at"]  # type: ignore
 
     def test_change_as_member(self):
         self.activate_user("member")
@@ -353,7 +353,7 @@ class TestVariableChangeAPI(BaseProjectVariable):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "newname"  # type: ignore
         assert response.data["value"] == "***masked***"  # type: ignore
-        assert response.data["created"] != response.data["modified"]  # type: ignore
+        assert response.data["created_at"] != response.data["modified_at"]  # type: ignore
 
     def test_change_as_member_empty_value(self):
         self.activate_user("member")
@@ -369,7 +369,7 @@ class TestVariableChangeAPI(BaseProjectVariable):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "newname"  # type: ignore
         assert response.data["value"] == ""  # type: ignore
-        assert response.data["created"] != response.data["modified"]  # type: ignore
+        assert response.data["created_at"] != response.data["modified_at"]  # type: ignore
 
     def test_change_as_non_member(self):
         self.activate_user("non_member")

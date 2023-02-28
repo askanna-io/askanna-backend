@@ -96,6 +96,6 @@ class Command(BaseCommand):
             original_filename="askanna_create_project.zip",
             project=project,
             size=os.stat(package_archive).st_size,
-            finished=timezone.now(),
+            finished_at=timezone.now(),
         )
         package_object.write(open(package_archive, "rb"))

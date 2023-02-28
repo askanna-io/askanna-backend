@@ -53,8 +53,8 @@ class ProjectView(
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
         "name",
         "visibility",
         "is_member",
@@ -90,13 +90,13 @@ class ProjectView(
                 .annotate(is_member=Value(False, BooleanField()))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted__isnull=True).values_list(
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
             "object_uuid"
         )
 
         memberships = Membership.objects.filter(
-            Q(user=user, deleted__isnull=True, object_uuid=OuterRef("pk"))
-            | Q(user=user, deleted__isnull=True, object_uuid=OuterRef("workspace__pk"))
+            Q(user=user, deleted_at__isnull=True, object_uuid=OuterRef("pk"))
+            | Q(user=user, deleted_at__isnull=True, object_uuid=OuterRef("workspace__pk"))
         )
 
         return (

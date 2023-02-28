@@ -14,4 +14,4 @@ def delete_projects():
     We pass on the queryset to get all objects
     these will be filtered in the function remove_objects to delete ones
     """
-    remove_objects(Project.objects.filter(workspace__deleted__isnull=True))
+    remove_objects(Project.objects.filter(workspace__deleted_at__isnull=True))

@@ -74,9 +74,9 @@ class RunMetricView(
     max_page_size = 10000  # For metric listings we want to allow "a lot" of data in a single request
     search_fields = ["metric__name"]
     serializer_class = RunMetricSerializer
-    ordering = "created"
+    ordering = "created_at"
     ordering_fields = [
-        "created",
+        "created_at",
         "metric.name",
         "metric.value",
         "metric.type",

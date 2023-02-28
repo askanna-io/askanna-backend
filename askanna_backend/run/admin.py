@@ -16,39 +16,24 @@ from run.models import (
 
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
-    fields = [
-        "suuid",
-        "jobdef",
-        "jobid",
-        "status",
-        "trigger",
-        "started",
-        "finished",
-        "duration",
-        "name",
-        "description",
-        "package",
-        "created_by",
-        "member",
-        "payload",
-        "environment_name",
-        "run_image",
-        "timezone",
-        "modified",
-        "created",
-        "deleted",
-    ]
+    fieldsets = (
+        (None, {"fields": ("uuid", "suuid", "jobdef", "created_by", "member")}),
+        ("Run info", {"fields": ("name", "description", "status", "jobid", "duration")}),
+        ("Metadata", {"fields": ("package", "trigger", "payload", "environment_name", "run_image", "timezone")}),
+        ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
+    )
     readonly_fields = [
+        "uuid",
         "suuid",
         "jobid",
         "trigger",
-        "started",
-        "finished",
+        "started_at",
+        "finished_at",
         "duration",
         "environment_name",
         "timezone",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
     raw_id_fields = [
         "jobdef",
@@ -65,24 +50,24 @@ class RunAdmin(admin.ModelAdmin):
         "job_name",
         "project",
         "status",
-        "created",
-        "started",
-        "finished",
+        "created_at",
+        "started_at",
+        "finished_at",
         "created_by",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
         "status",
-        "created",
-        "started",
-        "finished",
-        "deleted",
+        "created_at",
+        "started_at",
+        "finished_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
         "suuid",
         "name",
-        "jobdef_uuid",
+        "jobdef__uuid",
         "jobdef__suuid",
         "jobdef__name",
     ]
@@ -108,17 +93,17 @@ class RunArtifactAdmin(admin.ModelAdmin):
         "size",
         "count_dir",
         "count_files",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
         "size",
         "count_dir",
         "count_files",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
     raw_id_fields = [
         "run",
@@ -132,12 +117,12 @@ class RunArtifactAdmin(admin.ModelAdmin):
         "count_dir",
         "count_files",
         "size",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -168,9 +153,9 @@ class RunLogAdmin(admin.ModelAdmin):
         "lines",
         "size",
         "log_preview",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
@@ -178,8 +163,8 @@ class RunLogAdmin(admin.ModelAdmin):
         "lines",
         "size",
         "log_preview",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
     raw_id_fields = [
         "run",
@@ -193,13 +178,13 @@ class RunLogAdmin(admin.ModelAdmin):
         "exit_code",
         "lines",
         "size",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
         "exit_code",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -239,9 +224,9 @@ class RunResultAdmin(admin.ModelAdmin):
         "extension",
         "mime_type",
         "description",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
     readonly_fields = [
         "suuid",
@@ -249,8 +234,8 @@ class RunResultAdmin(admin.ModelAdmin):
         "size",
         "extension",
         "mime_type",
-        "modified",
-        "created",
+        "modified_at",
+        "created_at",
     ]
     raw_id_fields = [
         "run",
@@ -262,12 +247,12 @@ class RunResultAdmin(admin.ModelAdmin):
         "job_name",
         "project",
         "size",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -297,12 +282,12 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
         "job_name",
         "count",
         "size",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -313,7 +298,7 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "run", "job_name", "project_name", "workspace_name")}),
         ("Metrics meta", {"fields": ("count", "size", "metric_names", "label_names")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -322,9 +307,9 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
         "size",
         "metric_names",
         "label_names",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
 
     def job_name(self, obj):  # pragma: no cover
@@ -353,12 +338,12 @@ class RunMetricAdmin(admin.ModelAdmin):
         "job_name",
         "metric_preview",
         "label_preview",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "run__uuid",
@@ -374,7 +359,7 @@ class RunMetricAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("run", "job_name", "project_name", "workspace_name")}),
         ("Metric", {"fields": ("metric", "label")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "run",
@@ -383,9 +368,9 @@ class RunMetricAdmin(admin.ModelAdmin):
         "workspace_name",
         "metric",
         "label",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
 
     def job_name(self, obj):  # pragma: no cover
@@ -421,12 +406,12 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
         "job_name",
         "count",
         "size",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "uuid",
@@ -437,7 +422,7 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid", "run", "job_name", "project_name", "workspace_name")}),
         ("Variables meta", {"fields": ("count", "size", "variable_names", "label_names")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "suuid",
@@ -446,9 +431,9 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
         "size",
         "variable_names",
         "label_names",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
 
     def job_name(self, obj):  # pragma: no cover
@@ -478,13 +463,13 @@ class RunVariableAdmin(admin.ModelAdmin):
         "variable_preview",
         "is_masked",
         "label_preview",
-        "created",
+        "created_at",
     ]
-    date_hierarchy = "created"
+    date_hierarchy = "created_at"
     list_filter = [
         "is_masked",
-        "created",
-        "deleted",
+        "created_at",
+        "deleted_at",
     ]
     search_fields = [
         "run__uuid",
@@ -500,7 +485,7 @@ class RunVariableAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("run", "job_name", "project_name", "workspace_name")}),
         ("Metric", {"fields": ("variable", "is_masked", "label")}),
-        ("Important dates", {"fields": ("modified", "created", "deleted")}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "run",
@@ -510,9 +495,9 @@ class RunVariableAdmin(admin.ModelAdmin):
         "variable",
         "is_masked",
         "label",
-        "modified",
-        "created",
-        "deleted",
+        "modified_at",
+        "created_at",
+        "deleted_at",
     ]
 
     def job_name(self, obj):  # pragma: no cover

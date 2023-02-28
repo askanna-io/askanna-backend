@@ -27,7 +27,7 @@ def log_run_variables(run, variable_name, variable_value, variable_is_masked=Non
         "project_suuid": run.jobdef.project.suuid,
         "job_suuid": run.jobdef.suuid,
         "run_suuid": run.suuid,
-        "created": datetime.datetime.now(tz=datetime.timezone.utc),
+        "created_at": datetime.datetime.now(tz=datetime.timezone.utc),
         "variable": {
             "name": variable_name,
             "value": variable_value,
@@ -74,7 +74,12 @@ def start_run(self, run_uuid):
     # First save current Celery id to the jobid field
     run = Run.objects.get(pk=run_uuid)
     run.jobid = self.request.id
-    run.save(update_fields=["jobid"])
+    run.save(
+        update_fields=[
+            "jobid",
+            "modified_at",
+        ]
+    )
     run.to_pending()
 
     # What is the jobdef specified?

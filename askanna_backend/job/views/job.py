@@ -57,15 +57,15 @@ class JobView(
         JobDef.objects.active()
         .select_related("project", "project__workspace")
         .prefetch_related(
-            Prefetch("schedules", queryset=ScheduledJob.objects.order_by("next_run")),
-            Prefetch("project__packages", queryset=Package.objects.active_and_finished().order_by("-created")),
+            Prefetch("schedules", queryset=ScheduledJob.objects.order_by("next_run_at")),
+            Prefetch("project__packages", queryset=Package.objects.active_and_finished().order_by("-created_at")),
         )
     )
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [
-        "created",
-        "modified",
+        "created_at",
+        "modified_at",
         "name",
         "project.name",
         "project.suuid",
@@ -150,7 +150,7 @@ class JobView(
         payload = self.handle_payload(request=request, job=job)
 
         # Fetch the latest package found in the job.project
-        package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created").first()
+        package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created_at").first()
 
         run = Run.objects.create(
             name=request.query_params.get("name", ""),

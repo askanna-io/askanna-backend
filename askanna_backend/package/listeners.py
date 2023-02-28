@@ -13,7 +13,7 @@ from package.signals import package_upload_finish
 
 
 @receiver(package_upload_finish)
-def package_upload_101_extract_zip(sender, signal, postheaders, obj, **kwargs):
+def package_upload_extract_zip(sender, signal, postheaders, obj, **kwargs):
     # extract from package_root to blob_root under the package uuid
     # this is for the fileview
     target_location = settings.BLOB_ROOT
@@ -26,7 +26,7 @@ def package_upload_101_extract_zip(sender, signal, postheaders, obj, **kwargs):
 
 
 @receiver(package_upload_finish)
-def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
+def package_upload_extract_jobs_from_askannayml(sender, signal, postheaders, obj, **kwargs):
     """
     Extract jobs defined in the askanna.yml (if set)
 
@@ -51,8 +51,8 @@ def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders,
     # parse the askannaconfig
     configyml = AskAnnaConfig.from_stream(askanna_yml)
     if configyml is None:
-        # FIXME: we could not parse the config, report somewhere
         return
+
     project = obj.project
 
     # create or find jobdef for each found jobs
@@ -65,16 +65,23 @@ def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders,
         # update the jobdef.environment_image and timezone
         jd.environment_image = job.environment.image
         jd.timezone = job.timezone
-        jd.deleted = None  # restore the deleted job if this was set
-        jd.save(update_fields=["environment_image", "timezone", "deleted", "modified"])
+        jd.deleted_at = None  # restore the deleted job if this was set
+        jd.save(
+            update_fields=[
+                "environment_image",
+                "timezone",
+                "deleted_at",
+                "modified_at",
+            ]
+        )
 
-        # check what existing schedules where and store the last_run and raw_definition
+        # check what existing schedules where and store the last_run_at and raw_definition
         old_rules = ScheduledJob.objects.filter(job=jd)
         old_schedules = []
         for schedule in old_rules:
             old_schedules.append(
                 {
-                    "last_run": schedule.last_run,
+                    "last_run_at": schedule.last_run_at,
                     "raw_definition": schedule.raw_definition,
                 }
             )
@@ -91,11 +98,11 @@ def package_upload_102_extract_jobs_from_askannayml(sender, signal, postheaders,
                 "cron_timezone": schedule.cron_timezone,
                 "member": obj.member,
             }
-            last_run = [
-                old.get("last_run") for old in old_schedules if old.get("raw_definition") == schedule.raw_definition
+            last_run_at = [
+                old.get("last_run_at") for old in old_schedules if old.get("raw_definition") == schedule.raw_definition
             ]
-            if len(last_run) > 0:
-                new_schedule_def["last_run"] = last_run[0]
+            if len(last_run_at) > 0:
+                new_schedule_def["last_run_at"] = last_run_at[0]
             scheduled_job = ScheduledJob.objects.create(**new_schedule_def)
             scheduled_job.update_next()
 
@@ -121,7 +128,7 @@ def add_member_to_package(sender, instance, **kwargs):
         member_query = instance.created_by.memberships.filter(
             object_uuid=in_workspace.uuid,
             object_type=MSP_WORKSPACE,
-            deleted__isnull=True,
+            deleted_at__isnull=True,
         )
         if member_query.exists():
             # get the membership out of it

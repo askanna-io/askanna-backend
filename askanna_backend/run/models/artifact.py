@@ -1,11 +1,11 @@
 import os
 
-from core.models import ArtifactModelMixin, SlimBaseModel
+from core.models import ArtifactModelMixin, BaseModel
 from django.conf import settings
 from django.db import models
 
 
-class RunArtifact(ArtifactModelMixin, SlimBaseModel):
+class RunArtifact(ArtifactModelMixin, BaseModel):
     """
     Artifact of a run stored into an archive file
     """
@@ -36,10 +36,10 @@ class RunArtifact(ArtifactModelMixin, SlimBaseModel):
 
     class Meta:
         db_table = "run_artifact"
-        ordering = ["-created"]
+        ordering = ["-created_at"]
 
 
-class ChunkedRunArtifactPart(SlimBaseModel):
+class ChunkedRunArtifactPart(BaseModel):
     filename = models.CharField(max_length=500)
     size = models.IntegerField(help_text="Size of this artifactchunk")
     file_no = models.IntegerField()
@@ -48,6 +48,6 @@ class ChunkedRunArtifactPart(SlimBaseModel):
     artifact = models.ForeignKey("RunArtifact", on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         verbose_name = "Run artifact chunk"
         verbose_name_plural = "Run artifacts chunks"

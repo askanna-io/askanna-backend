@@ -1,4 +1,4 @@
-from core.models import AuthorModel, BaseModel
+from core.models import AuthorModel, NameDescriptionBaseModel
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
@@ -43,18 +43,18 @@ def get_status_external(status: str) -> str:
 class RunQuerySet(models.QuerySet):
     def active(self):
         return self.filter(
-            deleted__isnull=True,
-            jobdef__deleted__isnull=True,
-            jobdef__project__deleted__isnull=True,
-            jobdef__project__workspace__deleted__isnull=True,
+            deleted_at__isnull=True,
+            jobdef__deleted_at__isnull=True,
+            jobdef__project__deleted_at__isnull=True,
+            jobdef__project__workspace__deleted_at__isnull=True,
         )
 
     def inactive(self):
         return self.filter(
-            Q(deleted__isnull=False)
-            | Q(jobdef__deleted__isnull=True)
-            | Q(jobdef__project__deleted__isnull=False)
-            | Q(jobdef__project__workspace__deleted__isnull=False)
+            Q(deleted_at__isnull=False)
+            | Q(jobdef__deleted_at__isnull=True)
+            | Q(jobdef__project__deleted_at__isnull=False)
+            | Q(jobdef__project__workspace__deleted_at__isnull=False)
         )
 
 
@@ -69,7 +69,7 @@ class RunManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Run(AuthorModel, BaseModel):
+class Run(AuthorModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=True, null=False, default="", db_index=True)
 
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)
@@ -84,8 +84,8 @@ class Run(AuthorModel, BaseModel):
     member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     # Register the start and end of a run
-    started = models.DateTimeField(null=True, editable=False)
-    finished = models.DateTimeField(null=True, editable=False)
+    started_at = models.DateTimeField(null=True, editable=False)
+    finished_at = models.DateTimeField(null=True, editable=False)
     duration = models.PositiveIntegerField(
         null=True, blank=True, editable=False, help_text="Duration of the run in seconds"
     )
@@ -111,13 +111,24 @@ class Run(AuthorModel, BaseModel):
 
     def set_status(self, status_code):
         self.status = status_code
-        self.save(update_fields=["status", "modified"])
+        self.save(
+            update_fields=[
+                "status",
+                "modified_at",
+            ]
+        )
 
-    def set_finished(self):
-        self.finished = timezone.now()
-        if self.started:
-            self.duration = (self.finished - self.started).seconds
-        self.save(update_fields=["duration", "finished", "modified"])
+    def set_finished_at(self):
+        self.finished_at = timezone.now()
+        if self.started_at:
+            self.duration = (self.finished_at - self.started_at).seconds
+        self.save(
+            update_fields=[
+                "duration",
+                "finished_at",
+                "modified_at",
+            ]
+        )
 
         # fire off a Celery tasks to notify the user
         on_commit(
@@ -142,26 +153,41 @@ class Run(AuthorModel, BaseModel):
     def to_failed(self, exit_code=1):
         self.output.save_stdout()
         self.output.save_exitcode(exit_code=exit_code)
-        self.set_finished()
+        self.set_finished_at()
         self.set_status("FAILED")
 
     def to_completed(self):
         self.output.save_stdout()
-        self.set_finished()
+        self.set_finished_at()
         self.set_status("COMPLETED")
 
     def to_inprogress(self):
-        self.started = timezone.now()
-        self.save(update_fields=["started"])
+        self.started_at = timezone.now()
+        self.save(
+            update_fields=[
+                "started_at",
+                "modified_at",
+            ]
+        )
         self.set_status("IN_PROGRESS")
 
     def set_run_image(self, run_image):
         self.run_image = run_image
-        self.save(update_fields=["run_image"])
+        self.save(
+            update_fields=[
+                "run_image",
+                "modified_at",
+            ]
+        )
 
     def set_timezone(self, run_timezone):
         self.timezone = run_timezone
-        self.save(update_fields=["timezone"])
+        self.save(
+            update_fields=[
+                "timezone",
+                "modified_at",
+            ]
+        )
 
     def get_result(self):
         try:
@@ -176,10 +202,10 @@ class Run(AuthorModel, BaseModel):
     def get_duration(self) -> int:
         if self.is_finished and self.duration:
             return self.duration
-        if self.started and self.finished:
-            return (self.finished - self.started).seconds
-        if self.started:
-            return (timezone.now() - self.started).seconds
+        if self.started_at and self.finished_at:
+            return (self.finished_at - self.started_at).seconds
+        if self.started_at:
+            return (timezone.now() - self.started_at).seconds
         return 0
 
     def __str__(self):
@@ -188,7 +214,7 @@ class Run(AuthorModel, BaseModel):
         return self.suuid
 
     class Meta:
-        ordering = ["-created"]
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["name", "created"]),
+            models.Index(fields=["name", "created_at"]),
         ]

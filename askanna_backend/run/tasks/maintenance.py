@@ -13,8 +13,8 @@ def delete_runs():
     """
     remove_objects(
         Run.objects.filter(
-            jobdef__deleted__isnull=True,
-            jobdef__project__deleted__isnull=True,
-            jobdef__project__workspace__deleted__isnull=True,
+            jobdef__deleted_at__isnull=True,
+            jobdef__project__deleted_at__isnull=True,
+            jobdef__project__workspace__deleted_at__isnull=True,
         )
     )

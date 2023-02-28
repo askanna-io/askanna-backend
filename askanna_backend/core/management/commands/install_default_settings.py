@@ -11,7 +11,7 @@ class Command(BaseCommand):
             "OBJECT_REMOVAL_TTL_HOURS": 720,  # removal after 30 days
         }
         for setting_name, default_value in must_have_settings.items():
-            setting, _created = Setting.objects.get_or_create(name=setting_name)
-            if _created:
+            setting, created = Setting.objects.get_or_create(name=setting_name)
+            if created:
                 setting.value = default_value
                 setting.save(update_fields=["value"])

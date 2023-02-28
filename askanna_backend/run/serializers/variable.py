@@ -15,5 +15,5 @@ class RunVariableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RunVariable
-        fields = ["run_suuid", "variable", "label", "created"]
-        read_only_fields = ["run_suuid", "created"]
+        fields = ["run_suuid", "variable", "label", "created_at"]
+        read_only_fields = ["run_suuid", "created_at"]

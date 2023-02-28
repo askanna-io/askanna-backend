@@ -1,91 +1,81 @@
 import os
 import uuid as _uuid
 
+from core.fields import CreationDateTimeField, ModificationDateTimeField
 from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
-from django_extensions.db.models import TimeStampedModel
 
 from .utils.suuid import create_suuid
 
 
-class DeletedModel(models.Model):
+class BaseModel(models.Model):
     """
-    Defines an additional field to registere when the model is deleted
+    BaseModel is an abstract base class model that provides the fields:
+     - uuid
+     - suuid
+     - created_at
+     - modified_at
+     - deleted_at
+
+    "created_at" and "modified_at" are self-managed fields that are automatically set to the current date/time when the
+    model is created or updated.
+
+    "deleted_at" is used to mark the model as deleted, but not actually delete it from the database.
     """
-
-    deleted = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
-
-    def to_deleted(self):
-        if self.deleted:
-            return
-
-        self.deleted = timezone.now()
-        self.save(update_fields=["deleted"])
-
-    class Meta:
-        abstract = True
-
-
-class DescriptionModel(models.Model):
-    """
-    DescriptionModel
-
-    An abstract base class model that provides a description field.
-    """
-
-    description = models.TextField(blank=True, null=False, default="")
-
-    class Meta:
-        abstract = True
-
-
-class NameModel(models.Model):
-    """
-    NameModel
-
-    An abstract base class model that provides a name field.
-    """
-
-    name = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        abstract = True
-
-
-class NameDescriptionModel(NameModel, DescriptionModel):
-    class Meta:
-        abstract = True
-
-
-class SlimBaseModel(TimeStampedModel, DeletedModel, models.Model):
 
     uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
     suuid = models.CharField(max_length=32, unique=True, editable=False, verbose_name="SUUID")
+
+    created_at = CreationDateTimeField()
+    modified_at = ModificationDateTimeField()
+
+    deleted_at = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
 
     def save(self, *args, **kwargs):
         if not self.uuid:
             self.uuid = _uuid.uuid4()
         if not self.suuid and self.uuid:
             self.suuid = create_suuid(uuid=self.uuid)
+
+        self.update_modified = kwargs.pop("update_modified", getattr(self, "update_modified", True))
         super().save(*args, **kwargs)
 
+    def to_deleted(self):
+        if self.deleted_at:
+            return
+
+        self.deleted_at = timezone.now()
+        self.save(
+            update_fields=[
+                "deleted_at",
+                "modified_at",
+            ]
+        )
+
     class Meta:
         abstract = True
+        get_latest_by = "modified_at"
+        ordering = ["-modified_at"]
 
 
-class SlimBaseForAuthModel(SlimBaseModel):
+class NameDescriptionBaseModel(BaseModel):
+    """
+    NameDescriptionBaseModel is an abstract base class model that provides the fields:
+     - uuid
+     - suuid
+     - name
+     - description
+     - created_at
+     - modified_at
+     - deleted_at
+    """
 
-    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
+    name = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=False, default="")
 
     class Meta:
         abstract = True
-
-
-class BaseModel(NameDescriptionModel, SlimBaseModel):
-    class Meta:
-        abstract = True
-        ordering = ["-modified"]
 
 
 class AuthorModel(models.Model):
@@ -153,6 +143,6 @@ class ArtifactModelMixin:
             pass
 
 
-class Setting(SlimBaseModel):
+class Setting(BaseModel):
     name = models.CharField(max_length=32, blank=True, unique=True)
     value = encrypt(models.TextField(default=None, blank=True, null=True))

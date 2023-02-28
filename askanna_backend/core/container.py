@@ -199,7 +199,7 @@ class ContainerImageBuilder:
         try:
             run_image, created = RunImage.objects.get_or_create(name=name, tag=tag, digest=digest)
         except RunImage.MultipleObjectsReturned:
-            run_image = RunImage.objects.filter(name=name, tag=tag, digest=digest).order_by("-created").first()
+            run_image = RunImage.objects.filter(name=name, tag=tag, digest=digest).order_by("-created_at").first()
             created = False
             logging.warning(
                 "Multiple objects returned for RunImage, using the most recent one. More info:\n"

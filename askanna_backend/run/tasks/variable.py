@@ -29,7 +29,7 @@ def move_variables_to_rows(self, variable_meta_uuid):
     ).delete()
 
     for variable in run_variable_meta.variables:
-        variable["created"] = datetime.datetime.fromisoformat(variable["created"])
+        variable["created_at"] = datetime.datetime.fromisoformat(variable["created_at"])
         variable["project_suuid"] = run_variable_meta.run.jobdef.project.suuid
         variable["job_suuid"] = run_variable_meta.run.jobdef.suuid
         variable["run_suuid"] = run_variable_meta.run.suuid
@@ -45,14 +45,14 @@ def post_run_deduplicate_variables(self, run_uuid):
     """
     Remove double run variables if any
     """
-    variables = RunVariable.objects.filter(run__pk=run_uuid).order_by("created", "label")
+    variables = RunVariable.objects.filter(run__pk=run_uuid).order_by("created_at", "label")
     last_variable = None
     for variable in variables:
         if last_variable and (
             variable.variable == last_variable.variable
             and variable.is_masked == last_variable.is_masked
             and variable.label == last_variable.label
-            and variable.created == last_variable.created
+            and variable.created_at == last_variable.created_at
         ):
             variable.delete()
         last_variable = variable
