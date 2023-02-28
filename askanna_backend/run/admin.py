@@ -82,7 +82,7 @@ class RunAdmin(admin.ModelAdmin):
         "uuid",
         "suuid",
         "name",
-        "jobdef_uuid",
+        "jobdef__uuid",
         "jobdef__suuid",
         "jobdef__name",
     ]
