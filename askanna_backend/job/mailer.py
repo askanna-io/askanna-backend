@@ -1,7 +1,7 @@
 import json
+import zoneinfo
 from typing import Optional
 
-import pytz
 from account.models import Membership
 from core.config import Job as JobConfig
 from core.mail import send_email
@@ -141,17 +141,17 @@ def send_run_notification(
             log = []
 
         if run.created_at:
-            run_created_at = run.created_at.astimezone(tz=pytz.timezone(job.timezone))
+            run_created_at = run.created_at.astimezone(tz=zoneinfo.ZoneInfo(job.timezone))
         else:
             run_created_at = None
 
         if run.started_at:
-            run_started_at = run.started_at.astimezone(tz=pytz.timezone(job.timezone))
+            run_started_at = run.started_at.astimezone(tz=zoneinfo.ZoneInfo(job.timezone))
         else:
             run_started_at = None
 
         if run.finished_at:
-            run_finished_at = run.finished_at.astimezone(tz=pytz.timezone(job.timezone))
+            run_finished_at = run.finished_at.astimezone(tz=zoneinfo.ZoneInfo(job.timezone))
         else:
             run_finished_at = None
 

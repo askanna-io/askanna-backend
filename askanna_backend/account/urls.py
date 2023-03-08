@@ -1,7 +1,7 @@
 from account.views.account import AccountViewSet
 from account.views.me import MeAvatarViewSet, MeViewSet
 from core.urls import router
-from django.conf.urls import include, re_path
+from django.urls import include, re_path
 
 account_router = router.register(r"account", AccountViewSet, basename="account")
 

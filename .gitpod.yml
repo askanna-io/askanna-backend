@@ -1,3 +1,6 @@
+image:
+  file: .gitpod.Dockerfile
+
 additionalRepositories:
   - url: https://gitlab.askanna.io/askanna/askanna-frontend/
   - url: https://gitlab.askanna.io/askanna/askanna-cli/
@@ -57,30 +60,23 @@ tasks:
       pip install -r requirements-dev.txt
       pip install --editable .
       pre-commit install --install-hooks
-      askanna --help
+      while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do echo "Backend is not ready yet..." && sleep 10; done && echo "Backend is ready!"
+      while ! command -v askanna > /dev/null; do echo "CLI & SDK is not ready yet..." && sleep 10; done && echo "CLI & SDK is ready!" && askanna login --remote $(gp url 8000) --email admin@localhost.com --password DevAskAnna
   - name: Backend
     init: |
       python -m venv .venv
     command: |
-      [[ -n $GPG_KEY ]] && [[ -n $GPG_SIGNING_KEY ]] \
-        && echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf \
-        && gpg --verbose --batch --import <(echo $GPG_KEY|base64 -d) \
-        && git config --global user.signingkey $GPG_SIGNING_KEY \
-        && git config --global commit.gpgsign true \
-        && echo '>> Commits will be signed with a GPG key'
       source .venv/bin/activate
       pip install -r requirements/local.txt
       pre-commit install --install-hooks
       while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:4173/ht/)" != "200" ]]; do echo "Frontend is not ready yet..." && sleep 10; done && echo "Frontend is ready!"
       while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do echo "Backend is not ready yet..." && sleep 10; done && echo "Backend is ready!"
-      while ! command -v askanna >/dev/null; do echo "CLI & SDK is not ready yet..." && sleep 10; done && echo "CLI & SDK is ready!" && askanna login --remote $(gp url 8000) --email admin@localhost.com --password DevAskAnna
 
 ports:
   - name: Backend Dev
     description: The AskAnna Backend application in development mode
     port: 8000
     visibility: public
-    onOpen: open-browser
   - name: Backend Flower
     description: Flower for monitoring Celery
     port: 5555
@@ -89,7 +85,6 @@ ports:
     description: The AskAnna Frontend application in development mode
     port: 5173
     visibility: private
-    onOpen: open-browser
   - name: Frontend Preview
     description: The AskAnna Frontend application in review mode
     port: 4173
