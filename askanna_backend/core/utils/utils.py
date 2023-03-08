@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import zoneinfo
 from functools import reduce
 from typing import Tuple, Union
 from wsgiref.util import FileWrapper
@@ -10,7 +11,6 @@ from zipfile import ZipFile
 import croniter
 import filetype
 import magic
-import pytz
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -130,9 +130,9 @@ def is_valid_timezone(timezone, default=settings.TIME_ZONE):
     Validate whether the timezone specified is a valid one
     If not, return the default timezone.
     """
-    if timezone not in pytz.all_timezones:
-        return default
-    return timezone
+    if timezone in zoneinfo.available_timezones():
+        return timezone
+    return default
 
 
 def is_valid_email(email):

@@ -35,7 +35,7 @@ def settings(config, env):
         {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
     ]
 
-    config.REST_AUTH_SERIALIZERS = {
+    config.REST_AUTH = {
         "LOGIN_SERIALIZER": "account.serializers.user.LoginSerializer",
         "USER_DETAILS_SERIALIZER": "account.serializers.user.UserSerializer",
     }

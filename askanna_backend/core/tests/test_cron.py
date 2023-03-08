@@ -2,7 +2,6 @@ import datetime
 import unittest
 
 import pytest
-import pytz
 from core.utils import parse_cron_line, parse_cron_schedule
 from django.test import TestCase
 from job.models import ScheduledJob
@@ -69,21 +68,21 @@ class TestScheduledJobModel(TestCase):
             **{
                 "cron_definition": "*/5 * 1,15 * *",
                 "cron_timezone": "Europe/Amsterdam",
-                "last_run_at": datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=pytz.UTC),
-                "next_run_at": datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC),
+                "last_run_at": datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=datetime.timezone.utc),
+                "next_run_at": datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=datetime.timezone.utc),
             }
         )
 
         self.assertEqual(
             scheduled_job.last_run_at,
-            datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=pytz.UTC),
+            datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=datetime.timezone.utc),
         )
-        scheduled_job.update_last(timestamp=datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=pytz.UTC))
+        scheduled_job.update_last(timestamp=datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=datetime.timezone.utc))
         scheduled_job.refresh_from_db()
 
         self.assertEqual(
             scheduled_job.last_run_at,
-            datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=pytz.UTC),
+            datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=datetime.timezone.utc),
         )
 
     def test_model_setnext(self):
@@ -91,25 +90,25 @@ class TestScheduledJobModel(TestCase):
             **{
                 "cron_definition": "*/5 * 1,15 * *",
                 "cron_timezone": "Europe/Amsterdam",
-                "last_run_at": datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=pytz.UTC),
-                "next_run_at": datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC),
+                "last_run_at": datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=datetime.timezone.utc),
+                "next_run_at": datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=datetime.timezone.utc),
             }
         )
         self.assertEqual(
             scheduled_job.next_run_at,
-            datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC),
+            datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=datetime.timezone.utc),
         )
 
-        scheduled_job.update_next(current_dt=datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=pytz.UTC))
+        scheduled_job.update_next(current_dt=datetime.datetime(2021, 3, 3, 0, 15, 0, tzinfo=datetime.timezone.utc))
         scheduled_job.refresh_from_db()
         self.assertEqual(
             scheduled_job.next_run_at,
-            datetime.datetime(2021, 3, 14, 23, 0, 0, tzinfo=pytz.UTC),
+            datetime.datetime(2021, 3, 14, 23, 0, 0, tzinfo=datetime.timezone.utc),
         )
 
-        scheduled_job.update_next(current_dt=datetime.datetime(2050, 3, 15, 0, 15, 0, tzinfo=pytz.UTC))
+        scheduled_job.update_next(current_dt=datetime.datetime(2050, 3, 15, 0, 15, 0, tzinfo=datetime.timezone.utc))
         scheduled_job.refresh_from_db()
         self.assertEqual(
             scheduled_job.next_run_at,
-            datetime.datetime(2050, 3, 15, 0, 20, 0, tzinfo=pytz.UTC),
+            datetime.datetime(2050, 3, 15, 0, 20, 0, tzinfo=datetime.timezone.utc),
         )

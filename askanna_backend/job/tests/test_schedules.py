@@ -1,6 +1,5 @@
 import datetime
 
-import pytz
 from django.urls import reverse
 from job.models import ScheduledJob
 from rest_framework import status
@@ -26,7 +25,9 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
             },
         )
 
-    def add_schedules_to_job(self, job=None, definitions=[], current_dt=datetime.datetime.now(tz=pytz.UTC)):
+    def add_schedules_to_job(
+        self, job=None, definitions=[], current_dt=datetime.datetime.now(tz=datetime.timezone.utc)
+    ):
         for definition in definitions:
             scheduled_job = ScheduledJob.objects.create(
                 job=job,
@@ -73,7 +74,7 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
                 hour=18,
                 minute=0,
                 second=0,
-                tzinfo=pytz.UTC,
+                tzinfo=datetime.timezone.utc,
             ),
         )
 
