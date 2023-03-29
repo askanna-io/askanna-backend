@@ -131,6 +131,18 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 2  # type: ignore
 
+    def test_list_as_member_exclude_by_run(self):
+        """
+        We can list runs as member and exclude by run
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {"run_suuid__exclude": self.runs["run1"].suuid},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
+
     def test_list_as_member_filter_by_job(self):
         """
         We can list runs as member and filter by job
@@ -162,6 +174,18 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 4  # type: ignore
 
+    def test_list_as_member_exclude_by_job(self):
+        """
+        We can list runs as member and exclude by job
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {"job_suuid__exclude": self.jobdef.suuid},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+
     def test_list_as_member_filter_by_project(self):
         """
         We can list runs as member and filter by project
@@ -176,6 +200,20 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 4  # type: ignore
 
+    def test_list_as_member_exclude_by_project(self):
+        """
+        We can list runs as member and exclude by project
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "project_suuid__exclude": self.jobdef.project.suuid,
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+
     def test_list_as_member_filter_by_workspace(self):
         """
         We can list runs as member and filter by workspace
@@ -189,6 +227,160 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 4  # type: ignore
+
+    def test_list_as_member_exclude_by_workspace(self):
+        """
+        We can list runs as member and exclude by workspace
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "workspace_suuid__exclude": self.jobdef.project.workspace.suuid,
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+
+    def test_list_as_member_filter_by_status(self):
+        """
+        We can list runs as member and filter by status
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "status": "finished",
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
+
+    def test_list_as_member_filter_by_multiple_statuses(self):
+        """
+        We can list runs as member and filter by multiple statuses
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "status": "finished,failed",
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 3  # type: ignore
+
+    def test_list_as_member_exclude_by_status(self):
+        """
+        We can list runs as member and exclude by status
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "status__exclude": "finished",
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 3  # type: ignore
+
+    def test_list_as_member_filter_by_trigger(self):
+        """
+        We can list runs as member and filter by trigger
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "trigger": "webui",
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+
+    def test_list_as_member_filter_by_multiple_triggers(self):
+        """
+        We can list runs as member and filter by multiple triggers
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "trigger": "webui,cli",
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2  # type: ignore
+
+    def test_list_as_member_exclude_by_trigger(self):
+        """
+        We can list runs as member and exclude by trigger
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "trigger__exclude": "webui",
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
+
+    def test_list_as_member_filter_by_created_by(self):
+        """
+        We can list runs as member and filter by created by
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "created_by_suuid": self.members.get("member").suuid,  # type: ignore
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 4  # type: ignore
+
+    def test_list_as_member_exclude_by_created_by(self):
+        """
+        We can list runs as member and exclude by created by
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "created_by_suuid__exclude": self.members.get("member").suuid,  # type: ignore
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1  # type: ignore
+
+    def test_list_as_member_filter_by_package_suuid(self):
+        """
+        We can list runs as member and filter by package suuid
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "package_suuid": self.package.suuid,
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 5  # type: ignore
+
+    def test_list_as_member_exclude_by_package_suuid(self):
+        """
+        We can list runs as member and exclude by package suuid
+        """
+        self.activate_user("member")
+        response = self.client.get(
+            self.url,
+            {
+                "package_suuid__exclude": self.package.suuid,
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0  # type: ignore
 
 
 class TestRunDetailAPI(BaseRunTest, APITestCase):

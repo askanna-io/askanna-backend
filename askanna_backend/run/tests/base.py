@@ -309,7 +309,6 @@ class BaseRunTest(BaseUserPopulation):
                 jobdef=self.jobdef2,
                 status="SUBMITTED",
                 created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
             ),
             "run5": Run.objects.create(
@@ -319,7 +318,6 @@ class BaseRunTest(BaseUserPopulation):
                 jobdef=self.jobdef,
                 status="IN_PROGRESS",
                 created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
             ),
             "run6": Run.objects.create(
@@ -329,9 +327,9 @@ class BaseRunTest(BaseUserPopulation):
                 jobdef=self.jobdef_public,
                 status="IN_PROGRESS",
                 created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
                 started_at=timezone.now(),
+                trigger="WEBUI",
             ),
             "run7": Run.objects.create(
                 name="",
@@ -340,8 +338,8 @@ class BaseRunTest(BaseUserPopulation):
                 jobdef=self.jobdef,
                 status="FAILED",
                 created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
+                trigger="CLI",
             ),
         }
 

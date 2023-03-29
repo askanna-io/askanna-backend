@@ -672,7 +672,7 @@ class CursorPagination(pagination.CursorPagination):
 
         if self.get_max_page_size(view) is not None:
             description += (
-                "<p><i>Default value: "
+                "<p><i>Default value:</i> "
                 + str(
                     _positive_int(
                         self.get_default_page_size(view),
@@ -680,9 +680,9 @@ class CursorPagination(pagination.CursorPagination):
                         cutoff=self.get_max_page_size(view),
                     )
                 )
-                + "</br>Maximum value: "
+                + "</br><i>Maximum value:</i> "
                 + str(self.get_max_page_size(view))
-                + "</i></p>"
+                + "</p>"
             )
 
         return description

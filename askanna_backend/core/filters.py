@@ -1,8 +1,27 @@
 from django.db.models import Q
 from django.utils.encoding import force_str
+from django_filters import BaseInFilter, CharFilter
 from rest_framework.compat import coreapi, coreschema
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter as BaseOrderingFilter
+
+
+class MultiValueCharFilter(BaseInFilter, CharFilter):
+    pass
+
+
+class MultiUpperValueCharFilter(BaseInFilter, CharFilter):
+    def filter(self, qs, value):
+        if not value:
+            # No point filtering if empty
+            return qs
+
+        upper_values = []
+
+        for v in value:
+            upper_values.append(v.upper())
+
+        return super().filter(qs, upper_values)
 
 
 def case_insensitive(queryset, name, value):
@@ -112,16 +131,16 @@ class OrderingFilter(BaseOrderingFilter):
 
         if default_ordering and ordering_fields:
             description += (
-                "<p><i>Default ordering: "
+                "<p><i>Default ordering:</i> "
                 + ", ".join(default_ordering)
-                + "</br>Available values: "
+                + "</br><i>Available values:</i> "
                 + ", ".join(ordering_fields)
-                + "</i></p>"
+                + "</p>"
             )
         elif default_ordering:
-            description += "<p><i>Default ordering: " + ", ".join(default_ordering) + "</i></p>"
+            description += "<p><i>Default ordering:</i> " + ", ".join(default_ordering) + "</p>"
         elif ordering_fields:
-            description += "<p><i>Available values: " + ", ".join(ordering_fields) + "</i></p>"
+            description += "<p><i>Available values:</i> " + ", ".join(ordering_fields) + "</p>"
 
         return description
 

@@ -1,7 +1,7 @@
 import os
 
 from account.models import MSP_WORKSPACE
-from core.filters import filter_multiple
+from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions.role import RoleBasedPermission
 from core.utils import stream
@@ -9,37 +9,120 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Case, Q, Value, When
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django_filters import CharFilter, FilterSet
+from django_filters import FilterSet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from run.models import RedisLogQueue
-from run.models.run import Run, get_status_external
+from run.models.run import STATUS_MAPPING, Run, get_status_external
 from run.serializers.run import RunSerializer, RunStatusSerializer
 
 
+class MultiRunStatusFilter(MultiValueCharFilter):
+    def filter(self, qs, value):
+        if not value:
+            # No point filtering if empty
+            return qs
+
+        # Map "external" status values to internal values
+        mapped_values = []
+        for v in value:
+            for key, val in STATUS_MAPPING.items():
+                if val == v:
+                    mapped_values.append(key)
+
+        if not mapped_values:
+            # There are no valid values, so return an empty queryset
+            return qs.none()
+
+        return super().filter(qs, mapped_values)
+
+
 class RunFilterSet(FilterSet):
-    run_suuid = CharFilter(
+    run_suuid = MultiValueCharFilter(
         field_name="suuid",
-        method=filter_multiple,
-        help_text="Filter runs on a run suuid or multiple run suuids via a comma seperated list.",
+        help_text="Filter runs on a run suuid. For multiple values, separate the values with commas.",
     )
-    job_suuid = CharFilter(
+    run_suuid__exclude = MultiValueCharFilter(
+        field_name="suuid",
+        exclude=True,
+        help_text="Exclude runs on a run suuid. For multiple values, separate the values with commas.",
+    )
+
+    status = MultiRunStatusFilter(
+        field_name="status",
+        help_text="Filter runs on a status. For multiple values, separate the values with commas."
+        + "</br><i>Available values:</i> queued, running, finished, failed",
+    )
+    status__exclude = MultiRunStatusFilter(
+        field_name="status",
+        exclude=True,
+        help_text="Exclude runs on a status. For multiple values, separate the values with commas."
+        + "</br><i>Available values:</i> queued, running, finished, failed",
+    )
+
+    trigger = MultiUpperValueCharFilter(
+        field_name="trigger",
+        help_text="Filter runs on a trigger. For multiple values, separate the values with commas."
+        + "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker",
+    )
+    trigger__exclude = MultiUpperValueCharFilter(
+        field_name="trigger",
+        exclude=True,
+        help_text="Exclude runs on a trigger. For multiple values, separate the values with commas."
+        + "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker",
+    )
+
+    job_suuid = MultiValueCharFilter(
         field_name="jobdef__suuid",
-        method=filter_multiple,
-        help_text="Filter runs on a job suuid or multiple job suuids via a comma seperated list.",
+        help_text="Filter runs on a job suuid. For multiple values, separate the values with commas.",
     )
-    project_suuid = CharFilter(
+    job_suuid__exclude = MultiValueCharFilter(
+        field_name="jobdef__suuid",
+        exclude=True,
+        help_text="Exclude runs on a job suuid. For multiple values, separate the values with commas.",
+    )
+
+    project_suuid = MultiValueCharFilter(
         field_name="jobdef__project__suuid",
-        method=filter_multiple,
-        help_text="Filter runs on a project suuid or multiple project suuids via a comma seperated list.",
+        help_text="Filter runs on a project suuid. For multiple values, separate the values with commas.",
     )
-    workspace_suuid = CharFilter(
+    project_suuid__exclude = MultiValueCharFilter(
+        field_name="jobdef__project__suuid",
+        exclude=True,
+        help_text="Exclude runs on a project suuid. For multiple values, separate the values with commas.",
+    )
+
+    workspace_suuid = MultiValueCharFilter(
         field_name="jobdef__project__workspace__suuid",
-        method=filter_multiple,
-        help_text="Filter runs on a workspace suuid or multiple workspace suuids via a comma seperated list.",
+        help_text="Filter runs on a workspace suuid. For multiple values, separate the values with commas.",
+    )
+    workspace_suuid__exclude = MultiValueCharFilter(
+        field_name="jobdef__project__workspace__suuid",
+        exclude=True,
+        help_text="Exclude runs on a workspace suuid. For multiple values, separate the values with commas.",
+    )
+
+    created_by_suuid = MultiValueCharFilter(
+        field_name="member__suuid",
+        help_text="Filter runs on a member suuid. For multiple values, separate the values with commas.",
+    )
+    created_by_suuid__exclude = MultiValueCharFilter(
+        field_name="member__suuid",
+        exclude=True,
+        help_text="Exclude runs on a member suuid. For multiple values, separate the values with commas.",
+    )
+
+    package_suuid = MultiValueCharFilter(
+        field_name="package__suuid",
+        help_text="Filter runs on a package suuid. For multiple values, separate the values with commas.",
+    )
+    package_suuid__exclude = MultiValueCharFilter(
+        field_name="package__suuid",
+        exclude=True,
+        help_text="Exclude runs on a package suuid. For multiple values, separate the values with commas.",
     )
 
 
