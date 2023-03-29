@@ -131,8 +131,6 @@ class RunSerializer(serializers.ModelSerializer):
             "image": instance.run_image,
             "timezone": instance.timezone,
         }
-        # if instance.run_image:
-        # environment["image"] = RunImageRelationSerializer(instance.run_image).data
         return EnvironmentSerializer(environment).data
 
     @extend_schema_field(ArtifactRelationSerializer)
