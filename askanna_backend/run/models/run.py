@@ -15,6 +15,17 @@ RUN_STATUS = (
     ("FAILED", "FAILED"),
 )
 
+# If STATUS_MAPPING is updated, also update the mapping in run/views/run.py (annotated field 'status_external')
+STATUS_MAPPING = {
+    "SUBMITTED": "queued",
+    "PENDING": "queued",
+    "PAUSED": "paused",
+    "IN_PROGRESS": "running",
+    "SUCCESS": "finished",
+    "COMPLETED": "finished",
+    "FAILED": "failed",
+}
+
 
 def get_status_external(status: str) -> str:
     """Translate a status used in Run model to status used external
@@ -25,19 +36,7 @@ def get_status_external(status: str) -> str:
     Returns:
         str: status used external
     """
-
-    # If the status_mapping is updated, also update the mapping in run/views/run.py (annotated field 'status_external')
-    status_mapping = {
-        "SUBMITTED": "queued",
-        "PENDING": "queued",
-        "PAUSED": "paused",
-        "IN_PROGRESS": "running",
-        "SUCCESS": "finished",
-        "COMPLETED": "finished",
-        "FAILED": "failed",
-    }
-
-    return status_mapping[status]
+    return STATUS_MAPPING[status]
 
 
 class RunQuerySet(models.QuerySet):
