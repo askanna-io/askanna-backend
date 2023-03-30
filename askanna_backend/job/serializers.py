@@ -129,7 +129,7 @@ class JobPayloadRelationSerializer(serializers.ModelSerializer):
 class RunImageRelationSerializer(serializers.ModelSerializer):
     relation = serializers.SerializerMethodField()
     suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField(source="fullname")
+    name = serializers.ReadOnlyField()
     tag = serializers.ReadOnlyField()
     digest = serializers.ReadOnlyField()
 
