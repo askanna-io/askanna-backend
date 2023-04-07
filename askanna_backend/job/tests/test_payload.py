@@ -15,7 +15,7 @@ class BasePayload(BaseJobTestDef, APITestCase):
             kwargs={"version": "v1", "suuid": self.jobdef.suuid},
         )
 
-        self.setUpPayload()
+        self.set_payload()
 
         self.url = reverse(
             "run-payload-list",
@@ -25,7 +25,7 @@ class BasePayload(BaseJobTestDef, APITestCase):
             },
         )
 
-    def setUpPayload(self):
+    def set_payload(self):
         """
         Prep a payload for every test
         """
@@ -113,8 +113,8 @@ class TestRunPayloadRetrieveAPI(BasePayload):
             },
         )
 
-    def setUpPayload(self):
-        super().setUpPayload()
+    def set_payload(self):
+        super().set_payload()
         self.activate_user("admin")
 
         run_payload_list_url = reverse(

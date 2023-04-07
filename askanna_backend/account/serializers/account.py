@@ -168,7 +168,7 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"old_password": ["To change your password, you also need to provide the current password."]}
             )
-        elif data.get("password") and (data.get("password") == data.get("old_password")):
+        if data.get("password") and (data.get("password") == data.get("old_password")):
             raise serializers.ValidationError(
                 {"password": ["The new password should be different from the old password."]}
             )

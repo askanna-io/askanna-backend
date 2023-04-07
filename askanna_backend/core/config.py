@@ -1,6 +1,5 @@
 import collections
 import dataclasses
-from typing import Dict, List, Optional
 
 import yaml
 from django.conf import settings
@@ -19,7 +18,7 @@ class AskAnnaConfig:
     Reads the askanna.yml and converts this into usable config object
     """
 
-    notifications: Dict = {}
+    notifications: dict = {}
 
     # Within AskAnna, we have several variables reserved
     reserved_keys = (
@@ -36,8 +35,8 @@ class AskAnnaConfig:
         "worker",
     )
 
-    def __init__(self, config: Dict = {}, *args, **kwargs):
-        self.config = config
+    def __init__(self, config: dict | None = None, *args, **kwargs):
+        self.config = {} if config is None else config
         self.jobs = collections.OrderedDict()
         self.__extract_notifications()
         self.__extract_jobs()
@@ -135,7 +134,7 @@ class Schedule:
     cron_timezone: str
 
     @classmethod
-    def from_python(cls, schedule: Dict, job_timezone):
+    def from_python(cls, schedule: dict, job_timezone):
         parsed = parse_cron_line(schedule)
         if parsed:
             return cls(
@@ -149,13 +148,13 @@ class Schedule:
 @dataclasses.dataclass
 class ImageCredentials:
     username: str
-    password: Optional[str] = None
+    password: str | None = None
 
 
 @dataclasses.dataclass
 class Environment:
     image: str
-    credentials: Optional[ImageCredentials] = None
+    credentials: ImageCredentials | None = None
 
     def has_credentials(self) -> bool:
         """
@@ -175,7 +174,7 @@ class Environment:
         return spec
 
     @classmethod
-    def from_dict(cls, environment: Dict):
+    def from_dict(cls, environment: dict):
         spec = {"image": environment.get("image")}
         if environment.get("credentials") and environment.get("credentials", {}).get("username"):
             # Credentials are specified, we just assume at least the username is filled out.
@@ -193,12 +192,12 @@ class Environment:
 class Job:
     name: str
     environment: Environment
-    commands: List[str]
-    notifications: List[Dict]
-    schedules: List[Schedule]
+    commands: list[str]
+    notifications: list[dict]
+    schedules: list[Schedule]
     timezone: str
 
-    def __flatten_email_receivers(self, receivers) -> List:
+    def __flatten_email_receivers(self, receivers) -> list:
         _receivers = []
         for r in receivers:
             receiver = r.split(",")
@@ -206,7 +205,9 @@ class Job:
 
         return list(set(_receivers))
 
-    def get_notifications(self, medium: str = "email", levels: List = ["all"]) -> List:
+    def get_notifications(self, medium: str = "email", levels: list | None = None) -> list:
+        levels = ["all"] if levels is None else levels.copy()
+
         # get global
         receivers = []
 

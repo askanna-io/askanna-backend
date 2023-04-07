@@ -33,8 +33,8 @@ class BaseRunResultCreateView(
         parents = self.get_parents_query_dict()
         try:
             run = Run.objects.active().get(suuid=parents.get("run__suuid"))
-        except ObjectDoesNotExist:
-            raise Http404
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
         return Membership.get_roles_for_project(request.user, run.jobdef.project)
 
@@ -82,7 +82,7 @@ class RunResultCreateView(
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def store_as_filename(self, resumable_filename: str, obj) -> str:
-        return "result_{}.output".format(obj.uuid.hex)
+        return f"result_{obj.uuid.hex}.output"
 
     def get_upload_target_location(self, request, obj, **kwargs) -> str:
         return os.path.join(self.upload_target_location, obj.storage_location)
@@ -143,7 +143,7 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         parents = self.get_parents_query_dict()
         try:
             runresult = RunResult.objects.get(suuid=parents.get("runresult__suuid"))
-        except ObjectDoesNotExist:
-            raise Http404
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
         return Membership.get_roles_for_project(request.user, runresult.run.jobdef.project)

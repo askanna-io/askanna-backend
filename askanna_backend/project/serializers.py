@@ -1,5 +1,3 @@
-from typing import Dict
-
 from account.models import Membership
 from account.serializers.user import UserRelationSerializer
 from core.permissions.askanna_roles import merge_role_permissions
@@ -20,7 +18,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     is_member = serializers.BooleanField(read_only=True)
     permission = serializers.SerializerMethodField()
 
-    def get_permission(self, instance) -> Dict[str, bool]:
+    def get_permission(self, instance) -> dict[str, bool]:
         user_request_roles = self.context["request"].user_roles
         user_project_roles = Membership.get_roles_for_project(self.context["request"].user, instance)
         user_roles = user_request_roles + user_project_roles

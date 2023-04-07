@@ -73,8 +73,8 @@ class RunArtifactView(
         parents = self.get_parents_query_dict()
         try:
             run = Run.objects.get(suuid=parents.get("run__suuid"))
-        except ObjectDoesNotExist:
-            raise Http404
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
         return Membership.get_roles_for_project(request.user, run.jobdef.project)
 
@@ -197,8 +197,8 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         parents = self.get_parents_query_dict()
         try:
             artifact = RunArtifact.objects.get(suuid=parents.get("artifact__suuid"))
-        except ObjectDoesNotExist:
-            raise Http404
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
         return Membership.get_roles_for_project(request.user, artifact.run.jobdef.project)
 

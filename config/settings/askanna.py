@@ -46,4 +46,4 @@ def settings(config, env):
     config.USERPROFILE_DEFAULT_AVATAR = "assets/src_assets_icons_ask-anna-default-gravatar.png"
 
     # Set default docker image for the runner
-    config.RUNNER_DEFAULT_DOCKER_IMAGE = "askanna/python:3.7"
+    config.RUNNER_DEFAULT_DOCKER_IMAGE = "askanna/python:3.11"

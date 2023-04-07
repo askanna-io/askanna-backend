@@ -66,7 +66,7 @@ class RunMetricMeta(ArtifactModelMixin, BaseModel):
         return self.run.suuid
 
     def load_from_file(self, reverse=False):
-        with open(self.stored_path, "r") as f:
+        with open(self.stored_path) as f:
             return json.loads(f.read())
 
     def prune(self):
@@ -84,13 +84,12 @@ class RunMetricMeta(ArtifactModelMixin, BaseModel):
             return
 
         def compose_response(instance, metric):
-            var = {
+            return {
                 "run_suuid": instance.suuid,
                 "metric": metric.metric,
                 "label": metric.label,
                 "created_at": metric.created_at.isoformat(),
             }
-            return var
 
         self.count = len(run_metrics)
         self.size = len(json.dumps([compose_response(self, v) for v in run_metrics]).encode("utf-8"))

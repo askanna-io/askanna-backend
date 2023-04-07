@@ -53,26 +53,34 @@ class RunFilterSet(FilterSet):
 
     status = MultiRunStatusFilter(
         field_name="status",
-        help_text="Filter runs on a status. For multiple values, separate the values with commas."
-        + "</br><i>Available values:</i> queued, running, finished, failed",
+        help_text=(
+            "Filter runs on a status. For multiple values, separate the values with commas."
+            "</br><i>Available values:</i> queued, running, finished, failed"
+        ),
     )
     status__exclude = MultiRunStatusFilter(
         field_name="status",
         exclude=True,
-        help_text="Exclude runs on a status. For multiple values, separate the values with commas."
-        + "</br><i>Available values:</i> queued, running, finished, failed",
+        help_text=(
+            "Exclude runs on a status. For multiple values, separate the values with commas."
+            "</br><i>Available values:</i> queued, running, finished, failed"
+        ),
     )
 
     trigger = MultiUpperValueCharFilter(
         field_name="trigger",
-        help_text="Filter runs on a trigger. For multiple values, separate the values with commas."
-        + "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker",
+        help_text=(
+            "Filter runs on a trigger. For multiple values, separate the values with commas."
+            "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker"
+        ),
     )
     trigger__exclude = MultiUpperValueCharFilter(
         field_name="trigger",
         exclude=True,
-        help_text="Exclude runs on a trigger. For multiple values, separate the values with commas."
-        + "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker",
+        help_text=(
+            "Exclude runs on a trigger. For multiple values, separate the values with commas."
+            "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker"
+        ),
     )
 
     job_suuid = MultiValueCharFilter(

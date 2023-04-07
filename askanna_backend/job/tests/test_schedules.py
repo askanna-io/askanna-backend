@@ -1,7 +1,7 @@
 import datetime
 
 from django.urls import reverse
-from job.models import ScheduledJob
+from job.models import JobDef, ScheduledJob
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -26,8 +26,10 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
         )
 
     def add_schedules_to_job(
-        self, job=None, definitions=[], current_dt=datetime.datetime.now(tz=datetime.timezone.utc)
+        self, job: JobDef | None = None, definitions: list | None = None, current_dt: datetime.datetime | None = None
     ):
+        definitions = [] if definitions is None else definitions.copy()
+        current_dt = datetime.datetime.now(tz=datetime.UTC) if current_dt is None else current_dt
         for definition in definitions:
             scheduled_job = ScheduledJob.objects.create(
                 job=job,
@@ -74,7 +76,7 @@ class TestJobScheduleAPI(BaseJobTestDef, APITestCase):
                 hour=18,
                 minute=0,
                 second=0,
-                tzinfo=datetime.timezone.utc,
+                tzinfo=datetime.UTC,
             ),
         )
 

@@ -18,16 +18,20 @@ from variable.models import Variable
 from config.celery_app import app as celery_app
 
 
-def log_run_variables(run, variable_name, variable_value, variable_is_masked=None, variable_labels=[]):
+def log_run_variables(
+    run, variable_name, variable_value, variable_is_masked=None, variable_labels: list | None = None
+):
     """
     Log the variables used for the run
     """
+    variable_labels = [] if variable_labels is None else variable_labels.copy()
+
     spec = {
         "run": run,
         "project_suuid": run.jobdef.project.suuid,
         "job_suuid": run.jobdef.suuid,
         "run_suuid": run.suuid,
-        "created_at": datetime.datetime.now(tz=datetime.timezone.utc),
+        "created_at": datetime.datetime.now(tz=datetime.UTC),
         "variable": {
             "name": variable_name,
             "value": variable_value,
@@ -71,12 +75,12 @@ def start_run(self, run_uuid):
         return_type=bool,
     )
 
-    # First save current Celery id to the jobid field
+    # First save current Celery Task ID to the celery_task_id field
     run = Run.objects.get(pk=run_uuid)
-    run.jobid = self.request.id
+    run.celery_task_id = self.request.id
     run.save(
         update_fields=[
-            "jobid",
+            "celery_task_id",
             "modified_at",
         ]
     )
@@ -158,10 +162,10 @@ def start_run(self, run_uuid):
     if pl and isinstance(pl.payload, dict):
         # we have a valid dict from the payload
         for k, v in pl.payload.items():
-            if isinstance(v, (list, dict)):
+            if isinstance(v, list | dict):
                 # limit to 10.000 chars
                 payload_variables[k] = json.dumps(v)[:10000]
-            elif isinstance(v, (str)):
+            elif isinstance(v, str):
                 # limit to 10.000 chars
                 payload_variables[k] = v[:10000]
             else:
@@ -218,8 +222,8 @@ def start_run(self, run_uuid):
         op.log("", print_log=docker_debug_log)
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
-    except Exception as e:
-        exception_message = f"Error while getting image information: {e}"
+    except Exception as exc:
+        exception_message = f"Error while getting image information: {exc}"
 
         op.log(exception_message, print_log=docker_debug_log)
         op.log("An error report has been created and send to the AskAnna admins", print_log=docker_debug_log)
@@ -227,7 +231,7 @@ def start_run(self, run_uuid):
         op.log("Run failed", print_log=docker_debug_log)
         run.to_failed()
 
-        raise Exception(exception_message)
+        raise Exception(exception_message) from exc
 
     op.log("Preparing run environment", print_log=docker_debug_log)
     op.log(f"Getting image {job_image}", print_log=docker_debug_log)
@@ -247,8 +251,8 @@ def start_run(self, run_uuid):
         op.log("", print_log=docker_debug_log)
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
-    except Exception as e:
-        exception_message = f"Error while preparing the run image: {e}"
+    except Exception as exc:
+        exception_message = f"Error while preparing the run image: {exc}"
 
         op.log(exception_message, print_log=docker_debug_log)
         op.log("An error report has been created and send to the AskAnna admins", print_log=docker_debug_log)
@@ -256,7 +260,7 @@ def start_run(self, run_uuid):
         op.log("Run failed", print_log=docker_debug_log)
         run.to_failed()
 
-        raise Exception(exception_message)
+        raise Exception(exception_message) from exc
 
     op.log("All AskAnna requirements are available", print_log=docker_debug_log)
     op.log("", print_log=docker_debug_log)  # Left blank intentionally
@@ -276,7 +280,7 @@ def start_run(self, run_uuid):
             image=run_image.cached_image,
             command=runner_command,
             environment=env_variables,
-            name="aa-run-{run_suuid}".format(run_suuid=run.suuid),
+            name=f"aa-run-{run.suuid}",
             labels={
                 "run": run.suuid,
                 "project": pr.suuid,
@@ -296,12 +300,12 @@ def start_run(self, run_uuid):
             cpu_period=10000,  # The length of a CPU period in microseconds.
             cpu_quota=40000,  # Microseconds of CPU time that the container can get in a CPU period.
         )
-    except (docker.errors.APIError, docker.errors.DockerException) as e:  # type: ignore
+    except (docker.errors.APIError, docker.errors.DockerException) as exc:  # type: ignore
         op.log(
             f"Run could not be started because of run errors in the image {job_image}",
             print_log=docker_debug_log,
         )
-        op.log(e.explanation, print_log=docker_debug_log)
+        op.log(exc.explanation, print_log=docker_debug_log)
         op.log(
             "Please follow the instructions on https://docs.askanna.io/ to build your own image.",
             print_log=docker_debug_log,
@@ -339,4 +343,4 @@ def start_run(self, run_uuid):
 
     op.log("", print_log=docker_debug_log)
     op.log("Run failed", print_log=docker_debug_log)
-    run.to_failed()
+    return run.to_failed()

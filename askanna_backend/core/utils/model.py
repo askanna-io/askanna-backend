@@ -12,7 +12,7 @@ def field_is_of_type_char(model, field_name) -> bool:
         bool: True if the field is of type char, False otherwise.
     """
     if "__" in field_name:
-        for i in range(len(field_name.split("__")) - 1):
+        for _ in range(len(field_name.split("__")) - 1):
             model = model._meta.get_field(field_name.split("__")[0]).related_model
             field_name = "__".join(field_name.split("__")[1:])
 

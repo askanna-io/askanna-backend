@@ -137,7 +137,7 @@ class RunSerializer(serializers.ModelSerializer):
     def get_artifact(self, instance):
         try:
             artifact = instance.artifact.first()
-        except AttributeError or ObjectDoesNotExist:
+        except (AttributeError, ObjectDoesNotExist):
             pass
         else:
             if artifact:

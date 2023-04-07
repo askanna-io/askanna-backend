@@ -1,21 +1,126 @@
 stages:
-  - build-base
-  - build-deploy
+  - build base
+  - build
   - test
   - deploy
+  - release
   - cleanup
 
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-.test-base:
-  stage: test
-  image: $CI_REGISTRY_IMAGE/base:master
-  needs:
-    - job: build_master_base
-      optional: true
+# To use Kaniko extend the job and set the variable for DOCKER_DESTINATION and optionally DOCKER_FILE
+.use-kaniko:
   tags:
     - kubernetes
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $DOCKER_FILE --destination $DOCKER_DESTINATION
+
+build_base:
+  stage: build base
+  extends: .use-kaniko
+  variables:
+    DOCKER_FILE: $CI_PROJECT_DIR/docker/Dockerfile-base
+  rules:
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
+      changes:
+        - docker/Dockerfile-base
+        - requirements/base.txt
+        - requirements/production.txt
+      variables:
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:main
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
+      when: manual
+      allow_failure: true
+      variables:
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:main
+    - if: $CI_COMMIT_BRANCH == "beta"
+      changes:
+        - docker/Dockerfile-base
+        - requirements/base.txt
+        - requirements/production.txt
+      variables:
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:beta
+    - if: $CI_COMMIT_BRANCH == "beta"
+      when: manual
+      allow_failure: true
+      variables:
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:beta
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        - docker/Dockerfile-base
+        - requirements/base.txt
+        - requirements/production.txt
+      variables:
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:review
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
+      variables:
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:review
+
+build_production:
+  stage: build
+  extends: .use-kaniko
+  variables:
+    DOCKER_FILE: $CI_PROJECT_DIR/docker/production/django/Dockerfile
+  rules:
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
+      variables:
+        DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:main
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:main
+    - if: $CI_COMMIT_BRANCH == "beta"
+      variables:
+        DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:beta
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:beta
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      variables:
+        DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:main
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - if: $CI_COMMIT_BRANCH
+      variables:
+        DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:review
+        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $DOCKER_FILE --destination $DOCKER_DESTINATION --build-arg BASE_IMAGE=$DOCKER_BASE_IMAGE
+
+code_quality:
+  rules:
+    - if: ($CODE_QUALITY_DISABLED || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG)
+      when: never
+    - if: $CI_COMMIT_BRANCH
+  before_script:
+    - echo -e "[pycodestyle]\nmax-line-length = 119" > setup.cfg
+    - echo -e "rule 'MD013', :line_length = 119" > .mdlrc
+
+.test-base:
+  stage: test
+  image: $DOCKER_IMAGE
+  needs:
+    - job: build_production
+  tags:
+    - kubernetes
+  rules:
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
+      variables:
+        DOCKER_IMAGE: $CI_REGISTRY_IMAGE:main
+    - if: $CI_COMMIT_BRANCH == "beta"
+      variables:
+        DOCKER_IMAGE: $CI_REGISTRY_IMAGE:beta
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      variables:
+        DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - if: $CI_COMMIT_BRANCH
+      variables:
+        DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+
+.test-base-services:
+  extends: .test-base
   variables:
     DJANGO_SECRET_KEY: $CI_COMMIT_SHA
     DJANGO_ALLOWED_HOSTS: "*"
@@ -35,68 +140,35 @@ include:
       alias: redis
 
 pytest:
-  extends: .test-base
+  extends: .test-base-services
   before_script:
     - pip install -r requirements/local.txt
   script:
     - python manage.py collectstatic --no-input
-    - pytest --cov=askanna_backend --cov-report=xml --junitxml=report.junit.xml
-    - cat coverage.xml | sed -e "s.filename=\".filename=\"askanna_backend/.g" > report.coverage.xml
-    - coverage html
-    - coverage report
+    - pytest --cov=askanna_backend --cov-config=pyproject.toml --cov-report xml --cov-report html --cov-report term --junitxml=junit.xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     expire_in: 2 weeks
-    name: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
+    name: $CI_JOB_NAME-$CI_COMMIT_REF_SLUG
     paths:
       - htmlcov/
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: report.coverage.xml
-      junit: report.junit.xml
+        path: coverage.xml
+      junit: junit.xml
 
 migrations:
-  extends: .test-base
-  before_script:
-    - pip install -r requirements/base.txt
+  extends: .test-base-services
   script:
     - python manage.py makemigrations --dry-run --check --no-input
 
-.build_base:
-  stage: build-base
-  tags:
-    - kubernetes
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
+lint:
+  extends: .test-base
+  before_script:
+    - pip install -r requirements/local.txt
   script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/Dockerfile-base --destination ${CI_REGISTRY_IMAGE}/base:$CI_COMMIT_REF_NAME
-
-build_master_base:
-  extends: .build_base
-  rules:
-    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
-      changes:
-        - compose/Dockerfile-base
-        - requirements/base.txt
-        - requirements/production.txt
-
-build_branches_base:
-  extends: .build_base
-  when: manual
-
-build_deploy:
-  stage: build-deploy
-  tags:
-    - kubernetes
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/compose/production/django/Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - ruff check .
 
 .deploy-variables:
   variables:
@@ -111,48 +183,62 @@ build_deploy:
   tags:
     - kubernetes
   script:
-    - curl -X POST -F token=${CI_JOB_TOKEN} -F ref=${ASKANNA_DEPLOY_BRANCH} -F variables[product]=${ASKANNA_DEPLOY_PRODUCT} -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=deploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${ASKANNA_DEPLOY_TRIGGER}
+    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=deploy -F variables[branch]=$CI_COMMIT_REF_SLUG  -F variables[slug]=$CI_ENVIRONMENT_SLUG $ASKANNA_DEPLOY_TRIGGER
 
 deploy_review:
   extends: .deploy
   rules:
     - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG)
       when: never
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH
   needs:
-    - job: build_deploy
+    - job: build_production
     - job: migrations
   environment:
     name: $CI_COMMIT_REF_NAME
-    url: https://${CI_ENVIRONMENT_SLUG}-api.askanna.eu/v1/docs/swagger/
+    url: https://$CI_ENVIRONMENT_SLUG-api.askanna.eu/v1/docs/swagger/
     on_stop: stop_review
 
-deploy_master:
+deploy_production:
   extends: .deploy
   rules:
     - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
       when: manual
-  environment:
-    name: master
-    url: https://api.askanna.eu/v1/docs/swagger/
-
-deploy_beta:
-  extends: .deploy
-  rules:
+      variables:
+        ENV_NAME: master
+        ENV_HOST: api.askanna.eu/v1/docs/swagger/
     - if: $CI_COMMIT_BRANCH == "beta"
       when: manual
+      variables:
+        ENV_NAME: beta
+        ENV_HOST: beta-api.askanna.eu/v1/docs/swagger/
+  needs:
+    - job: build_production
+    - job: pytest
+    - job: migrations
   environment:
-    name: beta
-    url: https://beta-api.askanna.eu/v1/docs/swagger/
+    name: $ENV_NAME
+    url: https://$ENV_HOST
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
+  script:
+    - echo "Creating a new release..."
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: $CI_COMMIT_TAG_MESSAGE
 
 stop_review:
   stage: cleanup
   image: curlimages/curl
   extends: .deploy-variables
   rules:
-    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta")
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG)
       when: never
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH
       when: manual
   needs:
     - job: deploy_review
@@ -163,4 +249,4 @@ stop_review:
   tags:
     - kubernetes
   script:
-    - curl -X POST -F token=${CI_JOB_TOKEN} -F ref=${ASKANNA_DEPLOY_BRANCH} -F variables[product]=${ASKANNA_DEPLOY_PRODUCT} -F variables[branch]=${CI_COMMIT_REF_SLUG} -F variables[action]=undeploy -F variables[slug]=${CI_ENVIRONMENT_SLUG} ${ASKANNA_DEPLOY_TRIGGER}
+    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=undeploy -F variables[branch]=$CI_COMMIT_REF_SLUG  -F variables[slug]=$CI_ENVIRONMENT_SLUG $ASKANNA_DEPLOY_TRIGGER

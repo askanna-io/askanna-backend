@@ -153,11 +153,10 @@ class ObjectRoleMixin(viewsets.GenericViewSet):
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         try:
             return get_object_or_404(queryset, **filter_kwargs)
-        except Http404:
+        except Http404 as exc:
             if hasattr(self, "get_object_fallback"):
                 return self.get_object_fallback()  # type: ignore
-            else:
-                raise Http404
+            raise Http404 from exc
 
     def get_object_roles(self, request) -> list:
         if not self.detail:
@@ -176,8 +175,8 @@ class ObjectRoleMixin(viewsets.GenericViewSet):
 
         try:
             object_role = self.get_workspace_role(request.user)
-        except NotImplementedError:
-            raise NotImplementedError("ObjectRoleMixin requires either a workspace or a project")
+        except NotImplementedError as exc:
+            raise NotImplementedError("ObjectRoleMixin requires either a workspace or a project") from exc
         else:
             return [object_role]
 

@@ -177,13 +177,13 @@ class JobView(
 
         # Validate whether request.data is really a JSON structure
         try:
-            assert isinstance(request.data, (dict, list))
-        except AssertionError:
+            assert isinstance(request.data, dict | list)
+        except AssertionError as exc:
             raise ParseError(
                 detail={
                     "payload": ["The JSON data payload is not valid, please check and try again"],
                 },
-            )
+            ) from exc
 
         # Create new JobPayload
         json_string = json.dumps(request.data)

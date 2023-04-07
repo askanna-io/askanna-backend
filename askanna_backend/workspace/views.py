@@ -12,7 +12,7 @@ from workspace.serializers import WorkspaceSerializer
 
 class WorkspaceFilterSet(django_filters.FilterSet):
     is_member = django_filters.BooleanFilter(help_text="Filter on workspaces where the account is a member.")
-    visibility = django_filters.MultipleChoiceFilter(
+    visibility = django_filters.ChoiceFilter(
         choices=(("public", "PUBLIC"), ("private", "PRIVATE")),
         help_text="Filter workspaces on visibility.",
         method=case_insensitive,

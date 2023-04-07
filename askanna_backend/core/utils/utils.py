@@ -4,7 +4,6 @@ import os
 import re
 import zoneinfo
 from functools import reduce
-from typing import Tuple, Union
 from wsgiref.util import FileWrapper
 from zipfile import ZipFile
 
@@ -22,8 +21,7 @@ from rest_framework import status
 def parse_string(string, variables):
     env = Environment(variable_start_string="${", variable_end_string="}")  # nosec: B701
     template = env.from_string(string)
-    rendered = template.render(variables)
-    return rendered
+    return template.render(variables)
 
 
 def validate_cron_line(cron_line: str) -> bool:
@@ -60,7 +58,7 @@ def parse_cron_line(cron_line: str) -> str:
     elif isinstance(cron_line, dict):
         # we deal with dictionary
         # first check whether we have valid keys, if one invalid key is found, return None
-        valid_keys = set(["minute", "hour", "day", "month", "weekday"])
+        valid_keys = {"minute", "hour", "day", "month", "weekday"}
         invalid_keys = set(cron_line.keys()) - valid_keys
         if len(invalid_keys):
             return None
@@ -159,25 +157,25 @@ def pretty_time_delta(seconds: int) -> str:
         return f"{amount} {plural}"
 
     if days > 0:
-        return "%s, %s, %s and %s" % (
+        return "{}, {}, {} and {}".format(
             plurify(days, "day", "days"),
             plurify(hours, "hour", "hours"),
             plurify(minutes, "minute", "minutes"),
             plurify(seconds, "second", "seconds"),
         )
-    elif hours > 0:
-        return "%s, %s and %s" % (
+    if hours > 0:
+        return "{}, {} and {}".format(
             plurify(hours, "hour", "hours"),
             plurify(minutes, "minute", "minutes"),
             plurify(seconds, "second", "seconds"),
         )
-    elif minutes > 0:
-        return "%s and %s" % (
+    if minutes > 0:
+        return "{} and {}".format(
             plurify(minutes, "minute", "minutes"),
             plurify(seconds, "second", "seconds"),
         )
-    else:
-        return "%s" % (plurify(seconds, "second", "seconds"),)
+
+    return "{}".format(plurify(seconds, "second", "seconds"))
 
 
 def flatten(t):
@@ -212,7 +210,7 @@ def get_directory_size_from_filelist(directory: str, filelist: list) -> int:
     )
 
 
-def get_items_in_zip_file(zip_file_path: Union[str, os.PathLike]) -> Tuple[list, list]:
+def get_items_in_zip_file(zip_file_path: str | os.PathLike) -> tuple[list, list]:
     """
     Reading a zip archive and returns a list with items and a list with paths in the zip file.
     """
@@ -275,12 +273,12 @@ def get_all_directories(paths: list) -> list:
             if path and path != "/":
                 directories.append(path)
 
-    directories = sorted(list(set(directories) - set(["/"]) - set([""])))
+    directories = sorted(list(set(directories) - {"/"} - {""}))
 
     return directories
 
 
-def get_files_and_directories_in_zip_file(zip_file_path: Union[str, os.PathLike]) -> list:
+def get_files_and_directories_in_zip_file(zip_file_path: str | os.PathLike) -> list:
     """
     Reading a zip archive and returns the information about which files and directories are in the archive
     """
@@ -312,7 +310,7 @@ def get_files_and_directories_in_zip_file(zip_file_path: Union[str, os.PathLike]
 
 
 # The 'RangeFileWrapper' class and method 'stream' is used to setup streaming of content via an REST API endpoint
-class RangeFileWrapper(object):
+class RangeFileWrapper:
     def __init__(self, filelike, blksize=8192, offset=0, length=None):
         self.filelike = filelike
         self.filelike.seek(offset, os.SEEK_SET)
@@ -333,14 +331,17 @@ class RangeFileWrapper(object):
             if data:
                 return data
             raise StopIteration()
-        else:
-            if self.remaining <= 0:
-                raise StopIteration()
-            data = self.filelike.read(min(self.remaining, self.blksize))
-            if not data:
-                raise StopIteration()
-            self.remaining -= len(data)
-            return data
+
+        if self.remaining <= 0:
+            raise StopIteration()
+
+        data = self.filelike.read(min(self.remaining, self.blksize))
+
+        if not data:
+            raise StopIteration()
+
+        self.remaining -= len(data)
+        return data
 
 
 def stream(request, path, content_type, size):
@@ -363,7 +364,7 @@ def stream(request, path, content_type, size):
             content_type=content_type,
         )
         resp["Content-Length"] = str(length)
-        resp["Content-Range"] = "bytes %s-%s/%s" % (first_byte, last_byte, size)
+        resp["Content-Range"] = f"bytes {first_byte}-{last_byte}/{size}"
     else:
         try:
             resp = StreamingHttpResponse(FileWrapper(open(path, "rb")), content_type=content_type)

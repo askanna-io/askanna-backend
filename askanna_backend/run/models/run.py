@@ -75,11 +75,9 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
 
-    # Clarification, jobid holds the job-id of Celery
-    jobid = models.CharField(max_length=120, blank=True, null=True, help_text="The job-id of the Celery run")
     status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
 
-    trigger = models.CharField(max_length=20, blank=True, null=True, default="API")
+    trigger = models.CharField(max_length=20, blank=True, default="API")
     member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     # Register the start and end of a run
@@ -92,6 +90,8 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     environment_name = models.CharField(max_length=256, default="")
     timezone = models.CharField(max_length=256, default="UTC")
     run_image = models.ForeignKey("job.RunImage", on_delete=models.CASCADE, null=True)
+
+    celery_task_id = models.CharField(max_length=120, blank=True, help_text="The task ID of the Celery run")
 
     objects = RunManager()
 
@@ -129,11 +129,9 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             ]
         )
 
-        # fire off a Celery tasks to notify the user
         on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.send_run_notification",
-                args=None,
                 kwargs={"run_uuid": self.uuid},
             )
         )
@@ -144,7 +142,6 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.send_run_notification",
-                args=None,
                 kwargs={"run_uuid": self.uuid},
             )
         )

@@ -1,11 +1,9 @@
-from typing import Optional, Type, Union
-
 from core.models import Setting
 
 
 def get_setting_from_database(
-    name: str, default: Optional[Union[str, int, bool]] = None, return_type: Type[Union[str, int, bool]] = str
-) -> Optional[Union[str, int, bool]]:
+    name: str, default: str | int | bool | None = None, return_type: type[str | int | bool] = str
+) -> str | int | bool | None:
     """
     Retrieve configuration setting from database
 

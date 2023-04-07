@@ -172,8 +172,8 @@ class PeopleViewSet(
         self.workspace_suuid = query_dict.get("workspace__suuid")
         try:
             self.workspace = Workspace.objects.get(suuid=self.workspace_suuid)
-        except Workspace.DoesNotExist:
-            raise Http404
+        except Workspace.DoesNotExist as exc:
+            raise Http404 from exc
 
         return {
             "object_uuid": self.workspace.uuid,

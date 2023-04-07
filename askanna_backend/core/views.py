@@ -18,8 +18,8 @@ def get_object_or_404(queryset, *filter_args, **filter_kwargs):
     """
     try:
         return _get_object_or_404(queryset, *filter_args, **filter_kwargs)
-    except (TypeError, ValueError, ValidationError):
-        raise Http404
+    except (TypeError, ValueError, ValidationError) as exc:
+        raise Http404 from exc
 
 
 class BaseChunkedPartViewSet(
@@ -69,7 +69,7 @@ class BaseChunkedPartViewSet(
             return Response({"message": "chunk already exists"}, status=200)
         r.process_chunk(chunk)
 
-        chunkpart.filename = "%s%s%s" % (
+        chunkpart.filename = "{}{}{}".format(
             r.filename,
             r.chunk_suffix,
             r.kwargs.get("resumableChunkNumber").zfill(4),

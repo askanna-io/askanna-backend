@@ -167,8 +167,8 @@ class PackageViewSet(
             project_suuid = request.data.get("project_suuid")
             try:
                 project = Project.objects.active().get(suuid=project_suuid)
-            except Project.DoesNotExist:
-                raise Http404
+            except Project.DoesNotExist as exc:
+                raise Http404 from exc
 
             return Membership.get_roles_for_project(request.user, project)
 
@@ -260,8 +260,8 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
             try:
                 package = Package.objects.get(suuid=parents.get("package__suuid"))
                 project = package.project
-            except ObjectDoesNotExist:
-                raise Http404
+            except ObjectDoesNotExist as exc:
+                raise Http404 from exc
 
             return Membership.get_roles_for_project(request.user, project)
 

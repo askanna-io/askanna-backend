@@ -2,7 +2,7 @@ import datetime
 import io
 import uuid
 import zipfile
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from account.models import (
     MSP_WORKSPACE,
@@ -166,7 +166,7 @@ class BaseUserPopulation:
                 name="name of admin_inactive in membership",
                 job_title="job_title of admin_inactive in membership",
                 use_global_profile=False,
-                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
             ),
             "member_inactive": UserProfile.objects.create(
                 object_type=MSP_WORKSPACE,
@@ -176,7 +176,7 @@ class BaseUserPopulation:
                 name="name of member_inactive in membership",
                 job_title="job_title of member_inactive in membership",
                 use_global_profile=False,
-                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
             ),
         }
         self.members_workspace2 = {
@@ -212,7 +212,7 @@ class BaseUserPopulation:
                 name="name of member_inactive in membership",
                 job_title="job_title of member_inactive in membership",
                 use_global_profile=False,
-                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+                deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
             ),
         }
 
@@ -268,10 +268,10 @@ class BaseUploadTestMixin:
 
     def do_file_upload(
         self,
-        create_url: Optional[str] = None,
-        create_chunk_url: Optional[Callable[[dict], str]] = None,
-        upload_chunk_url: Optional[Callable[[dict, str], str]] = None,
-        finish_upload_url: Optional[Callable[[dict], str]] = None,
+        create_url: str | None = None,
+        create_chunk_url: Callable[[dict], str] | None = None,
+        upload_chunk_url: Callable[[dict, str], str] | None = None,
+        finish_upload_url: Callable[[dict], str] | None = None,
         fileobjectname: str = "testartifact.zip",
     ):
         file_buffer, file_size = self.create_file_object(filename=fileobjectname)

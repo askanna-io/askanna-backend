@@ -1,31 +1,21 @@
 ---
 version: "2"
 plugins:
-  csslint:
+  pep8:
     enabled: true
-  coffeelint:
+  markdownlint:
     enabled: true
   duplication:
     enabled: true
     config:
       languages:
-        - ruby
-        - javascript
         - python
-        - php
   editorconfig:
     enabled: true
     channel: beta
     config:
       editorconfig: .editorconfig
-  eslint:
-    enabled: true
-    channel: __ESLINT_CHANNEL__
   fixme:
-    enabled: true
-  rubocop:
-    enabled: true
-  pep8:
     enabled: true
 exclude_patterns:
   - config/
@@ -37,7 +27,7 @@ exclude_patterns:
   - "**/spec/"
   - "**/test/"
   - "**/tests/"
-  - Tests/
+  - tests/
   - "**/vendor/"
   - "**/*_test.go"
   - "**/*.d.ts"

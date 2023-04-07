@@ -19,6 +19,7 @@ def configclass(func):
     before:
         config["THE_KEY"]
     """
+
     def wrapper(config, *args, **kwargs):
         """Wrap the decorated function."""
         # Create the Config object and set the valid settings.
@@ -30,12 +31,6 @@ def configclass(func):
         func(config_class, *args, **kwargs)
 
         # Update original config with settings from the Config instance.
-        config.update(
-            **{
-                key: value
-                for key, value in config_class.__dict__.items()
-                if key.isupper()
-            }
-        )
+        config.update(**{key: value for key, value in config_class.__dict__.items() if key.isupper()})
 
     return wrapper

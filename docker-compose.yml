@@ -8,13 +8,16 @@ x-templates:
   base-build-django:
     &base-build-django
     context: .
-    dockerfile: ./compose/local/django/Dockerfile
+    dockerfile: ./docker/local/django/Dockerfile
 
   base-django:
     &base-django
     build:
       <<: *base-build-django
     <<: *restart-policy
+    depends_on:
+      - postgres
+      - redis
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -64,8 +67,6 @@ services:
     build:
       <<: *base-build-django
       target: django
-    depends_on:
-      - postgres
     command: /start
     stdin_open: true
     tty: true
@@ -74,16 +75,10 @@ services:
 
   celeryworker:
     <<: *base-django
-    depends_on:
-      - redis
-      - postgres
     command: /start-celeryworker
 
   celerybeat:
     <<: *base-django
-    depends_on:
-      - redis
-      - postgres
     command: /start-celerybeat
 
   flower:
@@ -91,8 +86,6 @@ services:
     build:
       <<: *base-build-django
       target: flower
-    depends_on:
-      - postgres
     command: /start-flower
     ports:
       - "5555:5555"

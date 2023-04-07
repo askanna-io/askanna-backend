@@ -3,14 +3,14 @@ import django.db.models.deletion
 
 
 def forwards_func(apps, schema_editor):
-    Run = apps.get_model("run", "Run")
+    Run = apps.get_model("run", "Run")  # noqa: N806
 
-    RunMetricRow = apps.get_model("run", "RunMetricRow")
+    RunMetricRow = apps.get_model("run", "RunMetricRow")  # noqa: N806
     for obj in RunMetricRow.objects.all():
         obj.run = Run.objects.get(suuid=obj.run_suuid)
         obj.save()
 
-    RunVariableRow = apps.get_model("run", "RunVariableRow")
+    RunVariableRow = apps.get_model("run", "RunVariableRow")  # noqa: N806
     for obj in RunVariableRow.objects.all():
         obj.run = Run.objects.get(suuid=obj.run_suuid)
         obj.save()
@@ -21,7 +21,6 @@ def reverse_func(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("run", "0017_auto_20221229_1112"),
     ]

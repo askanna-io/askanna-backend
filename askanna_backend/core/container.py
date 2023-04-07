@@ -1,13 +1,15 @@
 import datetime
 import logging
 import time
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
 
 import docker
 import redis
 from django.conf import settings
 from django.db import IntegrityError
 from job.models import RunImage
+
+TEMPLATES_PATH = str(settings.APPS_DIR.path("templates"))
 
 
 class RegistryAuthenticationError(Exception):
@@ -27,7 +29,7 @@ def get_descriptive_docker_error(docker_error) -> str:
     # Get https://registry-1.docker.io/v2/: unauthorized: incorrect username or password
     if "not found" in docker_error:
         return "The image was not found, please check your askanna.yml whether the environment image is correct."
-    elif "unauthorized" in docker_error or "access forbidden" in docker_error:
+    if "unauthorized" in docker_error or "access forbidden" in docker_error:
         return "We could not authenticate you to the registry. Please check the environment username and password."
     return docker_error
 
@@ -37,8 +39,8 @@ class RegistryImageHelper:
         self,
         client: docker.DockerClient,
         image_path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         logger: Callable[[str], None] = lambda x: None,
         *args,
         **kwargs,
@@ -72,18 +74,18 @@ class RegistryImageHelper:
             auth_config.update(**self.credentials)
             try:
                 loginresponse = self.client.login(**auth_config)
-            except docker.errors.APIError as e:  # type: ignore
+            except docker.errors.APIError as exc:  # type: ignore
                 message = f"Credentials are not correct to log in onto {self.image_registry}"
                 logging.info(message)
-                logging.info(get_descriptive_docker_error(e.explanation))
+                logging.info(get_descriptive_docker_error(exc.explanation))
                 self.logger(message)
-                raise RegistryAuthenticationError(message)
-            except Exception as e:
+                raise RegistryAuthenticationError(message) from exc
+            except Exception as exc:
                 message = f"Could not authenticate onto: {self.image_registry}"
                 logging.info(message)
-                logging.info(e)
+                logging.info(exc)
                 self.logger(message)
-                raise RegistryAuthenticationError(message)
+                raise RegistryAuthenticationError(message) from exc
             else:
                 self.userinfo = loginresponse
 
@@ -103,13 +105,13 @@ class RegistryImageHelper:
 
             try:
                 self.image_info = self.client.images.get_registry_data(self.image_path, auth_config=self.credentials)
-            except docker.errors.APIError as e:  # type: ignore
+            except docker.errors.APIError as exc:  # type: ignore
                 message = f"Could not pull image: {self.image_path}"
                 logging.info(message)
-                logging.info(get_descriptive_docker_error(e.explanation))
+                logging.info(get_descriptive_docker_error(exc.explanation))
                 self.logger(message)
-                self.logger(get_descriptive_docker_error(e.explanation))
-                raise RegistryContainerPullError(message)
+                self.logger(get_descriptive_docker_error(exc.explanation))
+                raise RegistryContainerPullError(message) from exc
 
         return self.image_info
 
@@ -135,19 +137,19 @@ class RegistryImageHelper:
         try:
             logging.info(f"Pulling image: {self.image_path}")
             image = self.client.api.pull(**pull_spec)
-        except (docker.errors.NotFound, docker.errors.APIError) as e:  # type: ignore
+        except (docker.errors.NotFound, docker.errors.APIError) as exc:  # type: ignore
             message = f"Could not pull image: {self.image_path}"
             logging.info(message)
-            logging.info(get_descriptive_docker_error(e.explanation))
+            logging.info(get_descriptive_docker_error(exc.explanation))
             self.logger(message)
-            self.logger(get_descriptive_docker_error(e.explanation))
-            raise RegistryContainerPullError(message)
-        except Exception as e:
+            self.logger(get_descriptive_docker_error(exc.explanation))
+            raise RegistryContainerPullError(message) from exc
+        except Exception as exc:
             message = f"Could not pull image: {self.image_path}"
             logging.info(message)
-            logging.info(e)
+            logging.info(exc)
             self.logger(message)
-            raise RegistryContainerPullError(message)
+            raise RegistryContainerPullError(message) from exc
         else:
             if log:
                 map(lambda line: self.logger(line.get("status")), image)
@@ -159,7 +161,7 @@ class ContainerImageBuilder:
         client: docker.DockerClient,
         image_helper: RegistryImageHelper,
         image_prefix: str = settings.ASKANNA_ENVIRONMENT,
-        image_dockerfile_path: str = str(settings.APPS_DIR.path("templates")),
+        image_dockerfile_path: str = TEMPLATES_PATH,
         image_dockerfile: str = "Dockerfile",
         logger: Callable[[str], None] = lambda x: None,
     ) -> None:
@@ -195,7 +197,7 @@ class ContainerImageBuilder:
                 )
                 raise TimeoutError(message)
 
-    def get_image_object(self, name: str, tag: str, digest: str) -> Tuple[RunImage, bool]:
+    def get_image_object(self, name: str, tag: str, digest: str) -> tuple[RunImage, bool]:
         try:
             run_image, created = RunImage.objects.get_or_create(name=name, tag=tag, digest=digest)
         except RunImage.MultipleObjectsReturned:
@@ -270,11 +272,11 @@ class ContainerImageBuilder:
                 forcerm=True,
                 buildargs={"IMAGE": from_image},
             )
-        except docker.errors.DockerException as e:  # type: ignore
+        except docker.errors.DockerException as exc:  # type: ignore
             self.logger(f"Preparing the run image with image '{self.image_helper.image_repository}' failed:")
-            self.logger(e.msg)
+            self.logger(exc.msg)
             self.logger("Please follow the instructions on https://docs.askanna.io/ to build your own image.")
-            raise e
+            raise exc
         else:
             run_image.set_cached_image(askanna_repository_image)
             logging.info(f"Image {askanna_repository_image} built and cached. Image digest: {image.short_id}")

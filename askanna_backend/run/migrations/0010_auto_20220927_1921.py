@@ -4,55 +4,76 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('run', '0009_rename_tables'),
+        ("run", "0009_rename_tables"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='chunkedrunartifactpart',
-            options={'ordering': ['-created'], 'verbose_name': 'Run artifact chunk', 'verbose_name_plural': 'Run artifacts chunks'},
+            name="chunkedrunartifactpart",
+            options={
+                "ordering": ["-created"],
+                "verbose_name": "Run artifact chunk",
+                "verbose_name_plural": "Run artifacts chunks",
+            },
         ),
         migrations.AlterModelOptions(
-            name='chunkedrunresultpart',
-            options={'ordering': ['-created'], 'verbose_name': 'Run result chunk', 'verbose_name_plural': 'Run result chunks'},
+            name="chunkedrunresultpart",
+            options={
+                "ordering": ["-created"],
+                "verbose_name": "Run result chunk",
+                "verbose_name_plural": "Run result chunks",
+            },
         ),
         migrations.AlterModelOptions(
-            name='runartifact',
-            options={'ordering': ['-created']},
+            name="runartifact",
+            options={"ordering": ["-created"]},
         ),
         migrations.AlterModelOptions(
-            name='runmetric',
-            options={'ordering': ['-created']},
+            name="runmetric",
+            options={"ordering": ["-created"]},
         ),
         migrations.AlterModelOptions(
-            name='runmetricrow',
-            options={'ordering': ['-created'], 'verbose_name': 'Run metric row', 'verbose_name_plural': 'Run metrics rows'},
+            name="runmetricrow",
+            options={
+                "ordering": ["-created"],
+                "verbose_name": "Run metric row",
+                "verbose_name_plural": "Run metrics rows",
+            },
         ),
         migrations.AlterModelOptions(
-            name='runresult',
-            options={'ordering': ['-created']},
+            name="runresult",
+            options={"ordering": ["-created"]},
         ),
         migrations.AlterModelOptions(
-            name='runvariable',
-            options={'ordering': ['-created']},
+            name="runvariable",
+            options={"ordering": ["-created"]},
         ),
         migrations.AlterModelOptions(
-            name='runvariablerow',
-            options={'ordering': ['-created'], 'verbose_name': 'Run variable row', 'verbose_name_plural': 'Run variables rows'},
+            name="runvariablerow",
+            options={
+                "ordering": ["-created"],
+                "verbose_name": "Run variable row",
+                "verbose_name_plural": "Run variables rows",
+            },
         ),
         migrations.RemoveField(
-            model_name='runlog',
-            name='jobdef',
+            model_name="runlog",
+            name="jobdef",
         ),
         migrations.RemoveField(
-            model_name='runresult',
-            name='job',
+            model_name="runresult",
+            name="job",
         ),
         migrations.AlterField(
-            model_name='runresult',
-            name='mime_type',
-            field=models.CharField(blank=True, editable=False, help_text='Storing the mime-type of the output file', max_length=100, null=True),
+            model_name="runresult",
+            name="mime_type",
+            field=models.CharField(
+                blank=True,
+                editable=False,
+                help_text="Storing the mime-type of the output file",
+                max_length=100,
+                null=True,
+            ),
         ),
     ]

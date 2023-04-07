@@ -26,9 +26,7 @@
         "editor.formatOnSave": true,
         "editor.formatOnType": true,
         "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
         "python.linting.banditPath": "/workspace/askanna-backend/.venv/bin/bandit",
-        "python.linting.flake8Path": "/workspace/askanna-backend/.venv/bin/flake8",
         "python.formatting.blackPath": "/workspace/askanna-backend/.venv/bin/black",
     }
 }

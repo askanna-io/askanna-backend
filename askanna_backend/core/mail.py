@@ -8,13 +8,17 @@ def send_email(
     html_email_template_name: str,
     from_email: str,
     to_email: str,
-    context: dict = {},
-    attachments: list = [],
-    inline_attachments: list = [],
+    context: dict | None = None,
+    attachments: list | None = None,
+    inline_attachments: list | None = None,
 ):
     """
     Send email function which loads templates from the filesytem
     """
+    context = {} if context is None else context.copy()
+    attachments = [] if attachments is None else attachments.copy()
+    inline_attachments = [] if inline_attachments is None else inline_attachments.copy()
+
     subject = loader.render_to_string(subject_template_name, context)
     # Email subject *must not* contain newlines
     subject = "".join(subject.splitlines())

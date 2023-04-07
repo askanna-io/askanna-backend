@@ -6,9 +6,9 @@ This repository holds code for the AskAnna Backend. Our frontend stack primarily
 ## Local Development
 
 You can run the AskAnna Backend locally on your machine. We advise to use Docker Compose to run the AskAnna Backend.
-See also the [Run via Docker](#run-via-docker) section.
+See also the [Run via Docker](#run-via-docker-compose) section.
 
-When you run the AskAnna Backend locally without Docker, make sure you use Python 3.9 or later. The required Python
+When you run the AskAnna Backend locally without Docker, make sure you use Python 3.11 or later. The required Python
 packages are listed in `requirements/local.txt`. Besides the Python packages, you also need to have a running
 PostgreSQL database.
 
@@ -139,14 +139,6 @@ To run the tests, check your test coverage, and generate an HTML coverage report
 pytest --cov=askanna_backend/
 coverage html
 open htmlcov/index.html
-```
-
-### Type checks
-
-Running type checks with mypy:
-
-```python
-mypy askanna_backend
 ```
 
 ### Celery
