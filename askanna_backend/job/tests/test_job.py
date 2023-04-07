@@ -113,7 +113,6 @@ class TestJobListWithProjectFilterAPI(BaseJobTestDef, APITestCase):
         self.activate_user("non_member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        print(response.data)
         assert len(response.data["results"]) == 0  # type: ignore
 
     def test_list_as_anonymous(self):

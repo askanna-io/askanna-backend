@@ -1,5 +1,6 @@
 """Functional tests configuration."""
 import os.path
+
 import pytest
 
 
@@ -7,4 +8,3 @@ import pytest
 def pytestbdd_feature_base_dir():
     """Basedir for feature files."""
     return os.path.join(os.path.dirname(__file__), "features")
-

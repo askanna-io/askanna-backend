@@ -4,19 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('project', '0001_initial_squashed_20220901'),
+        ("project", "0001_initial_squashed_20220901"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='project',
-            name='template',
+            model_name="project",
+            name="template",
         ),
         migrations.AlterField(
-            model_name='project',
-            name='visibility',
-            field=models.CharField(choices=[('PRIVATE', 'PRIVATE'), ('PUBLIC', 'PUBLIC')], db_index=True, default='PRIVATE', max_length=10),
+            model_name="project",
+            name="visibility",
+            field=models.CharField(
+                choices=[("PRIVATE", "PRIVATE"), ("PUBLIC", "PUBLIC")], db_index=True, default="PRIVATE", max_length=10
+            ),
         ),
     ]

@@ -98,8 +98,8 @@ class VariableView(
             project_suuid = request.data.get("project_suuid")
             try:
                 project = Project.objects.active().get(suuid=project_suuid)
-            except Project.DoesNotExist:
-                raise Http404
+            except Project.DoesNotExist as exc:
+                raise Http404 from exc
 
             return Membership.get_roles_for_project(request.user, project)
 

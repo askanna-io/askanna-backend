@@ -15,7 +15,6 @@ class RunResult(NameDescriptionBaseModel):
         max_length=100,
         editable=False,
         blank=True,
-        null=True,
         help_text="Storing the mime-type of the output file",
     )
     size = models.PositiveIntegerField(editable=False, default=0, help_text="Size of the result stored")
@@ -34,7 +33,7 @@ class RunResult(NameDescriptionBaseModel):
 
     @property
     def filename(self):
-        return "result_{}.output".format(self.uuid.hex)
+        return f"result_{self.uuid.hex}.output"
 
     @property
     def extension(self):

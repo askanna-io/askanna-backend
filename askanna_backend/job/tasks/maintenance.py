@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 import docker
 from core.utils.config import get_setting_from_database
@@ -20,7 +21,7 @@ def clean_dangling_images():
         # disabled image pruning, because we store `aa-project:version` images which will be unused and cleaned
         # in this action. These images will be used eventually, so disable this function temporarely
         # print(client.images.prune(filters={"dangling": True}))
-        print(client.volumes.prune())
+        logging.info(client.volumes.prune())
 
 
 @celery_app.task(name="job.tasks.clean_containers_after_run")
@@ -50,12 +51,10 @@ def clean_containers_after_run():
 
         if finished_at:
             finished_dt = parser.isoparse(finished_at)
-            age = datetime.datetime.now(tz=datetime.timezone.utc) - finished_dt
+            age = datetime.datetime.now(tz=datetime.UTC) - finished_dt
             if age > datetime.timedelta(minutes=delete_after_minutes):
-                print("Removing container", container.name)
-                # remove the container
-                # the print makes this removal visible in the logs
-                print(container.remove(v=True))
+                logging.info("Removing container", container.name)
+                logging.info(container.remove(v=True))
 
 
 @celery_app.task(name="job.tasks.delete_jobs")

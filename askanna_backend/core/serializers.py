@@ -1,5 +1,3 @@
-from typing import Dict, List, Union
-
 from core.utils import get_files_and_directories_in_zip_file
 from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
@@ -21,7 +19,7 @@ class ReadWriteSerializerMethodField(serializers.Field):
 
     def bind(self, field_name, parent):
         if self.method_name is None:
-            self.method_name = "get_{field_name}".format(field_name=field_name)
+            self.method_name = f"get_{field_name}"
         super().bind(field_name, parent)
 
     def to_representation(self, value):
@@ -43,7 +41,7 @@ class BaseArchiveDetailSerializer(serializers.ModelSerializer):
         """
         return f"{settings.ASKANNA_CDN_URL}/files/blob/{instance.uuid}"
 
-    def get_files_for_archive(self, instance) -> List[Dict[str, Union[str, int]]]:
+    def get_files_for_archive(self, instance) -> list[dict[str, str | int]]:
         """
         On the fly reading a zip archive and returns the information about what files are in the archive
         """

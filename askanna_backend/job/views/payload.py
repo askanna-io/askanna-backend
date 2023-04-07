@@ -70,8 +70,8 @@ class JobPayloadView(
         run_suuid = self.kwargs["parent_lookup_run__suuid"]
         try:
             run = Run.objects.active().get(suuid=run_suuid)
-        except Run.DoesNotExist:
-            raise Http404
+        except Run.DoesNotExist as exc:
+            raise Http404 from exc
 
         return Membership.get_roles_for_project(request.user, run.jobdef.project)
 

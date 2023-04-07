@@ -46,6 +46,7 @@ coverage.xml
 *.cover
 .hypothesis/
 report.*.xml
+junit.xml
 
 # Translations
 *.mo

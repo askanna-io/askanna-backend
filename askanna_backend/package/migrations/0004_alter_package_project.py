@@ -5,16 +5,22 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('project', '0006_uuid_and_suuid_field_config'),
-        ('package', '0003_uuid_and_suuid_field_config'),
+        ("project", "0006_uuid_and_suuid_field_config"),
+        ("package", "0003_uuid_and_suuid_field_config"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='package',
-            name='project',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='packages', to='project.project'),
+            model_name="package",
+            name="project",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="packages",
+                to="project.project",
+            ),
         ),
     ]

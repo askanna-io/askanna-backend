@@ -22,13 +22,13 @@ class RunLog(BaseModel):
         self.logqueue = RedisLogQueue(suuid=self.run.suuid)
         self.log_idx = 0
 
-    def log(self, message: str = None, timestamp: str = None, print_log: bool = False):
+    def log(self, message: str | None = None, timestamp: str | None = None, print_log: bool = False):
         self.log_idx += 1
         if not timestamp:
             timestamp = datetime.datetime.utcnow().isoformat()
         self.logqueue.append([self.log_idx, timestamp, message])
         if print_log:
-            print([self.log_idx, timestamp, message], flush=True)
+            print([self.log_idx, timestamp, message], flush=True)  # noqa: T201
 
     def save_stdout(self):
         self.stdout = self.logqueue.get()
@@ -59,22 +59,6 @@ class RunLog(BaseModel):
     def size(self):
         return len(json.dumps(self.stdout).encode("utf-8")) if self.stdout else 0
 
-    @property
-    def read(self):
-        """
-        Read the result from filesystem and return
-        """
-        try:
-            with open(self.stored_path, "rb") as f:
-                return f.read()
-        except FileNotFoundError:
-            return b""
-
-    def prune(self):
-        pass
-        # not implemented as file yet, the result is stored in the `stdout` field
-        # os.remove(self.stored_path)
-
     class Meta:
         db_table = "run_log"
         ordering = ["-created_at"]
@@ -86,13 +70,13 @@ class RedisLogQueue:
         self.redis_url = env("REDIS_URL")
         self.redis = redis.Redis.from_url(self.redis_url)
 
-    def append(self, log_object: list = None):
+    def append(self, log_object: list | None = None):
         """
         Add log object to queue
         """
-        if not log_object:
-            return
-        return self.redis.rpush(self.suuid, json.dumps(log_object))
+        if log_object:
+            return self.redis.rpush(self.suuid, json.dumps(log_object))
+        return None
 
     def get(self):
         """

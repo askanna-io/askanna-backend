@@ -17,7 +17,6 @@ from workspace.models import Workspace
 
 
 def visitor_ip_address(request):
-
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
 
     if x_forwarded_for:
@@ -39,7 +38,7 @@ def handle_log_password_reset(sender, signal, users, request, domain, email, **k
     hostname, aliaslist, ipddrlist = socket.gethostbyaddr(remote_ip)
 
     # create logentry for an password reset attempt
-    for idx, user in enumerate(users):
+    for user in users:
         _ = PasswordResetLog.objects.create(
             email=email,
             user=user,
@@ -83,7 +82,7 @@ def send_welcome_email_after_registration(sender, user, front_end_url, *args, **
     email_template_name = "emails/signup_welcome_email.txt"
     html_email_template_name = "emails/signup_welcome_email.html"
     from_email = "AskAnna <support@askanna.io>"
-    to_email = "{} <{}>".format(user.name, user.email)
+    to_email = f"{user.name} <{user.email}>"
 
     front_end_url = front_end_url.rstrip("/") + "/"
 
@@ -120,7 +119,7 @@ def send_email_changed(sender, user, old_email, **kwargs):
     email_template_name = "emails/email_changed_email.txt"
     html_email_template_name = "emails/email_changed_email.html"
     from_email = "AskAnna <support@askanna.io>"
-    to_email = "{} <{}>".format(user.name, old_email)
+    to_email = f"{user.name} <{old_email}>"
 
     context = {
         "user": user,
@@ -146,7 +145,7 @@ def send_password_changed(sender, user, **kwargs):
     email_template_name = "emails/password_changed_email.txt"
     html_email_template_name = "emails/password_changed_email.html"
     from_email = "AskAnna <support@askanna.io>"
-    to_email = "{} <{}>".format(user.name, user.email)
+    to_email = f"{user.name} <{user.email}>"
 
     context = {
         "user": user,

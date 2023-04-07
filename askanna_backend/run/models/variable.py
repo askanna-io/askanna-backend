@@ -66,7 +66,7 @@ class RunVariableMeta(ArtifactModelMixin, BaseModel):
         return self.run.suuid
 
     def load_from_file(self):
-        with open(self.stored_path, "r") as f:
+        with open(self.stored_path) as f:
             return json.loads(f.read())
 
     def prune(self):
@@ -84,13 +84,12 @@ class RunVariableMeta(ArtifactModelMixin, BaseModel):
             return
 
         def compose_response(instance, variable):
-            var = {
+            return {
                 "run_suuid": instance.suuid,
                 "variable": variable.variable,
                 "label": variable.label,
                 "created_at": variable.created_at.isoformat(),
             }
-            return var
 
         self.count = len(run_variables)
         self.size = len(json.dumps([compose_response(self, v) for v in run_variables]).encode("utf-8"))

@@ -5,20 +5,21 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('package', '0002_rename_short_uuid_to_suuid'),
+        ("package", "0002_rename_short_uuid_to_suuid"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='package',
-            name='suuid',
-            field=models.CharField(editable=False, max_length=32, unique=True, verbose_name='SUUID'),
+            model_name="package",
+            name="suuid",
+            field=models.CharField(editable=False, max_length=32, unique=True, verbose_name="SUUID"),
         ),
         migrations.AlterField(
-            model_name='package',
-            name='uuid',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, verbose_name='UUID'),
+            model_name="package",
+            name="uuid",
+            field=models.UUIDField(
+                default=uuid.uuid4, editable=False, primary_key=True, serialize=False, verbose_name="UUID"
+            ),
         ),
     ]

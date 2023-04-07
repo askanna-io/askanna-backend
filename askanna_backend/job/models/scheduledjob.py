@@ -27,7 +27,7 @@ class ScheduledJob(BaseModel):
         help_text="We store the datetime with timzone in UTC of the next run to be queried on",
     )
 
-    def update_last(self, timestamp=datetime.datetime.now(tz=datetime.timezone.utc)):
+    def update_last(self, timestamp: datetime.datetime):
         self.last_run_at = timestamp
         self.save(
             update_fields=[
@@ -37,14 +37,14 @@ class ScheduledJob(BaseModel):
         )
 
     def update_next(self, current_dt=None):
-        timezoned_now = current_dt or datetime.datetime.now(tz=datetime.timezone.utc)
+        timezoned_now = current_dt or datetime.datetime.now(tz=datetime.UTC)
         # transform the timezoned_now to target timezone
         timezoned_now = timezoned_now.astimezone(tz=zoneinfo.ZoneInfo(self.cron_timezone))
 
         it = croniter.croniter(self.cron_definition, timezoned_now)
         next_run_at = it.get_next(ret_type=datetime.datetime)
 
-        self.next_run_at = next_run_at.astimezone(tz=datetime.timezone.utc)
+        self.next_run_at = next_run_at.astimezone(tz=datetime.UTC)
         self.save(
             update_fields=[
                 "next_run_at",

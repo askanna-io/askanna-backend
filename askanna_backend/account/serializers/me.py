@@ -1,7 +1,6 @@
 import base64
 import binascii
 import io
-from typing import Dict, Optional
 
 from account.models import User, UserProfile
 from core.permissions.askanna_roles import get_role_class, merge_role_permissions
@@ -28,7 +27,7 @@ class MeSerializer(serializers.ModelSerializer):
         role = User.get_role(self.context["request"])
         return RoleSerializer(role).data
 
-    def get_permission(self, instance) -> Dict[str, bool]:
+    def get_permission(self, instance) -> dict[str, bool]:
         user_roles = self.context["request"].user_roles
         return merge_role_permissions(user_roles)
 
@@ -63,22 +62,22 @@ class ObjectMeSerializer(MeSerializer):
     job_title = ReadWriteSerializerMethodField("get_job_title", required=False)
     avatar = serializers.SerializerMethodField()
 
-    def get_name(self, instance) -> Optional[str]:
+    def get_name(self, instance) -> str | None:
         if self.context["request"].user.is_anonymous:
             return None
         return instance.get_name()
 
-    def get_email(self, instance) -> Optional[str]:
+    def get_email(self, instance) -> str | None:
         if self.context["request"].user.is_anonymous:
             return None
         return self.context["request"].user.email
 
-    def get_job_title(self, instance) -> Optional[str]:
+    def get_job_title(self, instance) -> str | None:
         if self.context["request"].user.is_anonymous:
             return None
         return instance.get_job_title()
 
-    def get_avatar(self, instance) -> Optional[Dict[str, str]]:
+    def get_avatar(self, instance) -> dict[str, str] | None:
         if self.context["request"].user.is_anonymous:
             return None
         return instance.get_avatar()
@@ -139,17 +138,17 @@ class AvatarSerializer(serializers.ModelSerializer):
         try:
             _, image_encoded = value.split(";base64,")
         except ValueError:
-            raise ValidationError("Image is not valid. Is the avatar Base64 encoded?")
+            raise ValidationError("Image is not valid. Is the avatar Base64 encoded?") from None
 
         try:
             image_binary = base64.standard_b64decode(image_encoded)
-        except binascii.Error as e:
-            raise ValidationError(f"Image is not valid. Error received: {e}")
+        except binascii.Error as exc:
+            raise ValidationError(f"Image is not valid. Error received: {exc}") from exc
 
         try:
             Image.open(io.BytesIO(image_binary))
-        except (TypeError, Exception) as e:
-            raise ValidationError(f"Image is not valid. Error received: {e}")
+        except (TypeError, Exception) as exc:
+            raise ValidationError(f"Image is not valid. Error received: {exc}") from exc
 
         return image_binary
 

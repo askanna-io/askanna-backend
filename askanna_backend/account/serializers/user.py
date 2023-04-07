@@ -145,13 +145,13 @@ class PasswordResetTokenStatusSerializer(serializers.Serializer):
         try:
             uid = force_str(uid_decoder(data["uid"]))
             user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist) as exc:
             raise ValidationError(
                 {
                     "status": "invalid",
                     "uid": ["User UID value is invalid."],
                 }
-            )
+            ) from exc
         if not default_token_generator.check_token(user, data["token"]):
             raise ValidationError({"status": "invalid", "detail": ["The User UID and token combination is invalid."]})
 

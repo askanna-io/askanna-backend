@@ -125,8 +125,8 @@ class ProjectView(
             workspace_suuid = request.data.get("workspace_suuid")
             try:
                 workspace = Workspace.objects.active().get(suuid=workspace_suuid)
-            except Workspace.DoesNotExist:
-                raise Http404
+            except Workspace.DoesNotExist as exc:
+                raise Http404 from exc
 
             return [Membership.get_workspace_role(request.user, workspace)]
 

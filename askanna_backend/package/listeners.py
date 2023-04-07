@@ -36,17 +36,17 @@ def package_upload_extract_jobs_from_askannayml(sender, signal, postheaders, obj
 
     # Read the zipfile and find askanna.yml
     askanna_yml = ""
-    with ZipFile(source_path) as zipObj:
-        listOfFileNames = zipObj.namelist()
+    with ZipFile(source_path) as zip_obj:
+        list_of_filenames = zip_obj.namelist()
 
-        askanna_ymlfiles = set(["askanna.yml", "askanna.yaml"])
-        found_askanna_yml = askanna_ymlfiles - (askanna_ymlfiles - set(listOfFileNames))
+        askanna_ymlfiles = {"askanna.yml", "askanna.yaml"}
+        found_askanna_yml = askanna_ymlfiles - (askanna_ymlfiles - set(list_of_filenames))
         yml_found_in_set = len(found_askanna_yml) > 0
 
         if not yml_found_in_set:
             return
 
-        askanna_yml = zipObj.read(list(found_askanna_yml)[0])
+        askanna_yml = zip_obj.read(list(found_askanna_yml)[0])
 
     # parse the askannaconfig
     configyml = AskAnnaConfig.from_stream(askanna_yml)

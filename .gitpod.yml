@@ -100,6 +100,7 @@ vscode:
     - eamodio.gitlens
     - GitLab.gitlab-workflow
     - ms-python.python
+    - charliermarsh.ruff
     - njpwerner.autodocstring
     - batisteo.vscode-django
     - DavidAnson.vscode-markdownlint

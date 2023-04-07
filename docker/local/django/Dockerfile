@@ -1,4 +1,4 @@
-FROM python:3.10-alpine AS base
+FROM python:3.11-alpine AS base
 
 ENV PYTHONUNBUFFERED 1
 
@@ -10,8 +10,6 @@ RUN apk update \
     && apk add jpeg-dev zlib-dev freetype-dev lcms2-dev openjpeg-dev tiff-dev tk-dev tcl-dev \
     # CFFI dependencies
     && apk add libffi-dev py-cffi \
-    # Translations dependencies
-    && apk add gettext \
     # https://docs.djangoproject.com/en/stable/ref/django-admin/#dbshell
     && apk add postgresql-client \
     && apk add git \
@@ -22,23 +20,23 @@ COPY ./requirements /requirements
 RUN pip install -U pip \
     pip install -r /requirements/local.txt
 
-COPY ./compose/production/django/entrypoint /entrypoint
+COPY ./docker/production/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
 RUN chmod +x /entrypoint
 
-COPY ./compose/local/django/start /start
+COPY ./docker/local/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
-COPY ./compose/local/django/celery/worker/start /start-celeryworker
+COPY ./docker/local/django/celery/worker/start /start-celeryworker
 RUN sed -i 's/\r$//g' /start-celeryworker
 RUN chmod +x /start-celeryworker
 
-COPY ./compose/local/django/celery/beat/start /start-celerybeat
+COPY ./docker/local/django/celery/beat/start /start-celerybeat
 RUN sed -i 's/\r$//g' /start-celerybeat
 RUN chmod +x /start-celerybeat
 
-COPY ./compose/local/django/celery/flower/start /start-flower
+COPY ./docker/local/django/celery/flower/start /start-flower
 RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 

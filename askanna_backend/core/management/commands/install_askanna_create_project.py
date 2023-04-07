@@ -34,9 +34,9 @@ def zip_files_in_dir(dir_name: str, zip_file_name: str, filter):
             for filename in filenames:
                 if filter(filename):
                     # Create complete filepath of file in directory
-                    filePath = os.path.join(folder_name, filename)
+                    filepath = os.path.join(folder_name, filename)
                     # Add file to zip
-                    zip_file.write(filePath)
+                    zip_file.write(filepath)
 
 
 class Command(BaseCommand):
@@ -53,7 +53,7 @@ class Command(BaseCommand):
             workspace.visibility = "PRIVATE"
             workspace.save()
         elif workspace.name != "AskAnna Core" or workspace.visibility != "PRIVATE":
-            warnings.warn(
+            warnings.warning(
                 "Workspace '3Cpy-QMzd-MVko-1rDQ' already exists but is not configured with the expected workspace "
                 "name or workspace visibility."
             )
@@ -69,7 +69,7 @@ class Command(BaseCommand):
             project.visibility = "PRIVATE"
             project.save()
         elif project.name != "AskAnna Create Project" or project.visibility != "PRIVATE":
-            warnings.warn(
+            warnings.warning(
                 "Project '7Lif-Rhcn-IRvS-Wv7J' already exists but is not configured with the expected project name "
                 "or project visibility."
             )
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             jobdef.project = project
             jobdef.save()
         elif jobdef.name != "create_project" or jobdef.project != project:
-            warnings.warn(
+            warnings.warning(
                 "Job '640q-2AMP-T5BL-Cnml' already exists but is not configured with the expected job name or project."
             )
 

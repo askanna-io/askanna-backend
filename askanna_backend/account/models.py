@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import os
 import uuid as _uuid
-from typing import List, Optional, Type, Union
 
 from account.signals import avatar_changed_signal
 from core.models import BaseModel
@@ -57,11 +57,11 @@ class BaseAvatarModel:
         self.install_default_avatar()
 
     def stored_path_with_name(self, name) -> str:
-        filename = "avatar_{}_{}.png".format(self.uuid.hex, name)
+        filename = f"avatar_{self.uuid.hex}_{name}.png"
         return os.path.join(settings.AVATARS_ROOT, self.storage_location, filename)
 
     def storage_location_with_name(self, name) -> str:
-        filename = "avatar_{}_{}.png".format(self.uuid.hex, name)
+        filename = f"avatar_{self.uuid.hex}_{name}.png"
         return os.path.join(self.storage_location, filename)
 
     @property
@@ -76,20 +76,19 @@ class BaseAvatarModel:
 
     @property
     def filename(self) -> str:
-        return "avatar_{}.image".format(self.uuid.hex)
+        return f"avatar_{self.uuid.hex}.image"
 
     def prune(self):
-        for spec_name, spec_size in self.avatar_specs.items():
-            filename = self.stored_path_with_name(spec_name)
+        for spec_name, _ in self.avatar_specs.items():
             try:
-                os.remove(filename)
-            except (FileNotFoundError, Exception) as e:
-                print(e, type(e))
+                os.remove(self.stored_path_with_name(spec_name))
+            except (FileNotFoundError, Exception) as exc:
+                logging.warning(f"Avatar file cannot be removed: {exc}")
 
         try:
             os.remove(self.stored_path)
-        except (FileNotFoundError, Exception) as e:
-            print(e, type(e))
+        except (FileNotFoundError, Exception) as exc:
+            logging.warning(f"Avatar directory cannot be removed: {exc}")
 
     @property
     def read(self) -> bytes:
@@ -111,11 +110,11 @@ class BaseAvatarModel:
         avatar_changed_signal.send(sender=self.__class__, instance=self)
 
     def prepend_cdn_url(self, location: str) -> str:
-        return "{BASE_URL}/files/avatars/{LOCATION}".format(BASE_URL=settings.ASKANNA_CDN_URL, LOCATION=location)
+        return f"{settings.ASKANNA_CDN_URL}/files/avatars/{location}"
 
     def append_timestamp_to_url(self, location: str) -> str:
         timestamp = datetime.datetime.timestamp(self.modified_at)
-        return "{location}?{timestamp}".format(location=location, timestamp=timestamp)
+        return f"{location}?{timestamp}"
 
     @property
     def avatar_cdn_locations(self) -> dict:
@@ -126,6 +125,7 @@ class BaseAvatarModel:
                     self.append_timestamp_to_url(self.prepend_cdn_url(self.storage_location_with_name(f)))
                     for f in self.avatar_specs.keys()
                 ],
+                strict=True,
             )
         )
 
@@ -283,6 +283,7 @@ class Membership(BaseAvatarModel, BaseModel):
     def workspace(self):
         if self.object_type == MSP_WORKSPACE:
             return Workspace.objects.get(uuid=self.object_uuid)
+        return None
 
     def get_status(self):
         if self.user and not self.deleted_at:
@@ -295,32 +296,32 @@ class Membership(BaseAvatarModel, BaseModel):
 
     def get_role(
         self,
-    ) -> Union[
-        Type[WorkspaceAdmin],
-        Type[WorkspaceMember],
-        Type[WorkspaceViewer],
-        Type[ProjectAdmin],
-        Type[ProjectMember],
-        Type[ProjectViewer],
-    ]:
+    ) -> (
+        type[WorkspaceAdmin]
+        | type[WorkspaceMember]
+        | type[WorkspaceViewer]
+        | type[ProjectAdmin]
+        | type[ProjectMember]
+        | type[ProjectViewer]
+    ):
         return get_role_class(self.role)
 
     @classmethod
     def get_roles_for_project(
         cls, user, project
-    ) -> List[
-        Union[
-            Type[ProjectAdmin],
-            Type[ProjectMember],
-            Type[ProjectViewer],
-            Type[ProjectNoMember],
-            Type[ProjectPublicViewer],
-            Type[WorkspaceAdmin],
-            Type[WorkspaceMember],
-            Type[WorkspaceViewer],
-            Type[WorkspaceNoMember],
-            Type[WorkspacePublicViewer],
-        ]
+    ) -> list[
+        (
+            type[ProjectAdmin]
+            | type[ProjectMember]
+            | type[ProjectViewer]
+            | type[ProjectNoMember]
+            | type[ProjectPublicViewer]
+            | type[WorkspaceAdmin]
+            | type[WorkspaceMember]
+            | type[WorkspaceViewer]
+            | type[WorkspaceNoMember]
+            | type[WorkspacePublicViewer]
+        )
     ]:
         workspace_role = cls.get_workspace_role(user, project.workspace)
         project_role = cls.get_project_role(user, project)
@@ -346,7 +347,7 @@ class Membership(BaseAvatarModel, BaseModel):
         return roles
 
     @classmethod
-    def get_project_membership(cls, user, project: Project) -> Optional[Membership]:
+    def get_project_membership(cls, user, project: Project) -> Membership | None:
         try:
             membership = cls.objects.get(
                 object_uuid=str(project.uuid),
@@ -362,9 +363,13 @@ class Membership(BaseAvatarModel, BaseModel):
     @classmethod
     def get_project_role(
         cls, user, project: Project
-    ) -> Union[
-        Type[ProjectAdmin], Type[ProjectMember], Type[ProjectViewer], Type[ProjectNoMember], Type[ProjectPublicViewer]
-    ]:
+    ) -> (
+        type[ProjectAdmin]
+        | type[ProjectMember]
+        | type[ProjectViewer]
+        | type[ProjectNoMember]
+        | type[ProjectPublicViewer]
+    ):
         if (user.is_anonymous or not user.is_active) and (
             project.visibility == "PRIVATE" or project.workspace.visibility == "PRIVATE"
         ):
@@ -378,13 +383,13 @@ class Membership(BaseAvatarModel, BaseModel):
         membership = cls.get_project_membership(user, project)
         if membership:
             return membership.get_role()
-        elif project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC":
+        if project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC":
             return ProjectPublicViewer
 
         return ProjectNoMember
 
     @classmethod
-    def get_workspace_membership(cls, user, workspace: Workspace) -> Optional[Membership]:
+    def get_workspace_membership(cls, user, workspace: Workspace) -> Membership | None:
         try:
             membership = cls.objects.get(
                 object_uuid=str(workspace.uuid),
@@ -400,13 +405,13 @@ class Membership(BaseAvatarModel, BaseModel):
     @classmethod
     def get_workspace_role(
         cls, user, workspace: Workspace
-    ) -> Union[
-        Type[WorkspaceAdmin],
-        Type[WorkspaceMember],
-        Type[WorkspaceViewer],
-        Type[WorkspaceNoMember],
-        Type[WorkspacePublicViewer],
-    ]:
+    ) -> (
+        type[WorkspaceAdmin]
+        | type[WorkspaceMember]
+        | type[WorkspaceViewer]
+        | type[WorkspaceNoMember]
+        | type[WorkspacePublicViewer]
+    ):
         if (user.is_anonymous or not user.is_active) and workspace.visibility == "PRIVATE":
             return WorkspaceNoMember
         if (user.is_anonymous or not user.is_active) and workspace.visibility == "PUBLIC":
@@ -415,7 +420,7 @@ class Membership(BaseAvatarModel, BaseModel):
         membership = cls.get_workspace_membership(user, workspace)
         if membership:
             return membership.get_role()
-        elif workspace.visibility == "PUBLIC":
+        if workspace.visibility == "PUBLIC":
             return WorkspacePublicViewer
 
         return WorkspaceNoMember
@@ -505,8 +510,8 @@ class PasswordResetLog(BaseModel):
     email = models.EmailField()
     user = models.ForeignKey("account.User", blank=True, null=True, default=None, on_delete=models.SET_NULL)
     remote_ip = models.GenericIPAddressField("Remote IP", null=True)
-    remote_host = models.CharField(max_length=1024, null=True, default=None)
-    front_end_domain = models.CharField(max_length=1024, null=True, default=None)
+    remote_host = models.CharField(max_length=1024, blank=True, default="")
+    front_end_domain = models.CharField(max_length=1024, blank=True, default="")
     meta = models.JSONField(null=True, default=None)
 
     class Meta:

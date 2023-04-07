@@ -117,8 +117,8 @@ class WorkspaceMeMixin(ObjectRoleMixin):
     def get_parrent_roles(self, request):
         try:
             self.request_workspace = Workspace.objects.get(suuid=self.kwargs.get("suuid"))
-        except ObjectDoesNotExist:
-            raise Http404
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
         return [self.get_workspace_role(request.user, self.request_workspace)]
 
@@ -214,8 +214,8 @@ class ProjectMeViewSet(
     def get_parrent_roles(self, request):
         try:
             self.request_project = Project.objects.get(suuid=self.kwargs.get("suuid"))
-        except ObjectDoesNotExist:
-            raise Http404
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
         return self.get_roles_for_project(request.user, self.request_project)
 

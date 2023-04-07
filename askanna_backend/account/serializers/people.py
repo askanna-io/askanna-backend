@@ -128,8 +128,8 @@ class InviteSerializer(serializers.Serializer):
     def validate_invitation(self):
         try:
             self.instance.invitation
-        except Invitation.DoesNotExist:
-            raise serializers.ValidationError({"detail": "Invitation does not exist"})
+        except Invitation.DoesNotExist as exc:
+            raise serializers.ValidationError({"detail": "Invitation does not exist"}) from exc
 
     def validate_email_is_not_active_in_object(self, email: str, object_uuid: str):
         if is_email_active_in_object_membership(email, object_uuid):
@@ -226,12 +226,12 @@ class AcceptInviteSerializer(serializers.Serializer):
             unsigned_value = self.instance.invitation.token_signer.unsign(
                 value, max_age=timedelta(hours=settings.ASKANNA_INVITATION_VALID_HOURS)
             )
-        except Membership.invitation.RelatedObjectDoesNotExist:
-            raise serializers.ValidationError("Token is not valid")
-        except signing.SignatureExpired:
-            raise serializers.ValidationError("Token expired")
-        except signing.BadSignature:
-            raise serializers.ValidationError("Token is not valid")
+        except Membership.invitation.RelatedObjectDoesNotExist as exc:
+            raise serializers.ValidationError("Token is not valid") from exc
+        except signing.SignatureExpired as exc:
+            raise serializers.ValidationError("Token expired") from exc
+        except signing.BadSignature as exc:
+            raise serializers.ValidationError("Token is not valid") from exc
         if str(self.instance.suuid) != unsigned_value:
             raise serializers.ValidationError("Token is not valid")
 

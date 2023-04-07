@@ -42,7 +42,7 @@ class TestDatabaseSetting(unittest.TestCase):
 class TestAskAnnaConfig(unittest.TestCase):
     def test_notifications_global(self):
         yml = settings.TEST_RESOURCES_DIR.path("askannaconfig.yml")
-        config = AskAnnaConfig.from_stream(open(yml, "r"))
+        config = AskAnnaConfig.from_stream(open(yml))
 
         self.assertEqual(
             config.notifications,
@@ -59,7 +59,7 @@ class TestAskAnnaConfig(unittest.TestCase):
 
     def test_notifications_job1(self):
         yml = settings.TEST_RESOURCES_DIR.path("askannaconfig.yml")
-        config = AskAnnaConfig.from_stream(open(yml, "r"))
+        config = AskAnnaConfig.from_stream(open(yml))
 
         self.assertEqual(
             config.jobs.get("job1", {}).notifications,

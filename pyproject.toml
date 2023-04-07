@@ -8,6 +8,48 @@ line-length = 119
 
 [tool.isort]
 profile = "black"
+known_third_party = ["docker"]
 
 [tool.bandit]
 skips = ["B101"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 119
+select = [
+    "F",   # pyflakes
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "C40", # flake8-comprehensions
+    "ISC", # flake8-implicit-str-concat
+    "T20", # flake8-print
+]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "askanna_backend/*",
+]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*.html",
+    "*.txt",
+    "*.sh",
+]
+plugins = [
+    "django_coverage_plugin",
+]
+
+[tool.coverage.report]
+precision = 2
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

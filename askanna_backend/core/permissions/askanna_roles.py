@@ -1,9 +1,6 @@
-from typing import Dict, List
-
-
 class BasePermissions:
     @classmethod
-    def __object_permissions__(cls) -> Dict[str, list]:
+    def __object_permissions__(cls) -> dict[str, list]:
         """
         The classmethod '__object_permissions__' return a dictionary with the permissions as keys and a list of
         roles that has the permission as values.
@@ -11,18 +8,18 @@ class BasePermissions:
         raise NotImplementedError("Please implement the classmethod '__object_permissions__' on the permission class")
 
     @classmethod
-    def full_permissions(cls) -> Dict[str, bool]:
+    def full_permissions(cls) -> dict[str, bool]:
         full_permissions = {}
         for permission, roles in cls.__object_permissions__().items():
             full_permissions[permission] = cls in roles
         return full_permissions
 
     @classmethod
-    def true_permissions(cls) -> Dict[str, bool]:
+    def true_permissions(cls) -> dict[str, bool]:
         return dict(filter(lambda x: x[1] is True, cls.full_permissions().items()))
 
     @classmethod
-    def permissions(cls) -> List[str]:
+    def permissions(cls) -> list[str]:
         return list(
             map(
                 lambda y: y[0],
@@ -33,19 +30,19 @@ class BasePermissions:
 
 class AskAnnaPermissions(BasePermissions):
     @classmethod
-    def __object_permissions__(cls) -> Dict[str, list]:
+    def __object_permissions__(cls) -> dict[str, list]:
         return askanna_permissions
 
 
 class WorkspacePermissions(BasePermissions):
     @classmethod
-    def __object_permissions__(cls) -> Dict[str, list]:
+    def __object_permissions__(cls) -> dict[str, list]:
         return workspace_permissions
 
 
 class ProjectPermissions(BasePermissions):
     @classmethod
-    def __object_permissions__(cls) -> Dict[str, list]:
+    def __object_permissions__(cls) -> dict[str, list]:
         return project_permissions
 
 
@@ -320,7 +317,7 @@ def get_role_class(role_code: str):
     return role_mapping[role_code]
 
 
-def merge_role_permissions(roles: list) -> Dict[str, bool]:
+def merge_role_permissions(roles: list) -> dict[str, bool]:
     """
     Merge the permissions of the given roles into a single list of permissions. If a permission is defined in multiple
     roles and one of the roles has the permission set to True, the permission is set to True in the merged list.

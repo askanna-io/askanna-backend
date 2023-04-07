@@ -1,5 +1,4 @@
 import uuid as _uuid
-from typing import Optional
 
 # Inspiration for create suuid from uuid comes from https://pythonhosted.org/shorten/user/examples.html
 
@@ -61,7 +60,7 @@ def str_to_groups(string: str, group_size: int, n_groups: int) -> str:
     return "-".join(string_groups[:n_groups])
 
 
-def create_suuid(uuid: Optional[_uuid.UUID] = None) -> str:
+def create_suuid(uuid: _uuid.UUID | None = None) -> str:
     """create_suuid will produce 16 character alphabetic tokens, split into 4 character groups. The format is:
 
         xxxx-xxxx-xxxx-xxxx

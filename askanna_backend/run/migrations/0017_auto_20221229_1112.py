@@ -4,20 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('run', '0016_description_do_not_allow_null_default_empty_string'),
+        ("run", "0016_description_do_not_allow_null_default_empty_string"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='run',
-            name='name',
-            field=models.CharField(blank=True, db_index=True, default='', max_length=255),
+            model_name="run",
+            name="name",
+            field=models.CharField(blank=True, db_index=True, default="", max_length=255),
         ),
         migrations.AlterField(
-            model_name='run',
-            name='status',
-            field=models.CharField(choices=[('SUBMITTED', 'SUBMITTED'), ('PENDING', 'PENDING'), ('IN_PROGRESS', 'IN_PROGRESS'), ('COMPLETED', 'COMPLETED'), ('FAILED', 'FAILED')], default='SUBMITTED', max_length=20),
+            model_name="run",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("SUBMITTED", "SUBMITTED"),
+                    ("PENDING", "PENDING"),
+                    ("IN_PROGRESS", "IN_PROGRESS"),
+                    ("COMPLETED", "COMPLETED"),
+                    ("FAILED", "FAILED"),
+                ],
+                default="SUBMITTED",
+                max_length=20,
+            ),
         ),
     ]

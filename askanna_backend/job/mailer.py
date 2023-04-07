@@ -1,6 +1,6 @@
 import json
+import logging
 import zoneinfo
-from typing import Optional
 
 from account.models import Membership
 from core.config import Job as JobConfig
@@ -21,9 +21,9 @@ def fill_in_mail_variable(string, variables):
 def send_run_notification(
     run_status: str,
     job_config: JobConfig,
-    run: Optional[Run] = None,
-    job: Optional[Job] = None,
-    extra_vars: dict = {},
+    run: Run | None = None,
+    job: Job | None = None,
+    extra_vars: dict | None = None,
 ):
     """Send a notification for a run or tasks related to running jobs
 
@@ -40,6 +40,7 @@ def send_run_notification(
     elif run and not job:
         job = run.jobdef
     assert job, "Job must be set. Either via run or as argument."
+    extra_vars = {} if extra_vars is None else extra_vars.copy()
 
     # determine the notification levels
     # info receivers receive all
@@ -72,10 +73,10 @@ def send_run_notification(
     if run and run.payload and isinstance(run.payload.payload, dict):
         # we have a valid dict from the payload
         for k, v in run.payload.payload.items():
-            if isinstance(v, (list, dict)):
+            if isinstance(v, list | dict):
                 # limit to 10.000 chars
                 vars[k] = json.dumps(v)[:10000]
-            elif isinstance(v, (str)):
+            elif isinstance(v, str):
                 # limit to 10.000 chars
                 vars[k] = v[:10000]
             else:
@@ -185,6 +186,5 @@ def send_run_notification(
                 to_email=email,
                 context=template_context,
             )
-        except Exception as e:
-            # Something went wrong sending the e-mail
-            print(e)
+        except Exception as exc:
+            logging.error(f"Something went wrong sending a notification e-mail: {exc}")

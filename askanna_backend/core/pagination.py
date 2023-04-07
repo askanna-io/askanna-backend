@@ -1,7 +1,6 @@
 import inspect
 from base64 import b64decode, b64encode
 from collections import OrderedDict, namedtuple
-from typing import Union
 from urllib import parse
 
 from core.utils.model import field_is_of_type_char
@@ -354,7 +353,7 @@ class CursorPagination(pagination.CursorPagination):
             ordering is not None
         ), "Using cursor pagination, but no ordering attribute was declared on the pagination class."
         assert isinstance(
-            ordering, (str, list, tuple)
+            ordering, str | list | tuple
         ), f"Invalid ordering. Expected string, list or tuple, but got {type(ordering).__name__}"
         assert "__" not in ordering, (
             "Cursor pagination does not support double underscore lookups for orderings. Orderings should be an "
@@ -370,8 +369,7 @@ class CursorPagination(pagination.CursorPagination):
         count = getattr(queryset, "count", None)
         if callable(count) and not inspect.isbuiltin(count) and method_has_no_args(count):
             return count()
-        else:
-            return len(queryset)
+        return len(queryset)
 
     def _get_position_from_instance(self, instance) -> str:
         assert self.cursor is not None, "Cursor must be set before calling this method."
@@ -396,7 +394,7 @@ class CursorPagination(pagination.CursorPagination):
 
         return attr  # type: ignore
 
-    def get_next_link(self) -> Union[str, None]:
+    def get_next_link(self) -> str | None:
         if not self.has_next:
             return None
 
@@ -480,7 +478,7 @@ class CursorPagination(pagination.CursorPagination):
         )
         return self.encode_cursor(cursor)
 
-    def get_previous_link(self) -> Union[str, None]:
+    def get_previous_link(self) -> str | None:
         if not self.has_previous:
             return None
 
@@ -564,7 +562,7 @@ class CursorPagination(pagination.CursorPagination):
         )
         return self.encode_cursor(cursor)
 
-    def decode_cursor(self, request) -> Union[Cursor, None]:
+    def decode_cursor(self, request) -> Cursor | None:
         """
         Given a request with a cursor, return a `Cursor` instance.
         """
@@ -591,8 +589,8 @@ class CursorPagination(pagination.CursorPagination):
 
             reverse = query_dict.get("r", ["0"])[0]
             reverse = bool(int(reverse))
-        except (TypeError, ValueError):
-            raise NotFound(self.invalid_cursor_message)
+        except (TypeError, ValueError) as exc:
+            raise NotFound(self.invalid_cursor_message) from exc
 
         return Cursor(
             position=Position(

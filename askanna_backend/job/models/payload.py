@@ -76,7 +76,7 @@ class JobPayload(BaseModel):
         Read the payload from filesystem and return as JSON object
         """
 
-        with open(self.stored_path, "r") as f:
+        with open(self.stored_path) as f:
             return f.read()
 
     def write(self, stream):

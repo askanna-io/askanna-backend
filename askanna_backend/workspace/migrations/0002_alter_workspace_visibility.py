@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('workspace', '0001_initial_squashed_20220901'),
+        ("workspace", "0001_initial_squashed_20220901"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='workspace',
-            name='visibility',
-            field=models.CharField(choices=[('PRIVATE', 'PRIVATE'), ('PUBLIC', 'PUBLIC')], db_index=True, default='PRIVATE', max_length=10),
+            model_name="workspace",
+            name="visibility",
+            field=models.CharField(
+                choices=[("PRIVATE", "PRIVATE"), ("PUBLIC", "PUBLIC")], db_index=True, default="PRIVATE", max_length=10
+            ),
         ),
     ]

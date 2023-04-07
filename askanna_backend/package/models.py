@@ -1,6 +1,5 @@
 import os
 import uuid
-from typing import Union
 
 from core.config import AskAnnaConfig
 from core.models import AuthorModel, NameDescriptionBaseModel
@@ -89,7 +88,7 @@ class Package(AuthorModel, NameDescriptionBaseModel):
 
     @property
     def filename(self):
-        return "package_{}.zip".format(self.uuid.hex)
+        return f"package_{self.uuid.hex}.zip"
 
     @property
     def read(self):
@@ -121,7 +120,7 @@ class Package(AuthorModel, NameDescriptionBaseModel):
         if os.path.exists(self.stored_path):
             os.remove(self.stored_path)
 
-    def get_askanna_yml_path(self) -> Union[str, None]:
+    def get_askanna_yml_path(self) -> str | None:
         """
         Read the askanna.yml from the package stored on the settings.BLOB_ROOT
         If file doesn't exist, return None
@@ -134,14 +133,14 @@ class Package(AuthorModel, NameDescriptionBaseModel):
             return None
         return askanna_yml_path
 
-    def get_askanna_config(self) -> Union[AskAnnaConfig, None]:
+    def get_askanna_config(self) -> AskAnnaConfig | None:
         """
         Reads the askanna.yml as is and return as AskAnnaConfig or None
         """
         askanna_yml = self.get_askanna_yml_path()
         if not askanna_yml:
             return None
-        return AskAnnaConfig.from_stream(open(askanna_yml, "r"))
+        return AskAnnaConfig.from_stream(open(askanna_yml))
 
     class Meta:
         ordering = ["-created_at"]
@@ -158,6 +157,9 @@ class ChunkedPackagePart(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return f"{self.filename} - part {self.file_no} ({self.uuid})"
 
     class Meta:
         ordering = ["-created_at"]

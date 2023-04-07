@@ -3,7 +3,6 @@
 import django.contrib.auth.models
 from django.db import migrations, models
 import django.db.models.manager
-from account.models import User
 
 
 class Migration(migrations.Migration):

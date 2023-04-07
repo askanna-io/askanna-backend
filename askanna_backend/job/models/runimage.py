@@ -15,7 +15,8 @@ class RunImage(NameDescriptionBaseModel):
 
     @property
     def fullname(self):
-        if self.tag:
+        # Check if last part of the name contains the tag, else add it
+        if self.tag and not self.name.endswith(f":{self.tag}"):
             return f"{self.name}:{self.tag}"
         return self.name
 

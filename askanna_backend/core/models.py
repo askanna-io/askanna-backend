@@ -71,7 +71,7 @@ class NameDescriptionBaseModel(BaseModel):
      - deleted_at
     """
 
-    name = models.CharField(max_length=255, blank=True, null=True)
+    name = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True, null=False, default="")
 
     class Meta:
@@ -118,7 +118,7 @@ class ArtifactModelMixin:
 
     @property
     def filename(self):
-        return "{}_{}.{}".format(self.filetype, self.uuid.hex, self.filextension)
+        return f"{self.filetype}_{self.uuid.hex}.{self.filextension}"
 
     def get_name(self):
         return self.filename

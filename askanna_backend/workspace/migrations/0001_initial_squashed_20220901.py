@@ -8,7 +8,6 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -17,23 +16,54 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Workspace',
+            name="Workspace",
             fields=[
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('description', models.TextField(blank=True, null=True, verbose_name='description')),
-                ('status', models.IntegerField(choices=[(0, 'Inactive'), (1, 'Active')], default=1, verbose_name='status')),
-                ('activate_date', models.DateTimeField(blank=True, help_text='keep empty for an immediate activation', null=True)),
-                ('deactivate_date', models.DateTimeField(blank=True, help_text='keep empty for indefinite activation', null=True)),
-                ('deleted', models.DateTimeField(blank=True, null=True)),
-                ('uuid', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('short_uuid', models.CharField(blank=True, max_length=32, unique=True)),
-                ('name', models.CharField(blank=True, max_length=255, null=True, verbose_name='name')),
-                ('visibility', models.CharField(db_index=True, default='PRIVATE', max_length=255, verbose_name='Visibility')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name="created"),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name="modified"),
+                ),
+                ("description", models.TextField(blank=True, null=True, verbose_name="description")),
+                (
+                    "status",
+                    models.IntegerField(choices=[(0, "Inactive"), (1, "Active")], default=1, verbose_name="status"),
+                ),
+                (
+                    "activate_date",
+                    models.DateTimeField(blank=True, help_text="keep empty for an immediate activation", null=True),
+                ),
+                (
+                    "deactivate_date",
+                    models.DateTimeField(blank=True, help_text="keep empty for indefinite activation", null=True),
+                ),
+                ("deleted", models.DateTimeField(blank=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("short_uuid", models.CharField(blank=True, max_length=32, unique=True)),
+                ("name", models.CharField(blank=True, max_length=255, null=True, verbose_name="name")),
+                (
+                    "visibility",
+                    models.CharField(db_index=True, default="PRIVATE", max_length=255, verbose_name="Visibility"),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

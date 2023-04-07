@@ -70,11 +70,6 @@ def delete_artifact(sender, instance, **kwargs):
     instance.prune()
 
 
-@receiver(pre_delete, sender=RunLog)
-def delete_runlog(sender, instance, **kwargs):
-    instance.prune()
-
-
 @receiver(pre_delete, sender=RunResult)
 def delete_runresult(sender, instance, **kwargs):
     instance.prune()
@@ -89,7 +84,7 @@ def create_run_log_for_new_run_signal(sender, instance, created, **kwargs):
         try:
             RunLog.objects.create(run=instance)
         except Exception as exc:
-            raise Exception("Issue creating a RunLog: {}".format(exc))
+            raise Exception(f"Issue creating a RunLog: {exc}") from exc
 
 
 @receiver(post_save, sender=Run)
@@ -101,7 +96,6 @@ def create_job_for_celery(sender, instance, created, **kwargs):
         on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.start_run",
-                args=None,
                 kwargs={"run_uuid": instance.uuid},
             )
         )
@@ -116,7 +110,6 @@ def post_run_deduplicate_metrics(sender, instance, created, **kwargs):
         on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_metrics",
-                args=None,
                 kwargs={"run_uuid": instance.uuid},
             )
         )
@@ -131,7 +124,6 @@ def post_run_deduplicate_variables(sender, instance, created, **kwargs):
         on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_variables",
-                args=None,
                 kwargs={"run_uuid": instance.uuid},
             )
         )
@@ -223,7 +215,6 @@ def extract_meta_from_variable(sender, instance, created, **kwargs):
     on_commit(
         lambda: celery_app.send_task(
             "run.tasks.extract_run_variable_meta",
-            args=None,
             kwargs={"variable_meta_uuid": instance.uuid},
         )
     )
@@ -247,7 +238,6 @@ def move_variables_to_rows(sender, instance, created, **kwargs):
         on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.move_variables_to_rows",
-                args=None,
                 kwargs={"variable_meta_uuid": instance.uuid},
             )
         )

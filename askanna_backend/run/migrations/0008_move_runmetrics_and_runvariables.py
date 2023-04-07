@@ -10,7 +10,6 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("run", "0007_alter_runartifact_table"),
     ]
@@ -109,7 +108,7 @@ class Migration(migrations.Migration):
                             models.JSONField(
                                 default=None,
                                 editable=False,
-                                help_text="JSON field as list with multiple objects which are metrics, but we limit to one",
+                                help_text="JSON field as list with multiple objects which are metrics, but we limit to one",  # noqa: E501
                             ),
                         ),
                         (

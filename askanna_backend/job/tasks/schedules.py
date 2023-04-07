@@ -15,20 +15,18 @@ def fix_missed_scheduledjobs():
     Select scheduled jobs which next_run_at is in the past (at least 1 minute older than now)
     Update them with `.update_next()`
     """
-    now = datetime.datetime.now(tz=datetime.timezone.utc).replace(second=0, microsecond=0)
-    for job in ScheduledJob.objects.filter(
+    now = datetime.datetime.now(tz=datetime.UTC).replace(second=0, microsecond=0)
+    for scheduled_job in ScheduledJob.objects.filter(
         next_run_at__lt=now - datetime.timedelta(minutes=1),
         job__deleted_at__isnull=True,
         job__project__deleted_at__isnull=True,
         job__project__workspace__deleted_at__isnull=True,
     ):
-        job.update_next()
-
+        scheduled_job.update_next()
         on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.send_missed_schedule_notification",
-                args=None,
-                kwargs={"job_uuid": job.job.uuid},
+                kwargs={"job_uuid": scheduled_job.job.uuid},
             )
         )
 
@@ -40,7 +38,7 @@ def launch_scheduled_jobs():
     We select jobs for the current minute ()
     We exclude jobs which are scheduled for deletion (or project/workspace)
     """
-    now = datetime.datetime.now(tz=datetime.timezone.utc).replace(second=0, microsecond=0)
+    now = datetime.datetime.now(tz=datetime.UTC).replace(second=0, microsecond=0)
     for job in ScheduledJob.objects.filter(
         next_run_at__gte=now,
         next_run_at__lt=now + datetime.timedelta(minutes=1),

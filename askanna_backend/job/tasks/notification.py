@@ -17,7 +17,7 @@ def send_run_notification(self, run_uuid):
     package = run.package
     config_yml = package.get_askanna_config()
     if config_yml is None:
-        logging.warn(f"Cannot send notifcations. No job config found for run {run.suuid}.")
+        logging.warning(f"Cannot send notifcations. No job config found for run {run.suuid}.")
         return
 
     job_config = config_yml.jobs.get(run.jobdef.name)
@@ -39,11 +39,11 @@ def send_missed_schedule_notification(self, job_uuid):
     # Fetch the latest package found in the job.project
     package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created_at").first()
     if package is None:
-        logging.warn(f"Cannot send notifcations. No package found for job {job.suuid}.")
+        logging.warning(f"Cannot send notifcations. No package found for job {job.suuid}.")
         return
     config_yml = package.get_askanna_config()
     if config_yml is None:
-        logging.warn(f"Cannot send notifcations. No config found for job {job.suuid}.")
+        logging.warning(f"Cannot send notifcations. No config found for job {job.suuid}.")
         return
 
     job_config = config_yml.jobs.get(job.name)

@@ -126,7 +126,7 @@ class TestWorkspaceMeDelete(BaseWorkspaceMe):
         assert self.member_profile.name != "name of member in membership"
         assert self.member_profile.job_title != "job_title of member in membership"
 
-    def test_me_as_member_delete_membership_NO_copy_global_profile_to_membership(self):
+    def test_me_as_member_delete_membership_no_copy_global_profile_to_membership(self):
         """
         Deleting membership but NOT using use_global_profile
         """

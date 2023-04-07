@@ -35,12 +35,7 @@ class JobManager(models.Manager):
 class JobDef(NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True)
 
-    environment_image = models.CharField(
-        max_length=2048,
-        null=True,
-        blank=True,
-        editable=False,
-    )
+    environment_image = models.CharField(max_length=2048, blank=True, editable=False)
     timezone = models.CharField(max_length=256, default="UTC")
 
     project = models.ForeignKey("project.Project", on_delete=models.CASCADE, blank=True, null=True)

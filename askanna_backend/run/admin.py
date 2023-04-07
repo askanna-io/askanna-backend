@@ -18,14 +18,14 @@ from run.models import (
 class RunAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("uuid", "suuid", "jobdef", "created_by", "member")}),
-        ("Run info", {"fields": ("name", "description", "status", "jobid", "duration")}),
+        ("Run info", {"fields": ("name", "description", "status", "celery_task_id", "duration")}),
         ("Metadata", {"fields": ("package", "trigger", "payload", "environment_name", "run_image", "timezone")}),
         ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "uuid",
         "suuid",
-        "jobid",
+        "celery_task_id",
         "trigger",
         "started_at",
         "finished_at",
@@ -204,8 +204,8 @@ class RunLogAdmin(admin.ModelAdmin):
             log_first = json.dumps(obj.stdout[:20], indent=4)
             log_last = json.dumps(obj.stdout[-20:], indent=4)
             return f"{log_first} \n\n...\n\n {log_last}"
-        else:
-            return json.dumps(obj.stdout, indent=4)
+
+        return json.dumps(obj.stdout, indent=4)
 
     def has_add_permission(self, request):
         return False
