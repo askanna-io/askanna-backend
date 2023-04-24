@@ -205,12 +205,8 @@ class InvitationAdmin(admin.ModelAdmin):
             messages.success(
                 request,
                 mark_safe(  # nosec: B703, B308
-                    "Invitation sent to <strong>%(email)s</strong> for %(type)s %(workspace)s."
-                    % {
-                        "email": escape(invitation.email),
-                        "type": invitation.object_type,
-                        "workspace": invitation.object_uuid,
-                    }
+                    f"Invitation sent to <strong>{escape(invitation.email)}</strong> for {invitation.object_type} "
+                    f"{invitation.object_uuid}."
                 ),
             )
 
