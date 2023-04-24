@@ -53,7 +53,7 @@ class Command(BaseCommand):
             workspace.visibility = "PRIVATE"
             workspace.save()
         elif workspace.name != "AskAnna Core" or workspace.visibility != "PRIVATE":
-            warnings.warning(
+            warnings.warn(
                 "Workspace '3Cpy-QMzd-MVko-1rDQ' already exists but is not configured with the expected workspace "
                 "name or workspace visibility."
             )
@@ -69,7 +69,7 @@ class Command(BaseCommand):
             project.visibility = "PRIVATE"
             project.save()
         elif project.name != "AskAnna Create Project" or project.visibility != "PRIVATE":
-            warnings.warning(
+            warnings.warn(
                 "Project '7Lif-Rhcn-IRvS-Wv7J' already exists but is not configured with the expected project name "
                 "or project visibility."
             )
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             jobdef.project = project
             jobdef.save()
         elif jobdef.name != "create_project" or jobdef.project != project:
-            warnings.warning(
+            warnings.warn(
                 "Job '640q-2AMP-T5BL-Cnml' already exists but is not configured with the expected job name or project."
             )
 
