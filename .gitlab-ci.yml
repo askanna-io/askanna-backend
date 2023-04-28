@@ -100,7 +100,9 @@ code_quality:
 
 .test-base:
   stage: test
-  image: $DOCKER_IMAGE
+  image:
+    name: $DOCKER_IMAGE
+    pull_policy: always
   needs:
     - job: build_production
   tags:
