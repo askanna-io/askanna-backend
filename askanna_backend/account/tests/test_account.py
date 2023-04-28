@@ -1,9 +1,9 @@
 import pytest
-from account.models import User
 from django.urls import reverse
 from rest_framework import status
 
 from .base_tests import BaseAccounts
+from account.models.user import User
 
 pytestmark = pytest.mark.django_db
 

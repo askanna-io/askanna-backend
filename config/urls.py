@@ -19,7 +19,7 @@ urlpatterns = [
     path("", include("package.urls")),
     path("", include("job.urls")),
     path("", include("run.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
 
 if settings.DEBUG:
     # This allows the error pages to be debugged during development, just visit these url in browser to see how these
@@ -49,7 +49,7 @@ if settings.DEBUG:
             kwargs={"exception": Exception("Page not Found")},
         ),
         path("500/", default_views.server_error),
-    ] + static("/files/", document_root=str(settings.ROOT_DIR("storage_root")))
+    ] + static("/files/", document_root=settings.BASE_DIR / "storage_root")
 else:
     urlpatterns += [
         path("", RedirectView.as_view(url=settings.ASKANNA_UI_URL, permanent=False), name="home"),

@@ -1,4 +1,3 @@
-from core.models import AuthorModel, NameDescriptionBaseModel
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
@@ -6,6 +5,8 @@ from django.db.transaction import on_commit
 from django.utils import timezone
 
 from config.celery_app import app as celery_app
+
+from core.models import AuthorModel, NameDescriptionBaseModel
 
 RUN_STATUS = (
     ("SUBMITTED", "SUBMITTED"),

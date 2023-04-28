@@ -1,6 +1,7 @@
+from django.db import models
+
 from core.const import VISIBLITY
 from core.models import AuthorModel, NameDescriptionBaseModel
-from django.db import models
 
 
 class WorkspaceQuerySet(models.QuerySet):

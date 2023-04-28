@@ -2,13 +2,16 @@ import datetime
 import logging
 
 import docker
-from core.utils.config import get_setting_from_database
-from core.utils.maintenance import remove_objects
 from dateutil import parser
 from django.conf import settings
-from job.models.jobdef import JobDef
 
 from config.celery_app import app as celery_app
+
+from core.utils.config import get_setting_from_database
+from core.utils.maintenance import remove_objects
+from job.models.jobdef import JobDef
+
+logger = logging.getLogger(__name__)
 
 
 @celery_app.task(name="job.tasks.clean_dangling_images")
@@ -21,7 +24,7 @@ def clean_dangling_images():
         # disabled image pruning, because we store `aa-project:version` images which will be unused and cleaned
         # in this action. These images will be used eventually, so disable this function temporarely
         # print(client.images.prune(filters={"dangling": True}))
-        logging.info(client.volumes.prune())
+        logger.info(client.volumes.prune())
 
 
 @celery_app.task(name="job.tasks.clean_containers_after_run")
@@ -53,8 +56,8 @@ def clean_containers_after_run():
             finished_dt = parser.isoparse(finished_at)
             age = datetime.datetime.now(tz=datetime.UTC) - finished_dt
             if age > datetime.timedelta(minutes=delete_after_minutes):
-                logging.info("Removing container", container.name)
-                logging.info(container.remove(v=True))
+                logger.info("Removing container", container.name)
+                logger.info(container.remove(v=True))
 
 
 @celery_app.task(name="job.tasks.delete_jobs")

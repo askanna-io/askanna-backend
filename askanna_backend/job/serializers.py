@@ -1,7 +1,8 @@
 from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
 from job.models import JobDef, JobPayload, RunImage
 from project.serializers import ProjectRelationSerializer
-from rest_framework import serializers
 from workspace.serializers import WorkspaceRelationSerializer
 
 

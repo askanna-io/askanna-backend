@@ -43,7 +43,7 @@ def settings(config, env):
     config.JOB_CREATE_PROJECT_SUUID = "640q-2AMP-T5BL-Cnml"
 
     # Setting for avatars
-    config.USERPROFILE_DEFAULT_AVATAR = "assets/src_assets_icons_ask-anna-default-gravatar.png"
+    config.USERPROFILE_DEFAULT_AVATAR = config.RESOURCES_DIR / "assets/src_assets_icons_ask-anna-default-gravatar.png"
 
     # Set default docker image for the runner
     config.RUNNER_DEFAULT_DOCKER_IMAGE = "askanna/python:3.11"

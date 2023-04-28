@@ -1,4 +1,8 @@
-from account.models import User
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework import mixins, viewsets
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+
+from account.models.user import User
 from account.permissions import IsNotMember, IsOwnerOfUser
 from account.serializers.account import AccountSerializer, AccountUpdateSerializer
 from core.mixins import (
@@ -6,9 +10,6 @@ from core.mixins import (
     PermissionByActionMixin,
     SerializerByActionMixin,
 )
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import mixins, viewsets
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 
 @extend_schema_view(

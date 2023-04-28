@@ -2,6 +2,7 @@ import json
 
 from django.contrib import admin
 from django.template.defaultfilters import truncatechars
+
 from run.models import (
     Run,
     RunArtifact,

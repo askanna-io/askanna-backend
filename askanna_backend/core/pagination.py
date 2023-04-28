@@ -3,7 +3,6 @@ from base64 import b64decode, b64encode
 from collections import OrderedDict, namedtuple
 from urllib import parse
 
-from core.utils.model import field_is_of_type_char
 from django.db.models import F, Q, Value
 from django.db.models.functions import Lower
 from django.utils.encoding import force_str
@@ -14,6 +13,8 @@ from rest_framework.exceptions import NotFound
 from rest_framework.pagination import _positive_int
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
+
+from core.utils.model import field_is_of_type_char
 
 Cursor = namedtuple("Cursor", ["position", "created_at", "offset", "reverse"])
 Position = namedtuple("Position", ["value", "is_reversed", "attr", "type_is_char"])

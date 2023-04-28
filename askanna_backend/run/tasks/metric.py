@@ -1,6 +1,7 @@
 import datetime
 
 from celery import shared_task
+
 from run.models import RunMetric, RunMetricMeta
 
 

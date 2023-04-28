@@ -2,11 +2,6 @@ import io
 import json
 
 import django_filters
-from account.models import MSP_WORKSPACE
-from core.const import ALLOWED_API_AGENTS
-from core.filters import filter_multiple
-from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.role import RoleBasedPermission
 from django.db.models import Prefetch, Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -15,13 +10,19 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from job.models import JobDef, JobPayload, ScheduledJob
-from job.serializers import JobSerializer, RequestJobRunSerializer
-from package.models import Package
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
+
+from account.models.membership import MSP_WORKSPACE
+from core.const import ALLOWED_API_AGENTS
+from core.filters import filter_multiple
+from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
+from core.permissions.role import RoleBasedPermission
+from job.models import JobDef, JobPayload, ScheduledJob
+from job.serializers import JobSerializer, RequestJobRunSerializer
+from package.models import Package
 from run.models import Run
 from run.serializers.run import RunStatusSerializer
 

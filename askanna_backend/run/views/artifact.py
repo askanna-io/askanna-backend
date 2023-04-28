@@ -1,9 +1,5 @@
-import os
+from pathlib import Path
 
-from account.models import MSP_WORKSPACE, Membership
-from core.mixins import ObjectRoleMixin
-from core.permissions.role import RoleBasedPermission
-from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -13,6 +9,11 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
+
+from account.models.membership import MSP_WORKSPACE, Membership
+from core.mixins import ObjectRoleMixin
+from core.permissions.role import RoleBasedPermission
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from run.models import ChunkedRunArtifactPart as ChunkedArtifactPart
 from run.models import Run, RunArtifact
 from run.serializers import (
@@ -59,26 +60,6 @@ class RunArtifactView(
         "download": ["project.run.list"],
     }
 
-    def get_upload_dir(self, obj):
-        # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.suuid)
-        if not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
-        return directory
-
-    def get_object_project(self):
-        return self.current_object.run.jobdef.project
-
-    def get_parrent_roles(self, request, *args, **kwargs):
-        parents = self.get_parents_query_dict()
-        try:
-            run = Run.objects.get(suuid=parents.get("run__suuid"))
-        except ObjectDoesNotExist as exc:
-            raise Http404 from exc
-
-        return Membership.get_roles_for_project(request.user, run.jobdef.project)
-
-    upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = artifact_upload_finish
     upload_finished_message = "artifact upload finished"
 
@@ -113,13 +94,28 @@ class RunArtifactView(
             )
         )
 
-    def store_as_filename(self, resumable_filename: str, obj) -> str:
-        return obj.filename
+    def get_object_project(self):
+        return self.current_object.run.jobdef.project
 
-    def get_upload_target_location(self, request, obj, **kwargs) -> str:
-        return os.path.join(self.upload_target_location, obj.storage_location)
+    def get_parrent_roles(self, request, *args, **kwargs):
+        parents = self.get_parents_query_dict()
+        try:
+            run = Run.objects.get(suuid=parents.get("run__suuid"))
+        except ObjectDoesNotExist as exc:
+            raise Http404 from exc
 
-    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+        return Membership.get_roles_for_project(request.user, run.jobdef.project)
+
+    def get_upload_location(self, obj) -> Path:
+        # directory structure is containing the run-suuid
+        directory = settings.UPLOAD_ROOT / "run" / obj.run.suuid
+        Path.mkdir(directory, parents=True, exist_ok=True)
+        return directory
+
+    def get_target_location(self, request, obj, **kwargs) -> Path:
+        return obj.root_storage_location
+
+    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj) -> None:
         instance_obj.size = resume_obj.size
         instance_obj.save(
             update_fields=[
@@ -183,11 +179,9 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         "chunk": ["project.run.create"],
     }
 
-    def get_upload_dir(self, chunkpart):
-        # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.artifact.run.suuid)
-        if not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
+    def get_upload_location(self, chunkpart) -> Path:
+        directory = settings.UPLOAD_ROOT / "run" / chunkpart.artifact.run.suuid
+        Path.mkdir(directory, parents=True, exist_ok=True)
         return directory
 
     def get_object_project(self):

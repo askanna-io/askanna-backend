@@ -1,7 +1,9 @@
-from account.models import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, User, UserProfile
 from django.db.models import signals
-from project.models import Project
 from rest_framework.test import APITestCase
+
+from account.models.membership import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, UserProfile
+from account.models.user import User
+from project.models import Project
 from workspace.listeners import install_demo_project_in_workspace
 from workspace.models import Workspace
 
@@ -12,13 +14,11 @@ class BaseAccounts(APITestCase):
         self.users = {
             "admin": User.objects.create_superuser(  # nosec: B106
                 username="admin",
-                is_staff=True,
-                is_superuser=True,
                 email="admin@example.com",
                 password="password-admin",
                 name="admin",
             ),
-            "workspace_admin": User.objects.create_superuser(  # nosec: B106
+            "workspace_admin": User.objects.create_user(  # nosec: B106
                 username="workspace_admin",
                 email="workspace_admin@example.com",
                 password="password-workspace-admin",

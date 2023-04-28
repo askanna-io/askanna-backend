@@ -1,5 +1,6 @@
-from account.models import Invitation
 from rest_framework import exceptions, permissions
+
+from account.models.membership import Invitation
 
 
 class RoleUpdateByAdminOnlyPermission(permissions.BasePermission):

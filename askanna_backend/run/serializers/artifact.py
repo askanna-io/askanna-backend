@@ -1,7 +1,8 @@
+from rest_framework import serializers
+
 from core.serializers import BaseArchiveDetailSerializer
 from job.serializers import JobRelationSerializer
 from project.serializers import ProjectRelationSerializer
-from rest_framework import serializers
 from run.models import ChunkedRunArtifactPart, RunArtifact
 from run.serializers.run import RunRelationSerializer
 from workspace.serializers import WorkspaceRelationSerializer

@@ -4,6 +4,7 @@ import os
 import re
 import zoneinfo
 from functools import reduce
+from pathlib import Path
 from wsgiref.util import FileWrapper
 from zipfile import ZipFile
 
@@ -13,7 +14,7 @@ import magic
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponseNotFound, StreamingHttpResponse
 from jinja2 import Environment
 from rest_framework import status
 
@@ -89,20 +90,20 @@ def parse_cron_schedule(schedule: list):
 
 
 # File mimetype detection logic
-def is_jsonfile(filepath) -> bool:
+def is_jsonfile(filepath: Path) -> bool:
     """
     Determine whether we are dealing with a JSON file
     returns True/False
     """
 
     try:
-        json.load(open(filepath))
+        json.load(filepath.open())
     except json.decoder.JSONDecodeError:
         return False
     return True
 
 
-def detect_file_mimetype(filepath) -> str:
+def detect_file_mimetype(filepath: Path) -> str:
     """
     Use libmagic to determine what file we find on `filepath`. If the mimetype is text/plain, we do an additional check
     to see if it is a JSON file. If so, we return application/json.
@@ -216,7 +217,7 @@ def get_items_in_zip_file(zip_file_path: str | os.PathLike) -> tuple[list, list]
     """
     zip_files = []
     zip_paths = []
-    with ZipFile(os.path.join(zip_file_path), mode="r") as zip_file:
+    with ZipFile(Path(zip_file_path), mode="r") as zip_file:
         for item in zip_file.infolist():
             if (
                 item.filename.startswith(".git/")
@@ -359,7 +360,7 @@ def stream(request, path, content_type, size):
             last_byte = size - 1
         length = last_byte - first_byte + 1
         resp = StreamingHttpResponse(
-            RangeFileWrapper(open(path, "rb"), offset=first_byte, length=length),
+            RangeFileWrapper(Path.open(path, "rb"), offset=first_byte, length=length),
             status=status.HTTP_206_PARTIAL_CONTENT,
             content_type=content_type,
         )
@@ -367,9 +368,9 @@ def stream(request, path, content_type, size):
         resp["Content-Range"] = f"bytes {first_byte}-{last_byte}/{size}"
     else:
         try:
-            resp = StreamingHttpResponse(FileWrapper(open(path, "rb")), content_type=content_type)
+            resp = StreamingHttpResponse(FileWrapper(Path.open(path, "rb")), content_type=content_type)
         except FileNotFoundError:
-            resp = HttpResponse(b"", content_type=content_type)
+            return HttpResponseNotFound()
 
         resp["Content-Length"] = str(size)
     resp["Accept-Ranges"] = "bytes"

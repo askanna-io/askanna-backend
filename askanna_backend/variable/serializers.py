@@ -1,6 +1,7 @@
+from rest_framework import serializers
+
 from project.models import Project
 from project.serializers import ProjectRelationSerializer
-from rest_framework import serializers
 from variable.models import Variable
 from workspace.serializers import WorkspaceRelationSerializer
 

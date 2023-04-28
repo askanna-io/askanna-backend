@@ -1,5 +1,3 @@
-from account.models import User
-from account.signals import password_reset_signal
 from dj_rest_auth.serializers import (
     PasswordResetSerializer as DefaultPasswordResetSerializer,
 )
@@ -10,6 +8,9 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode as uid_decoder
 from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
+
+from account.models.user import User
+from account.signals import password_reset_signal
 
 
 class UserSerializer(serializers.ModelSerializer):

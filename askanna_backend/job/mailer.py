@@ -2,15 +2,18 @@ import json
 import logging
 import zoneinfo
 
-from account.models import Membership
+from django.conf import settings
+
+from account.models.membership import Membership
 from core.config import Job as JobConfig
 from core.mail import send_email
 from core.utils import flatten, is_valid_email, parse_string, pretty_time_delta
 from core.utils.config import get_setting_from_database
-from django.conf import settings
 from job.models import JobDef as Job
 from run.models import Run
 from variable.models import Variable
+
+logger = logging.getLogger(__name__)
 
 
 def fill_in_mail_variable(string, variables):
@@ -187,4 +190,4 @@ def send_run_notification(
                 context=template_context,
             )
         except Exception as exc:
-            logging.error(f"Something went wrong sending a notification e-mail: {exc}")
+            logger.error(f"Something went wrong sending a notification e-mail: {exc}")

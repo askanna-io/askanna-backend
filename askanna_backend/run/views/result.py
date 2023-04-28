@@ -1,15 +1,16 @@
-import os
+from pathlib import Path
 
-from account.models import Membership
-from core.mixins import ObjectRoleMixin
-from core.permissions.role import RoleBasedPermission
-from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
+
+from account.models.membership import Membership
+from core.mixins import ObjectRoleMixin
+from core.permissions.role import RoleBasedPermission
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from run.models import ChunkedRunResultPart, Run, RunResult
 from run.serializers import ChunkedRunResultPartSerializer, RunResultSerializer
 from run.signals import result_upload_finish
@@ -51,16 +52,8 @@ class RunResultCreateView(
     lookup_field = "suuid"
     serializer_class = RunResultSerializer
 
-    upload_target_location = settings.ARTIFACTS_ROOT
     upload_finished_signal = result_upload_finish
     upload_finished_message = "Job result uploaded"
-
-    def get_upload_dir(self, obj):
-        # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", obj.run.suuid)
-        if not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
-        return directory
 
     # overwrite create row, we need to add the run
     def create(self, request, *args, **kwargs):
@@ -70,9 +63,7 @@ class RunResultCreateView(
         data.update(
             **{
                 "name": data.get("filename"),
-                "job": str(run.jobdef.pk),
                 "run": str(run.pk),
-                "owner": str(request.user.uuid),
             }
         )
         serializer = RunResultSerializer(data=data)
@@ -81,11 +72,13 @@ class RunResultCreateView(
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def store_as_filename(self, resumable_filename: str, obj) -> str:
-        return f"result_{obj.uuid.hex}.output"
+    def get_upload_location(self, obj) -> Path:
+        directory = settings.UPLOAD_ROOT / "run" / obj.run.suuid
+        Path.mkdir(directory, parents=True, exist_ok=True)
+        return directory
 
-    def get_upload_target_location(self, request, obj, **kwargs) -> str:
-        return os.path.join(self.upload_target_location, obj.storage_location)
+    def get_target_location(self, request, obj, **kwargs) -> Path:
+        return settings.ARTIFACTS_ROOT / obj.storage_location
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         instance_obj.size = resume_obj.size
@@ -129,11 +122,9 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
             }
         )
 
-    def get_upload_dir(self, chunkpart):
-        # directory structure is containing the run-suuid
-        directory = os.path.join(settings.UPLOAD_ROOT, "run", chunkpart.runresult.run.suuid)
-        if not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
+    def get_upload_location(self, chunkpart) -> Path:
+        directory = settings.UPLOAD_ROOT / "run" / chunkpart.runresult.run.suuid
+        Path.mkdir(directory, parents=True, exist_ok=True)
         return directory
 
     def get_object_project(self):

@@ -1,10 +1,10 @@
 from django.urls import reverse
-from job.models import JobPayload
 from rest_framework import status
 from rest_framework.test import APITestCase
-from run.models import Run
 
 from .base import BaseJobTestDef
+from job.models import JobPayload
+from run.models import Run
 
 
 class BasePayload(BaseJobTestDef, APITestCase):

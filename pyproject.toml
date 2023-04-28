@@ -1,7 +1,8 @@
 [tool.pytest.ini_options]
+addopts="--capture=tee-sys"
+DJANGO_SETTINGS_MODULE = "config.settings.main"
 norecursedirs = [".*", ".env", "storage_root"]
 python_files = ["test_*.py", "*_tests.py"]
-DJANGO_SETTINGS_MODULE = "config.settings.main"
 
 [tool.black]
 line-length = 119
@@ -9,6 +10,17 @@ line-length = 119
 [tool.isort]
 profile = "black"
 known_third_party = ["docker"]
+known_local_folder = [
+    "askanna_backend",
+    "account",
+    "core",
+    "job",
+    "package",
+    "project",
+    "run",
+    "variable",
+    "workspace"
+]
 
 [tool.bandit]
 skips = ["B101"]
@@ -21,10 +33,17 @@ select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "UP",  # pyupgrade
+    "DJ",  # flake8-django
     "N",   # pep8-naming
+    "B",   # flake8-bugbear
     "C40", # flake8-comprehensions
     "ISC", # flake8-implicit-str-concat
     "T20", # flake8-print
+    "RET", # flake8-return
+    "PTH", # flake8-use-pathlib
+]
+exclude = [
+    "tests/resources/*",
 ]
 
 [tool.coverage.run]

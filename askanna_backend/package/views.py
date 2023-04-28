@@ -1,25 +1,18 @@
-import os
+from pathlib import Path
 
 import django_filters
-from account.models import MSP_WORKSPACE, Membership
-from core.filters import filter_multiple
-from core.mixins import ObjectRoleMixin, SerializerByActionMixin
-from core.permissions.role import RoleBasedPermission
-from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Case, Q, When
 from django.http import Http404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from package.models import ChunkedPackagePart, Package
-from package.signals import package_upload_finish
-from project.models import Project
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 
+from account.models.membership import MSP_WORKSPACE, Membership
 from askanna_backend.package.serializers.chunked_package import (
     ChunkedPackagePartSerializer,
 )
@@ -28,6 +21,13 @@ from askanna_backend.package.serializers.package import (
     PackageSerializer,
     PackageSerializerWithFileList,
 )
+from core.filters import filter_multiple
+from core.mixins import ObjectRoleMixin, SerializerByActionMixin
+from core.permissions.role import RoleBasedPermission
+from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
+from package.models import ChunkedPackagePart, Package
+from package.signals import package_upload_finish
+from project.models import Project
 
 
 class PackageFilterSet(django_filters.FilterSet):
@@ -117,7 +117,6 @@ class PackageViewSet(
         "download": ["project.code.list"],
     }
 
-    upload_target_location = settings.PACKAGES_ROOT
     upload_finished_signal = package_upload_finish
     upload_finished_message = "package upload finished"
 
@@ -174,22 +173,17 @@ class PackageViewSet(
 
         return []
 
-    def get_upload_dir(self, obj):
-        directory = os.path.join(settings.UPLOAD_ROOT, "project", obj.project.suuid)
-        if not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
+    def get_upload_location(self, obj) -> Path:
+        directory = settings.UPLOAD_ROOT / "project" / obj.project.suuid
+        Path.mkdir(directory, parents=True, exist_ok=True)
         return directory
 
-    def store_as_filename(self, resumable_filename: str, obj) -> str:
-        return obj.filename
-
-    def get_upload_target_location(self, request, obj, **kwargs) -> str:
-        return os.path.join(self.upload_target_location, obj.storage_location)
+    def get_target_location(self, request, obj, **kwargs) -> Path:
+        return settings.PACKAGES_ROOT / obj.storage_location
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         # we specify the "member" also in the update_fields
         # because this will be updated later in a listener
-        # TODO move adding member to the serializer i.s.o. a listener
         instance_obj.finished_at = timezone.now()
         instance_obj.save(
             update_fields=[
@@ -237,10 +231,9 @@ class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         "chunk": ["project.code.create"],
     }
 
-    def get_upload_dir(self, chunkpart):
-        directory = os.path.join(settings.UPLOAD_ROOT, "project", chunkpart.package.project.suuid)
-        if not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
+    def get_upload_location(self, chunkpart) -> Path:
+        directory = settings.UPLOAD_ROOT / "project" / chunkpart.package.project.suuid
+        Path.mkdir(directory, parents=True, exist_ok=True)
         return directory
 
     def get_object_project(self):

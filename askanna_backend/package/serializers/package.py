@@ -1,9 +1,10 @@
+from rest_framework import serializers
+
 from account.serializers.people import MembershipRelationSerializer
 from core.serializers import BaseArchiveDetailSerializer
 from package.models import Package
 from project.models import Project
 from project.serializers import ProjectRelationSerializer
-from rest_framework import serializers
 from workspace.serializers import WorkspaceRelationSerializer
 
 

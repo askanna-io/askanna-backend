@@ -1,8 +1,9 @@
 import pytest
-from core.tests.base import BaseUploadTestMixin
 from django.urls import reverse
-from job.tests.base import BaseJobTestDef
 from rest_framework.test import APITestCase
+
+from core.tests.base import BaseUploadTestMixin
+from job.tests.base import BaseJobTestDef
 
 
 class TestPackageCreateUploadAPI(BaseUploadTestMixin, BaseJobTestDef, APITestCase):

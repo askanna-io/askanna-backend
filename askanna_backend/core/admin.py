@@ -1,5 +1,6 @@
-from core.models import Setting
 from django.contrib import admin
+
+from core.models import Setting
 
 
 @admin.register(Setting)

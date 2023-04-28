@@ -14,18 +14,15 @@ from .settings_decorator import configclass
 @configclass
 def settings(config, env):
     """Configure Sentry related settings."""
-    # Sentry
+    # Sentry (https://docs.sentry.io/platforms/python/)
     # ------------------------------------------------------------------------------
     if env("SENTRY_DSN", default=None):
-        config.SENTRY_DSN = env("SENTRY_DSN")
-        config.SENTRY_LOG_LEVEL = env.int("DJANGO_SENTRY_LOG_LEVEL", logging.INFO)
-
         sentry_logging = LoggingIntegration(
-            level=config.SENTRY_LOG_LEVEL,  # Capture info and above as breadcrumbs
-            event_level=logging.ERROR,  # Send errors as events
+            level=logging.INFO,
+            event_level=logging.ERROR,
         )
         sentry_sdk.init(
-            dsn=config.SENTRY_DSN,
+            dsn=env.str("SENTRY_DSN"),
             traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", 0.05),
             server_name=config.ASKANNA_API_URL,
             integrations=[

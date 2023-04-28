@@ -1,16 +1,17 @@
 from copy import copy
 
-from account.models import User
-from account.signals import (
-    email_changed_signal,
-    password_changed_signal,
-    user_created_signal,
-)
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
 from rest_framework import serializers
+
+from account.models.user import User
+from account.signals import (
+    email_changed_signal,
+    password_changed_signal,
+    user_created_signal,
+)
 
 
 class AccountSerializer(serializers.ModelSerializer):

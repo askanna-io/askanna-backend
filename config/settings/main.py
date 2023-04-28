@@ -1,5 +1,6 @@
 """Settings file for AskAnna backend."""
 import sys
+from pathlib import Path
 
 import environ
 
@@ -14,21 +15,22 @@ from config.settings import (
     sentry,
 )
 
-ROOT_DIR = environ.Path(__file__) - 3  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
-APPS_DIR = ROOT_DIR.path("askanna_backend")
-RESOURCES_DIR = ROOT_DIR.path("resources")
-TESTS_DIR = ROOT_DIR.path("tests")
-TEST_RESOURCES_DIR = TESTS_DIR.path("resources")
+BASE_DIR = (
+    Path(__file__).resolve(strict=True).parent.parent.parent
+)  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
 
-# Insert the APPS_DIR into PYTHON_PATH to allow easier import from our
-# apps housed in /app/askanna_backend
+APPS_DIR = BASE_DIR / "askanna_backend"
+RESOURCES_DIR = BASE_DIR / "resources"
+TEST_RESOURCES_DIR = BASE_DIR / "tests" / "resources"
+
+# Insert the APPS_DIR into PYTHON_PATH to allow easier import from our apps housed in askanna_backend/askanna_backend
 sys.path.insert(0, str(APPS_DIR))
 
 env = environ.Env()
 
 if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):  # type: ignore
     # OS environment variables take precedence over variables from .env
-    env.read_env(str(ROOT_DIR.path(".env")))
+    env.read_env(str(BASE_DIR / ".env"))
 
 
 # GENERAL
@@ -130,7 +132,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "core.middleware.logging.DebugSqlPrintMiddleware",
+    "core.middleware.logging.DebugSqlMiddleware",
 ]
 
 
@@ -143,14 +145,13 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "APP_DIRS": True,
         # https://docs.djangoproject.com/en/stable/ref/settings/#template-dirs
-        "DIRS": [str(APPS_DIR.path("templates"))],
+        "DIRS": [str(APPS_DIR / "templates")],
         "OPTIONS": {
             # https://docs.djangoproject.com/en/stable/ref/settings/#template-context-processors
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                "django.template.context_processors.media",
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
@@ -162,7 +163,7 @@ TEMPLATES = [
 # FIXTURES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/stable/ref/settings/#fixture-dirs
-FIXTURE_DIRS = (str(ROOT_DIR.path("fixtures")),)
+FIXTURE_DIRS = (str(BASE_DIR / "fixtures"),)
 
 
 # ADMIN
@@ -236,14 +237,25 @@ LOGGING = {
         },
     },
     "handlers": {
-        "console": {
+        "console_verbose": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-        }
+        },
+        "console_not_verbose": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "core.middleware.logging": {
+            "handlers": ["console_not_verbose"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
     "root": {
+        "handlers": ["console_verbose"],
         "level": "INFO",
-        "handlers": ["console"],
     },
 }

@@ -2,41 +2,42 @@ import os
 import tempfile
 import uuid
 import warnings
+from pathlib import Path
 from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+
 from job.models import JobDef
 from package.models import Package
 from project.models import Project
 from workspace.models import Workspace
 
 
-def package(src: str) -> str:
-    pwd_dir_name = os.path.basename(src)
-    random_suffix = uuid.uuid4().hex
+def package(source: Path) -> Path:
+    temp_dir = Path(tempfile.mkdtemp(prefix="askanna-package"))
+    zip_file_path = temp_dir / "{project_name}_{random_suffix}.zip".format(
+        project_name=source.name,
+        random_suffix=uuid.uuid4().hex,
+    )
 
-    tmpdir = tempfile.mkdtemp(prefix="askanna-package")
-    random_file_name = os.path.join(tmpdir, f"{pwd_dir_name}_{random_suffix}.zip")
+    with ZipFile(zip_file_path, mode="w") as zip_file:
+        for directory, _, files in os.walk(source):
+            if directory == str(source):
+                archive_directory = ""
+            else:
+                archive_directory = directory.replace(str(source) + "/", "")
+                # Always add the directory to the zip file to make sure we also include empty directories
+                zip_file.write(Path(directory), Path(archive_directory))
 
-    zip_files_in_dir(src, random_file_name, lambda x: x)
-    return random_file_name
+            for file in files:
+                zip_file.write(
+                    filename=Path(directory) / file,
+                    arcname=Path(archive_directory) / file,
+                )
 
-
-# Zip the files from given directory that matches the filter
-def zip_files_in_dir(dir_name: str, zip_file_name: str, filter):
-    os.chdir(dir_name)
-    # Create a ZipFile object
-    with ZipFile(zip_file_name, mode="w") as zip_file:
-        # Iterate over all the files in directory
-        for folder_name, _, filenames in os.walk("."):
-            for filename in filenames:
-                if filter(filename):
-                    # Create complete filepath of file in directory
-                    filepath = os.path.join(folder_name, filename)
-                    # Add file to zip
-                    zip_file.write(filepath)
+    return zip_file_path
 
 
 class Command(BaseCommand):
@@ -55,7 +56,9 @@ class Command(BaseCommand):
         elif workspace.name != "AskAnna Core" or workspace.visibility != "PRIVATE":
             warnings.warn(
                 "Workspace '3Cpy-QMzd-MVko-1rDQ' already exists but is not configured with the expected workspace "
-                "name or workspace visibility."
+                "name or workspace visibility.",
+                category=Warning,
+                stacklevel=1,
             )
 
         # Make sure we operate on the 'AskAnna Create Project' project
@@ -71,7 +74,9 @@ class Command(BaseCommand):
         elif project.name != "AskAnna Create Project" or project.visibility != "PRIVATE":
             warnings.warn(
                 "Project '7Lif-Rhcn-IRvS-Wv7J' already exists but is not configured with the expected project name "
-                "or project visibility."
+                "or project visibility.",
+                category=Warning,
+                stacklevel=1,
             )
 
         # Make sure the job is available for triggering 'create_project'
@@ -85,17 +90,25 @@ class Command(BaseCommand):
             jobdef.save()
         elif jobdef.name != "create_project" or jobdef.project != project:
             warnings.warn(
-                "Job '640q-2AMP-T5BL-Cnml' already exists but is not configured with the expected job name or project."
+                "Job '640q-2AMP-T5BL-Cnml' already exists but is not configured with the expected job name or "
+                "project.",
+                category=Warning,
+                stacklevel=1,
             )
 
-        # Create the package for the project
-        # use from our `resources/projects/askanna_create_project` folder
-        # TODO: on every deployment, we should only create the package when a new version is available
-        package_archive = package(settings.ROOT_DIR.path("resources/projects/askanna_create_project"))
+        # Create the package for the project use from our `resources/projects/askanna_create_project` directory
+        dir_to_pack = settings.BASE_DIR / "resources/projects/askanna_create_project"
+        package_archive = package(source=dir_to_pack)
+
+        latest_package = Package.objects.filter(project=project).order_by("-created_at").first()
+        if latest_package and package_archive.stat().st_size == latest_package.size:
+            # The package is already available, no need to create a new one
+            return
+
         package_object = Package.objects.create(
             original_filename="askanna_create_project.zip",
             project=project,
-            size=os.stat(package_archive).st_size,
+            size=package_archive.stat().st_size,
             finished_at=timezone.now(),
         )
-        package_object.write(open(package_archive, "rb"))
+        package_object.write(package_archive.open("rb"))

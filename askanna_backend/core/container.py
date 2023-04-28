@@ -2,14 +2,18 @@ import datetime
 import logging
 import time
 from collections.abc import Callable
+from pathlib import Path
 
 import docker
 import redis
 from django.conf import settings
 from django.db import IntegrityError
+
 from job.models import RunImage
 
-TEMPLATES_PATH = str(settings.APPS_DIR.path("templates"))
+logger = logging.getLogger(__name__)
+
+TEMPLATES_PATH = settings.APPS_DIR / "templates"
 
 
 class RegistryAuthenticationError(Exception):
@@ -76,14 +80,14 @@ class RegistryImageHelper:
                 loginresponse = self.client.login(**auth_config)
             except docker.errors.APIError as exc:  # type: ignore
                 message = f"Credentials are not correct to log in onto {self.image_registry}"
-                logging.info(message)
-                logging.info(get_descriptive_docker_error(exc.explanation))
+                logger.info(message)
+                logger.info(get_descriptive_docker_error(exc.explanation))
                 self.logger(message)
                 raise RegistryAuthenticationError(message) from exc
             except Exception as exc:
                 message = f"Could not authenticate onto: {self.image_registry}"
-                logging.info(message)
-                logging.info(exc)
+                logger.info(message)
+                logger.info(exc)
                 self.logger(message)
                 raise RegistryAuthenticationError(message) from exc
             else:
@@ -107,8 +111,8 @@ class RegistryImageHelper:
                 self.image_info = self.client.images.get_registry_data(self.image_path, auth_config=self.credentials)
             except docker.errors.APIError as exc:  # type: ignore
                 message = f"Could not pull image: {self.image_path}"
-                logging.info(message)
-                logging.info(get_descriptive_docker_error(exc.explanation))
+                logger.info(message)
+                logger.info(get_descriptive_docker_error(exc.explanation))
                 self.logger(message)
                 self.logger(get_descriptive_docker_error(exc.explanation))
                 raise RegistryContainerPullError(message) from exc
@@ -135,19 +139,19 @@ class RegistryImageHelper:
             pull_spec.update(**{"auth_config": self.credentials})
 
         try:
-            logging.info(f"Pulling image: {self.image_path}")
+            logger.info(f"Pulling image: {self.image_path}")
             image = self.client.api.pull(**pull_spec)
         except (docker.errors.NotFound, docker.errors.APIError) as exc:  # type: ignore
             message = f"Could not pull image: {self.image_path}"
-            logging.info(message)
-            logging.info(get_descriptive_docker_error(exc.explanation))
+            logger.info(message)
+            logger.info(get_descriptive_docker_error(exc.explanation))
             self.logger(message)
             self.logger(get_descriptive_docker_error(exc.explanation))
             raise RegistryContainerPullError(message) from exc
         except Exception as exc:
             message = f"Could not pull image: {self.image_path}"
-            logging.info(message)
-            logging.info(exc)
+            logger.info(message)
+            logger.info(exc)
             self.logger(message)
             raise RegistryContainerPullError(message) from exc
         else:
@@ -161,13 +165,13 @@ class ContainerImageBuilder:
         client: docker.DockerClient,
         image_helper: RegistryImageHelper,
         image_prefix: str = settings.ASKANNA_ENVIRONMENT,
-        image_dockerfile_path: str = TEMPLATES_PATH,
+        image_dockerfile_path: str | Path = TEMPLATES_PATH,
         image_dockerfile: str = "Dockerfile",
         logger: Callable[[str], None] = lambda x: None,
     ) -> None:
         self.image_helper = image_helper
         self.image_prefix = image_prefix
-        self.image_dockerfile_path = image_dockerfile_path
+        self.image_dockerfile_path = str(image_dockerfile_path)
         self.image_dockerfile = image_dockerfile
         self.client = client
         self.logger = logger
@@ -189,7 +193,7 @@ class ContainerImageBuilder:
             time.sleep(1)
             if time.time() > timeout_stamp:
                 message = f"Timeout while waiting for image '{run_image.name}' to be built by another run."
-                logging.warning(message)
+                logger.warning(message)
                 self.logger(message)
                 self.logger(
                     "The image is currently being built by another run. We waited for 5 minutes, but it did not "
@@ -203,7 +207,7 @@ class ContainerImageBuilder:
         except RunImage.MultipleObjectsReturned:
             run_image = RunImage.objects.filter(name=name, tag=tag, digest=digest).order_by("-created_at").first()
             created = False
-            logging.warning(
+            logger.warning(
                 "Multiple objects returned for RunImage, using the most recent one. More info:\n"
                 f"  name: {name}\n"
                 f"  tag: {tag}\n"
@@ -244,14 +248,14 @@ class ContainerImageBuilder:
             run_image.refresh_from_db()
 
         if run_image.cached_image and not self.image_exist(run_image.cached_image):
-            logging.info(f"Cached image {run_image.cached_image} not found. A trigger to rebuild the image is set.")
+            logger.info(f"Cached image {run_image.cached_image} not found. A trigger to rebuild the image is set.")
             run_image.unset_cached_image()
 
         if created or not run_image.cached_image:
-            logging.info(f"Building image {self.image_helper.image_path}")
+            logger.info(f"Building image {self.image_helper.image_path}")
             run_image = self.build_image(run_image=run_image)
 
-        return run_image
+        return run_image  # noqa: RET504
 
     def build_image(self, run_image: RunImage):
         self.set_build_lock(run_image)
@@ -279,7 +283,7 @@ class ContainerImageBuilder:
             raise exc
         else:
             run_image.set_cached_image(askanna_repository_image)
-            logging.info(f"Image {askanna_repository_image} built and cached. Image digest: {image.short_id}")
+            logger.info(f"Image {askanna_repository_image} built and cached. Image digest: {image.short_id}")
         finally:
             self.remove_build_lock(run_image)
 

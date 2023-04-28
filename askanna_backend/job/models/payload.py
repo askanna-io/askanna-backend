@@ -1,10 +1,11 @@
 import json
-import os
+from pathlib import Path
 
-from core.models import BaseModel
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+
+from core.models import FileBaseModel
 
 
 class PayloadQuerySet(models.QuerySet):
@@ -36,7 +37,7 @@ class PayloadManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class JobPayload(BaseModel):
+class JobPayload(FileBaseModel):
     """
     Input for a Run
     """
@@ -46,16 +47,14 @@ class JobPayload(BaseModel):
     objects = PayloadManager()
 
     @property
-    def stored_path(self):
-        return os.path.join(settings.PAYLOADS_ROOT, self.storage_location, self.filename)
-
-    @property
     def filename(self):
         return "payload.json"
 
-    @property
-    def storage_location(self):
-        return os.path.join(self.jobdef.project.uuid.hex, self.suuid)
+    def get_storage_location(self) -> Path:
+        return Path(self.jobdef.project.uuid.hex) / self.suuid
+
+    def get_root_location(self) -> Path:
+        return settings.PAYLOADS_ROOT
 
     size = models.PositiveIntegerField(editable=False, default=0)
     lines = models.PositiveIntegerField(editable=False, default=0)
@@ -65,30 +64,9 @@ class JobPayload(BaseModel):
     def payload(self):
         """
         Read the payload from filesystem and return as JSON object
-        # FIXME: in future be in-determined for which filetype
-        # FIXME: refactor job system to provide filetype
         """
         return json.loads(self.read)
 
-    @property
-    def read(self):
-        """
-        Read the payload from filesystem and return as JSON object
-        """
-
-        with open(self.stored_path) as f:
-            return f.read()
-
-    def write(self, stream):
-        """
-        Write contents to the filesystem
-        """
-        os.makedirs(os.path.join(settings.PAYLOADS_ROOT, self.storage_location), exist_ok=True)
-        with open(self.stored_path, "w") as f:
-            f.write(stream.read())
-
-    def prune(self):
-        os.remove(self.stored_path)
-
     class Meta:
+        get_latest_by = "created_at"
         ordering = ["-created_at"]

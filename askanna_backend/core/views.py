@@ -1,5 +1,6 @@
+from pathlib import Path
+
 import django
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.http import Http404
@@ -33,8 +34,8 @@ class BaseChunkedPartViewSet(
 
     filter_backends = []
 
-    def get_upload_dir(self, chunkpart):
-        return settings.UPLOAD_ROOT
+    def get_upload_location(self, chunkpart) -> Path:
+        raise NotImplementedError(f"Please implement 'get_upload_location' for {self.__class__.__name__}")
 
     def check_existence(self, request, chunkpart, **kwargs):
         """
@@ -42,13 +43,12 @@ class BaseChunkedPartViewSet(
         This prevents a new POST action from the client and we don't
         have to process this (saves time)
         """
-        storage_location = FileSystemStorage(location=self.get_upload_dir(chunkpart))
-
+        storage_location = FileSystemStorage(location=str(self.get_upload_location(chunkpart)))
         r = ResumableFile(storage_location, request.GET)
-        # default response
-        response = Response({"message": "chunk upload needed"}, status=404)
         if r.chunk_exists:
             response = Response({"message": "chunk already exists"}, status=200)
+        else:
+            response = Response({"message": "chunk upload needed"}, status=404)
         response["Cache-Control"] = "no-cache"
         return response
 
@@ -62,7 +62,7 @@ class BaseChunkedPartViewSet(
         if request.method == "GET":
             return self.check_existence(request, chunkpart, **kwargs)
         chunk: django.core.files.uploadedfile.InMemoryUploadedFile = request.FILES.get("file")
-        storage_location = FileSystemStorage(location=self.get_upload_dir(chunkpart))
+        storage_location = FileSystemStorage(location=str(self.get_upload_location(chunkpart)))
 
         r = ResumableFile(storage_location, request.POST)
         if r.chunk_exists:
@@ -80,32 +80,31 @@ class BaseChunkedPartViewSet(
 
 
 class BaseUploadFinishViewSet:
-    upload_target_location = ""
     upload_finished_signal = None
     upload_finished_message = "upload completed"
 
-    def get_upload_dir(self, obj):
-        return settings.UPLOAD_ROOT
+    def get_upload_location(self, obj) -> Path:
+        raise NotImplementedError(f"Please implement 'get_upload_location' for {self.__class__.__name__}")
 
-    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
+    def get_target_location(self, request, obj, **kwargs) -> Path:
+        raise NotImplementedError(f"Please implement 'get_target_location' for {self.__class__.__name__}")
+
+    def get_filename(self, obj) -> str | Path:
+        return obj.filename
+
+    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj) -> None:
         pass
-
-    def get_upload_target_location(self, request, obj, **kwargs):
-        return self.upload_target_location
-
-    def store_as_filename(self, resumable_filename, obj):
-        return resumable_filename
 
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
         """Register that the upload of all chunks is finished"""
         obj = self.get_object()
 
-        storage_location = FileSystemStorage(location=self.get_upload_dir(obj))
-        target_location = FileSystemStorage(location=self.get_upload_target_location(request=request, obj=obj))
+        storage_location = FileSystemStorage(location=str(self.get_upload_location(obj)))
+        target_location = FileSystemStorage(location=str(self.get_target_location(request=request, obj=obj)))
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
-            target_location.save(self.store_as_filename(r.filename, obj), r)
+            target_location.save(str(self.get_filename(obj)), r)
             self.post_finish_upload_update_instance(request, obj, r)
             r.delete_chunks()
 

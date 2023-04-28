@@ -1,10 +1,5 @@
-import os
+from pathlib import Path
 
-from account.models import MSP_WORKSPACE
-from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
-from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.role import RoleBasedPermission
-from core.utils import stream
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Case, Q, Value, When
 from django.http import HttpResponse
@@ -15,6 +10,12 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from account.models.membership import MSP_WORKSPACE
+from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
+from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
+from core.permissions.role import RoleBasedPermission
+from core.utils import stream
 from run.models import RedisLogQueue
 from run.models.run import STATUS_MAPPING, Run, get_status_external
 from run.serializers.run import RunSerializer, RunStatusSerializer
@@ -418,11 +419,11 @@ class RunView(
         """Get the result from a specific run"""
         run = self.get_object()
         try:
-            run.result.uuid
+            _ = run.result.uuid
         except ObjectDoesNotExist:
             return Response(None, status=status.HTTP_404_NOT_FOUND)
 
-        if not os.path.exists(run.result.stored_path):
+        if not Path.exists(run.result.stored_path):
             return Response(None, status=status.HTTP_404_NOT_FOUND)
 
         # Get the requested content-type header, if not set get it from the result object

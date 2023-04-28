@@ -1,6 +1,8 @@
 import datetime
 import unittest
 
+from django.conf import settings
+
 from core.utils import (
     get_all_directories,
     get_directory_size_from_filelist,
@@ -8,7 +10,6 @@ from core.utils import (
     get_items_in_zip_file,
     get_last_modified_in_directory,
 )
-from django.conf import settings
 
 filelist = [
     {
@@ -208,13 +209,13 @@ filelist = [
 
 class TestArchive(unittest.TestCase):
     def test_get_files_and_directories_in_zip_file_from_project_001(self):
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("projects/project-001.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "projects/project-001.zip"
         zip_files = get_files_and_directories_in_zip_file(zip_file_path)
 
         self.assertEqual(len(zip_files), 3)
 
     def test_get_items_in_zip_file_from_project_001(self):
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("projects/project-001.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "projects/project-001.zip"
         zip_files, zip_paths = get_items_in_zip_file(zip_file_path)
 
         self.assertEqual(len(zip_files), 3)
@@ -222,20 +223,20 @@ class TestArchive(unittest.TestCase):
 
     def test_get_all_directories_from_project_001(self):
         # Project 001 contain 0 directories
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("projects/project-001.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "projects/project-001.zip"
         _, zip_paths = get_items_in_zip_file(zip_file_path)
         zip_directories = get_all_directories(zip_paths)
 
         self.assertEqual(len(zip_directories), 0)
 
     def test_get_files_and_directories_in_zip_file_from_artifact_aa(self):
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "artifacts/artifact-aa.zip"
         zip_files = get_files_and_directories_in_zip_file(zip_file_path)
 
         self.assertEqual(len(zip_files), 3)
 
     def test_get_items_in_zip_file_from_artifact_aa(self):
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "artifacts/artifact-aa.zip"
         zip_files, zip_paths = get_items_in_zip_file(zip_file_path)
 
         self.assertEqual(len(zip_files), 2)
@@ -243,7 +244,7 @@ class TestArchive(unittest.TestCase):
 
     def test_get_all_directories_from_artifact_aa(self):
         # Artifact AA contains a file test.pyc that should be excluded and a directory that should be included
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "artifacts/artifact-aa.zip"
         _, zip_paths = get_items_in_zip_file(zip_file_path)
         zip_directories = get_all_directories(zip_paths)
 
@@ -257,7 +258,7 @@ class TestArchive(unittest.TestCase):
 
     def test_last_modified_empty_dir(self):
         expected_last_modified = datetime.datetime(2020, 12, 16, 1, 13, 12)
-        zip_file_path = settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip")
+        zip_file_path = settings.TEST_RESOURCES_DIR / "artifacts/artifact-aa.zip"
         filelist, _ = get_items_in_zip_file(zip_file_path)
         found_last_modified = get_last_modified_in_directory("models", filelist)
 

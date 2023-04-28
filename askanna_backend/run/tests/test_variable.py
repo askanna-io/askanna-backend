@@ -1,14 +1,14 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from run.models import Run, RunVariable, RunVariableMeta
-from run.tasks.variable import post_run_deduplicate_variables
 
 from .base import (
     BaseRunTest,
     tracked_variables_response_good,
     variable_response_good_small,
 )
+from run.models import Run, RunVariable, RunVariableMeta
+from run.tasks.variable import post_run_deduplicate_variables
 
 
 class TestRunVariableModel(BaseRunTest, APITestCase):

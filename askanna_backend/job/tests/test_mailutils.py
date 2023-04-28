@@ -1,10 +1,11 @@
 import unittest
 
 import pytest
+from rest_framework.test import APITestCase
+
 from core.utils import parse_string
 from job.mailer import fill_in_mail_variable, send_run_notification
 from job.tests.base import BaseJobTestDef
-from rest_framework.test import APITestCase
 
 pytestmark = pytest.mark.django_db
 

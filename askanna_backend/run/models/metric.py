@@ -1,40 +1,32 @@
 import io
 import json
-import os
+from pathlib import Path
 
-from core.models import ArtifactModelMixin, BaseModel
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils import timezone
+
+from core.models import BaseModel, FileBaseModel
 from run.utils import get_unique_names_with_data_type
 
 
-class RunMetricMeta(ArtifactModelMixin, BaseModel):
+class RunMetricMeta(FileBaseModel):
     """Store metrics for a Run"""
 
-    filetype = "runmetrics"
-    filextension = "json"
-    filereadmode = "r"
-    filewritemode = "w"
+    file_type = "runmetrics"
+    file_extension = "json"
 
-    def get_storage_location(self):
-        return os.path.join(
-            self.run.jobdef.project.uuid.hex,
-            self.run.jobdef.uuid.hex,
-            self.run.uuid.hex,
-        )
+    def get_storage_location(self) -> Path:
+        return Path(self.run.jobdef.project.uuid.hex) / self.run.jobdef.uuid.hex / self.run.uuid.hex
 
-    def get_base_path(self):
-        return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location)
-
-    def get_full_path(self):
-        return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location, self.filename)
+    def get_root_location(self) -> Path:
+        return settings.ARTIFACTS_ROOT
 
     run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="metrics_meta")
 
     @property
-    def metrics(self):
+    def metrics(self) -> list:
         return self.load_from_file()
 
     @metrics.setter
@@ -65,8 +57,8 @@ class RunMetricMeta(ArtifactModelMixin, BaseModel):
         """Return the suuid from the parent Run instance."""
         return self.run.suuid
 
-    def load_from_file(self, reverse=False):
-        with open(self.stored_path) as f:
+    def load_from_file(self, reverse=False) -> list:
+        with self.stored_path.open() as f:
             return json.loads(f.read())
 
     def prune(self):

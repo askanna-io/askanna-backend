@@ -1,8 +1,9 @@
-from core.models import NameDescriptionBaseModel
-from core.utils.config import get_setting_from_database
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+
+from core.models import NameDescriptionBaseModel
+from core.utils.config import get_setting_from_database
 
 
 class JobQuerySet(models.QuerySet):

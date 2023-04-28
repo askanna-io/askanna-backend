@@ -3,6 +3,10 @@ import json
 import logging
 
 import docker
+from django.conf import settings
+
+from config.celery_app import app as celery_app
+
 from core.container import (
     ContainerImageBuilder,
     RegistryAuthenticationError,
@@ -11,11 +15,10 @@ from core.container import (
 )
 from core.utils import parse_string
 from core.utils.config import get_setting_from_database
-from django.conf import settings
 from run.models import Run, RunVariable
 from variable.models import Variable
 
-from config.celery_app import app as celery_app
+logger = logging.getLogger(__name__)
 
 
 def log_run_variables(
@@ -67,7 +70,7 @@ def get_project_variables(run):
 
 @celery_app.task(bind=True, name="job.tasks.start_run")
 def start_run(self, run_uuid):
-    logging.info(f"Received message to start run {run_uuid}")
+    logger.info(f"Received message to start run {run_uuid}")
 
     docker_debug_log = get_setting_from_database(
         name="DOCKER_DEBUG_LOG",
@@ -237,11 +240,11 @@ def start_run(self, run_uuid):
     op.log(f"Getting image {job_image}", print_log=docker_debug_log)
     op.log("Check AskAnna requirements and if not available, try to install them", print_log=docker_debug_log)
 
-    logging.info(f"Get image: {job_image}")
+    logger.info(f"Get image: {job_image}")
     builder = ContainerImageBuilder(
         client=docker_client,
         image_helper=image_helper,
-        image_dockerfile_path=str(settings.APPS_DIR.path("job/templates")),
+        image_dockerfile_path=str(settings.APPS_DIR / "job/templates"),
         image_dockerfile="custom_Dockerfile",
         logger=lambda x: op.log(message=x, print_log=docker_debug_log),
     )
@@ -274,7 +277,7 @@ def start_run(self, run_uuid):
         "askanna-run-utils get-run-manifest --output /dev/stdout | sh",
     ]
 
-    logging.info(f"Starting run {run.suuid} with image {job_image}")
+    logger.info(f"Starting run {run.suuid} with image {job_image}")
     try:
         container = docker_client.containers.run(
             image=run_image.cached_image,

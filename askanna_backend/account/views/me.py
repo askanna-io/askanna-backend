@@ -1,4 +1,10 @@
-from account.models import Membership
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
+
+from account.models.membership import Membership
 from account.serializers.me import (
     MeAvatarSerializer,
     MeSerializer,
@@ -12,12 +18,7 @@ from core.mixins import (
     UpdateModelWithoutPartialUpateMixin,
 )
 from core.permissions.role import RoleBasedPermission
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import Http404
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from project.models import Project
-from rest_framework import mixins, status, viewsets
-from rest_framework.response import Response
 from workspace.models import Workspace
 
 

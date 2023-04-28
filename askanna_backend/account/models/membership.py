@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import datetime
-import logging
-import os
-import uuid as _uuid
+from django.core import signing
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
 
-from account.signals import avatar_changed_signal
-from core.models import BaseModel
+from account.models.avatar import BaseAvatarModel
 from core.permissions.askanna_roles import (
-    AskAnnaAdmin,
-    AskAnnaMember,
-    AskAnnaPublicViewer,
     ProjectAdmin,
     ProjectMember,
     ProjectNoMember,
@@ -23,188 +18,8 @@ from core.permissions.askanna_roles import (
     WorkspaceViewer,
     get_role_class,
 )
-from django.conf import settings
-from django.contrib.auth.models import AbstractUser, UserManager
-from django.core import signing
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
 from project.models import Project
 from workspace.models import Workspace
-
-
-class BaseAvatarModel:
-    avatar_specs = {
-        "icon": (60, 60),
-        "small": (120, 120),
-        "medium": (180, 180),
-        "large": (240, 240),
-    }
-
-    def install_default_avatar(self):
-        self.write(
-            open(
-                settings.RESOURCES_DIR.path(settings.USERPROFILE_DEFAULT_AVATAR),
-                "rb",
-            )
-        )
-
-    def delete_avatar(self):
-        """
-        Remove existing avatars from the system for this user.
-        And install default avatar
-        """
-        self.prune()
-        self.install_default_avatar()
-
-    def stored_path_with_name(self, name) -> str:
-        filename = f"avatar_{self.uuid.hex}_{name}.png"
-        return os.path.join(settings.AVATARS_ROOT, self.storage_location, filename)
-
-    def storage_location_with_name(self, name) -> str:
-        filename = f"avatar_{self.uuid.hex}_{name}.png"
-        return os.path.join(self.storage_location, filename)
-
-    @property
-    def storage_location(self) -> str:
-        return os.path.join(
-            self.uuid.hex,
-        )
-
-    @property
-    def stored_path(self) -> str:
-        return os.path.join(settings.AVATARS_ROOT, self.storage_location, self.filename)
-
-    @property
-    def filename(self) -> str:
-        return f"avatar_{self.uuid.hex}.image"
-
-    def prune(self):
-        for spec_name, _ in self.avatar_specs.items():
-            try:
-                os.remove(self.stored_path_with_name(spec_name))
-            except (FileNotFoundError, Exception) as exc:
-                logging.warning(f"Avatar file cannot be removed: {exc}")
-
-        try:
-            os.remove(self.stored_path)
-        except (FileNotFoundError, Exception) as exc:
-            logging.warning(f"Avatar directory cannot be removed: {exc}")
-
-    @property
-    def read(self) -> bytes:
-        """
-        Read the avatar from filesystem
-        """
-
-        with open(self.stored_path, "rb") as f:
-            return f.read()
-
-    def write(self, stream):
-        """
-        Write contents to the filesystem, as is without changing image format
-        """
-        os.makedirs(os.path.join(settings.AVATARS_ROOT, self.storage_location), exist_ok=True)
-        with open(self.stored_path, "wb") as f:
-            f.write(stream.read())
-
-        avatar_changed_signal.send(sender=self.__class__, instance=self)
-
-    def prepend_cdn_url(self, location: str) -> str:
-        return f"{settings.ASKANNA_CDN_URL}/files/avatars/{location}"
-
-    def append_timestamp_to_url(self, location: str) -> str:
-        timestamp = datetime.datetime.timestamp(self.modified_at)
-        return f"{location}?{timestamp}"
-
-    @property
-    def avatar_cdn_locations(self) -> dict:
-        return dict(
-            zip(
-                self.avatar_specs.keys(),
-                [
-                    self.append_timestamp_to_url(self.prepend_cdn_url(self.storage_location_with_name(f)))
-                    for f in self.avatar_specs.keys()
-                ],
-                strict=True,
-            )
-        )
-
-
-class User(BaseAvatarModel, BaseModel, AbstractUser):
-    uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
-
-    email = models.EmailField("Email address", blank=False)
-    name = models.CharField("Name of User", blank=False, max_length=255)
-    job_title = models.CharField("Job title", blank=True, default="", max_length=255)
-
-    # First and last name do not cover name patterns around the glob and are removed from the AbstractUser model
-    first_name = None
-    last_name = None
-
-    objects = UserManager()
-
-    @property
-    def memberships(self):
-        return self.memberships
-
-    @property
-    def auth_token(self):
-        return self.auth_token
-
-    @classmethod
-    def get_role(cls, request):  # TODO: rename to get_askanna_role
-        """
-        Defaulting the role to `AskAnnaPublicViewer` when no match is found
-        # key: is_anonymous, is_active, is_superuser
-        """
-        user_role_mapping = {
-            (1, 0, 0): AskAnnaPublicViewer,
-            (0, 1, 0): AskAnnaMember,
-            (0, 1, 1): AskAnnaAdmin,
-        }
-
-        return user_role_mapping.get(
-            (
-                request.user.is_anonymous,
-                request.user.is_active,
-                request.user.is_superuser,
-            ),
-            AskAnnaPublicViewer,
-        )
-
-    def to_deleted(self):
-        """
-        We don't actually remove the user, we mark it as deleted and we remove the confidential info such as
-        username and email.
-
-        Note: if the user has active workspace memberships, these memberships are not deleted. The memberships will be
-        marked as deleted. If a membership was using the global profile, then the profile will be copied over to the
-        membership before removing the user.
-        """
-        for membership in self.memberships.filter(deleted_at__isnull=True):
-            membership.to_deleted()
-
-        self.delete_avatar()
-        self.auth_token.delete()
-
-        self.is_active = False
-        self.username = f"deleted-user-{self.suuid}"
-        self.email = f"deleted-user-{self.suuid}@dev.null"
-        self.name = "deleted user"
-        self.job_title = ""
-        self.save(
-            update_fields=[
-                "is_active",
-                "username",
-                "email",
-                "name",
-                "job_title",
-                "modified_at",
-            ]
-        )
-
-        super().to_deleted()
-
 
 MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
@@ -246,7 +61,7 @@ class ActiveMemberManager(models.Manager):
         return self.get_queryset().members()
 
 
-class Membership(BaseAvatarModel, BaseModel):
+class Membership(BaseAvatarModel):
     """
     Membership holds the relation between
     - workspace vs user
@@ -304,7 +119,11 @@ class Membership(BaseAvatarModel, BaseModel):
         | type[ProjectMember]
         | type[ProjectViewer]
     ):
-        return get_role_class(self.role)
+        role = get_role_class(self.role)
+        if role in (WorkspaceAdmin, WorkspaceMember, WorkspaceViewer, ProjectAdmin, ProjectMember, ProjectViewer):
+            return role
+
+        raise ValueError(f"Unknown membership role: {self.role}")
 
     @classmethod
     def get_roles_for_project(
@@ -382,7 +201,10 @@ class Membership(BaseAvatarModel, BaseModel):
 
         membership = cls.get_project_membership(user, project)
         if membership:
-            return membership.get_role()
+            role = membership.get_role()
+            if role in (ProjectAdmin, ProjectMember, ProjectViewer):
+                return role
+
         if project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC":
             return ProjectPublicViewer
 
@@ -419,7 +241,10 @@ class Membership(BaseAvatarModel, BaseModel):
 
         membership = cls.get_workspace_membership(user, workspace)
         if membership:
-            return membership.get_role()
+            role = membership.get_role()
+            if role in (WorkspaceAdmin, WorkspaceMember, WorkspaceViewer):
+                return role
+
         if workspace.visibility == "PUBLIC":
             return WorkspacePublicViewer
 
@@ -480,7 +305,7 @@ class Membership(BaseAvatarModel, BaseModel):
             )
 
             # Copy the avatar from the user to membership
-            self.write(open(self.user.stored_path, "rb"))
+            self.write(self.user.avatar_path.open("rb"))
 
         super().to_deleted()
 
@@ -504,15 +329,3 @@ class Invitation(Membership):
 
     def generate_token(self):
         return self.token_signer.sign(self.suuid)
-
-
-class PasswordResetLog(BaseModel):
-    email = models.EmailField()
-    user = models.ForeignKey("account.User", blank=True, null=True, default=None, on_delete=models.SET_NULL)
-    remote_ip = models.GenericIPAddressField("Remote IP", null=True)
-    remote_host = models.CharField(max_length=1024, blank=True, default="")
-    front_end_domain = models.CharField(max_length=1024, blank=True, default="")
-    meta = models.JSONField(null=True, default=None)
-
-    class Meta:
-        ordering = ["-created_at"]

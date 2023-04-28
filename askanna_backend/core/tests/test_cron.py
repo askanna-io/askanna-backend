@@ -2,8 +2,9 @@ import datetime
 import unittest
 
 import pytest
-from core.utils import parse_cron_line, parse_cron_schedule
 from django.test import TestCase
+
+from core.utils import parse_cron_line, parse_cron_schedule
 from job.models import ScheduledJob
 
 pytestmark = pytest.mark.django_db
