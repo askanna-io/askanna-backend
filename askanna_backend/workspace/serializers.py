@@ -1,7 +1,8 @@
-from account.models import Membership
+from rest_framework import serializers
+
+from account.models.membership import Membership
 from account.serializers.user import UserRelationSerializer
 from core.permissions.askanna_roles import merge_role_permissions
-from rest_framework import serializers
 from workspace.models import Workspace
 
 

@@ -1,6 +1,11 @@
 import socket
 
-from account.models import Invitation, PasswordResetLog, User, UserProfile
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from account.models.membership import Invitation, UserProfile
+from account.models.user import PasswordResetLog, User
 from account.signals import (
     avatar_changed_signal,
     email_changed_signal,
@@ -9,10 +14,6 @@ from account.signals import (
     user_created_signal,
 )
 from core.mail import send_email
-from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from PIL import Image
 from workspace.models import Workspace
 
 
@@ -91,11 +92,11 @@ def send_welcome_email_after_registration(sender, user, front_end_url, *args, **
         "front_end_url": front_end_url,
     }
 
-    terms_of_use_dir = settings.RESOURCES_DIR.path("terms_and_conditions")
+    terms_of_use_dir = settings.RESOURCES_DIR / "terms_and_conditions"
     attachments = [
-        terms_of_use_dir.path("European Model Form for Withdrawal - AskAnna - 20201202.pdf"),
-        terms_of_use_dir.path("Terms of Use - AskAnna - 20201202.pdf"),
-        terms_of_use_dir.path("Data Processing Agreement - AskAnna - 20201214.pdf"),
+        terms_of_use_dir / "European Model Form for Withdrawal - AskAnna - 20201202.pdf",
+        terms_of_use_dir / "Terms of Use - AskAnna - 20201202.pdf",
+        terms_of_use_dir / "Data Processing Agreement - AskAnna - 20201214.pdf",
     ]
 
     send_email(
@@ -162,17 +163,11 @@ def send_password_changed(sender, user, **kwargs):
 
 
 @receiver(avatar_changed_signal)
-def convert_avatars(sender, instance, **kwargs):
+def convert_avatar(sender, instance, **kwargs):
     """
-    Upon writing a new avatar to the filesystem, we convert this avatar to several sizes and always save as PNG
+    Convert the avatar to several sizes.
     """
-    userprofile = instance
-
-    for spec_name, spec_size in userprofile.avatar_specs.items():
-        filename = instance.stored_path_with_name(spec_name)
-        with Image.open(userprofile.stored_path) as im:
-            im.thumbnail(spec_size)
-            im.save(filename, "png")
+    instance.convert_avatar()
 
 
 @receiver(post_save, sender=UserProfile)

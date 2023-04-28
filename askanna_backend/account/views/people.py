@@ -1,5 +1,15 @@
 import django_filters
-from account.models import MSP_WORKSPACE, Invitation, Membership
+from django.conf import settings
+from django.db.models import Case, Q, Value, When
+from django.http import Http404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from rest_framework import mixins, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework_extensions.mixins import NestedViewSetMixin
+
+from account.models.membership import MSP_WORKSPACE, Invitation, Membership
 from account.permissions import (
     RequestHasAccessToMembershipPermission,
     RequestIsValidInvite,
@@ -22,15 +32,6 @@ from core.permissions.askanna_roles import (
     WorkspaceViewer,
 )
 from core.permissions.role import RoleBasedPermission
-from django.conf import settings
-from django.db.models import Case, Q, Value, When
-from django.http import Http404
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import mixins, viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework_extensions.mixins import NestedViewSetMixin
 from workspace.models import Workspace
 
 
@@ -206,7 +207,7 @@ class PeopleViewSet(
     def perform_destroy(self, instance):
         """Delete invitations and soft-delete memberships."""
         try:
-            instance.invitation
+            _ = instance.invitation
         except Invitation.DoesNotExist:
             # This is an active membership. Soft-delete it.
             instance.to_deleted()

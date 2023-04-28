@@ -1,5 +1,6 @@
-from core.urls import router
 from django.urls import include, re_path
+
+from core.urls import router
 from job.views import JobPayloadView
 from run.views import (
     ChunkedArtifactViewSet,

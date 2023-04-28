@@ -1,12 +1,11 @@
-import os
 from zipfile import ZipFile
 
-from account.models import MSP_WORKSPACE
-from core.config import AskAnnaConfig
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
+
+from account.models.membership import MSP_WORKSPACE
+from core.config import AskAnnaConfig
 from job.models import JobDef, ScheduledJob
 from package.models import Package
 from package.signals import package_upload_finish
@@ -19,10 +18,10 @@ def package_upload_extract_zip(sender, signal, postheaders, obj, **kwargs):
     target_location = settings.BLOB_ROOT
 
     source_path = obj.stored_path
-    target_path = os.path.join(target_location, str(obj.uuid))
+    target_path = target_location / str(obj.uuid)
 
-    with ZipFile(source_path, mode="r") as zippackage:
-        zippackage.extractall(path=target_path)
+    with ZipFile(source_path, mode="r") as zip_package:
+        zip_package.extractall(path=target_path)
 
 
 @receiver(package_upload_finish)
@@ -35,32 +34,25 @@ def package_upload_extract_jobs_from_askannayml(sender, signal, postheaders, obj
     source_path = obj.stored_path
 
     # Read the zipfile and find askanna.yml
-    askanna_yml = ""
     with ZipFile(source_path) as zip_obj:
-        list_of_filenames = zip_obj.namelist()
-
-        askanna_ymlfiles = {"askanna.yml", "askanna.yaml"}
-        found_askanna_yml = askanna_ymlfiles - (askanna_ymlfiles - set(list_of_filenames))
-        yml_found_in_set = len(found_askanna_yml) > 0
+        askannayml_files = {"askanna.yml", "askanna.yaml"}
+        found_askannayml = askannayml_files - (askannayml_files - set(zip_obj.namelist()))
+        yml_found_in_set = len(found_askannayml) > 0
 
         if not yml_found_in_set:
             return
 
-        askanna_yml = zip_obj.read(list(found_askanna_yml)[0])
+        askannayml = zip_obj.read(list(found_askannayml)[0])
 
-    # parse the askannaconfig
-    configyml = AskAnnaConfig.from_stream(askanna_yml)
-    if configyml is None:
+    config_from_askannayml = AskAnnaConfig.from_stream(askannayml)
+    if config_from_askannayml is None:
         return
 
     project = obj.project
 
     # create or find jobdef for each found jobs
-    for _, job in configyml.jobs.items():
-        try:
-            jd = JobDef.objects.get(name=job.name, project=project)
-        except ObjectDoesNotExist:
-            jd = JobDef.objects.create(name=job.name, project=project)
+    for _, job in config_from_askannayml.jobs.items():
+        jd, _ = JobDef.objects.get_or_create(name=job.name, project=project)
 
         # update the jobdef.environment_image and timezone
         jd.environment_image = job.environment.image

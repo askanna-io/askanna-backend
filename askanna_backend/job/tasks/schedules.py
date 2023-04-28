@@ -1,11 +1,10 @@
 import datetime
 
-from django.db.transaction import on_commit
+from config.celery_app import app as celery_app
+
 from job.models import ScheduledJob
 from package.models import Package
 from run.models import Run
-
-from config.celery_app import app as celery_app
 
 
 @celery_app.task(name="job.tasks.fix_missed_scheduledjobs")
@@ -23,11 +22,9 @@ def fix_missed_scheduledjobs():
         job__project__workspace__deleted_at__isnull=True,
     ):
         scheduled_job.update_next()
-        on_commit(
-            lambda: celery_app.send_task(
-                "job.tasks.send_missed_schedule_notification",
-                kwargs={"job_uuid": scheduled_job.job.uuid},
-            )
+        celery_app.send_task(
+            "job.tasks.send_missed_schedule_notification",
+            kwargs={"job_uuid": scheduled_job.job.uuid},
         )
 
 

@@ -1,10 +1,12 @@
-from account.models import Invitation, Membership, PasswordResetLog, User, UserProfile
-from account.serializers.people import InviteSerializer
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+
+from account.models.membership import Invitation, Membership, UserProfile
+from account.models.user import PasswordResetLog, User
+from account.serializers.people import InviteSerializer
 
 # Don't show Auth Groups in the Django Admin because we don't use them.
 admin.site.unregister(Group)

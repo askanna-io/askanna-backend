@@ -1,7 +1,8 @@
-from core.const import VISIBLITY
-from core.models import AuthorModel, NameDescriptionBaseModel
 from django.db import models
 from django.db.models import Q
+
+from core.const import VISIBLITY
+from core.models import AuthorModel, NameDescriptionBaseModel
 
 
 class ProjectQuerySet(models.QuerySet):

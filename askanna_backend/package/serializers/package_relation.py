@@ -1,5 +1,6 @@
-from package.models import Package
 from rest_framework import serializers
+
+from package.models import Package
 
 
 class PackageRelationSerializer(serializers.ModelSerializer):

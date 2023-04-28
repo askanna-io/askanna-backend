@@ -1,13 +1,14 @@
-from account.serializers.user import (
-    PasswordResetSerializer,
-    PasswordResetTokenStatusSerializer,
-    UserSerializer,
-)
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from account.serializers.user import (
+    PasswordResetSerializer,
+    PasswordResetTokenStatusSerializer,
+    UserSerializer,
+)
 
 
 class UserDetailsView(RetrieveAPIView):

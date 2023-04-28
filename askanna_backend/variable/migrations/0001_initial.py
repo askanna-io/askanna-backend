@@ -1,14 +1,14 @@
-from django.db import migrations, models
+import uuid
+
 import django.db.models.deletion
 import django_cryptography.fields
 import django_extensions.db.fields
-import uuid
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ("project", "0010_move_projectvariable"),
+        ("project", "__first__"),
     ]
 
     operations = [

@@ -4,6 +4,8 @@ import logging
 
 from .settings_decorator import configclass
 
+logger = logging.getLogger(__name__)
+
 
 class IpNetworks:
     """
@@ -21,7 +23,6 @@ class IpNetworks:
 
     def __contains__(self, address):
         """Check if the given address is contained in any of our Networks."""
-        logger = logging.getLogger(__name__)
         logger.debug('Checking address: "%s".', address)
         for network in self.networks:
             if ipaddress.ip_address(address) in network:

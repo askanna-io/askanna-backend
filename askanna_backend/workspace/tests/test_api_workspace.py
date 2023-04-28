@@ -1,8 +1,9 @@
 import pytest
-from core.tests.base import BaseUserPopulation
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from core.tests.base import BaseUserPopulation
 
 pytestmark = pytest.mark.django_db
 

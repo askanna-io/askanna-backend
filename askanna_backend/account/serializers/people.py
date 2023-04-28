@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-from account.models import ROLES, Invitation, Membership, UserProfile
-from core.permissions.askanna_roles import get_role_class
 from django.conf import settings
 from django.core import signing
 from django.core.mail import EmailMultiAlternatives
@@ -9,9 +7,11 @@ from django.db.models import Q
 from django.template.loader import render_to_string
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from workspace.serializers import WorkspaceRelationSerializer
 
 from .user import RoleSerializer
+from account.models.membership import ROLES, Invitation, Membership, UserProfile
+from core.permissions.askanna_roles import get_role_class
+from workspace.serializers import WorkspaceRelationSerializer
 
 
 def is_email_active_in_object_membership(email: str, object_uuid: str) -> bool:
@@ -127,7 +127,7 @@ class InviteSerializer(serializers.Serializer):
 
     def validate_invitation(self):
         try:
-            self.instance.invitation
+            _ = self.instance.invitation
         except Invitation.DoesNotExist as exc:
             raise serializers.ValidationError({"detail": "Invitation does not exist"}) from exc
 

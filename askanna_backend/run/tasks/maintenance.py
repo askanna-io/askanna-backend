@@ -1,7 +1,7 @@
+from config.celery_app import app as celery_app
+
 from core.utils.maintenance import remove_objects
 from run.models import Run
-
-from config.celery_app import app as celery_app
 
 
 @celery_app.task(name="run.tasks.delete_runs")

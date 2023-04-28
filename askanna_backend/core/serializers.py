@@ -1,8 +1,9 @@
-from core.utils import get_files_and_directories_in_zip_file
 from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+
+from core.utils import get_files_and_directories_in_zip_file
 
 
 @extend_schema_field(OpenApiTypes.STR)

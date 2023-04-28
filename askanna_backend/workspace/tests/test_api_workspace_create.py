@@ -1,9 +1,10 @@
 import pytest
-from account.models import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
-from core.tests.base import BaseUserPopulation
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from account.models.membership import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
+from core.tests.base import BaseUserPopulation
 from workspace.models import Workspace
 
 pytestmark = pytest.mark.django_db

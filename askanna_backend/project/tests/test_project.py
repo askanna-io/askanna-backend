@@ -1,13 +1,13 @@
 import pytest
-from core.tests.base import BaseUserPopulation
 from django.db.models import signals
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from workspace.listeners import install_demo_project_in_workspace
-from workspace.models import Workspace
 
 from ..models import Project
+from core.tests.base import BaseUserPopulation
+from workspace.listeners import install_demo_project_in_workspace
+from workspace.models import Workspace
 
 pytestmark = pytest.mark.django_db
 

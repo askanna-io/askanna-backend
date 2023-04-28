@@ -1,8 +1,10 @@
-from account.models import Membership, User
-from core.views import get_object_or_404
 from django.http import Http404
 from rest_framework import viewsets
 from rest_framework.response import Response
+
+from account.models.membership import Membership
+from account.models.user import User
+from core.views import get_object_or_404
 
 
 class UpdateModelWithoutPartialUpateMixin:

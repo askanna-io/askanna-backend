@@ -1,12 +1,4 @@
 import pytest
-from account.models import (
-    MSP_WORKSPACE,
-    WS_ADMIN,
-    WS_MEMBER,
-    Invitation,
-    User,
-    UserProfile,
-)
 from django.core import mail
 from django.db.models import signals
 from django.test import override_settings
@@ -17,6 +9,14 @@ from rest_framework.test import APITestCase
 
 from ..listeners import install_demo_project_in_workspace
 from ..models import Workspace
+from account.models.membership import (
+    MSP_WORKSPACE,
+    WS_ADMIN,
+    WS_MEMBER,
+    Invitation,
+    UserProfile,
+)
+from account.models.user import User
 
 pytestmark = pytest.mark.django_db
 

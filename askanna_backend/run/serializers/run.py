@@ -1,10 +1,12 @@
+from django.core.exceptions import ObjectDoesNotExist
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
 from account.serializers.people import (
     MembershipRelationSerializer,
     MembershipWithAvatarRelationSerializer,
 )
-from django.core.exceptions import ObjectDoesNotExist
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_field
 from job.serializers import (
     JobPayloadRelationSerializer,
     JobRelationSerializer,
@@ -12,7 +14,6 @@ from job.serializers import (
 )
 from package.serializers.package_relation import PackageRelationSerializer
 from project.serializers import ProjectRelationSerializer
-from rest_framework import serializers
 from run.models import Run
 from run.serializers.artifact_relation import ArtifactRelationSerializer
 from run.serializers.log import LogRelationSerializer

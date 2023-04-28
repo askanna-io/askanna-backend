@@ -1,12 +1,12 @@
-import os
 import uuid as _uuid
+from pathlib import Path
 
-from core.fields import CreationDateTimeField, ModificationDateTimeField
 from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
 
 from .utils.suuid import create_suuid
+from core.fields import CreationDateTimeField, ModificationDateTimeField
 
 
 class BaseModel(models.Model):
@@ -32,6 +32,11 @@ class BaseModel(models.Model):
 
     deleted_at = models.DateTimeField(blank=True, auto_now_add=False, auto_now=False, null=True)
 
+    class Meta:
+        abstract = True
+        get_latest_by = "modified_at"
+        ordering = ["-modified_at"]
+
     def save(self, *args, **kwargs):
         if not self.uuid:
             self.uuid = _uuid.uuid4()
@@ -52,11 +57,6 @@ class BaseModel(models.Model):
                 "modified_at",
             ]
         )
-
-    class Meta:
-        abstract = True
-        get_latest_by = "modified_at"
-        ordering = ["-modified_at"]
 
 
 class NameDescriptionBaseModel(BaseModel):
@@ -89,58 +89,67 @@ class AuthorModel(models.Model):
         abstract = True
 
 
-class ArtifactModelMixin:
+class FileBaseModel(BaseModel):
     """
-    Providing basic accessors to the file on the filesystem related to the model
+    Providing basic accessors to a file on the filesystem related to a model
     """
 
-    filetype = "file"
-    filextension = "justafile"
-    filereadmode = "r"
-    filewritemode = "w"
+    file_type = "file"
+    file_extension = ""
+    file_readmode = "r"
+    file_writemode = "w"
 
     @property
-    def storage_location(self):
+    def filename(self) -> str:
+        base_filename = f"{self.file_type}_{self.uuid.hex}"
+
+        if self.file_extension:
+            return f"{base_filename}.{self.file_extension}"
+
+        return base_filename
+
+    @property
+    def storage_location(self) -> Path:
         return self.get_storage_location()
 
-    def get_storage_location(self):
+    @property
+    def root_storage_location(self) -> Path:
+        return self.get_root_location() / self.storage_location
+
+    @property
+    def stored_path(self) -> Path:
+        return self.root_storage_location / self.filename
+
+    def get_storage_location(self) -> Path:
         raise NotImplementedError(f"Please implement 'get_storage_location' for {self.__class__.__name__}")
 
-    def get_base_path(self):
-        raise NotImplementedError(f"Please implement 'get_full_path' for {self.__class__.__name__}")
-
-    def get_full_path(self):
-        raise NotImplementedError(f"Please implement 'get_base_path' for {self.__class__.__name__}")
-
-    @property
-    def stored_path(self):
-        return self.get_full_path()
-
-    @property
-    def filename(self):
-        return f"{self.filetype}_{self.uuid.hex}.{self.filextension}"
-
-    def get_name(self):
-        return self.filename
+    def get_root_location(self) -> Path:
+        raise NotImplementedError(f"Please implement 'get_root_location' for {self.__class__.__name__}")
 
     @property
     def read(self):
-        with open(self.stored_path, self.filereadmode) as f:
-            return f.read()
+        return self.stored_path.open(mode=self.file_readmode).read()
 
     def write(self, stream):
         """
         Write contents to the filesystem
         """
-        os.makedirs(self.get_base_path(), exist_ok=True)
-        with open(self.stored_path, self.filewritemode) as f:
-            f.write(stream.read())
+        Path.mkdir(self.root_storage_location, parents=True, exist_ok=True)
+        self.stored_path.open(self.file_writemode).write(stream.read())
 
     def prune(self):
+        Path.unlink(self.stored_path, missing_ok=True)
+
         try:
-            os.remove(self.stored_path)
-        except FileNotFoundError:
+            Path.rmdir(self.root_storage_location)
+        # If the directory is not empty or does not exist, we don't want to remove it
+        except (FileNotFoundError, OSError):
             pass
+
+    class Meta:
+        abstract = True
+        get_latest_by = "modified_at"
+        ordering = ["-modified_at"]
 
 
 class Setting(BaseModel):

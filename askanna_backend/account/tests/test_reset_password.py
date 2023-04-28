@@ -1,12 +1,12 @@
 import re
 
 import pytest
-from account.models import PasswordResetLog
 from django.core import mail
 from django.urls import reverse
 from rest_framework import status
 
 from .base_tests import BaseAccounts
+from account.models.user import PasswordResetLog
 
 pytestmark = pytest.mark.django_db
 

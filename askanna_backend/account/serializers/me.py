@@ -2,15 +2,16 @@ import base64
 import binascii
 import io
 
-from account.models import User, UserProfile
-from core.permissions.askanna_roles import get_role_class, merge_role_permissions
-from core.serializers import ReadWriteSerializerMethodField
 from drf_spectacular.utils import extend_schema_field
 from PIL import Image
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from .user import RoleSerializer
+from account.models.membership import UserProfile
+from account.models.user import User
+from core.permissions.askanna_roles import get_role_class, merge_role_permissions
+from core.serializers import ReadWriteSerializerMethodField
 
 
 class MeSerializer(serializers.ModelSerializer):

@@ -1,11 +1,12 @@
-import os
 import uuid
+from pathlib import Path
 
-from core.config import AskAnnaConfig
-from core.models import AuthorModel, NameDescriptionBaseModel
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+
+from core.config import AskAnnaConfig
+from core.models import AuthorModel, FileBaseModel, NameDescriptionBaseModel
 from package.signals import package_upload_finish
 
 
@@ -42,7 +43,7 @@ class PackageManager(models.Manager):
         return self.get_queryset().inactive()
 
 
-class Package(AuthorModel, NameDescriptionBaseModel):
+class Package(FileBaseModel, AuthorModel, NameDescriptionBaseModel):
     original_filename = models.CharField(max_length=1000, default="")
 
     project = models.ForeignKey(
@@ -70,41 +71,27 @@ class Package(AuthorModel, NameDescriptionBaseModel):
 
     objects = PackageManager()
 
+    file_type = "package"
+    file_extension = "zip"
+    file_readmode = "rb"
+    file_writemode = "wb"
+
     def __str__(self):
         if self.original_filename:
             return f"{self.original_filename} ({self.suuid})"
         return self.suuid
 
-    @property
-    def storage_location(self):
-        return os.path.join(
-            self.project.uuid.hex,
-            self.uuid.hex,
-        )
+    def get_storage_location(self) -> Path:
+        return Path(self.project.uuid.hex) / self.uuid.hex
 
-    @property
-    def stored_path(self):
-        return os.path.join(settings.PACKAGES_ROOT, self.storage_location, self.filename)
-
-    @property
-    def filename(self):
-        return f"package_{self.uuid.hex}.zip"
-
-    @property
-    def read(self):
-        """
-        Read the package from filesytem
-        """
-        with open(self.stored_path, "rb") as f:
-            return f.read()
+    def get_root_location(self) -> Path:
+        return settings.PACKAGES_ROOT
 
     def write(self, stream):
         """
         Write contents to the filesystem
         """
-        os.makedirs(os.path.join(settings.PACKAGES_ROOT, self.storage_location), exist_ok=True)
-        with open(self.stored_path, "wb") as f:
-            f.write(stream.read())
+        super().write(stream)
 
         # unpack the package via signal
         package_upload_finish.send(
@@ -113,25 +100,23 @@ class Package(AuthorModel, NameDescriptionBaseModel):
             obj=self,
         )
 
-    def prune(self):
-        """
-        Delete the files and metadata linked to this instance
-        """
-        if os.path.exists(self.stored_path):
-            os.remove(self.stored_path)
-
-    def get_askanna_yml_path(self) -> str | None:
+    def get_askanna_yml_path(self) -> Path | None:
         """
         Read the askanna.yml from the package stored on the settings.BLOB_ROOT
         If file doesn't exist, return None
         """
-        package_path = os.path.join(settings.BLOB_ROOT, str(self.uuid))
+        package_path = settings.BLOB_ROOT / str(self.uuid)
 
         # read config from askanna.yml
-        askanna_yml_path = os.path.join(package_path, "askanna.yml")
-        if not os.path.exists(askanna_yml_path):
-            return None
-        return askanna_yml_path
+        askanna_yml_path = package_path / "askanna.yml"
+        if Path.exists(askanna_yml_path):
+            return askanna_yml_path
+
+        askanna_yml_path = package_path / "askanna.yaml"
+        if Path.exists(askanna_yml_path):
+            return askanna_yml_path
+
+        return None
 
     def get_askanna_config(self) -> AskAnnaConfig | None:
         """
@@ -140,9 +125,10 @@ class Package(AuthorModel, NameDescriptionBaseModel):
         askanna_yml = self.get_askanna_yml_path()
         if not askanna_yml:
             return None
-        return AskAnnaConfig.from_stream(open(askanna_yml))
+        return AskAnnaConfig.from_stream(Path(askanna_yml).open())
 
     class Meta:
+        get_latest_by = "created_at"
         ordering = ["-created_at"]
 
 
@@ -158,8 +144,8 @@ class ChunkedPackagePart(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True)
 
-    def __str__(self):
-        return f"{self.filename} - part {self.file_no} ({self.uuid})"
-
     class Meta:
         ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.filename} - part {self.file_no} ({self.uuid})"

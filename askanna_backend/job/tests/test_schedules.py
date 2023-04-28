@@ -1,11 +1,11 @@
 import datetime
 
 from django.urls import reverse
-from job.models import JobDef, ScheduledJob
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .base import BaseJobTestDef
+from job.models import JobDef, ScheduledJob
 
 
 class TestJobScheduleAPI(BaseJobTestDef, APITestCase):

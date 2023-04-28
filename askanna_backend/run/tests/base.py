@@ -1,9 +1,10 @@
 import datetime
 import io
 
-from core.tests.base import BaseUserPopulation
 from django.conf import settings
 from django.utils import timezone
+
+from core.tests.base import BaseUserPopulation
 from job.models import JobDef, RunImage
 from package.models import Package
 from project.models import Project
@@ -177,10 +178,6 @@ metric_response_bad = [
 
 
 class BaseRunTest(BaseUserPopulation):
-    def file_to_bytes(self, fp):
-        with fp:
-            return fp.read()
-
     def setUp(self):
         super().setUp()
         self.project = Project.objects.create(**{"name": "TestProject", "workspace": self.workspace_a})
@@ -200,12 +197,7 @@ class BaseRunTest(BaseUserPopulation):
             created_by=self.users.get("member"),
             finished_at=timezone.now(),
         )
-        self.package.write(
-            open(
-                settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
-                "rb",
-            )
-        )
+        self.package.write((settings.TEST_RESOURCES_DIR / "projects" / "project-no-yml.zip").open("rb"))
 
         self.package2 = Package.objects.create(
             original_filename="project-001.zip",
@@ -215,12 +207,7 @@ class BaseRunTest(BaseUserPopulation):
             created_by=self.users.get("member"),
             finished_at=timezone.now(),
         )
-        self.package2.write(
-            open(
-                settings.TEST_RESOURCES_DIR.path("projects/project-001.zip"),
-                "rb",
-            )
-        )
+        self.package2.write((settings.TEST_RESOURCES_DIR / "projects" / "project-001.zip").open("rb"))
 
         self.package3 = Package.objects.create(
             original_filename="project-no-yml.zip",
@@ -230,12 +217,7 @@ class BaseRunTest(BaseUserPopulation):
             created_by=self.users.get("member"),
             finished_at=timezone.now(),
         )
-        self.package3.write(
-            open(
-                settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
-                "rb",
-            )
-        )
+        self.package3.write((settings.TEST_RESOURCES_DIR / "projects" / "project-no-yml.zip").open("rb"))
 
         # this package is visible to everyone
         self.package4 = Package.objects.create(
@@ -246,12 +228,7 @@ class BaseRunTest(BaseUserPopulation):
             created_by=self.users.get("member"),
             finished_at=timezone.now(),
         )
-        self.package4.write(
-            open(
-                settings.TEST_RESOURCES_DIR.path("projects/project-no-yml.zip"),
-                "rb",
-            )
-        )
+        self.package4.write((settings.TEST_RESOURCES_DIR / "projects" / "project-no-yml.zip").open("rb"))
 
         self.jobdef = JobDef.objects.create(
             name="TestJobDef",
@@ -424,8 +401,7 @@ class BaseRunTest(BaseUserPopulation):
         self.tracked_variables["run6"].save()
 
         self.artifact = RunArtifact.objects.create(**{"run": self.runs["run1"], "size": 500})
-        with open(settings.TEST_RESOURCES_DIR.path("artifacts/artifact-aa.zip"), "rb") as f:
-            self.artifact.write(f)
+        self.artifact.write((settings.TEST_RESOURCES_DIR / "artifacts" / "artifact-aa.zip").open("rb"))
 
     def tearDown(self):
         """

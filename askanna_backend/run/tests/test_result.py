@@ -1,9 +1,9 @@
-from core.tests.base import BaseUploadTestMixin
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .base import BaseRunTest
+from core.tests.base import BaseUploadTestMixin
 
 
 class TestResultCreateUploadAPI(BaseUploadTestMixin, BaseRunTest, APITestCase):

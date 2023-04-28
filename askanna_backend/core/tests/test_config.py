@@ -1,9 +1,10 @@
 import unittest
 
 import pytest
+from django.conf import settings
+
 from core.config import AskAnnaConfig
 from core.utils.config import get_setting_from_database
-from django.conf import settings
 
 pytestmark = pytest.mark.django_db
 
@@ -41,40 +42,38 @@ class TestDatabaseSetting(unittest.TestCase):
 
 class TestAskAnnaConfig(unittest.TestCase):
     def test_notifications_global(self):
-        yml = settings.TEST_RESOURCES_DIR.path("askannaconfig.yml")
-        config = AskAnnaConfig.from_stream(open(yml))
+        yml = settings.TEST_RESOURCES_DIR / "askannaconfig.yml"
+        config = AskAnnaConfig.from_stream(yml.open())
 
-        self.assertEqual(
-            config.notifications,
-            {
-                "all": {
-                    "email": [
-                        "anna@askanna.io",
-                        "robot@askanna.io",
-                    ]
-                },
-                "error": {"email": []},
+        assert config is not None
+        assert config.notifications == {
+            "all": {
+                "email": [
+                    "anna@askanna.io",
+                    "robot@askanna.io",
+                ]
             },
-        )
+            "error": {"email": []},
+        }
 
     def test_notifications_job1(self):
-        yml = settings.TEST_RESOURCES_DIR.path("askannaconfig.yml")
-        config = AskAnnaConfig.from_stream(open(yml))
+        yml = settings.TEST_RESOURCES_DIR / "askannaconfig.yml"
+        config = AskAnnaConfig.from_stream(yml.open())
 
-        self.assertEqual(
-            config.jobs.get("job1", {}).notifications,
-            {
-                "all": {
-                    "email": [
-                        "anna@askanna.io",
-                        "robot@askanna.io",
-                        "user@askanna.io",
-                    ]
-                },
-                "error": {
-                    "email": [
-                        "user+error@askanna.io",
-                    ]
-                },
+        assert config is not None
+        assert config.jobs.get("job1", {}) != {}
+        assert config.jobs.get("job1", {}) is not None
+        assert config.jobs.get("job1", {}).notifications == {
+            "all": {
+                "email": [
+                    "anna@askanna.io",
+                    "robot@askanna.io",
+                    "user@askanna.io",
+                ]
             },
-        )
+            "error": {
+                "email": [
+                    "user+error@askanna.io",
+                ]
+            },
+        }

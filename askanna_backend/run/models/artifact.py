@@ -1,32 +1,26 @@
-import os
+from pathlib import Path
 
-from core.models import ArtifactModelMixin, BaseModel
 from django.conf import settings
 from django.db import models
 
+from core.models import BaseModel, FileBaseModel
 
-class RunArtifact(ArtifactModelMixin, BaseModel):
+
+class RunArtifact(FileBaseModel):
     """
     Artifact of a run stored into an archive file
     """
 
-    filetype = "artifact"
-    filextension = "zip"
-    filereadmode = "rb"
-    filewritemode = "wb"
+    file_type = "artifact"
+    file_extension = "zip"
+    file_readmode = "rb"
+    file_writemode = "wb"
 
-    def get_storage_location(self):
-        return os.path.join(
-            self.run.jobdef.project.uuid.hex,
-            self.run.jobdef.uuid.hex,
-            self.run.uuid.hex,
-        )
+    def get_storage_location(self) -> Path:
+        return Path(self.run.jobdef.project.uuid.hex) / self.run.jobdef.uuid.hex / self.run.uuid.hex
 
-    def get_base_path(self):
-        return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location)
-
-    def get_full_path(self):
-        return os.path.join(settings.ARTIFACTS_ROOT, self.storage_location, self.filename)
+    def get_root_location(self) -> Path:
+        return settings.ARTIFACTS_ROOT
 
     run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="artifact")
 

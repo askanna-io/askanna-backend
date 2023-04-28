@@ -1,10 +1,10 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from run.models import Run, RunMetric, RunMetricMeta
-from run.tasks.metric import post_run_deduplicate_metrics
 
 from .base import BaseRunTest, metric_response_good, metric_response_good_small
+from run.models import Run, RunMetric, RunMetricMeta
+from run.tasks.metric import post_run_deduplicate_metrics
 
 
 class TestRunMetricModel(BaseRunTest, APITestCase):

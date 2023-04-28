@@ -1,7 +1,8 @@
-from core.models import BaseModel
 from django.db import models
 from django.db.models import Q
 from django_cryptography.fields import encrypt
+
+from core.models import BaseModel
 
 
 class VariableQuerySet(models.QuerySet):

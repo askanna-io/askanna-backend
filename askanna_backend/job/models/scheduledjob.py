@@ -2,8 +2,9 @@ import datetime
 import zoneinfo
 
 import croniter
-from core.models import BaseModel
 from django.db import models
+
+from core.models import BaseModel
 
 
 class ScheduledJob(BaseModel):

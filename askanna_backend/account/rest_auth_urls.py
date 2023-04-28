@@ -1,10 +1,11 @@
+from dj_rest_auth.views import LoginView, LogoutView, PasswordResetConfirmView
+from django.urls import path
+
 from account.views.user import (
     PasswordResetTokenStatusView,
     PasswordResetView,
     UserDetailsView,
 )
-from dj_rest_auth.views import LoginView, LogoutView, PasswordResetConfirmView
-from django.urls import path
 
 urlpatterns = [
     path("password/reset/", PasswordResetView.as_view(), name="rest_password_reset"),

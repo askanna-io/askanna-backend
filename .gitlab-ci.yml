@@ -138,6 +138,9 @@ code_quality:
 
 pytest:
   extends: .test-base-services
+  variables:
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   before_script:
     - pip install -r requirements/local.txt
   script:

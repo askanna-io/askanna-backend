@@ -1,7 +1,7 @@
+from config.celery_app import app as celery_app
+
 from core.utils.maintenance import remove_objects
 from project.models import Project
-
-from config.celery_app import app as celery_app
 
 
 @celery_app.task(name="project.tasks.delete_projects")

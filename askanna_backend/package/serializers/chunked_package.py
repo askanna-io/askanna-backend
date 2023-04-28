@@ -1,5 +1,6 @@
-from package.models import ChunkedPackagePart
 from rest_framework import serializers
+
+from package.models import ChunkedPackagePart
 
 
 class ChunkedPackagePartSerializer(serializers.ModelSerializer):

@@ -1,12 +1,14 @@
-import os
 from zipfile import ZipFile
 
-from account.models import MSP_WORKSPACE
-from core.utils import detect_file_mimetype, get_files_and_directories_in_zip_file
 from django.conf import settings
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
+
+from config.celery_app import app as celery_app
+
+from account.models.membership import MSP_WORKSPACE
+from core.utils import detect_file_mimetype, get_files_and_directories_in_zip_file
 from run.models import (
     Run,
     RunArtifact,
@@ -18,8 +20,6 @@ from run.models import (
 )
 from run.signals import artifact_upload_finish, result_upload_finish
 
-from config.celery_app import app as celery_app
-
 
 @receiver(result_upload_finish)
 def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
@@ -27,7 +27,7 @@ def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
     After saving the result, determine the mime-type of the file using python-magic
     """
     detected_mimetype = detect_file_mimetype(obj.stored_path)
-    if detect_file_mimetype:
+    if detected_mimetype:
         obj.mime_type = detected_mimetype
         obj.save(
             update_fields=[
@@ -47,8 +47,8 @@ def handle_upload(sender, signal, postheaders, obj, **kwargs):
     source_location = settings.ARTIFACTS_ROOT
     target_location = settings.BLOB_ROOT
 
-    source_path = os.path.join(source_location, obj.storage_location, obj.filename)
-    target_path = os.path.join(target_location, str(obj.uuid))
+    source_path = source_location / obj.storage_location / obj.filename
+    target_path = target_location / str(obj.uuid)
 
     zip_list = get_files_and_directories_in_zip_file(source_path)
     obj.count_dir = sum(map(lambda x: x["type"] == "directory", zip_list))

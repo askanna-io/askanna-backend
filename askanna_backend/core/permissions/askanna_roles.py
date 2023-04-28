@@ -296,7 +296,23 @@ project_permissions = {
 }
 
 
-def get_role_class(role_code: str):
+def get_role_class(
+    role_code: str,
+) -> (
+    type[AskAnnaPublicViewer]
+    | type[AskAnnaMember]
+    | type[AskAnnaAdmin]
+    | type[WorkspaceNoMember]
+    | type[WorkspacePublicViewer]
+    | type[WorkspaceViewer]
+    | type[WorkspaceMember]
+    | type[WorkspaceAdmin]
+    | type[ProjectNoMember]
+    | type[ProjectPublicViewer]
+    | type[ProjectViewer]
+    | type[ProjectMember]
+    | type[ProjectAdmin]
+):
     """Get the role class by the role code. If multiple classes have the same code, then return the first class."""
     role_mapping = {
         AskAnnaPublicViewer.code: AskAnnaPublicViewer,

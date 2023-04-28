@@ -1,26 +1,60 @@
-import io
-from unittest import mock
-
-from account.models import User
+import pytest
 from django.test import override_settings
-from rest_framework.test import APITestCase
 
 
-class SqlPrintMiddlewareTest(APITestCase):
-    @override_settings(DEBUG=True, DEBUG_SQL=True)
-    @mock.patch("sys.stdout", new_callable=io.StringIO)
-    def test_sql_print(self, mock_stdout):
-        user = User.objects.create_user("john", "john@example.com", "password")
-        self.client.get("/v1/auth/user/", HTTP_AUTHORIZATION="Token %s" % user.auth_token.key)
+@pytest.mark.django_db
+@override_settings(DEBUG=True, DEBUG_SQL=True)
+def test_debug_sql(client, django_user_model, capfd):
+    user = django_user_model.objects.create(username="john@example.com", email="john@example.com", password="password")
+    client.get("/v1/auth/user/", HTTP_AUTHORIZATION="Token %s" % user.auth_token.key)
 
-        assert "SELECT" in mock_stdout.getvalue()
-        assert "TOTAL QUERIES" in mock_stdout.getvalue()
+    captured = capfd.readouterr()
 
-    @override_settings(DEBUG=False, DEBUG_SQL=False)
-    @mock.patch("sys.stdout", new_callable=io.StringIO)
-    def test_sql_print_off(self, mock_stdout):
-        user = User.objects.create_user("john", "john@example.com", "password")
-        self.client.get("/v1/auth/user/", HTTP_AUTHORIZATION="Token %s" % user.auth_token.key)
+    assert "SELECT" in captured.err
+    assert "TOTAL QUERIES" in captured.err
 
-        assert "SELECT" not in mock_stdout.getvalue()
-        assert "TOTAL QUERIES" not in mock_stdout.getvalue()
+
+@pytest.mark.django_db(transaction=True)
+@override_settings(DEBUG=True, DEBUG_SQL=True)
+def test_debug_sql_no_query_part_2(client, capfd):
+    client.get("/v1/me/")
+
+    captured = capfd.readouterr()
+
+    assert "SELECT" not in captured.err
+    assert "TOTAL QUERIES" not in captured.err
+
+
+@pytest.mark.django_db(transaction=True)
+@override_settings(DEBUG=True, DEBUG_SQL=True)
+def test_debug_sql_no_query(client, capfd):
+    client.get("/admin/jsi18n/")
+
+    captured = capfd.readouterr()
+
+    assert "SELECT" not in captured.err
+    assert "TOTAL QUERIES" not in captured.err
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False, DEBUG_SQL=False)
+def test_debug_sql_off(client, django_user_model, capfd):
+    user = django_user_model.objects.create(username="john@example.com", email="john@example.com", password="password")
+    client.get("/v1/auth/user/", HTTP_AUTHORIZATION="Token %s" % user.auth_token.key)
+
+    captured = capfd.readouterr()
+
+    assert "SELECT" not in captured.err
+    assert "TOTAL QUERIES" not in captured.err
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=True, DEBUG_SQL=False)
+def test_debug_sql_with_debug_on_but_sql_debug_off(client, django_user_model, capfd):
+    user = django_user_model.objects.create(username="john@example.com", email="john@example.com", password="password")
+    client.get("/v1/auth/user/", HTTP_AUTHORIZATION="Token %s" % user.auth_token.key)
+
+    captured = capfd.readouterr()
+
+    assert "SELECT" not in captured.err
+    assert "TOTAL QUERIES" not in captured.err

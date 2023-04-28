@@ -1,11 +1,15 @@
 import datetime
 import json
+import logging
 
 import redis
-from core.models import BaseModel
 from django.db import models
 
 from config.settings.main import env
+
+from core.models import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class RunLog(BaseModel):
@@ -28,7 +32,7 @@ class RunLog(BaseModel):
             timestamp = datetime.datetime.utcnow().isoformat()
         self.logqueue.append([self.log_idx, timestamp, message])
         if print_log:
-            print([self.log_idx, timestamp, message], flush=True)  # noqa: T201
+            logger.info([self.log_idx, timestamp, message])
 
     def save_stdout(self):
         self.stdout = self.logqueue.get()
