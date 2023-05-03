@@ -3,11 +3,11 @@ docker~=6.0                   # https://github.com/docker/docker-py
 Jinja2~=3.1                   # parse non-Django templates | https://github.com/pallets/jinja
 Pillow~=9.5                   # https://github.com/python-pillow/Pillow
 PyYAML~=6.0                   # https://github.com/yaml/pyyaml
-sentry-sdk~=1.19              # https://github.com/getsentry/sentry-python
+sentry-sdk~=1.21              # https://github.com/getsentry/sentry-python
 
 # Django
 # ----------------------------------------------------------------------------------------------------
-django[argon2]~=4.1.8         # https://github.com/django/django
+django[argon2]~=4.2.0         # https://github.com/django/django
 django-cryptography==1.1      # https://github.com/georgemarshall/django-cryptography
 django-environ~=0.10.0        # https://github.com/joke2k/django-environ
 django-extensions~=3.2.1      # https://github.com/django-extensions/django-extensions
@@ -20,18 +20,19 @@ whitenoise~=6.4               # https://github.com/evansd/whitenoise
 # ----------------------------------------------------------------------------------------------------
 djangorestframework~=3.14.0   # https://github.com/encode/django-rest-framework
 dj-rest-auth~=3.0.0           # https://github.com/iMerica/dj-rest-auth
-drf-spectacular~=0.26.1       # https://github.com/tfranzel/drf-spectacular
+drf-spectacular~=0.26.2       # https://github.com/tfranzel/drf-spectacular
 drf-extensions~=0.7.1         # https://github.com/chibisov/drf-extensions
 
 # Django health check
 # ----------------------------------------------------------------------------------------------------
 django-health-check~=3.17.0   # https://github.com/KristianOellegaard/django-health-check
-psutil~=5.9.4                 # https://github.com/giampaolo/psutil
+psutil~=5.9.5                 # https://github.com/giampaolo/psutil
 
 # Redis
 # ----------------------------------------------------------------------------------------------------
-redis~=4.5.1                  # https://github.com/andymccurdy/redis-py
+redis~=4.5.4                  # https://github.com/andymccurdy/redis-py
 django-redis~=5.2.0           # https://github.com/niwinz/django-redis
+hiredis~=2.2.2                # https://github.com/redis/hiredis-py
 
 # Celery
 # ----------------------------------------------------------------------------------------------------
