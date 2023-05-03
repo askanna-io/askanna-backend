@@ -15,7 +15,6 @@ indent_style = space
 indent_size = 4
 
 [*.py]
-known_first_party = askanna_backend
 multi_line_output = 3
 default_section = THIRDPARTY
 recursive = true

@@ -15,15 +15,14 @@ from config.settings import (
     sentry,
 )
 
-BASE_DIR = (
-    Path(__file__).resolve(strict=True).parent.parent.parent
-)  # (askanna_backend/config/settings/base.py - 3 = askanna_backend/)
+# BASE_DIR = askanna_backend/config/settings/base.py - 3 = askanna_backend/
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 
-APPS_DIR = BASE_DIR / "askanna_backend"
+APPS_DIR = BASE_DIR / "apps"
 RESOURCES_DIR = BASE_DIR / "resources"
 TEST_RESOURCES_DIR = BASE_DIR / "tests" / "resources"
 
-# Insert the APPS_DIR into PYTHON_PATH to allow easier import from our apps housed in askanna_backend/askanna_backend
+# Insert the APPS_DIR into PYTHONPATH to allow easier import from our apps housed in the apps directory
 sys.path.insert(0, str(APPS_DIR))
 
 env = environ.Env()
