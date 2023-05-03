@@ -20,18 +20,32 @@ class DebugSqlMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        if settings.DEBUG_SQL is False or len(connection.queries) == 0 or "/admin/jsi18n/" in request.path_info:
+        if (
+            settings.DEBUG_SQL is False
+            or len(connection.queries) == 0
+            or "/admin/jsi18n/" in request.path_info
+            or (
+                len(connection.queries) == 2
+                and connection.queries[0]["sql"] == "BEGIN"
+                and connection.queries[-1]["sql"] == "COMMIT"
+            )
+        ):
             return response
 
-        logger.info(f'\n\033[1;35mSQL Queries for\033[1;34m "{request.method} {request.path_info}"\033[0m\n')
+        logger.info('\n\033[1;35mSQL Queries for\033[1;34m "%s %s"\033[0m\n', request.method, request.path_info)
         total_time = 0.0
+
         for query in connection.queries:
             nice_sql = query["sql"].replace('"', "").replace(",", ", ")
-            sql = "\033[1;31m[{}]\033[0m {}".format(query["time"], nice_sql)
+            sql = f"\033[1;31m[{query['time']}]\033[0m {nice_sql}"
             total_time = total_time + float(query["time"])
-            logger.info(f"{sql}\n")
+            logger.info("%s\n", sql)
 
-        logger.info(f"\033[1;32mTOTAL QUERIES: {len(connection.queries)}\033[0m")
-        logger.info(f"\033[1;32mTOTAL TIME: {str(total_time)} seconds\033[0m\n")
+        number_of_queries = len(connection.queries)
+        if connection.queries[0]["sql"] == "BEGIN" and connection.queries[-1]["sql"] == "COMMIT":
+            number_of_queries = number_of_queries - 2
+
+        logger.info("\033[1;32mTOTAL QUERIES: %s\033[0m", number_of_queries)
+        logger.info("\033[1;32mTOTAL TIME:    %s seconds\033[0m\n", total_time)
 
         return response
