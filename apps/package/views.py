@@ -13,19 +13,17 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 
 from account.models.membership import MSP_WORKSPACE, Membership
-from askanna_backend.package.serializers.chunked_package import (
-    ChunkedPackagePartSerializer,
-)
-from askanna_backend.package.serializers.package import (
-    PackageCreateSerializer,
-    PackageSerializer,
-    PackageSerializerWithFileList,
-)
 from core.filters import filter_multiple
 from core.mixins import ObjectRoleMixin, SerializerByActionMixin
 from core.permissions.role import RoleBasedPermission
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from package.models import ChunkedPackagePart, Package
+from package.serializers.chunked_package import ChunkedPackagePartSerializer
+from package.serializers.package import (
+    PackageCreateSerializer,
+    PackageSerializer,
+    PackageSerializerWithFileList,
+)
 from package.signals import package_upload_finish
 from project.models import Project
 

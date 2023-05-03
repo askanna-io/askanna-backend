@@ -6,4 +6,4 @@ set -o nounset
 
 # celery -A config.celery_app worker -l INFO
 
-watchmedo auto-restart --directory=./askanna_backend/ --pattern=*.py --recursive -- celery -A config.celery_app worker -l INFO
+watchmedo auto-restart --directory=./apps/ --pattern=*.py --recursive -- celery -A config.celery_app worker -l INFO

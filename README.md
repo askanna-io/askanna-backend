@@ -136,7 +136,7 @@ pytest
 To run the tests, check your test coverage, and generate an HTML coverage report:
 
 ```shell
-pytest --cov=askanna_backend/
+pytest --cov=apps/
 coverage html
 open htmlcov/index.html
 ```

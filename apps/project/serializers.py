@@ -2,10 +2,8 @@ from rest_framework import serializers
 
 from account.models.membership import Membership
 from account.serializers.user import UserRelationSerializer
-from askanna_backend.package.serializers.package_relation import (
-    PackageRelationSerializer,
-)
 from core.permissions.askanna_roles import merge_role_permissions
+from package.serializers.package_relation import PackageRelationSerializer
 from project.models import Project
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceRelationSerializer
