@@ -14,7 +14,7 @@ from core.container import (
     RegistryImageHelper,
 )
 from core.utils import parse_string
-from core.utils.config import get_setting_from_database
+from core.utils.config import get_setting
 from run.models import Run, RunVariable
 from variable.models import Variable
 
@@ -72,11 +72,7 @@ def get_project_variables(run):
 def start_run(self, run_uuid):
     logger.info(f"Received message to start run {run_uuid}")
 
-    docker_debug_log = get_setting_from_database(
-        name="DOCKER_DEBUG_LOG",
-        default=False,
-        return_type=bool,
-    )
+    docker_debug_log = get_setting(name="DOCKER_PRINT_LOG", default=False, return_type=bool)
 
     # First save current Celery Task ID to the celery_task_id field
     run = Run.objects.get(pk=run_uuid)

@@ -7,7 +7,7 @@ from django.conf import settings
 
 from config.celery_app import app as celery_app
 
-from core.utils.config import get_setting_from_database
+from core.utils.config import get_setting
 from core.utils.maintenance import remove_objects
 from job.models.jobdef import JobDef
 
@@ -31,16 +31,13 @@ def clean_dangling_images():
 def clean_containers_after_run():
     """
     We query all containers from Docker
-    We check which ones are older than `DOCKER_AUTO_REMOVE_TTL` hours
+    We check which ones are older than `DOCKER_AUTO_REMOVE_TTL_HOURS`
     Finally clean the container
     """
 
     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
 
-    delete_ttl_after_hours = get_setting_from_database(
-        name="DOCKER_AUTO_REMOVE_TTL", default=settings.DOCKER_AUTO_REMOVE_TTL
-    )
-    delete_after_minutes = int(float(delete_ttl_after_hours) * 60)
+    delete_when_older_than = get_setting(name="DOCKER_AUTO_REMOVE_TTL_HOURS", return_type=float, default=1)
 
     for container in client.containers.list(filters={"status": "exited"}):
         if not container.name.startswith("run_"):
@@ -55,7 +52,7 @@ def clean_containers_after_run():
         if finished_at:
             finished_dt = parser.isoparse(finished_at)
             age = datetime.datetime.now(tz=datetime.UTC) - finished_dt
-            if age > datetime.timedelta(minutes=delete_after_minutes):
+            if age > datetime.timedelta(hours=delete_when_older_than):
                 logger.info("Removing container", container.name)
                 logger.info(container.remove(v=True))
 

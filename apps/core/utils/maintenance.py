@@ -3,21 +3,22 @@ import datetime
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
-from .config import get_setting_from_database
+from core.utils.config import get_setting
 
 
-def remove_objects(queryset, ttl_hours: int = 1):
+def remove_objects(queryset: QuerySet, ttl_hours: float = 1):
     """
-    queryset: Queryset containing all objects, also the ones not to delete
-    ttl_hours: we only delete objects older than `ttl_hours` old.
+    Remove objects from the database that are older than `ttl_hours` hours.
+
+    Args:
+        queryset: Queryset containing all objects, also the ones not to delete
+        ttl_hours: we only delete objects older than `ttl_hours`.
     """
     if not isinstance(queryset, QuerySet):
         raise Exception("Given queryset is not a Django Queryset")
 
-    remove_ttl = str(get_setting_from_database(name="OBJECT_REMOVAL_TTL_HOURS", default=ttl_hours))
-    remove_ttl_mins = int(float(remove_ttl) * 60.0)
-
-    older_than = timezone.now() - datetime.timedelta(minutes=remove_ttl_mins)
+    remove_ttl_hours = get_setting(name="OBJECT_REMOVAL_TTL_HOURS", return_type=float, default=ttl_hours)
+    older_than = timezone.now() - datetime.timedelta(hours=remove_ttl_hours)
 
     for obj in queryset.filter(deleted_at__lte=older_than):
         obj.delete()

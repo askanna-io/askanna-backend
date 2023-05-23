@@ -7,6 +7,7 @@ from .settings_decorator import configclass
 def settings(config, env):
     """Configure askanna related settings."""
     config.ASKANNA_INVITATION_VALID_HOURS = env.int("ASKANNA_INVITATION_VALID_HOURS", 168)
+    config.OBJECT_REMOVAL_TTL_HOURS = env.int("OBJECT_REMOVAL_TTL_HOURS", 720)  # default: 30 days
 
     api_environments = {
         "api": "production",
@@ -31,13 +32,8 @@ def settings(config, env):
 
     config.ASKANNA_ENVIRONMENT = api_environments.get(parsed_url.netloc.split(".")[0], "review")
 
-    # AskAnna Docker settings
-    config.ASKANNA_DOCKER_USER = env.str("ASKANNA_DOCKER_USER", default=None)
-    config.ASKANNA_DOCKER_PASS = env.str("ASKANNA_DOCKER_PASS", default=None)
-
     # Setting for deletion of Docker containers after a run
-    config.DOCKER_AUTO_REMOVE_CONTAINER = env.bool("DOCKER_AUTO_REMOVE_CONTAINER", default=False)
-    config.DOCKER_AUTO_REMOVE_TTL = env.int("DOCKER_AUTO_REMOVE_TTL", default=1)
+    config.DOCKER_AUTO_REMOVE_TTL_HOURS = env.int("DOCKER_AUTO_REMOVE_TTL_HOURS", default=1)
 
     # Setting for internal job runs
     config.JOB_CREATE_PROJECT_SUUID = "640q-2AMP-T5BL-Cnml"
@@ -45,5 +41,7 @@ def settings(config, env):
     # Setting for avatars
     config.USERPROFILE_DEFAULT_AVATAR = config.RESOURCES_DIR / "assets/src_assets_icons_ask-anna-default-gravatar.png"
 
-    # Set default docker image for the runner
-    config.RUNNER_DEFAULT_DOCKER_IMAGE = "askanna/python:3.11"
+    # Set default Docker image for the runner
+    config.RUNNER_DEFAULT_DOCKER_IMAGE = env.str("RUNNER_DEFAULT_DOCKER_IMAGE", default="askanna/python:3.11")
+    config.RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME = env.str("RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME", default=None)
+    config.RUNNER_DEFAULT_DOCKER_IMAGE_PASSWORD = env.str("RUNNER_DEFAULT_DOCKER_IMAGE_PASSWORD", default=None)

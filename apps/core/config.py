@@ -3,6 +3,7 @@ import dataclasses
 
 import yaml
 from django.conf import settings
+from yaml.scanner import ScannerError
 
 try:
     from yaml import CLoader as Loader
@@ -10,7 +11,7 @@ except ImportError:
     from yaml import Loader
 
 from core.utils import is_valid_timezone, parse_cron_line
-from core.utils.config import get_setting_from_database
+from core.utils.config import get_setting
 
 
 class AskAnnaConfig:
@@ -69,7 +70,7 @@ class AskAnnaConfig:
     def from_stream(cls, filename):
         try:
             config = yaml.load(filename, Loader=Loader)  # nosec: B506
-        except yaml.scanner.ScannerError:
+        except ScannerError:
             return None
         else:
             return cls(config=config)
@@ -77,45 +78,35 @@ class AskAnnaConfig:
     @property
     def timezone(self):
         """
-        the global timezone can be set
-        if not set we take the default set in our settings
+        Get the project timezone from the config. If not set or invalid, we take the default timezone from
+        django.conf.settings.
         """
-        return is_valid_timezone(self.config.get("timezone"), settings.TIME_ZONE)
+        timezone = self.config.get("timezone", "")
+        return timezone if is_valid_timezone(timezone) else settings.TIME_ZONE
 
     @property
     def environment(self):
         """
-        Return the environment that is set
+        Return the environment that is set or the default environment
         """
-        # get runner image
-        # the default image can be set in core.models.Setting
-        default_runner_image = get_setting_from_database(
-            name="RUNNER_DEFAULT_DOCKER_IMAGE",
-            default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
-        )
-        default_runner_image_user = get_setting_from_database(
-            name="RUNNER_DEFAULT_DOCKER_IMAGE_USER",
-            default=settings.ASKANNA_DOCKER_USER,
-        )
-        default_runner_image_pass = get_setting_from_database(
-            name="RUNNER_DEFAULT_DOCKER_IMAGE_PASS",
-            default=settings.ASKANNA_DOCKER_PASS,
-        )
-
         environment = self.config.get("environment", {})
-        if not isinstance(environment, dict) or not environment:
+        if not environment or not isinstance(environment, dict):
             """
-            When the environment is not defined or just a string
-            we will return the default values configured.
+            When the environment is not defined or not a dictionary, we will return the default values configured.
             """
-            image_spec = {"image": default_runner_image}
-            if default_runner_image_user:
+            default_runner_image = get_setting(name="RUNNER_DEFAULT_DOCKER_IMAGE")
+            default_runner_image_username = get_setting(name="RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME")
+            default_runner_image_password = get_setting(name="RUNNER_DEFAULT_DOCKER_IMAGE_PASSWORD")
+
+            image_spec: dict[str, str | dict] = {"image": default_runner_image}
+            if default_runner_image_username:
                 image_spec["credentials"] = {
-                    "username": default_runner_image_user,
-                    "password": default_runner_image_pass,
+                    "username": default_runner_image_username,
+                    "password": default_runner_image_password,
                 }
 
             return Environment.from_dict(image_spec)
+
         return Environment.from_dict(
             {
                 "image": environment.get("image"),
@@ -129,20 +120,23 @@ class AskAnnaConfig:
 
 @dataclasses.dataclass
 class Schedule:
-    raw_definition: str
+    raw_definition: str | dict
     cron_definition: str
     cron_timezone: str
 
     @classmethod
-    def from_python(cls, schedule: dict, job_timezone):
-        parsed = parse_cron_line(schedule)
-        if parsed:
+    def from_python(cls, schedule: str | dict, job_timezone):
+        try:
+            cron_line_parsed = parse_cron_line(schedule)
+        except ValueError:
+            # FIXME: in the future we should provide feedback to the user that the proposed Schedule is not valid
+            return None
+        else:
             return cls(
                 raw_definition=schedule,
-                cron_definition=parsed,
+                cron_definition=cron_line_parsed,
                 cron_timezone=job_timezone,
             )
-        return None
 
 
 @dataclasses.dataclass
@@ -163,10 +157,8 @@ class Environment:
         return self.credentials is not None
 
     def to_dict(self):
-        spec = {
-            "image": self.image,
-        }
-        if self.has_credentials():
+        spec: dict[str, str | dict] = {"image": self.image}
+        if self.credentials is not None:
             spec["credentials"] = {
                 "username": self.credentials.username,
                 "password": self.credentials.password,
@@ -175,16 +167,17 @@ class Environment:
 
     @classmethod
     def from_dict(cls, environment: dict):
-        spec = {"image": environment.get("image")}
+        spec: dict[str, str | dict] = {"image": environment.get("image", "")}
         if environment.get("credentials") and environment.get("credentials", {}).get("username"):
             # Credentials are specified, we just assume at least the username is filled out.
             credentials = ImageCredentials(
                 **{
                     "username": environment.get("credentials", {}).get("username", ""),
-                    "password": environment.get("credentials", {}).get("password"),
+                    "password": environment.get("credentials", {}).get("password", None),
                 }
             )
             spec["credentials"] = credentials
+
         return cls(**spec)
 
 
@@ -193,11 +186,11 @@ class Job:
     name: str
     environment: Environment
     commands: list[str]
-    notifications: list[dict]
+    notifications: dict
     schedules: list[Schedule]
     timezone: str
 
-    def __flatten_email_receivers(self, receivers) -> list:
+    def __flatten_email_receivers(self, receivers: list) -> list:
         _receivers = []
         for r in receivers:
             receiver = r.split(",")
@@ -221,7 +214,9 @@ class Job:
     def from_dict(cls, name, job_config, global_config: AskAnnaConfig):
         global_timezone = global_config.timezone
         global_environment = global_config.environment
-        job_timezone = is_valid_timezone(job_config.get("timezone"), global_timezone)
+
+        job_config_timezone = job_config.get("timezone", "")
+        job_timezone = job_config_timezone if is_valid_timezone(job_config_timezone) else global_timezone
 
         schedules = []
         for schedule in job_config.get("schedule", []):
@@ -238,7 +233,7 @@ class Job:
         job_commands = job_config.get("job", [])
 
         # extract the notifications
-        job_notifications = job_config.get("notifications", {})
+        job_notifications: dict = job_config.get("notifications", {})
 
         # update the job notifications with those in `global_config.notifications`
         # FIXME: make merging of these list pretier
