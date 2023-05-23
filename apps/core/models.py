@@ -153,5 +153,16 @@ class FileBaseModel(BaseModel):
 
 
 class Setting(BaseModel):
-    name = models.CharField(max_length=32, blank=True, unique=True)
-    value = encrypt(models.TextField(default=None, blank=True, null=True))
+    AVAILABLE_SETTINGS = [
+        ("ASKANNA_UI_URL", "ASKANNA_UI_URL"),
+        ("DEFAULT_FROM_EMAIL", "DEFAULT_FROM_EMAIL"),
+        ("DOCKER_AUTO_REMOVE_TTL_HOURS", "DOCKER_AUTO_REMOVE_TTL_HOURS"),
+        ("DOCKER_PRINT_LOG", "DOCKER_PRINT_LOG"),
+        ("OBJECT_REMOVAL_TTL_HOURS", "OBJECT_REMOVAL_TTL_HOURS"),
+        ("RUNNER_DEFAULT_DOCKER_IMAGE", "RUNNER_DEFAULT_DOCKER_IMAGE"),
+        ("RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME", "RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME"),
+        ("RUNNER_DEFAULT_DOCKER_IMAGE_PASSWORD", "RUNNER_DEFAULT_DOCKER_IMAGE_PASSWORD"),
+    ]
+
+    name = models.CharField(unique=True, choices=AVAILABLE_SETTINGS)
+    value = encrypt(models.TextField(blank=True, null=False, default=""))

@@ -1,9 +1,8 @@
-from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
 from core.models import NameDescriptionBaseModel
-from core.utils.config import get_setting_from_database
+from core.utils.config import get_setting
 
 
 class JobQuerySet(models.QuerySet):
@@ -46,17 +45,9 @@ class JobDef(NameDescriptionBaseModel):
     def __str__(self):
         return f"{self.name} ({self.suuid})"
 
-    @property
-    def default_environment_image(self) -> str:
-        return str(
-            get_setting_from_database(
-                name="RUNNER_DEFAULT_DOCKER_IMAGE",
-                default=settings.RUNNER_DEFAULT_DOCKER_IMAGE,
-            )
-        )
-
     def get_environment_image(self) -> str:
-        return self.environment_image or self.default_environment_image
+        """Return the environment image set for this job definition or if not set the default runner image"""
+        return self.environment_image or get_setting(name="RUNNER_DEFAULT_DOCKER_IMAGE")
 
     class Meta:
         ordering = ["-created_at"]

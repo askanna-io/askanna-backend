@@ -11,7 +11,6 @@ from zipfile import ZipFile
 import croniter
 import filetype
 import magic
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.http import HttpResponseNotFound, StreamingHttpResponse
@@ -35,35 +34,52 @@ def validate_cron_line(cron_line: str) -> bool:
         return False
 
 
-def parse_cron_line(cron_line: str) -> str:
+def parse_cron_line(cron_line: str | dict) -> str:
     """
-    parse incoming cron definition
-    if it is valid, then return the cron_line, otherwise a None
+    Parse raw cron line and if it's valid return the cron definition. If it's not valid, raise a ValueError.
+
+    The parses determines which format the raw cron line is. It can be one of the following:
+    - "* * * * *"  (m, h, d, m, weekday)
+    - "@string" (@yearly, @annually, @daily, @hourly, etc.)
+    - dict (key, value with keys: minute, hour, day, month, weekday)
     """
 
     if isinstance(cron_line, str):
-        # we deal with cron strings
-        # first check whether we need to make a "translation" for @strings
+        cron_line_parsed = cron_line.strip()
 
-        alias_mapping = {
-            "@midnight": "0 0 * * *",
-            "@yearly": "0 0 1 1 *",
-            "@annually": "0 0 1 1 *",
-            "@monthly": "0 0 1 * *",
-            "@weekly": "0 0 * * 0",
-            "@daily": "0 0 * * *",
-            "@hourly": "0 * * * *",
-        }
-        cron_line = alias_mapping.get(cron_line.strip(), cron_line.strip())
+        if cron_line_parsed.startswith("@"):
+            # "translate" @string variants
+            alias_mapping = {
+                "@midnight": "0 0 * * *",
+                "@yearly": "0 0 1 1 *",
+                "@annually": "0 0 1 1 *",
+                "@monthly": "0 0 1 * *",
+                "@weekly": "0 0 * * 0",
+                "@daily": "0 0 * * *",
+                "@hourly": "0 * * * *",
+            }
+            cron_line_parsed = alias_mapping.get(cron_line_parsed, None)
+
+            if cron_line_parsed is None:
+                raise ValueError(
+                    "Invalid cron_line alias `%s`. Supported aliases are `%s`.",
+                    cron_line,
+                    ", ".join(alias_mapping.keys()),
+                )
 
     elif isinstance(cron_line, dict):
-        # we deal with dictionary
-        # first check whether we have valid keys, if one invalid key is found, return None
+        # Check whether we have valid keys, if one invalid key is found, raise an error
         valid_keys = {"minute", "hour", "day", "month", "weekday"}
         invalid_keys = set(cron_line.keys()) - valid_keys
+
         if len(invalid_keys):
-            return None
-        cron_line = "{minute} {hour} {day} {month} {weekday}".format(
+            raise ValueError(
+                "Invalid cron_line key(s) are used `%s`. Supported keys are `{}`.",
+                ", ".join(invalid_keys),
+                ", ".join(valid_keys),
+            )
+
+        cron_line_parsed = "{minute} {hour} {day} {month} {weekday}".format(
             minute=cron_line.get("minute", "0"),
             hour=cron_line.get("hour", "0"),
             day=cron_line.get("day", "*"),
@@ -71,22 +87,21 @@ def parse_cron_line(cron_line: str) -> str:
             weekday=cron_line.get("weekday", "*"),
         )
 
-    if not validate_cron_line(cron_line):
-        return None
+    else:
+        raise ValueError(
+            "Invalid cron_line type `%s`. Supported types are `str` and `dict`.",
+            type(cron_line).__name__,
+        )
 
-    return cron_line
+    if validate_cron_line(cron_line_parsed):
+        return cron_line_parsed
 
-
-def parse_cron_schedule(schedule: list):
-    """
-    Determine which format it has, it can be one of the following:
-    - * * * * *  (m, h, d, m, weekday)
-    - @annotation (@yearly, @annually, @monthly, @weekly, @daily, @hourly)
-    - dict (k,v with: minute,hour,day,month,weekday)
-    """
-
-    for cron_line in schedule:
-        yield cron_line, parse_cron_line(cron_line)
+    raise ValueError(
+        "Invalid parsed cron_line `%s`.\n  cron_line: `%s`\n  parsed_cron_line: `%s`.",
+        cron_line,
+        cron_line,
+        cron_line_parsed,
+    )
 
 
 # File mimetype detection logic
@@ -123,18 +138,13 @@ def detect_file_mimetype(filepath: Path) -> str:
     return detected_mimetype
 
 
-# date timezone validation
-def is_valid_timezone(timezone, default=settings.TIME_ZONE):
-    """
-    Validate whether the timezone specified is a valid one
-    If not, return the default timezone.
-    """
-    if timezone in zoneinfo.available_timezones():
-        return timezone
-    return default
+def is_valid_timezone(timezone: str) -> bool:
+    """Validate whether the timezone specified is a valid one"""
+    return timezone in zoneinfo.available_timezones()
 
 
-def is_valid_email(email):
+def is_valid_email(email: str) -> bool:
+    """Validate whether the email specified is a valid one"""
     try:
         validate_email(email)
     except ValidationError:

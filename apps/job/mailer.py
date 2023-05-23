@@ -2,13 +2,11 @@ import json
 import logging
 import zoneinfo
 
-from django.conf import settings
-
 from account.models.membership import Membership
 from core.config import Job as JobConfig
 from core.mail import send_email
 from core.utils import flatten, is_valid_email, parse_string, pretty_time_delta
-from core.utils.config import get_setting_from_database
+from core.utils.config import get_setting
 from job.models import JobDef as Job
 from run.models import Run
 from variable.models import Variable
@@ -114,13 +112,13 @@ def send_run_notification(
     }
 
     using_template = email_template.get(run_status, "run_update")
-    from_email = get_setting_from_database("DEFAULT_FROM_EMAIL", settings.DEFAULT_FROM_EMAIL)
+    from_email = get_setting("DEFAULT_FROM_EMAIL")
 
     template_context = {
         "run_status": run_status,
         "job": job,
         "event_type": event_type,
-        "ui_url": get_setting_from_database("ASKANNA_UI_URL", settings.ASKANNA_UI_URL),
+        "ui_url": get_setting("ASKANNA_UI_URL"),
     }
     template_context.update(**extra_vars)
 

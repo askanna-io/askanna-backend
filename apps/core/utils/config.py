@@ -1,50 +1,80 @@
+from typing import Any, overload
+
+from django.conf import settings
+
 from core.models import Setting
 
 
-def get_setting_from_database(
-    name: str, default: str | int | bool | None = None, return_type: type[str | int | bool] = str
-) -> str | int | bool | None:
+@overload
+def get_setting(name: str, return_type: type[str] = str, default: str | None = None) -> str:
+    ...
+
+
+@overload
+def get_setting(name: str, return_type: type[bool], default: bool | None = None) -> bool:
+    ...
+
+
+@overload
+def get_setting(name: str, return_type: type[int], default: int | None = None) -> int:
+    ...
+
+
+@overload
+def get_setting(name: str, return_type: type[float], default: float | None = None) -> float:
+    ...
+
+
+@overload
+def get_setting(name: str, return_type: type[Any], default: Any = None) -> Any:
+    ...
+
+
+def get_setting(name: str, return_type: type[Any] = str, default: Any = None) -> Any:
     """
-    Retrieve configuration setting from database
+    Retrieve configuration setting from database. If the setting is not found in the database, the value from
+    django.conf.settings is returned when it's available. If the setting is also not found in django.conf.settings,
+    the default svalue is returned.
 
     Args:
         name (str): name of the setting
-        default (str, int, bool, optional): value to return when setting value is not found or is empty.
-            Defaults to None.
-        return_type (Type[str, int, bool], optional): Optionally, the value return type. Defaults to str.
+        default (Any, optional): value to return when setting value is not found or is empty. Defaults to `None`.
+        return_type (type[Any], optional): The value return type. Defaults to `str`.
 
     Returns:
-        (str | int | bool | None): value of the setting
+        (Any): value of the setting
     """
     try:
-        setting = Setting.objects.get(name=name)
+        setting = Setting.objects.filter(deleted_at__isnull=True).get(name=name)
+        value = setting.value
     except Setting.DoesNotExist:
-        value = default
-    else:
-        value = setting.value or default
+        value = None
+
+    if value is None or value == "":
+        value = getattr(settings, name, default)
+
+    if value is None:
+        return value
 
     if return_type == bool:
-        if type(value) == int:
+        if isinstance(value, int):
             value = str(value)
-        if type(value) == str:
-            if value.lower() in ["true", "1", "t", "y", "yes"]:  # type: ignore
+        if isinstance(value, str):
+            if value.lower() in ["true", "1", "t", "y", "yes"]:
                 value = True
-            elif value.lower() in ["false", "0", "f", "n", "no"]:  # type: ignore
+            elif value.lower() in ["false", "0", "f", "n", "no"]:
                 value = False
-        if type(value) != bool:
-            raise TypeError(
-                f"The value of the setting '{name}' is not a boolean value, while return type is set to bool."
-            )
 
-    if return_type == int:
-        if type(value) in [str, bool]:
-            try:
-                value = int(value)  # type: ignore
-            except ValueError:
-                pass
-        if type(value) != int:
-            raise TypeError(
-                f"The value of the setting '{name}' is not an integer value, while return type is set to int."
-            )
+    if return_type in [bool, float, int, str] and isinstance(value, bool | float | int | str):
+        try:
+            return return_type(value)
+        except ValueError:
+            pass
 
-    return value
+    if isinstance(value, return_type):
+        return value
+
+    raise TypeError(
+        f"The value of the setting '{name}' is not a {return_type.__name__} value, while return_type is set to "
+        f"{return_type.__name__}."
+    )
