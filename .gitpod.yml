@@ -1,6 +1,3 @@
-image:
-  file: .gitpod.Dockerfile
-
 additionalRepositories:
   - url: https://gitlab.askanna.io/askanna/askanna-frontend/
   - url: https://gitlab.askanna.io/askanna/askanna-cli/

@@ -147,7 +147,7 @@ pytest:
     - pip install -r requirements/local.txt
   script:
     - python manage.py collectstatic --no-input
-    - pytest --cov=askanna_backend --cov-config=pyproject.toml --cov-report xml --cov-report html --cov-report term --junitxml=junit.xml
+    - pytest --cov=apps --cov-config=pyproject.toml --cov-report xml --cov-report html --cov-report term --junitxml=junit.xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     expire_in: 2 weeks
