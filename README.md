@@ -1,6 +1,6 @@
 # AskAnna Backend
 
-This repository holds code for the AskAnna Backend. Our frontend stack primarily uses
+This repository holds code for the AskAnna Backend. Our backend stack primarily uses
 [Django](https://www.djangoproject.com/) and the [Django REST Framework](https://www.django-rest-framework.org/).
 
 ## Local Development
