@@ -1,9 +1,14 @@
+variables:
+  DOCKER_PRODUCTION: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  DOCKER_REVIEW: $CI_REGISTRY_IMAGE/review:$CI_COMMIT_REF_SLUG
+
 stages:
   - build base
   - build
   - test
   - deploy
   - release
+  - publish
   - cleanup
 
 include:
@@ -39,14 +44,14 @@ build_base:
       allow_failure: true
       variables:
         DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:master
-    - if: $CI_COMMIT_BRANCH == "beta"
+    - if: ($CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       changes:
         - docker/Dockerfile-base
         - requirements/base.txt
         - requirements/production.txt
       variables:
         DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:beta
-    - if: $CI_COMMIT_BRANCH == "beta"
+    - if: ($CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       when: manual
       allow_failure: true
       variables:
@@ -73,19 +78,15 @@ build_production:
     - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
       variables:
         DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:master
-        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:master
-    - if: $CI_COMMIT_BRANCH == "beta"
+        DOCKER_DESTINATION: $DOCKER_PRODUCTION
+    - if: ($CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       variables:
         DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:beta
-        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:beta
-    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
-      variables:
-        DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:master
-        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        DOCKER_DESTINATION: $DOCKER_PRODUCTION
     - if: $CI_COMMIT_BRANCH
       variables:
         DOCKER_BASE_IMAGE: $CI_REGISTRY_IMAGE/base:review
-        DOCKER_DESTINATION: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        DOCKER_DESTINATION: $DOCKER_REVIEW
   script:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $DOCKER_FILE --destination $DOCKER_DESTINATION --build-arg BASE_IMAGE=$DOCKER_BASE_IMAGE
 
@@ -185,20 +186,27 @@ lint:
   tags:
     - kubernetes
   script:
-    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=deploy -F variables[branch]=$CI_COMMIT_REF_SLUG  -F variables[slug]=$CI_ENVIRONMENT_SLUG $ASKANNA_DEPLOY_TRIGGER
+    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=deploy -F variables[env_name]=$ENV_NAME  -F variables[env_host]=$ENV_HOST -F variables[backend_image]=$DOCKER_IMAGE $ASKANNA_DEPLOY_TRIGGER
+  environment:
+    name: $ENV_NAME
+    url: https://$ENV_HOST/v1/docs/swagger/
 
 deploy_review:
   extends: .deploy
   rules:
-    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG)
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       when: never
     - if: $CI_COMMIT_BRANCH
+      variables:
+        ENV_NAME: $CI_COMMIT_REF_NAME
+        ENV_HOST: $CI_ENVIRONMENT_SLUG-api.askanna.eu        
+        DOCKER_IMAGE: $DOCKER_REVIEW
   needs:
     - job: build_production
     - job: migrations
   environment:
-    name: $CI_COMMIT_REF_NAME
-    url: https://$CI_ENVIRONMENT_SLUG-api.askanna.eu/v1/docs/swagger/
+    name: $ENV_NAME
+    url: https://$ENV_HOST/v1/docs/swagger/
     on_stop: stop_review
 
 deploy_production:
@@ -208,19 +216,40 @@ deploy_production:
       when: manual
       variables:
         ENV_NAME: master
-        ENV_HOST: api.askanna.eu/v1/docs/swagger/
-    - if: $CI_COMMIT_BRANCH == "beta"
+        ENV_HOST: api.askanna.eu
+        DOCKER_IMAGE: $DOCKER_PRODUCTION
+    - if: ($CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       when: manual
       variables:
         ENV_NAME: beta
-        ENV_HOST: beta-api.askanna.eu/v1/docs/swagger/
+        ENV_HOST: beta-api.askanna.eu
+        DOCKER_IMAGE: $DOCKER_PRODUCTION
   needs:
     - job: build_production
     - job: pytest
     - job: migrations
+
+stop_review:
+  stage: cleanup
+  image: curlimages/curl
+  extends: .deploy-variables
+  variables: 
+    ENV_NAME: $CI_COMMIT_REF_NAME
+  rules:
+    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+  needs:
+    - job: deploy_review
   environment:
     name: $ENV_NAME
-    url: https://$ENV_HOST
+    action: stop
+  allow_failure: true
+  tags:
+    - kubernetes
+  script:
+    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=undeploy -F variables[branch]=$CI_COMMIT_REF_SLUG  -F variables[slug]=$CI_ENVIRONMENT_SLUG $ASKANNA_DEPLOY_TRIGGER
 
 release:
   stage: release
@@ -233,22 +262,112 @@ release:
     tag_name: $CI_COMMIT_TAG
     description: $CI_COMMIT_TAG_MESSAGE
 
-stop_review:
-  stage: cleanup
-  image: curlimages/curl
-  extends: .deploy-variables
-  rules:
-    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG)
-      when: never
-    - if: $CI_COMMIT_BRANCH
-      when: manual
+publish_to_gitlab:
+  stage: publish
   needs:
-    - job: deploy_review
-  environment:
-    name: $CI_COMMIT_REF_NAME
-    action: stop
-  allow_failure: true
+    - job: build_production
+    - job: deploy_production
+      optional: true
+    - job: release
+      optional: true
   tags:
     - kubernetes
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/'
+      variables:
+        TARGET: refs/tags/$CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      variables:
+        TARGET: HEAD:$CI_COMMIT_BRANCH
+  before_script:
+    - apt-get update -y && apt-get install openssh-client git curl -y
+    - eval $(ssh-agent -s)
+    - echo "${SSH_PRIVATE_KEY_GITLAB_COM}" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - git config --global user.email "hello@askanna.io"
+    - git config --global user.name "AskAnna Robot"
   script:
-    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=undeploy -F variables[branch]=$CI_COMMIT_REF_SLUG  -F variables[slug]=$CI_ENVIRONMENT_SLUG $ASKANNA_DEPLOY_TRIGGER
+    - git remote add gitlab git@gitlab.com:askanna/askanna-backend.git
+    - git push gitlab $TARGET
+
+publish_release_to_gitlab:
+  stage: publish
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: build_production
+    - job: deploy_production
+      optional: true
+    - job: release
+    - job: publish_to_gitlab
+  tags:
+    - kubernetes
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/'
+  variables:
+    GITLAB_PRIVATE_TOKEN: $GITLAB_COM_API_TOKEN
+  script:
+    - release-cli --server-url https://gitlab.com --project-id 46875844 create --tag-name $CI_COMMIT_TAG --description "$CI_COMMIT_TAG_MESSAGE"
+
+publish_to_github:
+  stage: publish
+  needs:
+    - job: build_production
+    - job: deploy_production
+      optional: true
+    - job: release
+      optional: true
+  tags:
+    - kubernetes
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/'
+      variables:
+        TARGET: refs/tags/$CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      variables:
+        TARGET: HEAD:$CI_COMMIT_BRANCH
+  before_script:
+    - apt-get update -y && apt-get install openssh-client git curl -y
+    - eval $(ssh-agent -s)
+    - echo "${SSH_PRIVATE_KEY_GITHUB_COM}" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - git config --global user.email "hello@askanna.io"
+    - git config --global user.name "AskAnna Robot"
+  script:
+    - git remote add github git@github.com:askanna-io/askanna-backend.git
+    - git push github $TARGET
+
+publish_release_to_github:
+  image: ubuntu:22.04
+  stage: publish
+  needs:
+    - job: build_production
+    - job: deploy_production
+      optional: true
+    - job: release
+    - job: publish_to_github
+  tags:
+    - kubernetes
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/'
+  variables:
+    GH_TOKEN: $GITHUB_COM_API_TOKEN
+  before_script:
+    - apt-get update -y && apt-get install curl -y
+    - curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    - chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+    - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    - apt-get update -y && apt-get install gh -y
+  script:
+    - gh release create $CI_COMMIT_TAG --verify-tag --title $CI_COMMIT_TAG --notes "$CI_COMMIT_TAG_MESSAGE" --repo askanna-io/askanna-backend
