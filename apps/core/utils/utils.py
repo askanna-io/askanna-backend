@@ -284,9 +284,7 @@ def get_all_directories(paths: list) -> list:
             if path and path != "/":
                 directories.append(path)
 
-    directories = sorted(list(set(directories) - {"/"} - {""}))
-
-    return directories
+    return sorted(list(set(directories) - {"/"} - {""}))
 
 
 def get_files_and_directories_in_zip_file(zip_file_path: str | os.PathLike) -> list:
