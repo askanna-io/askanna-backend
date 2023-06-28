@@ -11,7 +11,7 @@ line-length = 119
 profile = "black"
 known_third_party = ["docker"]
 known_local_folder = [
-    "askanna_backend",
+    "apps",
     "account",
     "core",
     "job",
@@ -49,7 +49,7 @@ exclude = [
 [tool.coverage.run]
 branch = true
 source = [
-    "askanna_backend/*",
+    "apps/*",
 ]
 omit = [
     "*/migrations/*",

@@ -6,22 +6,21 @@ psycopg2-binary~=2.9.6          # https://github.com/psycopg/psycopg2
 # Testing
 # ---------------------------------------------------------------------------------
 django-coverage-plugin~=3.0     # https://github.com/nedbat/django_coverage_plugin
-pytest~=7.2                     # https://github.com/pytest-dev/pytest
-pytest-bdd~=6.1                 # https://github.com/pytest-dev/pytest-bdd
-pytest-cov~=4.0                 # https://github.com/pytest-dev/pytest-cov
+pytest~=7.3                     # https://github.com/pytest-dev/pytest
+pytest-cov~=4.1                 # https://github.com/pytest-dev/pytest-cov
 pytest-django~=4.5              # https://github.com/pytest-dev/pytest-django
 pytest-sugar~=0.9               # https://github.com/Frozenball/pytest-sugar
-pytest-xdist~=3.2.1             # https://github.com/pytest-dev/pytest-xdist
+pytest-xdist~=3.3               # https://github.com/pytest-dev/pytest-xdist
 
 # Code quality
 # ---------------------------------------------------------------------------------
-ruff~=0.0.261                   # https://github.com/charliermarsh/ruff
+ruff~=0.0.274                   # https://github.com/charliermarsh/ruff
 bandit[toml]~=1.7               # https://github.com/PyCQA/bandit
 black~=23.3                     # https://github.com/ambv/black
 isort~=5.12                     # https://github.com/pycqa/isort
-pre-commit~=3.2                 # https://github.com/pre-commit/pre-commit
+pre-commit~=3.3                 # https://github.com/pre-commit/pre-commit
 
 # Django
 # ---------------------------------------------------------------------------------
-django-cors-headers~=3.14       # https://github.com/adamchainz/django-cors-headers
-Werkzeug[watchdog]~=2.2         # https://github.com/pallets/werkzeug
+django-cors-headers~=4.1       # https://github.com/adamchainz/django-cors-headers
+Werkzeug[watchdog]~=2.3         # https://github.com/pallets/werkzeug

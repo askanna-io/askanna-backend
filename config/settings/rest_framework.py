@@ -11,10 +11,10 @@ def settings(config, _env):
             "rest_framework.authentication.TokenAuthentication",
         ],
         "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
-        "DEFAULT_PAGINATION_CLASS": "askanna_backend.core.pagination.CursorPagination",
+        "DEFAULT_PAGINATION_CLASS": "core.pagination.CursorPagination",
         "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
         "DEFAULT_FILTER_BACKENDS": [
-            "askanna_backend.core.filters.OrderingFilter",
+            "core.filters.OrderingFilter",
             "rest_framework.filters.SearchFilter",
             "django_filters.rest_framework.DjangoFilterBackend",
         ],

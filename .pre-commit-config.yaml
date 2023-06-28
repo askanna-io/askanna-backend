@@ -18,12 +18,12 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.33.0
+    rev: v0.35.0
     hooks:
       - id: markdownlint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.261
+    rev: v0.0.274
     hooks:
       - id: ruff
         args:
@@ -50,7 +50,7 @@ repos:
           - pyproject.toml
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
+    rev: v3.7.0
     hooks:
     - id: pyupgrade
       args:

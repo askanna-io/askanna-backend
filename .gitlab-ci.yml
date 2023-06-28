@@ -148,7 +148,7 @@ pytest:
     - pip install -r requirements/local.txt
   script:
     - python manage.py collectstatic --no-input
-    - pytest --cov=askanna_backend --cov-config=pyproject.toml --cov-report xml --cov-report html --cov-report term --junitxml=junit.xml
+    - pytest --cov=apps --cov-config=pyproject.toml --cov-report xml --cov-report html --cov-report term --junitxml=junit.xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     expire_in: 2 weeks
@@ -198,8 +198,8 @@ deploy_review:
       when: never
     - if: $CI_COMMIT_BRANCH
       variables:
-        ENV_NAME: $CI_COMMIT_REF_NAME
-        ENV_HOST: $CI_ENVIRONMENT_SLUG-api.askanna.eu        
+        ENV_NAME: $CI_COMMIT_REF_SLUG
+        ENV_HOST: $CI_ENVIRONMENT_SLUG-api.askanna.eu
         DOCKER_IMAGE: $DOCKER_REVIEW
   needs:
     - job: build_production
@@ -233,8 +233,8 @@ stop_review:
   stage: cleanup
   image: curlimages/curl
   extends: .deploy-variables
-  variables: 
-    ENV_NAME: $CI_COMMIT_REF_NAME
+  variables:
+    ENV_NAME: $CI_COMMIT_REF_SLUG
   rules:
     - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       when: never
