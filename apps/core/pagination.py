@@ -149,7 +149,7 @@ class CursorPagination(pagination.CursorPagination):
             self.has_previous = has_following_position
             if self.has_next:
                 self.next_position = self.cursor.position.value
-                self.next__at = self.cursor.created_at
+                self.next_created_at = self.cursor.created_at
             if self.has_previous:
                 self.previous_position = following_position
                 self.previous_created_at = following_created_at
