@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 addopts="--capture=tee-sys"
-DJANGO_SETTINGS_MODULE = "config.settings.main"
+DJANGO_SETTINGS_MODULE = "config.settings.test"
 norecursedirs = [".*", ".env", "storage_root"]
 python_files = ["test_*.py", "*_tests.py"]
 

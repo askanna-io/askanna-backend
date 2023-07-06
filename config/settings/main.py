@@ -1,4 +1,4 @@
-"""Settings file for AskAnna backend."""
+"""Settings file for AskAnna Backend"""
 import sys
 from pathlib import Path
 
@@ -20,7 +20,6 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 
 APPS_DIR = BASE_DIR / "apps"
 RESOURCES_DIR = BASE_DIR / "resources"
-TEST_RESOURCES_DIR = BASE_DIR / "tests" / "resources"
 
 # Insert the APPS_DIR into PYTHONPATH to allow easier import from our apps housed in the apps directory
 sys.path.insert(0, str(APPS_DIR))
@@ -37,6 +36,7 @@ if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):  # type: ignore
 # https://docs.djangoproject.com/en/stable/ref/settings/#debug
 DEBUG = env.bool("DJANGO_DEBUG", default=False)  # type: ignore
 DEBUG_SQL = env.bool("DJANGO_DEBUG_SQL", default=False)  # type: ignore
+TEST = False
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-tz
 USE_TZ = True
@@ -44,8 +44,6 @@ USE_TZ = True
 TIME_ZONE = "UTC"
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-i18n
 USE_I18N = False
-
-TEST = "test" in " ".join(sys.argv)
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -173,11 +171,6 @@ ADMIN_URL = env.str("DJANGO_ADMIN_URL", default="admin/")  # type: ignore
 
 # Encrypted field settings
 FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")  # type: ignore
-
-
-# https://docs.djangoproject.com/en/stable/ref/settings/#test-runner
-# https://docs.celeryproject.org/projects/django-celery/en/2.4/cookbook/unit-testing.html
-TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
 
 
 # CACHES
