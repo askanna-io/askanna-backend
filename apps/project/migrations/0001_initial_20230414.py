@@ -10,22 +10,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("project", "0001_initial_squashed_20220901"),
-        ("project", "0002_alter_project_visibility_and_remove_unused_template"),
-        ("project", "0003_move_projectvariable"),
-        ("project", "0004_alter_projectvariable_options"),
-        ("project", "0005_rename_short_uuid_to_suuid"),
-        ("project", "0006_uuid_and_suuid_field_config"),
-        ("project", "0007_remove_translation"),
-        ("project", "0008_alter_project_workspace"),
-        ("project", "0009_description_do_not_allow_null_default_empty_string"),
-        ("project", "0010_move_projectvariable"),
-        ("project", "0011_auto_20221222_0720"),
-        ("project", "0012_add_db_index"),
-        ("project", "0013_add_at_suffix_to_datetime_fields"),
-        ("project", "0014_move_field_to_core_iso_third_party_app"),
-    ]
+    initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

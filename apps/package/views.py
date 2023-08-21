@@ -203,11 +203,7 @@ class PackageViewSet(
         return Response(
             {
                 "action": "redirect",
-                "target": "{BASE_URL}/files/packages/{LOCATION}/{FILENAME}".format(
-                    BASE_URL=settings.ASKANNA_CDN_URL,
-                    LOCATION=package.storage_location,
-                    FILENAME=package.filename,
-                ),
+                "target": f"{settings.ASKANNA_CDN_URL}/files/packages/{package.storage_location}/{package.filename}",
             }
         )
 

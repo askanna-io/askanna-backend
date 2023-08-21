@@ -9,14 +9,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("core", "0001_initial_squashed_20220901"),
-        ("core", "0002_rename_short_uuid_to_suuid"),
-        ("core", "0003_uuid_and_suuid_field_config"),
-        ("core", "0004_add_at_suffix_to_datetime_fields"),
-        ("core", "0005_move_field_to_core_iso_third_party_app"),
-        ("core", "0006_change_meta_options"),
-    ]
+    initial = True
 
     dependencies = []
 
