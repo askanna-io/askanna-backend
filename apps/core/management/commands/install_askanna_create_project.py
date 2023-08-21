@@ -17,10 +17,7 @@ from workspace.models import Workspace
 
 def package(source: Path) -> Path:
     temp_dir = Path(tempfile.mkdtemp(prefix="askanna-package"))
-    zip_file_path = temp_dir / "{project_name}_{random_suffix}.zip".format(
-        project_name=source.name,
-        random_suffix=uuid.uuid4().hex,
-    )
+    zip_file_path = temp_dir / f"{source.name}_{uuid.uuid4().hex}.zip"
 
     with ZipFile(zip_file_path, mode="w") as zip_file:
         for directory, _, files in os.walk(source):

@@ -395,21 +395,9 @@ class RunView(
             path = request.path
             host = request.META["HTTP_HOST"]
             if offset + limit < count:
-                response_json["next"] = "{scheme}://{host}{path}?limit={limit}&offset={offset}".format(
-                    scheme=scheme,
-                    limit=limit,
-                    offset=offset + limit,
-                    host=host,
-                    path=path,
-                )
+                response_json["next"] = f"{scheme}://{host}{path}?limit={limit}&offset={offset + limit}"
             if offset - limit > -1:
-                response_json["previous"] = "{scheme}://{host}{path}?limit={limit}&offset={offset}".format(
-                    scheme=scheme,
-                    limit=limit,
-                    offset=offset - limit,
-                    host=host,
-                    path=path,
-                )
+                response_json["previous"] = f"{scheme}://{host}{path}?limit={limit}&offset={offset - limit}"
 
         return Response(response_json, status=status.HTTP_200_OK)
 
