@@ -12,33 +12,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("run", "0001_initial"),
-        ("run", "0002_log"),
-        ("run", "0003_update_meta_data"),
-        ("run", "0004_move_run_result"),
-        ("run", "0005_alter_result_options"),
-        ("run", "0006_move_run_artifact"),
-        ("run", "0007_alter_runartifact_table"),
-        ("run", "0008_move_runmetrics_and_runvariables"),
-        ("run", "0009_rename_tables"),
-        ("run", "0010_auto_20220927_1921"),
-        ("run", "0011_alter_run_run_image"),
-        ("run", "0012_rename_jobrun_to_run"),
-        ("run", "0013_rename_short_uuid_to_suuid"),
-        ("run", "0014_uuid_and_suuid_field_config"),
-        ("run", "0015_remove_translation"),
-        ("run", "0016_description_do_not_allow_null_default_empty_string"),
-        ("run", "0017_auto_20221229_1112"),
-        ("run", "0018_auto_20230105_0940"),
-        ("run", "0019_auto_20230105_1456"),
-        ("run", "0020_add_db_index"),
-        ("run", "0021_add_at_suffix_to_datetime_fields"),
-        ("run", "0022_move_field_to_core_iso_third_party_app"),
-        ("run", "0023_more_strict_in_allowing_null"),
-        ("run", "0024_rename_jobid_run_celery_job_id"),
-        ("run", "0025_alter_run_celery_task_id"),
-    ]
+    initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

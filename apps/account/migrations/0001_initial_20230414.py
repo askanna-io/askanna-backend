@@ -13,20 +13,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("account", "0001_initial_squashed_20220901"),
-        ("account", "0002_alter_user_id"),
-        ("account", "0003_rename_short_uuid_to_suuid"),
-        ("account", "0004_uuid_and_suuid_field_config"),
-        ("account", "0005_remove_unused_fields"),
-        ("account", "0006_alter_user_managers"),
-        ("account", "0007_alter_membership_use_global_profile"),
-        ("account", "0008_alter_user_uuid"),
-        ("account", "0009_add_at_suffix_to_datetime_fields"),
-        ("account", "0010_move_field_to_core_iso_third_party_app"),
-        ("account", "0011_change_meta_options"),
-        ("account", "0012_more_strict_in_allowing_null"),
-    ]
+    initial = True
 
     dependencies = [
         ("auth", "0012_alter_user_first_name_max_length"),

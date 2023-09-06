@@ -10,17 +10,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("package", "0001_initial_squashed_20220901"),
-        ("package", "0002_rename_short_uuid_to_suuid"),
-        ("package", "0003_uuid_and_suuid_field_config"),
-        ("package", "0004_alter_package_project"),
-        ("package", "0005_remove_translation"),
-        ("package", "0006_description_do_not_allow_null_default_empty_string"),
-        ("package", "0007_add_at_suffix_to_datetime_fields"),
-        ("package", "0008_move_field_to_core_iso_third_party_app"),
-        ("package", "0009_more_strict_in_allowing_null"),
-    ]
+    initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
