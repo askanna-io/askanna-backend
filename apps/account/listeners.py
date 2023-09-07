@@ -1,13 +1,10 @@
 import socket
 
 from django.conf import settings
-from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from account.models.membership import Invitation, UserProfile
-from account.models.user import PasswordResetLog, User
+from account.models.user import PasswordResetLog
 from account.signals import (
-    avatar_changed_signal,
     email_changed_signal,
     password_changed_signal,
     password_reset_signal,
@@ -160,41 +157,3 @@ def send_password_changed(sender, user, **kwargs):
         to_email,
         context,
     )
-
-
-@receiver(avatar_changed_signal)
-def convert_avatar(sender, instance, **kwargs):
-    """
-    Convert the avatar to several sizes.
-    """
-    instance.convert_avatar()
-
-
-@receiver(post_save, sender=UserProfile)
-def install_avatar_after_new_membership(sender, instance, created, **kwargs):
-    """
-    Install a default avatar for the user when a profile was created
-    """
-    if created:
-        instance.refresh_from_db()
-        instance.install_default_avatar()
-
-
-@receiver(post_save, sender=Invitation)
-def install_avatar_after_new_invite(sender, instance, created, **kwargs):
-    """
-    Install a default avatar for the user when he was invited
-    """
-    if created:
-        instance.refresh_from_db()
-        instance.install_default_avatar()
-
-
-@receiver(post_save, sender=User)
-def install_avatar_after_new_user(sender, instance, created, **kwargs):
-    """
-    Install a default avatar for the user when he was invited
-    """
-    if created:
-        instance.refresh_from_db()
-        instance.install_default_avatar()

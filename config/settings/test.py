@@ -2,7 +2,7 @@ from .main import *  # noqa: F403
 
 TEST = True
 
-TEST_RESOURCES_DIR = BASE_DIR / "tests" / "resources"  # noqa: F405
+TEST_RESOURCES_DIR = BASE_DIR / "tests/resources"  # noqa: F405
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#test-runner
 # https://docs.celeryq.dev/projects/django-celery/en/v2.5/cookbook/unit-testing.html

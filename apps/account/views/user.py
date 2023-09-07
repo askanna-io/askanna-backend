@@ -23,6 +23,9 @@ class UserDetailsView(RetrieveAPIView):
         return self.request.user
 
 
+@extend_schema(
+    responses={202: None},
+)
 class PasswordResetView(GenericAPIView):
     """
     Post a request to reset the password for an account
@@ -36,10 +39,7 @@ class PasswordResetView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(
-            {"detail": "Password reset request has been processed."},
-            status=status.HTTP_200_OK,
-        )
+        return Response(status=status.HTTP_202_ACCEPTED)
 
 
 @extend_schema(

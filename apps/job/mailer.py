@@ -89,13 +89,13 @@ def send_run_notification(
     # send to workspace admins if this is defined
     if "workspace admins" in notification_receivers:
         # append the e-mail addresses of the workspace admins
-        admins = Membership.members.admins().filter(object_uuid=job.project.workspace.uuid)
+        admins = Membership.objects.active_admins().filter(object_uuid=job.project.workspace.uuid)
         for member in admins:
             notification_receivers.append(member.user.email)
 
     if "workspace members" in notification_receivers:
         # append the e-mail addresses of the workspace members
-        members = Membership.members.members().filter(object_uuid=job.project.workspace.uuid)
+        members = Membership.objects.active_members().filter(object_uuid=job.project.workspace.uuid)
         for member in members:
             notification_receivers.append(member.user.email)
 

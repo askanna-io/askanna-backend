@@ -1,15 +1,17 @@
 from pathlib import Path
 
-import django
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import Http404
 from django.shortcuts import get_object_or_404 as _get_object_or_404
-from rest_framework import mixins, viewsets
+from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from resumable.files import ResumableFile
+
+from core.viewsets import AskAnnaGenericViewSet
 
 
 def get_object_or_404(queryset, *filter_args, **filter_kwargs):
@@ -26,7 +28,7 @@ def get_object_or_404(queryset, *filter_args, **filter_kwargs):
 class BaseChunkedPartViewSet(
     NestedViewSetMixin,
     mixins.CreateModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     """
     Request an uuid to upload a chunk
@@ -61,7 +63,7 @@ class BaseChunkedPartViewSet(
 
         if request.method == "GET":
             return self.check_existence(request, chunkpart, **kwargs)
-        chunk: django.core.files.uploadedfile.InMemoryUploadedFile = request.FILES.get("file")
+        chunk: InMemoryUploadedFile = request.FILES.get("file")
         storage_location = FileSystemStorage(location=str(self.get_upload_location(chunkpart)))
 
         r = ResumableFile(storage_location, request.POST)
@@ -98,13 +100,13 @@ class BaseUploadFinishViewSet:
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
         """Register that the upload of all chunks is finished"""
-        obj = self.get_object()
+        obj = self.get_object()  # type: ignore
 
         storage_location = FileSystemStorage(location=str(self.get_upload_location(obj)))
         target_location = FileSystemStorage(location=str(self.get_target_location(request=request, obj=obj)))
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
-            target_location.save(str(self.get_filename(obj)), r)
+            target_location.save(str(self.get_filename(obj)), r)  # type: ignore
             self.post_finish_upload_update_instance(request, obj, r)
             r.delete_chunks()
 

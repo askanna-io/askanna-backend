@@ -6,27 +6,32 @@ from core.models import Setting
 
 
 @overload
-def get_setting(name: str, return_type: type[str] = str, default: str | None = None) -> str:
+def get_setting(name: str, return_type: type[str] = str, default: str | None = None) -> str:  # pragma: no cover
     ...
 
 
 @overload
-def get_setting(name: str, return_type: type[bool], default: bool | None = None) -> bool:
+def get_setting(name: str, return_type: type[bool], default: bool | None = None) -> bool:  # pragma: no cover
     ...
 
 
 @overload
-def get_setting(name: str, return_type: type[int], default: int | None = None) -> int:
+def get_setting(name: str, return_type: type[int], default: int | None = None) -> int:  # pragma: no cover
     ...
 
 
 @overload
-def get_setting(name: str, return_type: type[float], default: float | None = None) -> float:
+def get_setting(name: str, return_type: type[dict], default: dict | None = None) -> dict:  # pragma: no cover
     ...
 
 
 @overload
-def get_setting(name: str, return_type: type[Any], default: Any = None) -> Any:
+def get_setting(name: str, return_type: type[float], default: float | None = None) -> float:  # pragma: no cover
+    ...
+
+
+@overload
+def get_setting(name: str, return_type: type[Any], default: Any = None) -> Any:  # pragma: no cover
     ...
 
 
@@ -34,7 +39,7 @@ def get_setting(name: str, return_type: type[Any] = str, default: Any = None) ->
     """
     Retrieve configuration setting from database. If the setting is not found in the database, the value from
     django.conf.settings is returned when it's available. If the setting is also not found in django.conf.settings,
-    the default svalue is returned.
+    the default value is returned.
 
     Args:
         name (str): name of the setting

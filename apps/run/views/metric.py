@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.http import Http404
 from django_filters import CharFilter, FilterSet
 from drf_spectacular.utils import extend_schema
-from rest_framework import mixins, viewsets
+from rest_framework import mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
@@ -11,6 +11,7 @@ from account.models.membership import MSP_WORKSPACE, Membership
 from core.filters import filter_array, filter_multiple
 from core.mixins import ObjectRoleMixin, UpdateModelWithoutPartialUpateMixin
 from core.permissions.role import RoleBasedPermission
+from core.viewsets import AskAnnaGenericViewSet
 from run.models import Run, RunMetric, RunMetricMeta
 from run.serializers.metric import RunMetricSerializer, RunMetricUpdateSerializer
 
@@ -23,9 +24,9 @@ class RunMetricObjectMixin(ObjectRoleMixin):
     }
 
     def get_parrent_roles(self, request, *args, **kwargs):
-        run_suuid = self.kwargs["parent_lookup_run__suuid"]
+        run_suuid = self.kwargs["parent_lookup_run__suuid"]  # type: ignore
         try:
-            run = Run.objects.active().get(suuid=run_suuid)
+            run = Run.objects.active().get(suuid=run_suuid)  # type: ignore
         except Run.DoesNotExist as exc:
             raise Http404 from exc
 
@@ -67,7 +68,7 @@ class RunMetricView(
     RunMetricObjectMixin,
     NestedViewSetMixin,
     mixins.ListModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     """List metrics"""
 
@@ -104,7 +105,9 @@ class RunMetricView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
+            "object_uuid", flat=True
+        )
 
         return (
             super()
@@ -123,7 +126,7 @@ class RunMetricUpdateView(
     RunMetricObjectMixin,
     NestedViewSetMixin,
     UpdateModelWithoutPartialUpateMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     """Update the metrics for a run"""
 
@@ -149,7 +152,9 @@ class RunMetricUpdateView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
+            "object_uuid", flat=True
+        )
 
         return (
             super()
@@ -171,7 +176,7 @@ class RunMetricUpdateView(
 
     def get_object_fallback(self):
         """Return a new RunMetric instance or raise 404 if Run does not exists."""
-        run = get_object_or_404(Run.objects.active(), suuid=self.kwargs[self.lookup_field])
+        run = get_object_or_404(Run.objects.active(), suuid=self.kwargs[self.lookup_field])  # type: ignore
 
         run_metrics = RunMetricMeta.objects.create(run=run, metrics=[])
         run_metrics.metrics = []  # save initial data

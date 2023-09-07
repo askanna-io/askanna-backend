@@ -1,9 +1,8 @@
 from django.http import Http404
-from rest_framework import viewsets
 from rest_framework.response import Response
 
 from account.models.membership import Membership
-from account.models.user import User
+from core.permissions.askanna_roles import get_request_role
 from core.views import get_object_or_404
 
 
@@ -121,7 +120,7 @@ class SerializerByActionMixin:
             return self.serializer_class
 
 
-class ObjectRoleMixin(viewsets.GenericViewSet):
+class ObjectRoleMixin:
     """
     Given an object (Workspace, Project, Job, etc.) return the role based on that object.
 
@@ -189,7 +188,7 @@ class ObjectRoleMixin(viewsets.GenericViewSet):
         """
         This initial method sets the roles of the user in relation to the request and the request's object.
         """
-        request.user_roles = [User.get_role(request)]
+        request.user_roles = [get_request_role(request)]
 
         if self.detail:
             object_roles = self.get_object_roles(request)

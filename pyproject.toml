@@ -1,8 +1,8 @@
 [tool.pytest.ini_options]
-addopts="--capture=tee-sys"
 DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts="--capture=tee-sys"
 norecursedirs = [".*", ".env", "storage_root"]
-python_files = ["test_*.py", "*_tests.py"]
 
 [tool.black]
 line-length = 119
@@ -12,12 +12,14 @@ profile = "black"
 known_third_party = ["docker"]
 known_local_folder = [
     "apps",
+    "tests",
     "account",
     "core",
     "job",
     "package",
     "project",
     "run",
+    "storage",
     "variable",
     "workspace"
 ]
@@ -52,6 +54,7 @@ source = [
     "apps/*",
 ]
 omit = [
+    "admin.py",
     "*/migrations/*",
     "*/tests/*",
     "*.html",

@@ -48,4 +48,5 @@ def settings(config, _env):
             "displayRequestDuration": True,
             "docExpansion": "none",
         },
+        "COMPONENT_SPLIT_REQUEST": True,
     }

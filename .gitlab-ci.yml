@@ -13,6 +13,8 @@ stages:
 
 include:
   - template: Code-Quality.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 # To use Kaniko extend the job and set the variable for DOCKER_DESTINATION and optionally DOCKER_FILE
 .use-kaniko:
@@ -118,6 +120,8 @@ code_quality:
     - if: $CI_COMMIT_BRANCH
       variables:
         DOCKER_IMAGE: $CI_REGISTRY_IMAGE/base:review
+  before_script:
+    - pip install -r requirements/local.txt
 
 .test-base-services:
   extends: .test-base
@@ -131,21 +135,36 @@ code_quality:
     POSTGRES_HOST: postgres
     POSTGRES_PORT: 5432
     POSTGRES_USER: anna
-    POSTGRES_PASSWORD: pass
+    POSTGRES_PASSWORD: password
     POSTGRES_DB: askanna_backend
+    MINIO_ENDPOINT: minio:9000
+    MINIO_EXTERNAL_ENDPOINT: localhost:9000
+    MINIO_ROOT_USER: anna
+    MINIO_ROOT_PASSWORD: password
+    MINIO_ACCESS_KEY: $MINIO_ROOT_USER
+    MINIO_SECRET_KEY: $MINIO_ROOT_PASSWORD
+    ASKANNA_API_URL: http://localhost:8000
+    ASKANNA_CDN_URL: http://localhost:8000/files
+    ASKANNA_UI_URL: http://localhost:4173
+    ASKANNA_FILESTORAGE: filesystem
+    ASKANNA_FILE_DOWNLOAD_VIA_DJANGO: "True"
   services:
     - name: postgres:12
       alias: postgres
     - name: redis:7
       alias: redis
+    - name: minio/minio:RELEASE.2023-09-04T19-57-37Z
+      alias: minio
+      command: ["server", "/data"]
 
 pytest:
   extends: .test-base-services
+  parallel:
+    matrix:
+      - ASKANNA_FILESTORAGE: [filesystem, minio]
   variables:
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_REQUEST: 2Gi
-  before_script:
-    - pip install -r requirements/local.txt
   script:
     - python manage.py collectstatic --no-input
     - pytest --cov=apps --cov-config=pyproject.toml --cov-report xml --cov-report html --cov-report term --junitxml=junit.xml
@@ -163,20 +182,25 @@ pytest:
 
 migrations:
   extends: .test-base-services
+  before_script:
+    - pip install -r requirements/production.txt
   script:
     - python manage.py makemigrations --dry-run --check --no-input
 
 lint:
   extends: .test-base
-  before_script:
-    - pip install -r requirements/local.txt
   script:
     - ruff check .
+
+pre-commit:
+  extends: .test-base
+  script:
+    - pre-commit run --all-files
 
 .deploy-variables:
   variables:
     GIT_STRATEGY: none
-    ASKANNA_DEPLOY_BRANCH: main
+    ASKANNA_DEPLOY_BRANCH: add-minio-to-askanna-backend
     ASKANNA_DEPLOY_PRODUCT: askanna-backend
 
 .deploy:
@@ -186,7 +210,7 @@ lint:
   tags:
     - kubernetes
   script:
-    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=deploy -F variables[env_name]=$ENV_NAME  -F variables[env_host]=$ENV_HOST -F variables[backend_image]=$DOCKER_IMAGE $ASKANNA_DEPLOY_TRIGGER
+    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=deploy -F variables[env_name]=$ENV_NAME -F variables[env_host]=$ENV_HOST -F variables[backend_image]=$DOCKER_IMAGE $ASKANNA_DEPLOY_TRIGGER
   environment:
     name: $ENV_NAME
     url: https://$ENV_HOST/v1/docs/swagger/
@@ -249,7 +273,7 @@ stop_review:
   tags:
     - kubernetes
   script:
-    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=undeploy -F variables[branch]=$CI_COMMIT_REF_SLUG  -F variables[slug]=$CI_ENVIRONMENT_SLUG $ASKANNA_DEPLOY_TRIGGER
+    - curl -X POST -F token=$CI_JOB_TOKEN -F ref=$ASKANNA_DEPLOY_BRANCH -F variables[product]=$ASKANNA_DEPLOY_PRODUCT -F variables[action]=undeploy -F variables[env_name]=$ENV_NAME -F variables[env_host]=$ENV_HOST -F variables[backend_image]=$DOCKER_IMAGE $ASKANNA_DEPLOY_TRIGGER
 
 release:
   stage: release

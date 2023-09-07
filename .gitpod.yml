@@ -10,6 +10,7 @@ tasks:
     init: |
       cp .env.django.example .env.django
       cp .env.postgres.example .env.postgres
+      cp .env.minio.example .env.minio
     command: |
       sed -i "s~ASKANNA_API_URL.*~ASKANNA_API_URL=$(gp url 8000)~g" .env.django
       sed -i "s~ASKANNA_CDN_URL.*~ASKANNA_CDN_URL=$(gp url 8000)~g" .env.django

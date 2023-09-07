@@ -1,12 +1,8 @@
-from django.conf import settings
-from django.contrib import admin, messages
+from django.contrib import admin
 from django.contrib.auth.models import Group
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 
-from account.models.membership import Invitation, Membership, UserProfile
+from account.models.membership import Invitation, Membership
 from account.models.user import PasswordResetLog, User
-from account.serializers.people import InviteSerializer
 
 # Don't show Auth Groups in the Django Admin because we don't use them.
 admin.site.unregister(Group)
@@ -127,41 +123,6 @@ class MembershipAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
-    list_display = [
-        "suuid",
-        "user",
-        "object_type",
-        "object_uuid",
-        "name",
-        "job_title",
-        "created_at",
-        "deleted_at",
-    ]
-    search_fields = ["uuid", "suuid", "user__email", "user__name", "user__suuid"]
-    ordering = ("-created_at",)
-    date_hierarchy = "created_at"
-    list_filter = ("created_at", "modified_at", "deleted_at")
-
-    fieldsets = (
-        (None, {"fields": ("suuid",)}),
-        ("Membership info", {"fields": ("user", "object_type", "object_uuid", "role")}),
-        ("User profile", {"fields": ("use_global_profile", "name", "job_title")}),
-        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
-    )
-    readonly_fields = [
-        "suuid",
-        "created_at",
-        "modified_at",
-        "deleted_at",
-    ]
-    raw_id_fields = ["user"]
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(Invitation)
 class InvitationAdmin(admin.ModelAdmin):
     list_display = [
@@ -183,7 +144,7 @@ class InvitationAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("suuid",)}),
         ("Membership info", {"fields": ("object_type", "object_uuid", "role")}),
-        ("Invite info", {"fields": ("email", "front_end_url")}),
+        ("Invite info", {"fields": ("email",)}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
@@ -193,26 +154,14 @@ class InvitationAdmin(admin.ModelAdmin):
         "deleted_at",
     ]
 
-    def resend_invitation(self, request, queryset):
-        """Resend invitation email for the given Invitations."""
-        if queryset.count() > 10:
-            messages.error(
-                request,
-                "For performance reasons, no more than 10 invitations can be sent at once.",
-            )
-            return
+    def has_add_permission(self, request, obj=None):
+        return False
 
-        for invitation in queryset.all():
-            InviteSerializer(invitation).send_invite(front_end_url=settings.ASKANNA_UI_URL)
-            messages.success(
-                request,
-                mark_safe(  # nosec: B703, B308
-                    f"Invitation sent to <strong>{escape(invitation.email)}</strong> for {invitation.object_type} "
-                    f"{invitation.object_uuid}."
-                ),
-            )
+    def has_change_permission(self, request, obj=None):
+        return False
 
-    resend_invitation.short_description = "Resend selected invitations"
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(PasswordResetLog)

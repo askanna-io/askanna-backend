@@ -1,6 +1,5 @@
 from copy import copy
 
-from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
@@ -12,6 +11,7 @@ from account.signals import (
     password_changed_signal,
     user_created_signal,
 )
+from core.utils.config import get_setting
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -23,11 +23,12 @@ class AccountSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     last_login = serializers.DateTimeField(read_only=True)
+    modified_at = serializers.DateTimeField(read_only=True)
 
     workspace_name = serializers.CharField(write_only=True, required=False)
     terms_of_use = serializers.BooleanField(write_only=True, required=True)
 
-    front_end_url = serializers.CharField(write_only=True, required=False, default=settings.ASKANNA_UI_URL)
+    front_end_url = serializers.URLField(write_only=True, required=False)
 
     def create(self, validated_data):
         """
@@ -38,7 +39,7 @@ class AccountSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password")
         validated_data.pop("terms_of_use")  # Only needed for validation
         workspace_name = validated_data.pop("workspace_name", None)
-        front_end_url = validated_data.pop("front_end_url", settings.ASKANNA_UI_URL)
+        front_end_url = validated_data.pop("front_end_url", get_setting("ASKANNA_UI_URL"))
 
         user = User(**validated_data)
         user.set_password(password)
@@ -83,6 +84,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "last_login",
+            "modified_at",
             "workspace_name",
             "front_end_url",
         ]
@@ -93,12 +95,17 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     This update serializer updates specific fields of the User model
     """
 
+    suuid = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    email = serializers.EmailField(required=False)
+
     password = serializers.CharField(write_only=True, required=False)
     old_password = serializers.CharField(write_only=True, required=False)
 
     is_active = serializers.BooleanField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     last_login = serializers.DateTimeField(read_only=True)
+    modified_at = serializers.DateTimeField(read_only=True)
 
     def update(self, instance, validated_data):
         name_changed = instance.name != validated_data.get("name", instance.name)

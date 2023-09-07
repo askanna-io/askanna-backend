@@ -12,6 +12,7 @@ urlpatterns = [
     re_path(r"^(?P<version>(v1))/auth/", include("account.rest_auth_urls")),
     # API Urls
     path("", include("core.urls")),
+    path("", include("storage.urls")),
     path("", include("account.urls")),
     path("", include("workspace.urls")),
     path("", include("project.urls")),
@@ -19,20 +20,20 @@ urlpatterns = [
     path("", include("package.urls")),
     path("", include("job.urls")),
     path("", include("run.urls")),
+    path(
+        "",
+        RedirectView.as_view(
+            url=reverse_lazy("api-swagger", kwargs={"version": "v1"}),
+            permanent=False,
+        ),
+        name="home",
+    ),
 ]
 
 if settings.DEBUG:
     # This allows the error pages to be debugged during development, just visit these url in browser to see how these
     # error pages look like.
     urlpatterns += [
-        path(
-            "",
-            RedirectView.as_view(
-                url=reverse_lazy("api-swagger", kwargs={"version": "v1"}),
-                permanent=False,
-            ),
-            name="home",
-        ),
         path(
             "400/",
             default_views.bad_request,
@@ -49,8 +50,8 @@ if settings.DEBUG:
             kwargs={"exception": Exception("Page not Found")},
         ),
         path("500/", default_views.server_error),
-    ] + static("/files/", document_root=settings.BASE_DIR / "storage_root")
-else:
-    urlpatterns += [
-        path("", RedirectView.as_view(url=settings.ASKANNA_UI_URL, permanent=False), name="home"),
     ]
+
+    if settings.ASKANNA_FILESTORAGE == "filesystem":
+        # When ASKANNA_FILESTORAGE is "filesystem" this pattern allows the serving of files during development
+        urlpatterns += static("/files/", document_root=settings.STORAGE_ROOT)

@@ -5,71 +5,44 @@ import uuid as _uuid
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
-from account.models.avatar import BaseAvatarModel
+from account.models.membership import MSP_WORKSPACE, MemberProfile
 from core.models import BaseModel
-from core.permissions.askanna_roles import (
-    AskAnnaAdmin,
-    AskAnnaMember,
-    AskAnnaPublicViewer,
-)
+from core.permissions.askanna_roles import get_request_role, merge_role_permissions
+from workspace.models import Workspace
 
 
-class User(BaseAvatarModel, AbstractUser):
+class User(MemberProfile, AbstractUser):
     uuid = models.UUIDField(db_index=True, editable=False, default=_uuid.uuid4, verbose_name="UUID")
 
     email = models.EmailField("Email address", blank=False)
     name = models.CharField("Name of User", blank=False, max_length=255)
-    job_title = models.CharField("Job title", blank=True, default="", max_length=255)
 
-    # First and last name do not cover name patterns around the glob and are removed from the AbstractUser model
+    # We don't use the first and last name set by the AbstractUser
     first_name = None
     last_name = None
 
     objects = UserManager()
 
-    @property
-    def memberships(self):
-        return self.memberships
+    def __str__(self):
+        return f"{self.name or self.username} ({self.suuid})"
 
     @property
-    def auth_token(self):
-        return self.auth_token
-
-    @classmethod
-    def get_role(cls, request):
-        """
-        Defaulting the role to `AskAnnaPublicViewer` when no match is found
-        # key: is_anonymous, is_active, is_superuser
-        """
-        user_role_mapping = {
-            (1, 0, 0): AskAnnaPublicViewer,
-            (0, 1, 0): AskAnnaMember,
-            (0, 1, 1): AskAnnaAdmin,
-        }
-
-        return user_role_mapping.get(
-            (
-                request.user.is_anonymous,
-                request.user.is_active,
-                request.user.is_superuser,
-            ),
-            AskAnnaPublicViewer,
-        )
+    def active_memberships(self):
+        return self.memberships.active_members()  # type: ignore
 
     def to_deleted(self):
         """
         We don't actually remove the user, we mark it as deleted and we remove the confidential info such as
-        username and email.
+        email, password and avatar files.
 
         Note: if the user has active workspace memberships, these memberships are not deleted. The memberships will be
         marked as deleted. If a membership was using the global profile, then the profile will be copied over to the
         membership before removing the user.
         """
-        for membership in self.memberships.filter(deleted_at__isnull=True):
+        for membership in self.active_memberships:
             membership.to_deleted()
 
-        self.delete_avatar()
-        self.auth_token.delete()
+        self.auth_token.delete()  # type: ignore
         self.set_unusable_password()
 
         self.is_active = False
@@ -77,6 +50,8 @@ class User(BaseAvatarModel, AbstractUser):
         self.email = f"deleted-user-{self.suuid}@dev.null"
         self.name = "deleted user"
         self.job_title = ""
+
+        self.delete_avatar_files()
         self.save(
             update_fields=[
                 "is_active",
@@ -89,6 +64,35 @@ class User(BaseAvatarModel, AbstractUser):
         )
 
         super().to_deleted()
+
+    def request_has_object_read_permission(self, request) -> bool:
+        # User can always read its own user
+        if request.user and request.user == self:
+            return True
+
+        # Workspace memberships can be set to use the user profile. Select all memberships that use this user profile.
+        memberships_workspace_uuids = self.active_memberships.filter(
+            use_global_profile=True, object_type=MSP_WORKSPACE
+        ).values_list("object_uuid", flat=True)
+
+        # Read permission to this user is given for PUBLIC workspaces where this user has a membership with the
+        # profile set to use this user profile
+        if Workspace.objects.filter(uuid__in=memberships_workspace_uuids, visibility="PUBLIC").exists():
+            return True
+
+        if request.user.is_anonymous:
+            return False
+
+        # Read permission to this user is given for workspaces where this user has a membership with the profile set to
+        # use this user profile and the request.user has an active membership with the role permission
+        # "workspace.info.view"
+        request_user_memberships = request.user.active_memberships.filter(object_uuid__in=memberships_workspace_uuids)
+
+        request_user_roles = list({membership.get_role() for membership in request_user_memberships}) + [
+            get_request_role(request)
+        ]
+
+        return merge_role_permissions(request_user_roles).get("workspace.info.view", False)
 
 
 class PasswordResetLog(BaseModel):

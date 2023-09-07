@@ -6,6 +6,20 @@ from rest_framework import serializers
 from core.utils import get_files_and_directories_in_zip_file
 
 
+class RelationSerializer(serializers.Serializer):
+    relation = serializers.SerializerMethodField()
+    suuid = serializers.CharField(read_only=True)
+    name = serializers.SerializerMethodField()
+
+    def get_relation(self, instance) -> str:
+        return instance._meta.model_name
+
+    def get_name(self, instance) -> str:
+        if hasattr(instance, "get_name"):
+            return instance.get_name()
+        return instance.name
+
+
 @extend_schema_field(OpenApiTypes.STR)
 class ReadWriteSerializerMethodField(serializers.Field):
     """

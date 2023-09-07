@@ -2,6 +2,7 @@ import io
 import json
 
 import django_filters
+from django.conf import settings
 from django.db.models import Prefetch, Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -10,16 +11,16 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 
 from account.models.membership import MSP_WORKSPACE
-from core.const import ALLOWED_API_AGENTS
 from core.filters import filter_multiple
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions.role import RoleBasedPermission
+from core.viewsets import AskAnnaGenericViewSet
 from job.models import JobDef, JobPayload, ScheduledJob
 from job.serializers import JobSerializer, RequestJobRunSerializer
 from package.models import Package
@@ -52,14 +53,17 @@ class JobView(
     mixins.RetrieveModelMixin,
     PartialUpdateModelMixin,
     mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     queryset = (
-        JobDef.objects.active()
+        JobDef.objects.active()  # type: ignore
         .select_related("project", "project__workspace")
         .prefetch_related(
             Prefetch("schedules", queryset=ScheduledJob.objects.order_by("next_run_at")),
-            Prefetch("project__packages", queryset=Package.objects.active_and_finished().order_by("-created_at")),
+            Prefetch(
+                "project__packages",
+                queryset=Package.objects.active_and_finished().order_by("-created_at"),  # type: ignore
+            ),
         )
     )
     lookup_field = "suuid"
@@ -102,7 +106,9 @@ class JobView(
                 .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
+            "object_uuid", flat=True
+        )
 
         return (
             super()
@@ -144,14 +150,19 @@ class JobView(
         name="Request new job run",
         serializer_class=RequestJobRunSerializer,
         url_path="run/request/batch",
-        queryset=JobDef.objects.active().select_related("project", "project__workspace"),
+        queryset=JobDef.objects.active().select_related("project", "project__workspace"),  # type: ignore
     )
     def new_run(self, request, suuid, **kwargs):
         job = self.get_object()
         payload = self.handle_payload(request=request, job=job)
 
         # Fetch the latest package found in the job.project
-        package = Package.objects.active_and_finished().filter(project=job.project).order_by("-created_at").first()
+        package = (
+            Package.objects.active_and_finished()  # type: ignore
+            .filter(project=job.project)
+            .order_by("-created_at")
+            .first()
+        )
 
         run = Run.objects.create(
             name=request.query_params.get("name", ""),
@@ -206,4 +217,4 @@ class JobView(
         """
         source = request.headers.get("askanna-agent", "api").upper()
         # If the source is not in the allowed list, we know the API is used directly and we set the trigger to API
-        return source if source in ALLOWED_API_AGENTS else "API"
+        return source if source in settings.ALLOWED_API_AGENTS else "API"

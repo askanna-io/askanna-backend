@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.db.models import signals
 from django.utils import timezone
 
 from core.tests.base import BaseUserPopulation
@@ -7,14 +6,11 @@ from job.models import JobDef, RunImage
 from package.models import Package
 from project.models import Project
 from run.models import Run
-from workspace.listeners import install_demo_project_in_workspace
-from workspace.models import Workspace
 
 
 class BaseJobTestDef(BaseUserPopulation):
     def setUp(self):
         super().setUp()
-        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
         self.project = Project.objects.create(**{"name": "TestProject", "workspace": self.workspace_a})
         self.project2 = Project.objects.create(**{"name": "TestProject2", "workspace": self.workspace_b})
         self.project3 = Project.objects.create(

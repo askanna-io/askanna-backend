@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from account.models import User
 from job.models import JobDef
 from package.models import Package
 from project.models import Project
@@ -41,37 +42,60 @@ class Command(BaseCommand):
     help = "Install 'AskAnna Create Project' in workspace 'AskAnna Core'"
 
     def handle(self, *args, **options):
+        user_anna, _ = User.objects.get_or_create(username="anna")
+
         # Make sure we are operating on the 'AskAnna workspace'
-        workspace, workspace_created = Workspace.objects.get_or_create(
-            uuid="695fcc8b-ba8c-4575-a1e0-f0fcfc70a349",
-            suuid="3Cpy-QMzd-MVko-1rDQ",
-        )
-        if workspace_created:
-            workspace.name = "AskAnna Core"
-            workspace.visibility = "PRIVATE"
-            workspace.save()
-        elif workspace.name != "AskAnna Core" or workspace.visibility != "PRIVATE":
+        workspace_uuid = uuid.UUID("695fcc8b-ba8c-4575-a1e0-f0fcfc70a349")
+        workspace_suuid = "3Cpy-QMzd-MVko-1rDQ"
+        workspace_name = "AskAnna Core"
+        workspace_visibility = "PRIVATE"
+        try:
+            workspace = Workspace.objects.get(
+                uuid=workspace_uuid,
+                suuid=workspace_suuid,
+            )
+        except Workspace.DoesNotExist:
+            workspace = Workspace.objects.create(
+                uuid=workspace_uuid,
+                suuid=workspace_suuid,
+                name=workspace_name,
+                visibility=workspace_visibility,
+                created_by=user_anna,
+            )
+
+        if workspace.name != workspace_name or workspace.visibility != workspace_visibility:
             warnings.warn(
-                "Workspace '3Cpy-QMzd-MVko-1rDQ' already exists but is not configured with the expected workspace "
-                "name or workspace visibility.",
+                "Workspace '3Cpy-QMzd-MVko-1rDQ' exists but is not configured with the expected workspace name or "
+                "workspace visibility.",
                 category=Warning,
                 stacklevel=1,
             )
 
         # Make sure we operate on the 'AskAnna Create Project' project
-        project, project_created = Project.objects.get_or_create(
-            uuid=uuid.UUID("f1823c3b-e9e7-47bb-a610-5462c9cd9767"),
-            suuid="7Lif-Rhcn-IRvS-Wv7J",
-            workspace=workspace,
-        )
-        if project_created:
-            project.name = "AskAnna Create Project"
-            project.visibility = "PRIVATE"
-            project.save()
-        elif project.name != "AskAnna Create Project" or project.visibility != "PRIVATE":
+        project_uuid = uuid.UUID("f1823c3b-e9e7-47bb-a610-5462c9cd9767")
+        project_suuid = "7Lif-Rhcn-IRvS-Wv7J"
+        project_name = "AskAnna Create Project"
+        project_visibility = "PRIVATE"
+        try:
+            project = Project.objects.get(
+                uuid=project_uuid,
+                suuid=project_suuid,
+                workspace=workspace,
+            )
+        except Project.DoesNotExist:
+            project = Project.objects.create(
+                uuid=project_uuid,
+                suuid=project_suuid,
+                name=project_name,
+                visibility=project_visibility,
+                workspace=workspace,
+                created_by=user_anna,
+            )
+
+        if project.name != project_name or project.visibility != project_visibility:
             warnings.warn(
-                "Project '7Lif-Rhcn-IRvS-Wv7J' already exists but is not configured with the expected project name "
-                "or project visibility.",
+                "Project '7Lif-Rhcn-IRvS-Wv7J' exists but is not configured with the expected project name or "
+                "project visibility.",
                 category=Warning,
                 stacklevel=1,
             )
@@ -107,5 +131,6 @@ class Command(BaseCommand):
             project=project,
             size=package_archive.stat().st_size,
             finished_at=timezone.now(),
+            created_by=user_anna,
         )
         package_object.write(package_archive.open("rb"))

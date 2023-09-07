@@ -177,12 +177,6 @@ workspace_permissions = {
     "workspace.remove": [
         WorkspaceAdmin,
     ],
-    "workspace.me.view": [
-        WorkspaceAdmin,
-        WorkspaceMember,
-        WorkspaceViewer,
-        WorkspacePublicViewer,
-    ],
     "workspace.info.view": [
         WorkspaceAdmin,
         WorkspaceMember,
@@ -191,6 +185,12 @@ workspace_permissions = {
     ],
     "workspace.info.edit": [
         WorkspaceAdmin,
+    ],
+    "workspace.me.view": [
+        WorkspaceAdmin,
+        WorkspaceMember,
+        WorkspaceViewer,
+        WorkspacePublicViewer,
     ],
     "workspace.me.edit": [
         WorkspaceAdmin,
@@ -351,3 +351,14 @@ def merge_role_permissions(roles: list) -> dict[str, bool]:
     permissions.update(true_permissions)
 
     return dict(sorted(permissions.items()))
+
+
+def get_request_role(request):
+    """Returns the role for the request"""
+
+    if request.user.is_active:
+        if request.user.is_superuser:
+            return AskAnnaAdmin
+        return AskAnnaMember
+
+    return AskAnnaPublicViewer

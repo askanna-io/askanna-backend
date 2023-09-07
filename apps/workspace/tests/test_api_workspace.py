@@ -4,16 +4,17 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from core.tests.base import BaseUserPopulation
+from core.utils.suuid import create_suuid
 
 pytestmark = pytest.mark.django_db
 
 
-class BaseWorkspace(BaseUserPopulation):
+class BaseWorkspace(BaseUserPopulation, APITestCase):
     def setUp(self):
         super().setUp()
 
 
-class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
+class TestWorkspaceListAPI(BaseWorkspace):
     def setUp(self):
         super().setUp()
         self.url = reverse("workspace-list", kwargs={"version": "v1"})
@@ -72,7 +73,7 @@ class TestWorkspaceListAPI(BaseWorkspace, APITestCase):
         self.assertEqual(len(response.data["results"]), 1)
 
 
-class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
+class TestWorkspaceDetailAPI(BaseWorkspace):
     def setUp(self):
         super().setUp()
         self.url = reverse(
@@ -81,7 +82,7 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
         )
         self.url_non_existing_workspace = reverse(
             "workspace-detail",
-            kwargs={"version": "v1", "suuid": self.workspace_a.suuid[:-1] + "a"},
+            kwargs={"version": "v1", "suuid": create_suuid()},
         )
 
     def test_detail_as_anna(self):
@@ -147,7 +148,7 @@ class TestWorkspaceDetailAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.data.get("name"), "test workspace_c")
 
 
-class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
+class TestWorkspaceUpdateAPI(BaseWorkspace):
     def setUp(self):
         super().setUp()
         self.url = reverse(
@@ -180,7 +181,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         new_details = {"name": "New workspace name", "description": "A new world"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_member_name(self):
         self.activate_user("member")
@@ -188,7 +189,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         new_details = {"name": "New workspace name 2"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_member_description(self):
         self.activate_user("member")
@@ -196,7 +197,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         new_details = {"description": "A new world 2"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_member_visibility(self):
         self.activate_user("member")
@@ -204,7 +205,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         new_details = {"visibility": "PUBLIC"}
 
         response = self.client.patch(self.url, new_details, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_as_admin_visibility(self):
         self.activate_user("admin")
@@ -230,7 +231,7 @@ class TestWorkspaceUpdateAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
+class TestWorkspaceDeleteAPI(BaseWorkspace):
     def setUp(self):
         super().setUp()
         self.url = reverse(
@@ -257,7 +258,7 @@ class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
         self.activate_user("member")
 
         response = self.client.delete(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_as_non_member(self):
         """Delete a workspace by a non member is not possible"""
@@ -272,7 +273,7 @@ class TestWorkspaceDeleteAPI(BaseWorkspace, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class TestWorkspaceListWithFilterAPI(BaseWorkspace, APITestCase):
+class TestWorkspaceListWithFilterAPI(BaseWorkspace):
     def setUp(self):
         super().setUp()
         self.url = reverse("workspace-list", kwargs={"version": "v1"})

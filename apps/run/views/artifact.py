@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
@@ -14,6 +14,7 @@ from account.models.membership import MSP_WORKSPACE, Membership
 from core.mixins import ObjectRoleMixin
 from core.permissions.role import RoleBasedPermission
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
+from core.viewsets import AskAnnaGenericViewSet
 from run.models import ChunkedRunArtifactPart as ChunkedArtifactPart
 from run.models import Run, RunArtifact
 from run.serializers import (
@@ -41,7 +42,7 @@ class RunArtifactView(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     """
     List all artifacts and allow to finish upload action
@@ -80,7 +81,9 @@ class RunArtifactView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
+            "object_uuid", flat=True
+        )
 
         return (
             super()

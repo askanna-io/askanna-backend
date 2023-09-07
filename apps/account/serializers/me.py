@@ -1,48 +1,69 @@
-import base64
-import binascii
-import io
-
 from drf_spectacular.utils import extend_schema_field
-from PIL import Image
-from rest_framework import serializers, status
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
 
-from .user import RoleSerializer
-from account.models.membership import UserProfile
+from account.models.membership import Membership
 from account.models.user import User
-from core.permissions.askanna_roles import get_role_class, merge_role_permissions
+from account.serializers.user import AvatarSerializer, RoleSerializer
+from core.permissions.askanna_roles import (
+    get_request_role,
+    get_role_class,
+    merge_role_permissions,
+)
 from core.serializers import ReadWriteSerializerMethodField
 
 
 class MeSerializer(serializers.ModelSerializer):
-    suuid = serializers.CharField(read_only=True, allow_null=True, default=None)
+    suuid = serializers.CharField(read_only=True)
     name = serializers.CharField(default=None)
-    email = serializers.EmailField(read_only=True, default=None)
+    email = serializers.EmailField(read_only=True)
     job_title = serializers.CharField(allow_blank=True, default=None)
-    avatar = serializers.DictField(read_only=True, allow_null=True, default=None, source="avatar_cdn_locations")
-    role = serializers.SerializerMethodField("get_role")
-    permission = serializers.SerializerMethodField("get_permission")
+    avatar = serializers.ImageField(
+        default=None,
+        allow_null=True,
+        write_only=True,
+        help_text=(
+            "Upload an image file that will be used as the authenticated user's avatar. Existing image files are "
+            "automatically deleted. Submit the avatar field with an empty value to delete an existing image file "
+            "without uploading a new one."
+        ),
+    )
+    avatar_files = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField(read_only=True)
+    permission = serializers.SerializerMethodField()
 
     @extend_schema_field(RoleSerializer)
     def get_role(self, instance):
-        role = User.get_role(self.context["request"])
+        role = get_request_role(self.context["request"])
         return RoleSerializer(role).data
+
+    @extend_schema_field(AvatarSerializer)
+    def get_avatar_files(self, instance):
+        if self.context["request"].user.is_anonymous:
+            return None
+
+        if hasattr(instance, "get_avatar_files"):
+            avatar_files = instance.get_avatar_files()
+        else:
+            avatar_files = instance.avatar_files
+
+        if avatar_files:
+            return AvatarSerializer(avatar_files, context=self.context).data
+
+        return None
 
     def get_permission(self, instance) -> dict[str, bool]:
         user_roles = self.context["request"].user_roles
         return merge_role_permissions(user_roles)
 
     def update(self, instance, validated_data):
-        instance.name = validated_data.get("name", instance.name)
-        instance.job_title = validated_data.get("job_title", instance.job_title)
-        instance.save(
-            update_fields=[
-                "name",
-                "job_title",
-                "modified_at",
-            ]
-        )
-        return instance
+        if "avatar" in validated_data.keys():
+            avatar_file = validated_data.pop("avatar")
+            if avatar_file is not None:
+                instance.set_avatar(avatar_file)
+            else:
+                instance.delete_avatar_files()
+
+        return super().update(instance, validated_data)
 
     class Meta:
         model = User
@@ -52,16 +73,16 @@ class MeSerializer(serializers.ModelSerializer):
             "email",
             "job_title",
             "avatar",
+            "avatar_files",
             "role",
             "permission",
         )
 
 
-class ObjectMeSerializer(MeSerializer):
-    name = ReadWriteSerializerMethodField("get_name", required=True)
+class MembershipMeSerializer(MeSerializer):
+    name = ReadWriteSerializerMethodField(required=True)
     email = serializers.SerializerMethodField()
-    job_title = ReadWriteSerializerMethodField("get_job_title", required=False)
-    avatar = serializers.SerializerMethodField()
+    job_title = ReadWriteSerializerMethodField(required=False)
 
     def get_name(self, instance) -> str | None:
         if self.context["request"].user.is_anonymous:
@@ -78,105 +99,29 @@ class ObjectMeSerializer(MeSerializer):
             return None
         return instance.get_job_title()
 
-    def get_avatar(self, instance) -> dict[str, str] | None:
-        if self.context["request"].user.is_anonymous:
-            return None
-        return instance.get_avatar()
-
     @extend_schema_field(RoleSerializer)
     def get_role(self, instance):
         role = get_role_class(instance.role)
         return RoleSerializer(role).data
 
     def update(self, instance, validated_data):
-        instance.name = validated_data.get("name", instance.name)
-        instance.job_title = validated_data.get("job_title", instance.job_title)
-        instance.use_global_profile = validated_data.get("use_global_profile", instance.use_global_profile)
-        instance.save(
-            update_fields=[
-                "name",
-                "job_title",
-                "use_global_profile",
-                "modified_at",
-            ]
-        )
-        return instance
+        # We update a Membership instance. To serve the right information, we make sure that we use the membership
+        # profile instead of the global profile.
+        if "use_global_profile" not in validated_data.keys():
+            instance.use_global_profile = False
+
+        return super().update(instance, validated_data)
 
     class Meta:
-        model = UserProfile
+        model = Membership
         fields = (
             "suuid",
             "name",
             "email",
             "job_title",
             "avatar",
+            "avatar_files",
             "use_global_profile",
             "role",
             "permission",
         )
-
-
-class WorkspaceMeSerializer(ObjectMeSerializer):
-    ...
-
-
-class ProjectMeSerializer(ObjectMeSerializer):
-    ...
-
-
-class AvatarSerializer(serializers.ModelSerializer):
-    """
-    The AvatarSerializer is used to validate the avatar and save it in relation to a UserProfile instance.
-    """
-
-    avatar = serializers.CharField(required=True, write_only=True)
-
-    def validate_avatar(self, value):
-        """
-        Validate the content of the avatar, as this is a base64 encoded value, we need to validate whether this is
-        an image or not
-        """
-        try:
-            _, image_encoded = value.split(";base64,")
-        except ValueError:
-            raise ValidationError("Image is not valid. Is the avatar Base64 encoded?") from None
-
-        try:
-            image_binary = base64.standard_b64decode(image_encoded)
-        except binascii.Error as exc:
-            raise ValidationError(f"Image is not valid. Error received: {exc}") from exc
-
-        try:
-            Image.open(io.BytesIO(image_binary))
-        except (TypeError, Exception) as exc:
-            raise ValidationError(f"Image is not valid. Error received: {exc}") from exc
-
-        return image_binary
-
-    def save(self):
-        """
-        Perform save of the avatar if set self.validated_data.get('avatar')
-        """
-        if self.instance and self.validated_data:
-            avatar = self.validated_data.get("avatar")
-            if avatar:
-                self.instance.write(io.BytesIO(avatar))
-                self.instance.save(update_fields=["modified_at"])
-        super().save()
-
-    class Meta:
-        model = UserProfile
-        fields = ["avatar"]
-        status = status.HTTP_204_NO_CONTENT
-
-
-class MeAvatarSerializer(AvatarSerializer):
-    "Serializer for the user's avatar"
-
-    class Meta(AvatarSerializer.Meta):
-        model = User
-
-
-class WorkspaceMeAvatarSerializer(AvatarSerializer):
-    "Serializer for workspace's member avatar"
-    pass
