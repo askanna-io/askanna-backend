@@ -4,7 +4,6 @@ import uuid
 import zipfile
 from collections.abc import Callable
 
-from django.db.models import signals
 from rest_framework import status
 
 from account.models.membership import (
@@ -12,52 +11,16 @@ from account.models.membership import (
     WS_ADMIN,
     WS_MEMBER,
     WS_VIEWER,
-    UserProfile,
+    Membership,
 )
 from account.models.user import User
 from project.models import Project
-from workspace.listeners import install_demo_project_in_workspace
 from workspace.models import Workspace
 
 
 class BaseUserPopulation:
     def setUp(self):
         super().setUp()  # type: ignore
-        signals.post_save.disconnect(install_demo_project_in_workspace, sender=Workspace)
-        self.workspace_a = Workspace.objects.create(name="test workspace_a")
-        self.workspace_b = Workspace.objects.create(name="test workspace_b")
-        self.workspace_c = Workspace.objects.create(name="test workspace_c", visibility="PUBLIC")
-
-        self.workspaces = {
-            "workspace_a": self.workspace_a,
-            "workspace_b": self.workspace_b,
-            "workspace_c": self.workspace_c,
-        }
-        self.projects = {
-            "project_a_wp_private_pr_private": Project.objects.create(
-                name="test project_a_1",
-                workspace=self.workspace_a,
-            ),
-            "project_a_wp_private_pr_public": Project.objects.create(
-                name="test project_a_2",
-                workspace=self.workspace_a,
-                visibility="PUBLIC",
-            ),
-            "project_b_wp_private_pr_private": Project.objects.create(
-                name="test project_b_1",
-                workspace=self.workspace_b,
-            ),
-            "project_c_wp_public_pr_private": Project.objects.create(
-                name="test project_c_1",
-                workspace=self.workspace_c,
-            ),
-            "project_c_wp_public_pr_public": Project.objects.create(
-                name="test project_c_2",
-                workspace=self.workspace_c,
-                visibility="PUBLIC",
-            ),
-        }
-
         self.users = {
             "anna": User.objects.create(
                 username="anna",
@@ -110,19 +73,68 @@ class BaseUserPopulation:
                 email="member_inactive@askanna.dev",
                 password="password-member_inactive",
             ),
+            "admin_for_workspace_b": User.objects.create(  # nosec: B106
+                username="admin_for_workspace_b",
+                email="admin_b@askanna.dev",
+            ),
+            "admin_for_workspace_c": User.objects.create(  # nosec: B106
+                username="admin_for_workspace_c",
+                email="admin_c@askanna.dev",
+            ),
         }
+
+        self.workspace_a = Workspace.objects.create(
+            name="test workspace_a",
+            created_by=self.users["admin"],
+        )
+        self.workspace_b = Workspace.objects.create(
+            name="test workspace_b",
+            created_by=self.users["admin_for_workspace_b"],
+        )
+        self.workspace_c = Workspace.objects.create(
+            name="test workspace_c",
+            created_by=self.users["admin_for_workspace_c"],
+            visibility="PUBLIC",
+        )
+        self.workspaces = {
+            "workspace_a": self.workspace_a,
+            "workspace_b": self.workspace_b,
+            "workspace_c": self.workspace_c,
+        }
+
+        self.projects = {
+            "project_a_wp_private_pr_private": Project.objects.create(
+                name="test project_a_1",
+                workspace=self.workspace_a,
+            ),
+            "project_a_wp_private_pr_public": Project.objects.create(
+                name="test project_a_2",
+                workspace=self.workspace_a,
+                visibility="PUBLIC",
+            ),
+            "project_b_wp_private_pr_private": Project.objects.create(
+                name="test project_b_1",
+                workspace=self.workspace_b,
+            ),
+            "project_c_wp_public_pr_private": Project.objects.create(
+                name="test project_c_1",
+                workspace=self.workspace_c,
+            ),
+            "project_c_wp_public_pr_public": Project.objects.create(
+                name="test project_c_2",
+                workspace=self.workspace_c,
+                visibility="PUBLIC",
+            ),
+        }
+
         self.members = {
             "anna": None,
-            "admin": UserProfile.objects.create(
+            "admin": Membership.objects.get(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["admin"],
-                role=WS_ADMIN,
-                name="name of admin in membership",
-                job_title="job_title of admin in membership",
-                use_global_profile=False,
             ),
-            "member": UserProfile.objects.create(
+            "member": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member"],
@@ -132,7 +144,7 @@ class BaseUserPopulation:
                 use_global_profile=False,
             ),
             "non_member": None,
-            "admin2": UserProfile.objects.create(
+            "admin2": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["admin2"],
@@ -141,7 +153,7 @@ class BaseUserPopulation:
                 job_title="job_title of admin2 in membership",
                 use_global_profile=False,
             ),
-            "member2": UserProfile.objects.create(
+            "member2": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member2"],
@@ -150,7 +162,7 @@ class BaseUserPopulation:
                 job_title="job_title of member2 in membership",
                 use_global_profile=False,
             ),
-            "member_wv": UserProfile.objects.create(
+            "member_wv": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member_wv"],
@@ -159,7 +171,7 @@ class BaseUserPopulation:
                 job_title="job_title of member_wv in membership",
                 use_global_profile=True,
             ),
-            "admin_inactive": UserProfile.objects.create(
+            "admin_inactive": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["admin_inactive"],
@@ -169,7 +181,7 @@ class BaseUserPopulation:
                 use_global_profile=False,
                 deleted_at=datetime.datetime(2021, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
             ),
-            "member_inactive": UserProfile.objects.create(
+            "member_inactive": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member_inactive"],
@@ -184,7 +196,7 @@ class BaseUserPopulation:
             # anna user never has a profile to simulate askanna admin without
             # an explicit access to workspaces and projects
             "anna": None,
-            "admin": UserProfile.objects.create(
+            "admin": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_b.uuid,
                 user=self.users["admin"],
@@ -195,7 +207,7 @@ class BaseUserPopulation:
             "member": None,
             "non_member": None,
             "admin2": None,
-            "member2": UserProfile.objects.create(
+            "member2": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_b.uuid,
                 user=self.users["member2"],
@@ -205,7 +217,7 @@ class BaseUserPopulation:
                 use_global_profile=True,
             ),
             "member3": None,
-            "member_inactive": UserProfile.objects.create(
+            "member_inactive": Membership.objects.create(
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_b.uuid,
                 user=self.users["member_inactive"],

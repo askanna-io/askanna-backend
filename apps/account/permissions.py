@@ -56,7 +56,7 @@ class RequestHasAccessToMembershipPermission(permissions.BasePermission):
             except Invitation.DoesNotExist:
                 has_permission = view.request_user_is_workspace_admin and obj.user != request.user
 
-        elif view.action in ["partial_update", "avatar"]:
+        elif view.action in ["partial_update"]:
             has_permission = (not obj.deleted_at and obj.user == request.user) or view.request_user_is_workspace_admin
 
         elif view.action == "invite_accept":

@@ -1,16 +1,19 @@
 from dj_rest_auth.serializers import (
     PasswordResetSerializer as DefaultPasswordResetSerializer,
 )
-from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode as uid_decoder
 from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 
+from account.models.membership import AVATAR_SPECS
 from account.models.user import User
 from account.signals import password_reset_signal
+from core.utils.config import get_setting
+from storage.serializers import FileDownloadInfoSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -52,6 +55,23 @@ class UserRelationSerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.Serializer):
     name = serializers.CharField()
     code = serializers.CharField()
+
+
+class AvatarSerializer(serializers.Serializer):
+    def __init__(self, instance=None, data=empty, **kwargs):
+        if instance:
+            instance = {
+                avatar_file.name.split(".")[0]
+                if avatar_file.name.split(".")[0] in AVATAR_SPECS
+                else "original": avatar_file
+                for avatar_file in instance
+            }
+
+        super().__init__(instance, data=data, **kwargs)
+
+        self.fields["original"] = FileDownloadInfoSerializer()
+        for spec_name in AVATAR_SPECS.keys():
+            self.fields[spec_name] = FileDownloadInfoSerializer()
 
 
 class LoginSerializer(serializers.Serializer):
@@ -96,7 +116,7 @@ class PasswordResetSerializer(DefaultPasswordResetSerializer):
     Serializer for requesting a password reset e-mail.
     """
 
-    front_end_url = serializers.CharField(required=False, default=settings.ASKANNA_UI_URL)
+    front_end_url = serializers.URLField(required=False)
 
     def get_email_options(self) -> dict:
         return {"from_email": "AskAnna <support@askanna.io>"}
@@ -108,10 +128,9 @@ class PasswordResetSerializer(DefaultPasswordResetSerializer):
         request = self.context.get("request")
         # Set some values to trigger the send_email method.
 
-        front_end_url = self.validated_data.get("front_end_url", "")
-        domain = front_end_url.replace("https://", "").replace("http://", "")
-        domain = domain.rstrip("/")
-        is_secure = "https" in self.validated_data.get("front_end_url", "")
+        front_end_url = self.validated_data.get("front_end_url", get_setting("ASKANNA_UI_URL"))
+        domain = front_end_url.replace("https://", "").replace("http://", "").rstrip("/")
+        is_secure = "https" in front_end_url
 
         opts = {
             "domain_override": domain,

@@ -243,7 +243,7 @@ class TestMetricUpdateAPI(BaseRunTest, APITestCase):
             {"metrics": metric_response_good_small},
             format="json",
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_as_admin(self):
         """
@@ -281,7 +281,7 @@ class TestMetricUpdateAPI(BaseRunTest, APITestCase):
             {"metrics": metric_response_good_small},
             format="json",
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_as_anonymous(self):
         """
@@ -292,7 +292,7 @@ class TestMetricUpdateAPI(BaseRunTest, APITestCase):
             {"metrics": metric_response_good_small},
             format="json",
         )
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestRunMetricDeduplicate(BaseRunTest, APITestCase):

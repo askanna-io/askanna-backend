@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from django.core import signing
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+import io
 
-from account.models.avatar import BaseAvatarModel
+from django.core import signing
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.base import ContentFile
+from django.db import models
+from PIL import Image
+
+from core.models import BaseModel
 from core.permissions.askanna_roles import (
     ProjectAdmin,
     ProjectMember,
@@ -16,59 +21,99 @@ from core.permissions.askanna_roles import (
     WorkspaceNoMember,
     WorkspacePublicViewer,
     WorkspaceViewer,
+    get_request_role,
     get_role_class,
+    merge_role_permissions,
 )
 from project.models import Project
+from storage.models import File
 from workspace.models import Workspace
 
-MSP_PROJECT = "PR"
 MSP_WORKSPACE = "WS"
-MEMBERSHIPS = ((MSP_PROJECT, "Project"), (MSP_WORKSPACE, "Workspace"))
+MEMBERSHIPS = [(MSP_WORKSPACE, "Workspace")]
 WS_MEMBER = "WM"
 WS_ADMIN = "WA"
 WS_VIEWER = "WV"
 ROLES = ((WS_VIEWER, "viewer"), (WS_MEMBER, "member"), (WS_ADMIN, "admin"))
 
+AVATAR_SPECS = {
+    "icon": (60, 60),
+    "small": (120, 120),
+    "medium": (180, 180),
+    "large": (240, 240),
+}
 
-class MemberQuerySet(models.QuerySet):
+
+class MemberProfile(BaseModel):
+    name = models.CharField("Name", blank=True, max_length=255)
+    job_title = models.CharField("Job title", blank=True, default="", max_length=255)
+
+    _avatar_directory = None
+
+    @property
+    def avatar_files(self) -> models.QuerySet[File] | None:
+        try:
+            return self.objectreference.file_created_for.all()  # type: ignore
+        except ObjectDoesNotExist:
+            return None
+
+    def delete_avatar_files(self) -> models.QuerySet[File] | None:
+        try:
+            return self.objectreference.file_created_for.all().delete()  # type: ignore
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def avatar_directory(self):
+        if self._avatar_directory is None:
+            self._avatar_directory = (
+                "avatars/" + self.suuid[:2].lower() + "/" + self.suuid[2:4].lower() + "/" + self.suuid
+            )
+
+        return self._avatar_directory
+
+    def set_avatar(self, avatar_file, created_by=None):
+        created_by = created_by or self
+
+        self.delete_avatar_files()
+
+        File.objects.create(
+            name=avatar_file.name,
+            file=avatar_file,
+            upload_to=self.avatar_directory,
+            created_for=self,
+            created_by=created_by,
+        )
+
+        with Image.open(avatar_file) as image:
+            for spec_name, spec_size in AVATAR_SPECS.items():
+                with io.BytesIO() as tmp_file, image.copy() as tmp_image:
+                    tmp_image.thumbnail(spec_size)
+                    tmp_image.save(fp=tmp_file, format="png")
+
+                    filename = f"{spec_name}.png"
+                    File.objects.create(
+                        name=filename,
+                        file=ContentFile(tmp_file.getvalue(), name=filename),
+                        upload_to=self.avatar_directory,
+                        created_for=self,
+                        created_by=created_by,
+                    )
+
+    class Meta(BaseModel.Meta):
+        abstract = True
+
+
+class MembershipQuerySet(models.QuerySet):
     def active_members(self):
         return self.filter(deleted_at__isnull=True)
 
-    def admins(self):
-        return self.active_members().filter(role=WS_ADMIN)
 
-    def members(self):
-        """
-        Members include admins
-        """
-        return self.active_members()
-
-    def all_admins(self):
-        return self.filter(role=WS_ADMIN)
-
-    def all_members(self):
-        return self.filter(role=WS_MEMBER)
-
-
-class ActiveMemberManager(models.Manager):
-    def get_queryset(self):
-        return MemberQuerySet(self.model, using=self._db)
-
-    def admins(self):
-        return self.get_queryset().admins()
-
-    def members(self):
-        return self.get_queryset().members()
-
-
-class Membership(BaseAvatarModel):
+class Membership(MemberProfile):
     """
     Membership holds the relation between
     - workspace vs user
     - project vs user
-
-    README: We don't choose to work with Django generic relations for now
-
     """
 
     object_uuid = models.UUIDField(db_index=True)
@@ -88,19 +133,24 @@ class Membership(BaseAvatarModel):
         default=True,
         help_text="Use information from the global user account",
     )
-    name = models.CharField("Name", blank=True, max_length=255)
-    job_title = models.CharField("Job title", blank=True, max_length=255)
 
-    objects = models.Manager()
-    members = ActiveMemberManager()
+    objects = MembershipQuerySet().as_manager()
+
+    @property
+    def is_active(self):
+        return self.deleted_at is None
 
     @property
     def workspace(self):
         if self.object_type == MSP_WORKSPACE:
-            return Workspace.objects.get(uuid=self.object_uuid)
+            return cache.get_or_set(
+                f"membership_workspace_{self.object_uuid}",
+                lambda: Workspace.objects.get(uuid=self.object_uuid),
+                timeout=10,
+            )
         return None
 
-    def get_status(self):
+    def get_status(self) -> str:
         if self.user and not self.deleted_at:
             return "active"
         if self.deleted_at:
@@ -265,7 +315,7 @@ class Membership(BaseAvatarModel):
             return f"{self.get_name()} ({self.suuid})"
         return self.suuid
 
-    def get_name(self):
+    def get_name(self) -> str | None:
         """
         Get name, respecting the `use_global_profile` setting
         """
@@ -273,7 +323,7 @@ class Membership(BaseAvatarModel):
             return self.user.name
         return self.name
 
-    def get_job_title(self):
+    def get_job_title(self) -> str | None:
         """
         Get job_title, respecting the `use_global_profile` setting
         """
@@ -281,15 +331,17 @@ class Membership(BaseAvatarModel):
             return self.user.job_title
         return self.job_title
 
-    def get_avatar(self):
+    def get_avatar_files(self):
         """
-        Get avatar, respecting the `use_global_profile` setting
+        Get avatar_files, respecting the `use_global_profile` setting
         """
         if self.use_global_profile and self.user:
-            return self.user.avatar_cdn_locations
-        return self.avatar_cdn_locations
+            return self.user.avatar_files
+        return self.avatar_files
 
-    def to_deleted(self):
+    def to_deleted(self, removed_by=None):
+        removed_by = removed_by or self
+
         if self.use_global_profile and self.user:
             # If use_global_profile is True, then make a copy of the global profile to the membership profile.
             self.name = self.user.name
@@ -304,20 +356,53 @@ class Membership(BaseAvatarModel):
                 ]
             )
 
-            # Copy the avatar from the user to membership
-            self.write(self.user.avatar_path.open("rb"))
+            self.delete_avatar_files()
+            user_avatar_files: models.QuerySet = self.user.avatar_files
+            if isinstance(user_avatar_files, models.QuerySet) and user_avatar_files.count() > 0:
+                for avatar_file in user_avatar_files:
+                    with avatar_file.file as image_file:
+                        File.objects.create(
+                            name=avatar_file.name,
+                            file=ContentFile(image_file.read(), name=avatar_file.name),
+                            upload_to=self.avatar_directory,
+                            created_for=self,
+                            created_by=removed_by,
+                        )
 
         super().to_deleted()
+
+    def request_has_object_read_permission(self, request) -> bool:
+        # User can always read its own membership as long as the membership is active
+        if self.is_active and request.user == self.user:
+            return True
+
+        # No read permission if membership is set to use the global user profile
+        if self.use_global_profile:
+            return False
+
+        # Read permission to this membership is given if the workspace visibility is PUBLIC
+        # Note: for reproducibility reasons we show the membership also if the membership is inactive.
+        if self.workspace and self.workspace.is_public:
+            return True
+
+        if request.user.is_anonymous:
+            return False
+
+        # Read permission to this membership is given if the request.user has an active membership for this
+        # membership's workspace with the role permission "workspace.info.view"
+        request_user_membership = request.user.active_memberships.filter(
+            object_uuid=self.object_uuid, object_type=MSP_WORKSPACE
+        )
+
+        request_user_roles = list({membership.get_role() for membership in request_user_membership}) + [
+            get_request_role(request)
+        ]
+
+        return merge_role_permissions(request_user_roles).get("workspace.info.view", False)
 
     class Meta:
         ordering = ["-created_at"]
         unique_together = [["user", "object_uuid", "object_type", "deleted_at"]]
-
-
-class UserProfile(Membership):
-    """For now, the UserProfile extends the Membership model and contains the same information as the Membership."""
-
-    pass
 
 
 class Invitation(Membership):

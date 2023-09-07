@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django_filters import FilterSet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -16,6 +16,7 @@ from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions.role import RoleBasedPermission
 from core.utils import stream
+from core.viewsets import AskAnnaGenericViewSet
 from run.models import RedisLogQueue
 from run.models.run import STATUS_MAPPING, Run, get_status_external
 from run.serializers.run import RunSerializer, RunStatusSerializer
@@ -138,7 +139,6 @@ class RunFilterSet(FilterSet):
 @extend_schema_view(
     list=extend_schema(description="List the runs you have access to"),
     retrieve=extend_schema(description="Get info from a specific run"),
-    update=extend_schema(description="Update a run"),
     partial_update=extend_schema(description="Update a run"),
     destroy=extend_schema(description="Remove a run"),
 )
@@ -148,25 +148,27 @@ class RunView(
     mixins.RetrieveModelMixin,
     PartialUpdateModelMixin,
     mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     queryset = (
-        Run.objects.active()
+        Run.objects.active()  # type: ignore
         .select_related(
-            "jobdef",
-            "jobdef__project",
             "jobdef__project__workspace",
             "payload",
             "package",
-            "member",
-            "member__user",
-            "created_by",
+            "member__objectreference__account_membership",
+            "member__user__objectreference__account_user",
+            "created_by__objectreference__account_user",
             "run_image",
+            "result",
+            "output",
         )
         .prefetch_related(
-            "result",
             "artifact",
-            "output",
+            "metrics_meta",
+            "variables_meta",
+            "member__objectreference__file_created_for",
+            "member__user__objectreference__file_created_for",
         )
         .annotate(
             member_name=Case(
@@ -237,7 +239,9 @@ class RunView(
                 .filter(Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
+            "object_uuid", flat=True
+        )
 
         return (
             super()

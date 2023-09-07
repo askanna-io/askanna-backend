@@ -1,25 +1,23 @@
-from django.conf.urls import include
 from django.urls import re_path
 
-from account.views.me import WorkspaceMeAvatarViewSet, WorkspaceMeViewSet
-from account.views.people import PeopleViewSet
 from core.urls import router
-from workspace.views import WorkspaceViewSet
+from workspace.views.me import WorkspaceMeViewSet
+from workspace.views.people import WorkspacePeopleViewSet
+from workspace.views.workspace import WorkspaceViewSet
 
 workspace_router = router.register(
     r"workspace",
     WorkspaceViewSet,
     basename="workspace",
 )
-workspace_people_router = workspace_router.register(
+workspace_router.register(
     r"people",
-    PeopleViewSet,
+    WorkspacePeopleViewSet,
     basename="workspace-people",
     parents_query_lookups=["workspace__suuid"],
 )
 
 urlpatterns = [
-    re_path(r"^(?P<version>(v1))/", include(router.urls)),
     re_path(
         r"^(?P<version>(v1))/workspace/(?P<suuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/?$",
         WorkspaceMeViewSet.as_view(
@@ -30,15 +28,5 @@ urlpatterns = [
             }
         ),
         name="workspace-me",
-    ),
-    re_path(
-        r"^(?P<version>(v1))/workspace/(?P<suuid>((?:[a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{4}))/me/avatar/?$",
-        WorkspaceMeAvatarViewSet.as_view(
-            actions={
-                "put": "update",
-                "delete": "destroy",
-            }
-        ),
-        name="workspace-me-avatar",
     ),
 ]

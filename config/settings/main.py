@@ -73,6 +73,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # APPS
 # ------------------------------------------------------------------------------
+TOP_OF_THE_LIST_APPS = [
+    # http://whitenoise.evans.io/en/latest/django.html#using-whitenoise-in-development
+    "whitenoise.runserver_nostatic",
+]
+
 DJANGO_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -96,7 +101,6 @@ THIRD_PARTY_APPS = [
     "health_check",
     "health_check.db",
     "health_check.cache",
-    "health_check.storage",
     "health_check.contrib.migrations",
     "health_check.contrib.celery",
     "health_check.contrib.celery_ping",
@@ -106,6 +110,7 @@ THIRD_PARTY_APPS = [
 
 ASKANNA_APPS = [
     "core",
+    "storage",
     "account",
     "workspace",
     "project",
@@ -115,7 +120,7 @@ ASKANNA_APPS = [
     "run",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + ASKANNA_APPS
+INSTALLED_APPS = TOP_OF_THE_LIST_APPS + DJANGO_APPS + THIRD_PARTY_APPS + ASKANNA_APPS
 
 # MIDDLEWARE
 # ------------------------------------------------------------------------------
@@ -229,19 +234,19 @@ LOGGING = {
         },
     },
     "handlers": {
+        "console_default": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+        },
         "console_verbose": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
-        "console_not_verbose": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-        },
     },
     "loggers": {
         "core.middleware.logging": {
-            "handlers": ["console_not_verbose"],
+            "handlers": ["console_default"],
             "level": "INFO",
             "propagate": False,
         },

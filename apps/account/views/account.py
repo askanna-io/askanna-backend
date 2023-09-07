@@ -1,5 +1,5 @@
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import mixins, viewsets
+from rest_framework import mixins
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 from account.models.user import User
@@ -10,6 +10,7 @@ from core.mixins import (
     PermissionByActionMixin,
     SerializerByActionMixin,
 )
+from core.viewsets import AskAnnaGenericViewSet
 
 
 @extend_schema_view(
@@ -25,7 +26,7 @@ class AccountViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     PartialUpdateModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()

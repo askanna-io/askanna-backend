@@ -32,7 +32,7 @@ class RunResult(FileBaseModel, NameDescriptionBaseModel):
         return settings.ARTIFACTS_ROOT
 
     @property
-    def extension(self):
+    def extension(self) -> str:
         if self.name:
             extension = Path(self.name).suffix
             if extension and extension.startswith("."):

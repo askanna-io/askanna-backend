@@ -2,7 +2,7 @@ import django_filters
 from django.db.models import Q
 from django.http import Http404
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import mixins, viewsets
+from rest_framework import mixins
 from rest_framework.exceptions import NotAuthenticated
 
 from account.models.membership import MSP_WORKSPACE, Membership
@@ -13,6 +13,7 @@ from core.mixins import (
     SerializerByActionMixin,
 )
 from core.permissions.role import RoleBasedPermission
+from core.viewsets import AskAnnaGenericViewSet
 from project.models import Project
 from variable.models import Variable
 from variable.serializers import VariableCreateSerializer, VariableSerializer
@@ -47,9 +48,9 @@ class VariableView(
     mixins.RetrieveModelMixin,
     PartialUpdateModelMixin,
     mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
-    queryset = Variable.objects.active().select_related("project", "project__workspace")
+    queryset = Variable.objects.active().select_related("project", "project__workspace")  # type: ignore
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [
@@ -98,7 +99,7 @@ class VariableView(
 
             project_suuid = request.data.get("project_suuid")
             try:
-                project = Project.objects.active().get(suuid=project_suuid)
+                project = Project.objects.active().get(suuid=project_suuid)  # type: ignore
             except Project.DoesNotExist as exc:
                 raise Http404 from exc
 
@@ -118,9 +119,9 @@ class VariableView(
                 .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
-            "object_uuid", flat=True
-        )
+        member_of_workspaces = user.memberships.filter(  # type: ignore
+            object_type=MSP_WORKSPACE, deleted_at__isnull=True
+        ).values_list("object_uuid", flat=True)
 
         return (
             super()

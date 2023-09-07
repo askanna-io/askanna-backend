@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .base import BaseRunTest
+from tests.utils import get_avatar_content_file
 
 
 class TestRunModel(BaseRunTest, APITestCase):
@@ -469,17 +470,24 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         """
         self.activate_user("member2")
 
+        # Set avatar file for user
+        self.members.get("member").set_avatar(get_avatar_content_file())  # type: ignore
+
         # first visit 1st workspace
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
         assert response.data["created_by"]["name"] == "name of member in membership"  # type: ignore
+        assert response.data["created_by"]["avatar_files"] is not None  # type: ignore
 
         # then visit 2nd workspace
         response = self.client.get(self.url_other_workspace)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["suuid"] == self.runs["run3"].suuid  # type: ignore
         assert response.data["created_by"]["name"] == "member2"  # type: ignore
+
+        # Delete avatar file for user
+        self.members.get("member").delete_avatar_files()  # type: ignore
 
     def test_detail_as_non_member(self):
         """

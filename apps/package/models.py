@@ -29,20 +29,6 @@ class PackageQuerySet(models.QuerySet):
         )
 
 
-class PackageManager(models.Manager):
-    def get_queryset(self):
-        return PackageQuerySet(self.model, using=self._db)
-
-    def active(self):
-        return self.get_queryset().active()
-
-    def active_and_finished(self):
-        return self.get_queryset().active_and_finished()
-
-    def inactive(self):
-        return self.get_queryset().inactive()
-
-
 class Package(FileBaseModel, AuthorModel, NameDescriptionBaseModel):
     original_filename = models.CharField(max_length=1000, default="")
 
@@ -69,7 +55,7 @@ class Package(FileBaseModel, AuthorModel, NameDescriptionBaseModel):
         db_index=True,
     )
 
-    objects = PackageManager()
+    objects = PackageQuerySet().as_manager()
 
     file_type = "package"
     file_extension = "zip"

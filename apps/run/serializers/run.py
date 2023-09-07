@@ -22,18 +22,18 @@ from workspace.serializers import WorkspaceRelationSerializer
 
 
 class EnvironmentSerializer(serializers.Serializer):
-    name = serializers.ReadOnlyField()
+    name = serializers.CharField(read_only=True)
     image = RunImageRelationSerializer()
-    timezone = serializers.ReadOnlyField()
+    timezone = serializers.CharField(read_only=True)
 
 
 class NameTypeSerializer(serializers.Serializer):
-    name = serializers.ReadOnlyField()
-    type = serializers.ReadOnlyField()
+    name = serializers.CharField(read_only=True)
+    type = serializers.CharField(read_only=True)
 
 
 class NameTypeCountSerializer(NameTypeSerializer):
-    count = serializers.ReadOnlyField()
+    count = serializers.IntegerField(read_only=True)
 
 
 class MetricsMetaSerializer(serializers.Serializer):
@@ -220,7 +220,7 @@ class RunStatusSerializer(serializers.ModelSerializer):
 class RunRelationSerializer(serializers.ModelSerializer):
     relation = serializers.SerializerMethodField()
     suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField(source="get_name")
+    name = serializers.ReadOnlyField()
 
     def get_relation(self, instance) -> str:
         return self.Meta.model.__name__.lower()

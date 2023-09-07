@@ -27,7 +27,7 @@ class DebugSqlMiddleware:
             or (
                 len(connection.queries) == 2
                 and connection.queries[0]["sql"] == "BEGIN"
-                and connection.queries[-1]["sql"] == "COMMIT"
+                and connection.queries[-1]["sql"] in ["COMMIT", "ROLLBACK"]
             )
         ):
             return response
@@ -42,7 +42,7 @@ class DebugSqlMiddleware:
             logger.info("%s\n", sql)
 
         number_of_queries = len(connection.queries)
-        if connection.queries[0]["sql"] == "BEGIN" and connection.queries[-1]["sql"] == "COMMIT":
+        if connection.queries[0]["sql"] == "BEGIN" and connection.queries[-1]["sql"] in ["COMMIT", "ROLLBACK"]:
             number_of_queries = number_of_queries - 2
 
         logger.info("\033[1;32mTOTAL QUERIES: %s\033[0m", number_of_queries)

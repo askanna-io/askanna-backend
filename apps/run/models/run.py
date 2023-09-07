@@ -52,21 +52,10 @@ class RunQuerySet(models.QuerySet):
     def inactive(self):
         return self.filter(
             Q(deleted_at__isnull=False)
-            | Q(jobdef__deleted_at__isnull=True)
+            | Q(jobdef__deleted_at__isnull=False)
             | Q(jobdef__project__deleted_at__isnull=False)
             | Q(jobdef__project__workspace__deleted_at__isnull=False)
         )
-
-
-class RunManager(models.Manager):
-    def get_queryset(self):
-        return RunQuerySet(self.model, using=self._db)
-
-    def active(self):
-        return self.get_queryset().active()
-
-    def inactive(self):
-        return self.get_queryset().inactive()
 
 
 class Run(AuthorModel, NameDescriptionBaseModel):
@@ -94,7 +83,7 @@ class Run(AuthorModel, NameDescriptionBaseModel):
 
     celery_task_id = models.CharField(max_length=120, blank=True, help_text="The task ID of the Celery run")
 
-    objects = RunManager()
+    objects = RunQuerySet().as_manager()
 
     @property
     def output(self):

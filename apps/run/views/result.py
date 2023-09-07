@@ -3,7 +3,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -11,6 +11,7 @@ from account.models.membership import Membership
 from core.mixins import ObjectRoleMixin
 from core.permissions.role import RoleBasedPermission
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
+from core.viewsets import AskAnnaGenericViewSet
 from run.models import ChunkedRunResultPart, Run, RunResult
 from run.serializers import ChunkedRunResultPartSerializer, RunResultSerializer
 from run.signals import result_upload_finish
@@ -33,7 +34,7 @@ class BaseRunResultCreateView(
     def get_parrent_roles(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
-            run = Run.objects.active().get(suuid=parents.get("run__suuid"))
+            run = Run.objects.active().get(suuid=parents.get("run__suuid"))  # type: ignore
         except ObjectDoesNotExist as exc:
             raise Http404 from exc
 
@@ -44,7 +45,7 @@ class RunResultCreateView(
     BaseRunResultCreateView,
     BaseUploadFinishViewSet,
     mixins.CreateModelMixin,
-    viewsets.GenericViewSet,
+    AskAnnaGenericViewSet,
 ):
     """Do a request to upload a new result"""
 

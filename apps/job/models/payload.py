@@ -47,7 +47,7 @@ class JobPayload(FileBaseModel):
     objects = PayloadManager()
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         return "payload.json"
 
     def get_storage_location(self) -> Path:

@@ -14,20 +14,9 @@ class VariableQuerySet(models.QuerySet):
     def inactive(self):
         return self.filter(
             Q(deleted_at__isnull=False)
-            | Q(project__deleted_at__isnull=True)
+            | Q(project__deleted_at__isnull=False)
             | Q(project__workspace__deleted_at__isnull=False)
         )
-
-
-class VariableManager(models.Manager):
-    def get_queryset(self):
-        return VariableQuerySet(self.model, using=self._db)
-
-    def active(self):
-        return self.get_queryset().active()
-
-    def inactive(self):
-        return self.get_queryset().inactive()
 
 
 class Variable(BaseModel):
@@ -44,7 +33,7 @@ class Variable(BaseModel):
         related_name="variable",
     )
 
-    objects = VariableManager()
+    objects = VariableQuerySet().as_manager()
 
     def get_value(self):
         if self.is_masked:

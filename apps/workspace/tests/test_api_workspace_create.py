@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from account.models.membership import MSP_WORKSPACE, WS_ADMIN, Membership, UserProfile
+from account.models.membership import MSP_WORKSPACE, WS_ADMIN, Membership
 from core.tests.base import BaseUserPopulation
 from workspace.models import Workspace
 
@@ -25,7 +25,7 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
         new_workspace = {"name": "New workspace name"}
         response = self.client.post(self.url, new_workspace, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_workspace_as_anna(self):
         """An member without access to a workspace can create a workspace."""
@@ -124,7 +124,7 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
         self.assertIsNotNone(workspace)
         self.assertEqual(workspace.created_by, user)
 
-    def test_create_workspace_membership_and_userprofile(self):
+    def test_create_workspace_membership(self):
         """A member gets a membership in the workspace that was greated by the member"""
         self.activate_user("member")
         user = self.users["member"]
@@ -140,7 +140,3 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
         membership = Membership.objects.get(object_uuid=workspace.uuid, object_type=MSP_WORKSPACE, user=user)
         self.assertIsNotNone(membership)
         self.assertEqual(membership.role, WS_ADMIN)
-
-        userprofile = UserProfile.objects.get(object_uuid=workspace.uuid, object_type=MSP_WORKSPACE, user=user)
-        self.assertEqual(userprofile.uuid, membership.uuid)
-        self.assertEqual(userprofile.role, membership.role)
