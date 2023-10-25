@@ -50,7 +50,7 @@ class ProjectView(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Project.objects.active().select_related("workspace", "created_by")
+    queryset = Project.objects.active().select_related("workspace", "created_by_user", "created_by_member__user")
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [

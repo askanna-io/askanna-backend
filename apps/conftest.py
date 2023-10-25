@@ -2,6 +2,8 @@ import pytest
 
 from account.models.membership import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership
 from account.models.user import User
+from job.models import JobDef
+from project.models import Project
 from workspace.models import Workspace
 
 
@@ -59,5 +61,35 @@ def test_memberships(db, test_users, test_workspaces) -> dict:
             object_uuid=test_workspaces.get("workspace_private").uuid,
             object_type=MSP_WORKSPACE,
             role=WS_MEMBER,
+        ),
+    }
+
+
+@pytest.fixture()
+def test_projects(db, test_workspaces) -> dict:
+    return {
+        "project_private": Project.objects.create(
+            name="test project",
+            workspace=test_workspaces.get("workspace_private"),
+            visibility="PRIVATE",
+        ),
+        "project_public": Project.objects.create(
+            name="test project public",
+            workspace=test_workspaces.get("workspace_public"),
+            visibility="PUBLIC",
+        ),
+    }
+
+
+@pytest.fixture()
+def test_jobs(db, test_projects) -> dict:
+    return {
+        "job_private": JobDef.objects.create(
+            name="test job",
+            project=test_projects.get("project_private"),
+        ),
+        "job_public": JobDef.objects.create(
+            name="test job public",
+            project=test_projects.get("project_public"),
         ),
     }

@@ -7,7 +7,7 @@ Run:      {% if run.name %}{{ run.name }}{% else %}{{ run.suuid }}{% endif %} ({
 Date:     {{ run_finished_at | date:"F d, Y, h:i:s a e" }}
 Duration: {{ duration_humanized }}
 
-By:       {{ run.member.get_name }}
+By:       {{ run.created_by_member.get_name }}
 Trigger:  {{ trigger }}
 
 {% if result %}

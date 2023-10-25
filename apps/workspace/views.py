@@ -36,7 +36,7 @@ class WorkspaceViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Workspace.objects.active().select_related("created_by")
+    queryset = Workspace.objects.active().select_related("created_by_user", "created_by_member__user")
     serializer_class = WorkspaceSerializer
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]

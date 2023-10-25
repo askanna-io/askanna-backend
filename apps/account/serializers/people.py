@@ -8,8 +8,8 @@ from django.template.loader import render_to_string
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .user import RoleSerializer
 from account.models.membership import ROLES, Invitation, Membership, UserProfile
+from account.serializers.user import RoleSerializer
 from core.permissions.askanna_roles import get_role_class
 from workspace.serializers import WorkspaceRelationSerializer
 
@@ -287,33 +287,3 @@ class InviteInfoSerializer(AcceptInviteSerializer):
 
 class ResendInviteSerializer(serializers.Serializer):
     front_end_url = serializers.URLField(required=False, default=settings.ASKANNA_UI_URL)
-
-
-class MembershipRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField(source="get_name")
-    job_title = serializers.ReadOnlyField(source="get_job_title")
-    role = RoleSerializer(source="get_role")
-    status = serializers.ReadOnlyField(source="get_status")
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = Membership
-        fields = (
-            "relation",
-            "suuid",
-            "name",
-            "job_title",
-            "role",
-            "status",
-        )
-
-
-class MembershipWithAvatarRelationSerializer(MembershipRelationSerializer):
-    avatar = serializers.DictField(source="get_avatar", read_only=True)
-
-    class Meta(MembershipRelationSerializer.Meta):
-        fields = MembershipRelationSerializer.Meta.fields + ("avatar",)

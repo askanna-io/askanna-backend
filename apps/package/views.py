@@ -40,7 +40,7 @@ class PackageFilterSet(django_filters.FilterSet):
         help_text="Filter packages on a workspace suuid or multiple workspace suuids via a comma seperated list.",
     )
     created_by_suuid = django_filters.CharFilter(
-        field_name="member__suuid",
+        field_name="created_by_member__suuid",
         method=filter_multiple,
         help_text="Filter packages on a created by suuid or multiple created by suuids via a comma seperated list.",
     )
@@ -71,11 +71,11 @@ class PackageViewSet(
 
     queryset = (
         Package.objects.active()
-        .select_related("project", "project__workspace", "created_by", "member", "member__user")
+        .select_related("project", "project__workspace", "created_by_user", "created_by_member__user")
         .annotate(
             member_name=Case(
-                When(member__use_global_profile=True, then="created_by__name"),
-                When(member__use_global_profile=False, then="member__name"),
+                When(created_by_member__use_global_profile=True, then="created_by_user__name"),
+                When(created_by_member__use_global_profile=False, then="created_by_member__name"),
             ),
         )
     )
@@ -185,7 +185,7 @@ class PackageViewSet(
         instance_obj.finished_at = timezone.now()
         instance_obj.save(
             update_fields=[
-                "member",
+                "created_by_member",
                 "finished_at",
                 "modified_at",
             ]
@@ -203,11 +203,7 @@ class PackageViewSet(
         return Response(
             {
                 "action": "redirect",
-                "target": "{BASE_URL}/files/packages/{LOCATION}/{FILENAME}".format(
-                    BASE_URL=settings.ASKANNA_CDN_URL,
-                    LOCATION=package.storage_location,
-                    FILENAME=package.filename,
-                ),
+                "target": f"{settings.ASKANNA_CDN_URL}/files/packages/{package.storage_location}/{package.filename}",
             }
         )
 

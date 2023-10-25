@@ -128,7 +128,7 @@ def start_run(self, run_uuid):
         "TZ": job_config.timezone,
         "LC_ALL": "C.UTF-8",
         "LANG": "C.UTF-8",
-        "AA_TOKEN": run.created_by.auth_token.key,
+        "AA_TOKEN": run.created_by_user.auth_token.key,
         "AA_REMOTE": settings.ASKANNA_API_URL,
         "AA_RUN_SUUID": run.suuid,
         "AA_JOB_NAME": jd.name,

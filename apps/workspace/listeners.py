@@ -48,18 +48,21 @@ def install_demo_project_in_workspace(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Workspace)
-def set_memberships_for_workspace_creator(sender, instance, created, **kwargs):
+def set_memberships_for_workspace_creator(sender, instance: Workspace, created, **kwargs):
     if created:
-        workspace = instance
-
+        # Create new membership for this workspace
         membership = Membership.objects.create(
-            object_uuid=workspace.uuid,
+            object_uuid=instance.uuid,
             object_type=MSP_WORKSPACE,
             role=WS_ADMIN,
-            user=workspace.created_by,
+            user=instance.created_by_user,
         )
 
         # Create a UserProfile for this Membership
         userprofile = UserProfile()
         userprofile.membership_ptr = membership
         userprofile.save_base(raw=True)
+
+        # Update workspace.member with membership info
+        instance.created_by_member = membership
+        instance.save(update_fields=["created_by_member"])
