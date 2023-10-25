@@ -1,29 +1,4 @@
-version: '3'
-
-x-templates:
-  restart-policy:
-    &restart-policy
-    restart: on-failure
-
-  base-build-django:
-    &base-build-django
-    context: .
-    dockerfile: ./docker/local/django/Dockerfile
-
-  base-django:
-    &base-django
-    build:
-      <<: *base-build-django
-    <<: *restart-policy
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - .:/app
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    env_file:
-      - .env.django
-      - .env.postgres
+version: "3"
 
 services:
   #                       #
@@ -31,7 +6,7 @@ services:
   #                       #
   postgres:
     image: postgres:12-alpine
-    <<: *restart-policy
+    restart: on-failure
     volumes:
       - db_volume:/var/lib/postgresql/data
     env_file:
@@ -39,7 +14,7 @@ services:
 
   redis:
     image: redis:7
-    <<: *restart-policy
+    restart: on-failure
     volumes:
       - redis_volume:/data
 
@@ -51,7 +26,7 @@ services:
   #
   # backup_helper:
   #   image: askanna/backup-helper
-  #   <<: *restart-policy
+  #   restart: on-failure
   #   volumes:
   #     - backup_volume:/backups
   #     - storage_volume:/data
@@ -62,33 +37,41 @@ services:
   #                       #
   # Project images        #
   #                       #
-  django:
-    <<: *base-django
+  django: &django
     build:
-      <<: *base-build-django
-      target: django
-    command: /start
-    stdin_open: true
-    tty: true
+      context: .
+      dockerfile: ./docker/local/django/Dockerfile
+    restart: on-failure
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app:z
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env.django
+      - .env.postgres
     ports:
       - "8000:8000"
+    stdin_open: true
+    tty: true
+    command: /start
 
   celeryworker:
-    <<: *base-django
+    <<: *django
+    ports: []
     command: /start-celeryworker
 
   celerybeat:
-    <<: *base-django
+    <<: *django
+    ports: []
     command: /start-celerybeat
 
   flower:
-    <<: *base-django
-    build:
-      <<: *base-build-django
-      target: flower
-    command: /start-flower
+    <<: *django
     ports:
       - "5555:5555"
+    command: /start-flower
 
 volumes:
   storage_volume:

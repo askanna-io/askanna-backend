@@ -91,7 +91,7 @@ docker compose exec django python manage.py migrate
 You can also start a terminal session on the Django container with:
 
 ```shell
-docker compose exec django /bin/sh
+docker compose exec django /bin/bash
 ```
 
 ### Removing via Docker
@@ -122,7 +122,7 @@ python manage.py createsuperuser
 container:
 
 ```shell
-docker compose exec django /bin/sh
+docker compose exec django /bin/bash
 ```
 
 ### Running tests with py.test
