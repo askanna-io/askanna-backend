@@ -10,27 +10,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("job", "0001_initial_squashed_20220901"),
-        ("job", "0002_auto_20220913_1349"),
-        ("job", "0003_auto_20220920_1459"),
-        ("job", "0004_move_run_result"),
-        ("job", "0005_move_run_artifact"),
-        ("job", "0006_move_projectvariable"),
-        ("job", "0007_move_runmetrics_and_runvariables"),
-        ("job", "0008_auto_20220927_2033"),
-        ("job", "0009_rename_short_uuid_to_suuid"),
-        ("job", "0010_uuid_and_suuid_field_config"),
-        ("job", "0011_remove_translation"),
-        ("job", "0012_description_do_not_allow_null_default_empty_string"),
-        ("job", "0013_alter_jobdef_name"),
-        ("job", "0014_add_unique_together_to_run_image"),
-        ("job", "0015_add_db_index"),
-        ("job", "0016_add_at_suffix_to_datetime_fields"),
-        ("job", "0017_move_field_to_core_iso_third_party_app"),
-        ("job", "0018_change_meta_options"),
-        ("job", "0019_more_strict_in_allowing_null"),
-    ]
+    initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
