@@ -1,11 +1,10 @@
 FROM python:3.11-slim-bookworm AS python
 
-ARG BUILD_ENVIRONMENT=local
+ARG BUILD_ENVIRONMENT=production
 
 ENV PYTHONUNBUFFERED=yes
 ENV PYTHONDONTWRITEBYTECODE=yes
 ENV BUILD_ENV=${BUILD_ENVIRONMENT}
-
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Build Python Wheel archives to speed up future builds
@@ -20,20 +19,18 @@ RUN apt-get update && apt-get install --no-install-recommends --assume-yes \
 COPY ./requirements .
 
 # Build Python wheels for all requirements for the build environment
-RUN pip install --upgrade pip \
-    && pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels --requirement ${BUILD_ENVIRONMENT}.txt
-
+RUN pip install --upgrade pip && \
+    pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels --requirement ${BUILD_ENVIRONMENT}.txt
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Django application image
-FROM python AS django
+# Application base image
+FROM python AS base
 
-WORKDIR /app
+RUN addgroup --system django \
+    && adduser --system --no-create-home --ingroup django django
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --assume-yes \
-      # Develop dependencies
-      sudo bash-completion vim git \
       # Psycopg2 dependency
       libpq-dev \
       # Pillow dependencies
@@ -50,25 +47,3 @@ COPY --from=build-wheels /usr/src/app/wheels /wheels/
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
     && rm -rf /wheels/
-
-COPY ./docker/production/django/entrypoint /entrypoint
-RUN sed -i 's/\r$//g' /entrypoint
-RUN chmod +x /entrypoint
-
-COPY ./docker/local/django/start /start
-RUN sed -i 's/\r$//g' /start
-RUN chmod +x /start
-
-COPY ./docker/local/django/celery/worker/start /start-celeryworker
-RUN sed -i 's/\r$//g' /start-celeryworker
-RUN chmod +x /start-celeryworker
-
-COPY ./docker/local/django/celery/beat/start /start-celerybeat
-RUN sed -i 's/\r$//g' /start-celerybeat
-RUN chmod +x /start-celerybeat
-
-COPY ./docker/local/django/celery/flower/start /start-flower
-RUN sed -i 's/\r$//g' /start-flower
-RUN chmod +x /start-flower
-
-ENTRYPOINT ["/entrypoint"]

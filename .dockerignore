@@ -1,5 +1,4 @@
 storage_root
 .*
 !.coveragerc
-!.env
 !.pylintrc
