@@ -1,3 +1,6 @@
+image:
+    file: .gitpod.Dockerfile
+
 additionalRepositories:
   - url: https://gitlab.askanna.io/askanna/askanna-frontend/
   - url: https://gitlab.askanna.io/askanna/askanna-cli/
@@ -55,8 +58,7 @@ tasks:
       python -m venv .venv
     command: |
       source .venv/bin/activate
-      pip install -r requirements-dev.txt
-      pip install --editable .
+      make install-dev
       pre-commit install --install-hooks
       while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do echo "Backend is not ready yet..." && sleep 10; done && echo "Backend is ready!"
       while ! command -v askanna > /dev/null; do echo "CLI & SDK is not ready yet..." && sleep 10; done && echo "CLI & SDK is ready!" && askanna login --remote $(gp url 8000) --email admin@localhost.com --password DevAskAnna

@@ -25,7 +25,7 @@ class BaseJobTestDef(BaseUserPopulation):
             project=self.project,
             size=1,
             name="TestPackage",
-            created_by=self.users.get("member"),
+            created_by_user=self.users.get("member"),
             finished_at=timezone.now(),
         )
         self.package.write((settings.TEST_RESOURCES_DIR / "projects" / "project-no-yml.zip").open("rb"))
@@ -35,7 +35,7 @@ class BaseJobTestDef(BaseUserPopulation):
             project=self.project2,
             size=1,
             name="TestPackage2",
-            created_by=self.users.get("member"),
+            created_by_user=self.users.get("member"),
             finished_at=timezone.now(),
         )
         self.package2.write((settings.TEST_RESOURCES_DIR / "projects" / "project-001.zip").open("rb"))
@@ -45,7 +45,7 @@ class BaseJobTestDef(BaseUserPopulation):
             project=self.project2,
             size=1,
             name="TestPackage3",
-            created_by=self.users.get("member"),
+            created_by_user=self.users.get("member"),
             finished_at=timezone.now(),
         )
         self.package3.write((settings.TEST_RESOURCES_DIR / "projects" / "project-no-yml.zip").open("rb"))
@@ -56,7 +56,7 @@ class BaseJobTestDef(BaseUserPopulation):
             project=self.project3,
             size=1,
             name="TestPackage4",
-            created_by=self.users.get("member"),
+            created_by_user=self.users.get("member"),
             finished_at=timezone.now(),
         )
         self.package4.write((settings.TEST_RESOURCES_DIR / "projects" / "project-no-yml.zip").open("rb"))
@@ -85,8 +85,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package,
                 jobdef=self.jobdef,
                 status="COMPLETED",
-                created_by=self.users.get("member"),
-                member=self.members.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members.get("member"),
                 run_image=self.run_image,
                 duration=50646,  # fictive because we don't have access to the handlers here in tests
             ),
@@ -96,8 +96,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package,
                 jobdef=self.jobdef,
                 status="COMPLETED",
-                created_by=self.users.get("member"),
-                member=self.members.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members.get("member"),
                 run_image=self.run_image,
             ),
             "run3": Run.objects.create(
@@ -106,8 +106,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package2,
                 jobdef=self.jobdef3,  # link faulty job on purpose to test on error not found in askanna.yml
                 status="IN_PROGRESS",
-                created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
             ),
             "run4": Run.objects.create(
@@ -116,8 +116,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package2,
                 jobdef=self.jobdef2,
                 status="SUBMITTED",
-                created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
             ),
             "run5": Run.objects.create(
@@ -126,8 +126,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package,
                 jobdef=self.jobdef,
                 status="IN_PROGRESS",
-                created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
             ),
             "run6": Run.objects.create(
@@ -136,8 +136,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package,
                 jobdef=self.jobdef_public,
                 status="IN_PROGRESS",
-                created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
                 started_at=timezone.now(),
             ),
@@ -147,8 +147,8 @@ class BaseJobTestDef(BaseUserPopulation):
                 package=self.package,
                 jobdef=self.jobdef,
                 status="FAILED",
-                created_by=self.users.get("member"),
-                member=self.members_workspace2.get("member"),
+                created_by_user=self.users.get("member"),
+                created_by_member=self.members_workspace2.get("member"),
                 run_image=self.run_image,
             ),
         }

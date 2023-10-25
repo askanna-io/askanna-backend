@@ -171,7 +171,7 @@ class JobView(
             payload=payload,
             package=package,
             trigger=self.get_trigger_source(request),
-            created_by=request.user,
+            created_by_user=request.user,
         )
 
         # Return the run information

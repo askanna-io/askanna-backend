@@ -17,34 +17,34 @@ class BaseProjectTest(BaseUserPopulation, APITestCase):
         self.project = Project.objects.create(
             name="test project",
             workspace=self.workspace_a,
-            created_by=self.workspace_a.created_by,
+            created_by_user=self.workspace_a.created_by_user,
         )
         self.project_public = Project.objects.create(
             name="test project public",
             workspace=self.workspace_a,
-            created_by=self.workspace_a.created_by,
+            created_by_user=self.workspace_a.created_by_user,
             visibility="PUBLIC",
         )
 
         self.unused_workspace = Workspace.objects.create(
             name="unused workspace",
-            created_by=self.workspace_c.created_by,
+            created_by_user=self.workspace_c.created_by_user,
         )
         self.unused_project = Project.objects.create(
             name="unused project",
             workspace=self.unused_workspace,
-            created_by=self.unused_workspace.created_by,
+            created_by_user=self.unused_workspace.created_by_user,
         )
 
         self.private_project_in_public_workspace = Project.objects.create(
             name="test project private",
             workspace=self.workspace_c,
-            created_by=self.workspace_c.created_by,
+            created_by_user=self.workspace_c.created_by_user,
         )
         self.project_public_in_public_workspace = Project.objects.create(
             name="test project public in public workspace",
             workspace=self.workspace_c,
-            created_by=self.workspace_c.created_by,
+            created_by_user=self.workspace_c.created_by_user,
             visibility="PUBLIC",
         )
 

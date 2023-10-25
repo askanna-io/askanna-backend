@@ -2,6 +2,7 @@ import pytest
 
 from account.models.membership import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership
 from account.models.user import User
+from job.models import JobDef
 from project.models import Project
 from tests.utils import get_avatar_content_file
 from variable.models import Variable
@@ -64,12 +65,12 @@ def test_workspaces(test_users):
         "workspace_private": Workspace.objects.create(
             name="test workspace private",
             visibility="PRIVATE",
-            created_by=test_users["workspace_admin"],
+            created_by_user=test_users["workspace_admin"],
         ),
         "workspace_public": Workspace.objects.create(
             name="test workspace public",
             visibility="PUBLIC",
-            created_by=test_users["workspace_admin"],
+            created_by_user=test_users["workspace_admin"],
         ),
     }
 
@@ -172,3 +173,22 @@ def test_variables(test_projects):
 
     for variable in variables.values():
         variable.delete()
+
+
+@pytest.fixture()
+def test_jobs(db, test_projects):
+    jobs = {
+        "job_private": JobDef.objects.create(
+            name="test job",
+            project=test_projects.get("project_private"),
+        ),
+        "job_public": JobDef.objects.create(
+            name="test job public",
+            project=test_projects.get("project_public"),
+        ),
+    }
+
+    yield jobs
+
+    for job in jobs.values():
+        job.delete()

@@ -16,18 +16,21 @@ def remove_memberships_after_workspace_removal(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Workspace)
-def set_memberships_for_workspace_creator(sender, instance, created, **kwargs):
+def set_memberships_for_workspace_creator(sender, instance: Workspace, created, **kwargs):
     if created:
-        workspace = instance
-
-        if not workspace.created_by:
+        if not instance.created_by_user:
             # created_by field will be replaced with a field that store the membership. For now, to prevent creating a
             # workspace without a membership that is not linked to a user, we raise an error here.
             raise ValueError("Workspace must have a creator")
 
-        Membership.objects.create(
-            object_uuid=workspace.uuid,
+        # Create new membership for this workspace
+        membership = Membership.objects.create(
+            object_uuid=instance.uuid,
             object_type=MSP_WORKSPACE,
             role=WS_ADMIN,
-            user=workspace.created_by,
+            user=instance.created_by_user,
         )
+
+        # Update workspace.member with membership info
+        instance.created_by_member = membership
+        instance.save(update_fields=["created_by_member"])

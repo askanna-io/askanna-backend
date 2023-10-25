@@ -3,7 +3,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from account.serializers.people import (
+from account.serializers.membership import (
     MembershipRelationSerializer,
     MembershipWithAvatarRelationSerializer,
 )
@@ -55,7 +55,7 @@ class RunSerializer(serializers.ModelSerializer):
     duration = serializers.ReadOnlyField(source="get_duration")
     trigger = serializers.ReadOnlyField()
 
-    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="member")
+    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
 
     package = PackageRelationSerializer(read_only=True)
     payload = JobPayloadRelationSerializer(read_only=True)
@@ -178,7 +178,7 @@ class RunStatusSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField()
     status = serializers.ReadOnlyField(source="get_status_external")
     duration = serializers.IntegerField(read_only=True, source="get_duration")
-    created_by = MembershipRelationSerializer(read_only=True, source="member")
+    created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
     job = JobRelationSerializer(read_only=True, source="jobdef")
     project = ProjectRelationSerializer(read_only=True, source="jobdef.project")
     workspace = WorkspaceRelationSerializer(read_only=True, source="jobdef.project.workspace")

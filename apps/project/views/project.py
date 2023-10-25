@@ -50,7 +50,9 @@ class ProjectView(
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    queryset = Project.objects.active().select_related("workspace", "created_by")  # type: ignore
+    queryset = Project.objects.active().select_related(  # type: ignore
+        "workspace", "created_by_user", "created_by_member__user"
+    )
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from account.serializers.people import MembershipRelationSerializer
+from account.serializers.membership import MembershipRelationSerializer
 from core.serializers import BaseArchiveDetailSerializer
 from package.models import Package
 from project.models import Project
@@ -12,7 +12,7 @@ class PackageSerializer(serializers.ModelSerializer):
     filename = serializers.CharField(source="original_filename")
     workspace = WorkspaceRelationSerializer(read_only=True, source="project.workspace")
     project = ProjectRelationSerializer(read_only=True)
-    created_by = MembershipRelationSerializer(read_only=True, source="member")
+    created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
 
     class Meta:
         model = Package
@@ -59,7 +59,7 @@ class PackageCreateSerializer(PackageSerializer):
     )
 
     def create(self, validated_data):
-        validated_data["created_by"] = self.context.get("request").user
+        validated_data["created_by_user"] = self.context.get("request").user
         return super().create(validated_data)
 
     class Meta(PackageSerializer.Meta):

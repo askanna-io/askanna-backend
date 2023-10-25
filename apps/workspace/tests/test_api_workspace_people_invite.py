@@ -23,8 +23,8 @@ class TestInviteAPI(APITestCase):
                 username="admin_extra_workspaces", email="admin_extra_workspaces@example.com"
             ),
         }
-        self.workspace = Workspace.objects.create(name="test workspace", created_by=self.users["admin"])
-        self.workspace2 = Workspace.objects.create(name="test workspace2", created_by=self.users["admin"])
+        self.workspace = Workspace.objects.create(name="test workspace", created_by_user=self.users["admin"])
+        self.workspace2 = Workspace.objects.create(name="test workspace2", created_by_user=self.users["admin"])
         self.invitation = Invitation.objects.create(
             object_uuid=self.workspace.uuid,
             object_type=MSP_WORKSPACE,
@@ -318,7 +318,7 @@ class TestInviteAPI(APITestCase):
         """Revoking an invitation is limited to workspaces a user is member of."""
         extra_workspace = Workspace.objects.create(
             name="extra test workspace",
-            created_by=self.users["admin_extra_workspaces"],
+            created_by_user=self.users["admin_extra_workspaces"],
         )
         extra_invitation = Invitation.objects.create(
             object_uuid=extra_workspace.uuid,
@@ -635,7 +635,7 @@ class TestInviteAPI(APITestCase):
         """The invitation must be for the correct workspace."""
         to_fail_workspace = Workspace.objects.create(
             name="will fail workspace",
-            created_by=self.users["admin_extra_workspaces"],
+            created_by_user=self.users["admin_extra_workspaces"],
         )
 
         url = reverse(
@@ -664,7 +664,7 @@ class TestInviteAPI(APITestCase):
         """Listing of people is correctly filtered to requested workspace."""
         new_workspace = Workspace.objects.create(
             name="test workspace",
-            created_by=self.users["admin_extra_workspaces"],
+            created_by_user=self.users["admin_extra_workspaces"],
         )
         filtered_invitation = Invitation.objects.create(
             object_uuid=new_workspace.uuid,

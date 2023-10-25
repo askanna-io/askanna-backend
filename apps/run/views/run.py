@@ -116,11 +116,11 @@ class RunFilterSet(FilterSet):
     )
 
     created_by_suuid = MultiValueCharFilter(
-        field_name="member__suuid",
+        field_name="created_by_member__suuid",
         help_text="Filter runs on a member suuid. For multiple values, separate the values with commas.",
     )
     created_by_suuid__exclude = MultiValueCharFilter(
-        field_name="member__suuid",
+        field_name="created_by_member__suuid",
         exclude=True,
         help_text="Exclude runs on a member suuid. For multiple values, separate the values with commas.",
     )
@@ -156,9 +156,9 @@ class RunView(
             "jobdef__project__workspace",
             "payload",
             "package",
-            "member__objectreference__account_membership",
-            "member__user__objectreference__account_user",
-            "created_by__objectreference__account_user",
+            "created_by_member__objectreference__account_membership",
+            "created_by_member__user__objectreference__account_user",
+            "created_by_user__objectreference__account_user",
             "run_image",
             "result",
             "output",
@@ -167,13 +167,13 @@ class RunView(
             "artifact",
             "metrics_meta",
             "variables_meta",
-            "member__objectreference__file_created_for",
-            "member__user__objectreference__file_created_for",
+            "created_by_member__objectreference__file_created_for",
+            "created_by_member__user__objectreference__file_created_for",
         )
         .annotate(
             member_name=Case(
-                When(member__use_global_profile=True, then="created_by__name"),
-                When(member__use_global_profile=False, then="member__name"),
+                When(created_by_member__use_global_profile=True, then="created_by_user__name"),
+                When(created_by_member__use_global_profile=False, then="created_by_member__name"),
             ),
             status_external=Case(
                 When(status="SUBMITTED", then=Value(get_status_external("SUBMITTED"))),
