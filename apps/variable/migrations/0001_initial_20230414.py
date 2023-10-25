@@ -10,12 +10,7 @@ import core.fields
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("variable", "0001_initial"),
-        ("variable", "0002_auto_20221222_0720"),
-        ("variable", "0003_add_at_suffix_to_datetime_fields"),
-        ("variable", "0004_move_field_to_core_iso_third_party_app"),
-    ]
+    initial = True
 
     dependencies = [
         ("project", "__first__"),
