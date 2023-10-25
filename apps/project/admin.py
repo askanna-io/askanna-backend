@@ -6,14 +6,15 @@ from project.models import Project
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {"fields": ("uuid", "suuid", "workspace", "created_by")}),
+        (None, {"fields": ("uuid", "suuid", "workspace", "created_by_user", "created_by_member")}),
         ("Project info", {"fields": ("name", "description", "visibility")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "uuid",
         "suuid",
-        "created_by",
+        "created_by_user",
+        "created_by_member",
         "modified_at",
         "created_at",
         "deleted_at",
@@ -27,7 +28,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "name",
         "visibility",
         "workspace",
-        "created_by",
+        "created_by_user",
         "created_at",
     ]
     list_display_links = (

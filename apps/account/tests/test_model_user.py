@@ -1,3 +1,4 @@
+from core.permissions.askanna_roles import AskAnnaAdmin, AskAnnaMember
 from tests.utils import get_avatar_content_file
 
 
@@ -44,3 +45,21 @@ def test_user_to_deleted(test_users, test_memberships):
         assert membership.deleted_at is not None
         assert membership.get_name() == "workspace admin"
         assert membership.get_avatar_files().count() == 5
+
+
+def test_user_get_status(test_users):
+    user = test_users.get("workspace_admin")
+    assert user.get_status() == "active"
+
+    user.is_active = False
+    user.save()
+    assert user.get_status() == "blocked"
+
+
+def test_user_get_user_role(test_users):
+    user = test_users.get("workspace_admin")
+    assert user.get_user_role() == AskAnnaMember
+
+    user.is_superuser = True
+    user.save()
+    assert user.get_user_role() == AskAnnaAdmin

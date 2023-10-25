@@ -4,7 +4,7 @@ from workspace.models import Workspace
 
 
 def test_create_workspace(test_users):
-    Workspace.objects.create(name="test workspace private", created_by=test_users["workspace_admin"])
+    Workspace.objects.create(name="test workspace private", created_by_user=test_users["workspace_admin"])
 
 
 def test_create_workspace_without_creator_fails(db):

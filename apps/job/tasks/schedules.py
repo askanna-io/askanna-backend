@@ -36,14 +36,14 @@ def launch_scheduled_jobs():
     We exclude jobs which are scheduled for deletion (or project/workspace)
     """
     now = datetime.datetime.now(tz=datetime.UTC).replace(second=0, microsecond=0)
-    for job in ScheduledJob.objects.filter(
+    for scheduled_job in ScheduledJob.objects.filter(
         next_run_at__gte=now,
         next_run_at__lt=now + datetime.timedelta(minutes=1),
         job__deleted_at__isnull=True,
         job__project__deleted_at__isnull=True,
         job__project__workspace__deleted_at__isnull=True,
     ):
-        jobdef = job.job
+        jobdef = scheduled_job.job
         package = Package.objects.active_and_finished().filter(project=jobdef.project).order_by("-created_at").first()
 
         # create new run and this will automaticly scheduled
@@ -53,7 +53,7 @@ def launch_scheduled_jobs():
             payload=None,
             package=package,
             trigger="SCHEDULE",
-            created_by=job.member.user,
+            created_by_user=scheduled_job.member.user,
         )
-        job.update_last(timestamp=now)
-        job.update_next()
+        scheduled_job.update_last(timestamp=now)
+        scheduled_job.update_next()

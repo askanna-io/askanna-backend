@@ -18,7 +18,7 @@ from run.models import (
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {"fields": ("uuid", "suuid", "jobdef", "created_by", "member")}),
+        (None, {"fields": ("uuid", "suuid", "jobdef", "created_by_user", "created_by_member")}),
         ("Run info", {"fields": ("name", "description", "status", "celery_task_id", "duration")}),
         ("Metadata", {"fields": ("package", "trigger", "payload", "environment_name", "run_image", "timezone")}),
         ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
@@ -39,8 +39,8 @@ class RunAdmin(admin.ModelAdmin):
     raw_id_fields = [
         "jobdef",
         "package",
-        "created_by",
-        "member",
+        "created_by_user",
+        "created_by_member",
         "payload",
         "run_image",
     ]
@@ -54,7 +54,7 @@ class RunAdmin(admin.ModelAdmin):
         "created_at",
         "started_at",
         "finished_at",
-        "created_by",
+        "created_by_user",
     ]
     date_hierarchy = "created_at"
     list_filter = [

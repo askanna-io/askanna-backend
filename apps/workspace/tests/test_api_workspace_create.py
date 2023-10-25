@@ -122,7 +122,7 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
         workspace = Workspace.objects.get(suuid=suuid)
 
         self.assertIsNotNone(workspace)
-        self.assertEqual(workspace.created_by, user)
+        self.assertEqual(workspace.created_by_user, user)
 
     def test_create_workspace_membership(self):
         """A member gets a membership in the workspace that was greated by the member"""

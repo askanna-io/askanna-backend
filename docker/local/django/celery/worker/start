@@ -1,9 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 set -o errexit
 set -o nounset
 
-
-# celery -A config.celery_app worker -l INFO
-
-watchmedo auto-restart --directory=./apps/ --pattern=*.py --recursive -- celery -A config.celery_app worker -l INFO
+exec watchmedo auto-restart --directory=./apps/ --pattern=*.py --recursive -- \
+     celery -A config.celery_app worker -l INFO

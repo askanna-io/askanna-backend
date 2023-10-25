@@ -1,13 +1,13 @@
 from rest_framework import serializers
 
 from account.models.membership import Membership
-from account.serializers.user import UserRelationSerializer
+from account.serializers.membership import MembershipWithAvatarRelationSerializer
 from core.permissions.askanna_roles import merge_role_permissions
 from workspace.models import Workspace
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
-    created_by = UserRelationSerializer(read_only=True)
+    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
     is_member = serializers.BooleanField(read_only=True)
     permission = serializers.SerializerMethodField()
 
@@ -18,7 +18,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         return merge_role_permissions(user_roles)
 
     def create(self, validated_data):
-        validated_data.update(**{"created_by": self.context["request"].user})
+        validated_data.update(**{"created_by_user": self.context["request"].user})
         instance = super().create(validated_data)
         instance.is_member = True
         return instance

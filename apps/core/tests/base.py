@@ -85,15 +85,15 @@ class BaseUserPopulation:
 
         self.workspace_a = Workspace.objects.create(
             name="test workspace_a",
-            created_by=self.users["admin"],
+            created_by_user=self.users["admin"],
         )
         self.workspace_b = Workspace.objects.create(
             name="test workspace_b",
-            created_by=self.users["admin_for_workspace_b"],
+            created_by_user=self.users["admin_for_workspace_b"],
         )
         self.workspace_c = Workspace.objects.create(
             name="test workspace_c",
-            created_by=self.users["admin_for_workspace_c"],
+            created_by_user=self.users["admin_for_workspace_c"],
             visibility="PUBLIC",
         )
         self.workspaces = {

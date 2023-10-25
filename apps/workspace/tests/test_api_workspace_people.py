@@ -80,7 +80,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
     def test_retrieve_profile_requires_correct_workspace(self):
         """The path to a profile requires the correct parrent be given."""
         workspace_to_fail = Workspace.objects.create(
-            name="workspace to fail", created_by=self.users["workspace_admin"]
+            name="workspace to fail", created_by_user=self.users["workspace_admin"]
         )
 
         url = reverse(
@@ -357,7 +357,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
 
     def test_admin_is_restricted_to_correct_workspace(self):
         """An admin in one workspace is not an admin in another."""
-        new_workspace = Workspace.objects.create(name="test workspace", created_by=self.users["workspace_member"])
+        new_workspace = Workspace.objects.create(name="test workspace", created_by_user=self.users["workspace_member"])
         new_profile = Membership.objects.get(
             object_type=MSP_WORKSPACE, object_uuid=new_workspace.uuid, user=self.users["workspace_member"]
         )

@@ -18,6 +18,11 @@ from storage.serializers import FileDownloadInfoSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     suuid = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    date_joined = serializers.DateTimeField(read_only=True)
+    last_login = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
@@ -28,27 +33,6 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "last_login",
-        ]
-        read_only_fields = [
-            "suuid",
-            "is_active",
-            "date_joined",
-            "last_login",
-        ]
-
-
-class UserRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = User
-        fields = [
-            "relation",
-            "suuid",
         ]
 
 

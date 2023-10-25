@@ -42,8 +42,6 @@ class Package(FileBaseModel, AuthorModel, NameDescriptionBaseModel):
     )
     size = models.IntegerField(help_text="Size of this package in bytes")
 
-    member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
-
     # Store when it was finished uploading
     finished_at = models.DateTimeField(
         "Finished upload at",

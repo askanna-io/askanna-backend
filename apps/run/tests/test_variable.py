@@ -309,8 +309,8 @@ class TestRunVariableDeduplicate(BaseRunTest, APITestCase):
             package=self.package,
             jobdef=self.jobdef,
             status="COMPLETED",
-            created_by=self.users.get("member"),
-            member=self.members.get("member"),
+            created_by_user=self.users.get("member"),
+            created_by_member=self.members.get("member"),
             run_image=self.run_image,
             duration=123,
         )

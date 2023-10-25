@@ -7,7 +7,13 @@ from django.db import models
 
 from account.models.membership import MSP_WORKSPACE, MemberProfile
 from core.models import BaseModel
-from core.permissions.askanna_roles import get_request_role, merge_role_permissions
+from core.permissions.askanna_roles import (
+    AskAnnaAdmin,
+    AskAnnaMember,
+    AskAnnaPermissions,
+    get_request_role,
+    merge_role_permissions,
+)
 from workspace.models import Workspace
 
 
@@ -25,6 +31,16 @@ class User(MemberProfile, AbstractUser):
 
     def __str__(self):
         return f"{self.name or self.username} ({self.suuid})"
+
+    def get_status(self) -> str:
+        if self.is_active:
+            return "active"
+        return "blocked"
+
+    def get_user_role(self) -> type[AskAnnaPermissions]:
+        if self.is_superuser:
+            return AskAnnaAdmin
+        return AskAnnaMember
 
     @property
     def active_memberships(self):

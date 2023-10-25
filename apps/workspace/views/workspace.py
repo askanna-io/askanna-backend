@@ -37,7 +37,7 @@ class WorkspaceViewSet(
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    queryset = Workspace.objects.active().select_related("created_by")  # type: ignore
+    queryset = Workspace.objects.active().select_related("created_by_user", "created_by_member__user")  # type: ignore
     serializer_class = WorkspaceSerializer
     lookup_field = "suuid"
     search_fields = ["suuid", "name"]

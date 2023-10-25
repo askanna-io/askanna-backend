@@ -22,7 +22,7 @@ include:
     - kubernetes
   image:
     name: gcr.io/kaniko-project/executor:debug
-    entrypoint: ['']
+    entrypoint: [""]
   before_script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
@@ -32,11 +32,11 @@ build_base:
   stage: build base
   extends: .use-kaniko
   variables:
-    DOCKER_FILE: $CI_PROJECT_DIR/docker/Dockerfile-base
+    DOCKER_FILE: $CI_PROJECT_DIR/docker/Dockerfile.base
   rules:
     - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main")
       changes:
-        - docker/Dockerfile-base
+        - docker/Dockerfile.base
         - requirements/base.txt
         - requirements/production.txt
       variables:
@@ -48,7 +48,7 @@ build_base:
         DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:master
     - if: ($CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/)
       changes:
-        - docker/Dockerfile-base
+        - docker/Dockerfile.base
         - requirements/base.txt
         - requirements/production.txt
       variables:
@@ -60,7 +60,7 @@ build_base:
         DOCKER_DESTINATION: $CI_REGISTRY_IMAGE/base:beta
     - if: $CI_COMMIT_BRANCH
       changes:
-        - docker/Dockerfile-base
+        - docker/Dockerfile.base
         - requirements/base.txt
         - requirements/production.txt
       variables:
@@ -195,6 +195,7 @@ lint:
 pre-commit:
   extends: .test-base
   script:
+    - apt-get update && apt-get install --no-install-recommends --assume-yes git
     - pre-commit run --all-files
 
 .deploy-variables:

@@ -60,7 +60,7 @@ class Command(BaseCommand):
                 suuid=workspace_suuid,
                 name=workspace_name,
                 visibility=workspace_visibility,
-                created_by=user_anna,
+                created_by_user=user_anna,
             )
 
         if workspace.name != workspace_name or workspace.visibility != workspace_visibility:
@@ -89,7 +89,7 @@ class Command(BaseCommand):
                 name=project_name,
                 visibility=project_visibility,
                 workspace=workspace,
-                created_by=user_anna,
+                created_by_user=user_anna,
             )
 
         if project.name != project_name or project.visibility != project_visibility:
@@ -131,6 +131,6 @@ class Command(BaseCommand):
             project=project,
             size=package_archive.stat().st_size,
             finished_at=timezone.now(),
-            created_by=user_anna,
+            created_by_user=user_anna,
         )
         package_object.write(package_archive.open("rb"))

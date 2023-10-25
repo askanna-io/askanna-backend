@@ -85,7 +85,8 @@ class AuthorModel(models.Model):
     Adding created_by to the model to register who created this instance
     """
 
-    created_by = models.ForeignKey("account.User", on_delete=models.SET_NULL, blank=True, null=True)
+    created_by_user = models.ForeignKey("account.User", on_delete=models.SET_NULL, blank=True, null=True)
+    created_by_member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
 
     class Meta:
         abstract = True
