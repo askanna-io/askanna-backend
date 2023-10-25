@@ -139,15 +139,15 @@ def create_runvariable(sender, instance, created, **kwargs):
 
 
 @receiver(pre_save, sender=Run)
-def add_member_to_run(sender, instance, **kwargs):
+def add_created_by_member_to_run(sender, instance: Run, **kwargs):
     """
     On creation of the run, add the member to it who created this. We already have the user, but we lookup the
     membership for it. We know this by job->project->workspace.
     """
-    if not instance.member:
+    if instance.created_by_user and (not instance.created_by_member):
         workspace = instance.jobdef.project.workspace
         membership = (
-            instance.created_by.memberships.filter(
+            instance.created_by_user.memberships.filter(
                 object_uuid=workspace.uuid,
                 object_type=MSP_WORKSPACE,
                 deleted_at__isnull=True,
@@ -156,7 +156,7 @@ def add_member_to_run(sender, instance, **kwargs):
             .first()
         )
         if membership:
-            instance.member = membership
+            instance.created_by_member = membership
 
 
 @receiver(post_save, sender=RunMetricMeta)

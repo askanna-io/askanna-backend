@@ -6,14 +6,15 @@ from workspace.models import Workspace
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {"fields": ("uuid", "suuid", "created_by")}),
+        (None, {"fields": ("uuid", "suuid", "created_by_user", "created_by_member")}),
         ("Workspace info", {"fields": ("name", "description", "visibility")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "uuid",
         "suuid",
-        "created_by",
+        "created_by_user",
+        "created_by_member",
         "modified_at",
         "created_at",
         "deleted_at",
@@ -23,7 +24,7 @@ class WorkspaceAdmin(admin.ModelAdmin):
         "suuid",
         "name",
         "visibility",
-        "created_by",
+        "created_by_user",
         "created_at",
     ]
     date_hierarchy = "created_at"

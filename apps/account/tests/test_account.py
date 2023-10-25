@@ -100,6 +100,23 @@ class TestAccountCreateAPI(BaseAccounts):
 
         User.objects.get(suuid=response.data["suuid"]).delete()  # type: ignore
 
+    def test_create_account_as_anonymous_with_workspace(self):
+        """We can create a user when anonymous (new member signup) and automatically create a workspace"""
+        response = self.client.post(
+            self.url,
+            {
+                "name": "New User Test",
+                "email": "new-test@askanna.dev",
+                "password": "1234567890abcdef",
+                "terms_of_use": True,
+                "workspace_name": "New Workspace",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+
+        User.objects.get(suuid=response.data["suuid"]).delete()  # type: ignore
+
     def test_create_account_as_anonymous_email_already_used(self):
         """
         We can create a user account as anonymous (new member signup)

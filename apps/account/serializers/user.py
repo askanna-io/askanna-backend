@@ -13,8 +13,18 @@ from account.models.user import User
 from account.signals import password_reset_signal
 
 
+class RoleSerializer(serializers.Serializer):
+    name = serializers.CharField(read_only=True)
+    code = serializers.CharField(read_only=True)
+
+
 class UserSerializer(serializers.ModelSerializer):
     suuid = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    date_joined = serializers.DateTimeField(read_only=True)
+    last_login = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
@@ -32,26 +42,6 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
         ]
-
-
-class UserRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = User
-        fields = [
-            "relation",
-            "suuid",
-        ]
-
-
-class RoleSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    code = serializers.CharField()
 
 
 class LoginSerializer(serializers.Serializer):

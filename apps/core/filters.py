@@ -25,7 +25,7 @@ class MultiUpperValueCharFilter(BaseInFilter, CharFilter):
 
 
 def case_insensitive(queryset, name, value):
-    if type(value) == str:
+    if isinstance(value, str):
         return queryset.filter(**{f"{name}__iexact": value})
 
     q = Q()

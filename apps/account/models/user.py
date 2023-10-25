@@ -10,6 +10,7 @@ from core.models import BaseModel
 from core.permissions.askanna_roles import (
     AskAnnaAdmin,
     AskAnnaMember,
+    AskAnnaPermissions,
     AskAnnaPublicViewer,
 )
 
@@ -27,16 +28,18 @@ class User(BaseAvatarModel, AbstractUser):
 
     objects = UserManager()
 
-    @property
-    def memberships(self):
-        return self.memberships
+    def get_status(self) -> str:
+        if self.is_active:
+            return "active"
+        return "blocked"
 
-    @property
-    def auth_token(self):
-        return self.auth_token
+    def get_user_role(self) -> type[AskAnnaPermissions]:
+        if self.is_superuser:
+            return AskAnnaAdmin
+        return AskAnnaMember
 
     @classmethod
-    def get_role(cls, request):
+    def get_role(cls, request) -> type[AskAnnaPermissions]:
         """
         Defaulting the role to `AskAnnaPublicViewer` when no match is found
         # key: is_anonymous, is_active, is_superuser

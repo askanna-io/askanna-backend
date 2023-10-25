@@ -88,7 +88,7 @@ def package_upload_extract_jobs_from_askannayml(sender, signal, postheaders, obj
                 "raw_definition": schedule.raw_definition,
                 "cron_definition": schedule.cron_definition,
                 "cron_timezone": schedule.cron_timezone,
-                "member": obj.member,
+                "member": obj.created_by_member,
             }
             last_run_at = [
                 old.get("last_run_at") for old in old_schedules if old.get("raw_definition") == schedule.raw_definition
@@ -100,30 +100,24 @@ def package_upload_extract_jobs_from_askannayml(sender, signal, postheaders, obj
 
 
 @receiver(pre_delete, sender=Package)
-def delete_package(sender, instance, **kwargs):
+def delete_package(sender, instance: Package, **kwargs):
     instance.prune()
 
 
 @receiver(pre_save, sender=Package)
-def add_member_to_package(sender, instance, **kwargs):
+def add_member_to_package(sender, instance: Package, **kwargs):
     """
-    On update of a package, add the member to it who created this.
-    We already thave the user, but we lookup the membership for it
-    (we know this by project->workspace)
-    We only know the instance.created_by when an upload was finished
-    So this signal is executed twice, but we only update when the
-    created_by is filled
+    On creation or update of a package, add the member to it who created this. We already have the user, but we lookup
+    the membership for it. We know this by project->workspace.
+
+    We only know the instance.created_by when an upload was finished. So this signal is executed twice, but we only
+    update when the created_by is filled
     """
-    if (not instance.member) and instance.created_by:
-        # first lookup which member this could be based on workspace
-        in_workspace = instance.project.workspace
-        member_query = instance.created_by.memberships.filter(
-            object_uuid=in_workspace.uuid,
+    if instance.created_by_user and (not instance.created_by_member):
+        membership = instance.created_by_user.memberships.filter(
+            object_uuid=instance.project.workspace.uuid,  # type: ignore
             object_type=MSP_WORKSPACE,
             deleted_at__isnull=True,
-        )
-        if member_query.exists():
-            # get the membership out of it
-            membership = member_query.first()
-            if membership:
-                instance.member = membership
+        ).first()
+        if membership:
+            instance.created_by_member = membership
