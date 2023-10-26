@@ -5,7 +5,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
@@ -18,12 +18,12 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.35.0
+    rev: v0.37.0
     hooks:
       - id: markdownlint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.284
+    rev: v0.1.0
     hooks:
       - id: ruff
         args:
@@ -31,7 +31,7 @@ repos:
           - --exit-non-zero-on-fix
 
   - repo: https://github.com/ambv/black
-    rev: 23.7.0
+    rev: 23.9.1
     hooks:
       - id: black
 
@@ -50,7 +50,7 @@ repos:
           - pyproject.toml
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.10.1
+    rev: v3.15.0
     hooks:
     - id: pyupgrade
       args:

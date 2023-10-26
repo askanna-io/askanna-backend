@@ -1,41 +1,41 @@
 croniter~=1.4                 # crontab library for scheduled jobs | http://github.com/kiorky/croniter
 docker~=6.1                   # https://github.com/docker/docker-py
 Jinja2~=3.1                   # parse non-Django templates | https://github.com/pallets/jinja
-Pillow~=10.0                  # https://github.com/python-pillow/Pillow
+Pillow~=10.1                  # https://github.com/python-pillow/Pillow
 PyYAML~=6.0                   # https://github.com/yaml/pyyaml
-sentry-sdk~=1.29              # https://github.com/getsentry/sentry-python
+sentry-sdk~=1.32              # https://github.com/getsentry/sentry-python
 
 # Django
 # ----------------------------------------------------------------------------------------------------
-django[argon2]~=4.2.4         # https://github.com/django/django
+django[argon2]~=4.2.6         # https://github.com/django/django
 django-cryptography==1.1      # https://github.com/georgemarshall/django-cryptography
-django-environ~=0.10.0        # https://github.com/joke2k/django-environ
+django-environ~=0.11.2        # https://github.com/joke2k/django-environ
 django-extensions~=3.2.3      # https://github.com/django-extensions/django-extensions
-django-filter==23.2           # https://github.com/carltongibson/django-filter
+django-filter==23.3           # https://github.com/carltongibson/django-filter
 django-resumable~=0.2.0       # https://github.com/jeanphix/django-resumable
 django-sendgrid-v5~=1.2.2     # https://github.com/sklarsa/django-sendgrid-v5
-whitenoise[brotli]~=6.5       # https://github.com/evansd/whitenoise
+whitenoise[brotli]~=6.6       # https://github.com/evansd/whitenoise
 
 # Django REST Framework
 # ----------------------------------------------------------------------------------------------------
 djangorestframework~=3.14.0   # https://github.com/encode/django-rest-framework
 dj-rest-auth~=4.0.1           # https://github.com/iMerica/dj-rest-auth
-drf-spectacular~=0.26.4       # https://github.com/tfranzel/drf-spectacular
+drf-spectacular~=0.26.5       # https://github.com/tfranzel/drf-spectacular
 drf-extensions~=0.7.1         # https://github.com/chibisov/drf-extensions
 
 # Django health check
 # ----------------------------------------------------------------------------------------------------
 django-health-check~=3.17.0   # https://github.com/KristianOellegaard/django-health-check
-psutil~=5.9.5                 # https://github.com/giampaolo/psutil
+psutil~=5.9.6                 # https://github.com/giampaolo/psutil
 
 # Redis
 # ----------------------------------------------------------------------------------------------------
 redis[hiredis]~=4.6.0         # https://github.com/andymccurdy/redis-py
-django-redis~=5.3.0           # https://github.com/niwinz/django-redis
+django-redis~=5.4.0           # https://github.com/niwinz/django-redis
 
 # Celery
 # ----------------------------------------------------------------------------------------------------
-celery~=5.3.1                 # https://github.com/celery/celery
+celery~=5.3.4                 # https://github.com/celery/celery
 flower~=2.0.1                 # https://github.com/mher/flower
 django-celery-beat~=2.5.0     # https://github.com/celery/django-celery-beat
 django-celery-results~=2.5.1  # https://github.com/celery/django-celery-results
