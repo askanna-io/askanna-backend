@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import sentry_sdk
 from django.http import FileResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
@@ -11,6 +12,31 @@ from core.permissions import AskAnnaPermission
 from core.viewsets import AskAnnaGenericViewSet
 from storage.models import File
 from storage.serializers import FileInfoSerializer
+
+
+def _validate_file_exists(instance: File) -> bool:
+    """
+    Validate that the file exists in the storage. If not, log an error in Sentry and return False.
+
+    Args:
+        instance (File): A file instance
+
+    Returns:
+        bool: True if the file exists, False otherwise
+    """
+    if instance.file.storage.exists(instance.file.name) is False:
+        sentry_sdk.set_context(
+            "file info",
+            {
+                "file_suuid": instance.suuid,
+                "file_storage": instance.file.storage,
+                "file_name": instance.file.name,
+            },
+        )
+        sentry_sdk.capture_exception(Exception("File not found in Storage while it's active in the File database"))
+        return False
+
+    return True
 
 
 class FileViewSet(AskAnnaGenericViewSet):
@@ -39,6 +65,10 @@ class FileViewSet(AskAnnaGenericViewSet):
     )
     def info(self, request, *args, **kwargs):
         instance = self.get_object()
+
+        if _validate_file_exists(instance) is False:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -79,6 +109,9 @@ class FileViewSet(AskAnnaGenericViewSet):
     @action(detail=True, methods=["get"])
     def download(self, request, *args, **kwargs):
         instance = self.get_object()
+
+        if _validate_file_exists(instance) is False:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         file_object = instance.file.file
         filename = Path(file_object.name).name

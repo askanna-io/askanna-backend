@@ -221,11 +221,10 @@ class MinioStorage(Storage):
         try:
             if self.get_stat_object(name):
                 return True
-            return False
         except S3Error as exc:
-            if "does not exist" in exc.message:
-                return False
-            raise exc
+            if "does not exist" not in exc.message:
+                raise exc
+        return False
 
     def listdir(self, path: str | None = None) -> tuple[list[str], list[str]]:
         """Lists the contents of the bucket on the specified path. If the path is not specified, the contents of the
