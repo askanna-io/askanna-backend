@@ -31,9 +31,9 @@ def test_get_role_that_does_not_exist(test_users, test_workspaces):
 
 
 def test_get_active_member(test_memberships):
-    assert Membership.objects.active_members().count() == 3  # type: ignore
+    assert Membership.objects.active_members().count() == 3
     test_memberships["workspace_private_admin"].to_deleted()
-    assert Membership.objects.active_members().count() == 2  # type: ignore
+    assert Membership.objects.active_members().count() == 2
 
 
 def test_get_is_active_workspace_member(test_memberships):
@@ -50,25 +50,25 @@ def test_avatar_directory(test_memberships):
 
 def test_membership_set_avatar(test_memberships):
     member = test_memberships.get("workspace_private_admin")
-    assert member.get_avatar_files() is None
+    assert member.avatar_file is None
 
     member.set_avatar(get_avatar_content_file())
-    assert member.avatar_files.count() == 5
+    member.refresh_from_db()
+    assert member.avatar_file is not None
 
 
-def test_membership_delete_avatar_files(test_memberships):
+def test_membership_delete_avatar_file(test_memberships):
     member = test_memberships.get("workspace_private_admin")
+    assert member.avatar_file is None
 
     member.set_avatar(get_avatar_content_file())
-    assert member.avatar_files.count() == 5
+    assert member.avatar_file is not None
 
-    member.delete_avatar_files()
-    assert member.delete_avatar_files() is not None
-    assert member.avatar_files.count() == 0
+    member.delete_avatar_file()
+    assert member.avatar_file is None
 
     member = test_memberships.get("workspace_private_member")
-    assert member.avatar_files is None
-    assert member.delete_avatar_files() is None
+    assert member.avatar_file is None
 
 
 def test_membership_to_deleted(test_users, test_memberships):
@@ -79,27 +79,27 @@ def test_membership_to_deleted(test_users, test_memberships):
 
     assert membership.deleted_at is None
     assert membership.name == "workspace private admin"
-    assert membership.avatar_files is None
+    assert membership.avatar_file is None
     assert membership.use_global_profile is True
     assert membership.get_name() == "workspace admin"
-    assert membership.get_avatar_files().count() == 5
+    assert membership.get_avatar_file() is not None
 
     assert user.name == "workspace admin"
     assert user.email.startswith("deleted-") is False
-    assert user.avatar_files.count() == 5
+    assert user.avatar_file is not None
 
     membership.to_deleted()
 
     assert user.name == "workspace admin"
     assert user.email.startswith("deleted-") is False
-    assert user.avatar_files.count() == 5
+    assert user.avatar_file is not None
 
     assert membership.deleted_at is not None
     assert membership.name == "workspace admin"
-    assert membership.avatar_files.count() == 5
+    assert membership.avatar_file is not None
     assert membership.use_global_profile is False
     assert membership.get_name() == "workspace admin"
-    assert membership.get_avatar_files().count() == 5
+    assert membership.avatar_file is not None
 
 
 def test_membership_with_object_type_not_workspace(test_users, test_workspaces):

@@ -9,9 +9,10 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from account.models.membership import ROLES, Invitation, Membership
-from account.serializers.user import AvatarSerializer, RoleSerializer
+from account.serializers.user import RoleSerializer
 from core.permissions.askanna_roles import get_role_class
 from core.utils.config import get_setting
+from storage.serializers import FileDownloadInfoSerializer
 from workspace.serializers import WorkspaceRelationSerializer
 
 
@@ -82,7 +83,7 @@ class PeopleSerializer(serializers.ModelSerializer):
             "without uploading a new one."
         ),
     )
-    avatar_files = serializers.SerializerMethodField()
+    avatar_file = FileDownloadInfoSerializer(read_only=True, source="get_avatar_file")
     workspace = WorkspaceRelationSerializer(read_only=True)
     role = serializers.SerializerMethodField()
     role_code = serializers.ChoiceField(write_only=True, required=False, choices=ROLES)
@@ -90,15 +91,6 @@ class PeopleSerializer(serializers.ModelSerializer):
     @extend_schema_field(RoleSerializer)
     def get_role(self, instance):
         return RoleSerializer(get_role_class(instance.role)).data
-
-    @extend_schema_field(AvatarSerializer)
-    def get_avatar_files(self, instance):
-        avatar_files = instance.get_avatar_files()
-
-        if avatar_files:
-            return AvatarSerializer(avatar_files, context=self.context).data
-
-        return None
 
     def update(self, instance, validated_data):
         if "member_name" in validated_data.keys():
@@ -130,7 +122,7 @@ class PeopleSerializer(serializers.ModelSerializer):
                     ),
                 )
             else:
-                instance.delete_avatar_files()
+                instance.delete_avatar_file()
 
         instance.save(
             update_fields=[
@@ -151,7 +143,7 @@ class PeopleSerializer(serializers.ModelSerializer):
             "name",
             "job_title",
             "avatar",
-            "avatar_files",
+            "avatar_file",
             "workspace",
             "role",
             "role_code",

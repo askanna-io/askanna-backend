@@ -41,7 +41,7 @@ def test_users(db):
     yield users
 
     for user in users.values():
-        user.delete_avatar_files()
+        user.delete_avatar_file()
         user.delete()
 
 
@@ -50,13 +50,13 @@ def test_avatar_files(test_users):
     test_users["workspace_admin"].set_avatar(get_avatar_content_file())
 
     avatar_files = {
-        "workspace_admin": test_users["workspace_admin"].avatar_files,
+        "workspace_admin": test_users["workspace_admin"].avatar_file,
     }
 
     yield avatar_files
 
     for avatar_file in avatar_files.keys():
-        test_users[avatar_file].delete_avatar_files()
+        test_users[avatar_file].delete_avatar_file()
 
 
 @pytest.fixture()
@@ -117,7 +117,7 @@ def test_memberships(test_users, test_workspaces):
     yield memberships
 
     for membership in memberships.values():
-        membership.delete_avatar_files()
+        membership.delete_avatar_file()
         membership.delete()
 
 

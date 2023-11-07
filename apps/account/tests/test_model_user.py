@@ -14,12 +14,11 @@ def test_user_get_user_memberships(test_users, test_memberships):
 def test_user_set_avatar(test_users):
     user = test_users["workspace_admin"]
     user.set_avatar(get_avatar_content_file())
-    avatar_file_suuids = [avatar_file.suuid for avatar_file in user.avatar_files]
+    avatar_file_suuid = user.avatar_file.suuid
 
     user.set_avatar(get_avatar_content_file())
-    assert user.avatar_files.count() == 5
-    for avatar_file in user.avatar_files:
-        assert avatar_file.suuid not in avatar_file_suuids
+    assert user.avatar_file is not None
+    assert user.avatar_file.suuid != avatar_file_suuid
 
 
 def test_user_to_deleted(test_users, test_memberships):
@@ -29,22 +28,22 @@ def test_user_to_deleted(test_users, test_memberships):
     for membership in memberships:
         assert membership.deleted_at is None
         assert membership.get_name() == "workspace admin"
-        assert membership.get_avatar_files().count() == 5
+        assert membership.get_avatar_file() is not None
 
     assert user.name == "workspace admin"
     assert user.email.startswith("deleted-") is False
-    assert user.avatar_files.count() == 5
+    assert user.avatar_file is not None
 
     user.to_deleted()
 
     assert user.name == "deleted user"
     assert user.email.startswith("deleted-") is True
-    assert user.avatar_files.count() == 0
+    assert user.avatar_file is None
     memberships = user.memberships.all()
     for membership in memberships:
         assert membership.deleted_at is not None
         assert membership.get_name() == "workspace admin"
-        assert membership.get_avatar_files().count() == 5
+        assert membership.get_avatar_file() is not None
 
 
 def test_user_get_status(test_users):

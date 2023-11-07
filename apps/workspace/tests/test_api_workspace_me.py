@@ -53,7 +53,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
 
         response = self.client.get(self.url_private)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["workspace.remove"] is True  # type: ignore
+        assert response.data["permission"]["workspace.remove"] is True
 
     def test_me_as_workspace_member(self):
         """A workspace member can get /me on a private workspace where user is a member"""
@@ -61,8 +61,8 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
 
         response = self.client.get(self.url_private)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["workspace.remove"] is False  # type: ignore
-        assert response.data["permission"]["workspace.people.invite.create"] is True  # type: ignore
+        assert response.data["permission"]["workspace.remove"] is False
+        assert response.data["permission"]["workspace.people.invite.create"] is True
 
     def test_me_as_non_workspace_member_for_private_workspace(self):
         """A non workspace member can NOT get /me on a private workspace where user is not a member"""
@@ -77,8 +77,8 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
 
         response = self.client.get(self.url_public)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["workspace.me.view"] is True  # type: ignore
-        assert response.data["permission"]["workspace.remove"] is False  # type: ignore
+        assert response.data["permission"]["workspace.me.view"] is True
+        assert response.data["permission"]["workspace.remove"] is False
 
     def test_me_as_user_non_existing_workspace(self):
         self.set_authorization(self.users["no_workspace_member"])
@@ -88,19 +88,19 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
 
     def test_me_as_anonymous_private_workspace(self):
         """An anonymous user cannot get /me on a private workspace"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.get(self.url_private)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_me_as_anonymous_public_workspace(self):
         """An anonymous user can get /me on a public workspace"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.get(self.url_public)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["workspace.me.view"] is True  # type: ignore
-        assert response.data["permission"]["workspace.remove"] is False  # type: ignore
+        assert response.data["permission"]["workspace.me.view"] is True
+        assert response.data["permission"]["workspace.remove"] is False
 
     def test_me_getting_my_membership_avatar(self):
         """Regular user can update /me with avatar"""
@@ -114,7 +114,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
             format="multipart",
         )
 
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_200_OK
@@ -136,10 +136,10 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
             format="multipart",
         )
 
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_200_OK
 
@@ -158,7 +158,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
             format="multipart",
         )
 
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
         self.set_authorization(self.users["no_workspace_member"])
@@ -179,10 +179,10 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
             format="multipart",
         )
 
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -200,7 +200,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
             format="multipart",
         )
 
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
         self.set_authorization(self.users["no_workspace_member"])
@@ -222,7 +222,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
             format="multipart",
         )
 
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
         self.set_authorization(self.users["workspace_member"])
@@ -266,11 +266,11 @@ class TestWorkspaceMePatch(BaseWorkspaceMeAPI):
 
         # The fields stored in membership itself, but not reflected in effective name because
         # use_global_profile is True
-        assert response.data.get("name") != "some random name that is not used"  # type: ignore
-        assert response.data.get("job_title") != "some random job_title that is not used"  # type: ignore
-        assert response.data.get("name") == "workspace member"  # type: ignore
-        assert response.data.get("job_title") == ""  # type: ignore
-        assert response.data.get("use_global_profile") is True  # type: ignore
+        assert response.data.get("name") != "some random name that is not used"
+        assert response.data.get("job_title") != "some random job_title that is not used"
+        assert response.data.get("name") == "workspace member"
+        assert response.data.get("job_title") == ""
+        assert response.data.get("use_global_profile") is True
 
     def test_member_patch_not_use_global_profile(self):
         """A workspace member can patch /me on a private workspace where user is a member"""
@@ -289,9 +289,9 @@ class TestWorkspaceMePatch(BaseWorkspaceMeAPI):
 
         # The fields stored in membership itself, and reflected in effective name because
         # use_global_profile is False
-        assert response.data.get("name") == "some random name that is used"  # type: ignore
-        assert response.data.get("job_title") == "some random job_title that is used"  # type: ignore
-        assert response.data.get("use_global_profile") is False  # type: ignore
+        assert response.data.get("name") == "some random name that is used"
+        assert response.data.get("job_title") == "some random job_title that is used"
+        assert response.data.get("use_global_profile") is False
 
     def test_member_patch_avatar(self):
         """A workspace member can patch /me to update avatar on a private workspace where user is a member"""
@@ -306,22 +306,18 @@ class TestWorkspaceMePatch(BaseWorkspaceMeAPI):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["avatar_files"] is not None  # type: ignore
+        assert response.data["avatar_file"] is not None
 
-        avatar_files = response.data["avatar_files"]  # type: ignore
-        assert isinstance(avatar_files, dict)
-        assert avatar_files.get("original") is not None
-
-        avatar_files_original = avatar_files.get("original")  # type: ignore
-        assert isinstance(avatar_files_original, dict)
-        assert avatar_files_original.get("type") is not None
-        assert avatar_files_original.get("url") is not None
+        avatar_file = response.data["avatar_file"]
+        assert isinstance(avatar_file, dict)
+        assert avatar_file.get("type") is not None
+        assert avatar_file.get("url") is not None
 
         self.client.patch(self.url_private, {"avatar": ""}, format="multipart")
 
     def test_me_as_anonymous(self):
         """Anonymous cannot patch workspace /me"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.patch(
             self.url_private,

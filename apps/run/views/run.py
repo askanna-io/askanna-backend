@@ -156,9 +156,8 @@ class RunView(
             "jobdef__project__workspace",
             "payload",
             "package",
-            "created_by_member__objectreference__account_membership",
-            "created_by_member__user__objectreference__account_user",
-            "created_by_user__objectreference__account_user",
+            "created_by_member__avatar_file",
+            "created_by_user__avatar_file",
             "run_image",
             "result",
             "output",
@@ -167,8 +166,6 @@ class RunView(
             "artifact",
             "metrics_meta",
             "variables_meta",
-            "created_by_member__objectreference__file_created_for",
-            "created_by_member__user__objectreference__file_created_for",
         )
         .annotate(
             member_name=Case(

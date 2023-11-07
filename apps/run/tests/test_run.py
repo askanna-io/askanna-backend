@@ -61,8 +61,8 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         self.activate_user("anna")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
-        assert response.data["results"][0]["name"] == "run6"  # type: ignore
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == "run6"
 
     def test_list_as_admin(self):
         """
@@ -71,7 +71,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         self.activate_user("admin")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 7  # type: ignore
+        assert len(response.data["results"]) == 7
 
     def test_list_as_member(self):
         """
@@ -80,7 +80,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         self.activate_user("member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 5  # type: ignore
+        assert len(response.data["results"]) == 5
 
     def test_list_as_non_member(self):
         """
@@ -89,8 +89,8 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         self.activate_user("non_member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
-        assert response.data["results"][0]["name"] == "run6"  # type: ignore
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == "run6"
 
     def test_list_as_anonymous(self):
         """
@@ -98,8 +98,8 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         """
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
-        assert response.data["results"][0]["name"] == "run6"  # type: ignore
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == "run6"
 
     def test_list_as_member_filter_by_run(self):
         """
@@ -111,7 +111,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             {"run_suuid": self.runs["run1"].suuid},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
+        assert len(response.data["results"]) == 1
 
     def test_list_as_member_filter_by_runs(self):
         """
@@ -130,7 +130,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_member_exclude_by_run(self):
         """
@@ -142,7 +142,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             {"run_suuid__exclude": self.runs["run1"].suuid},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_filter_by_job(self):
         """
@@ -154,7 +154,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             {"job_suuid": self.jobdef.suuid},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_filter_by_jobs(self):
         """
@@ -173,7 +173,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_exclude_by_job(self):
         """
@@ -185,7 +185,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             {"job_suuid__exclude": self.jobdef.suuid},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
+        assert len(response.data["results"]) == 1
 
     def test_list_as_member_filter_by_project(self):
         """
@@ -199,7 +199,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_exclude_by_project(self):
         """
@@ -213,7 +213,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
+        assert len(response.data["results"]) == 1
 
     def test_list_as_member_filter_by_workspace(self):
         """
@@ -227,7 +227,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_exclude_by_workspace(self):
         """
@@ -241,7 +241,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
+        assert len(response.data["results"]) == 1
 
     def test_list_as_member_filter_by_status(self):
         """
@@ -255,7 +255,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_member_filter_by_multiple_statuses(self):
         """
@@ -269,7 +269,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 3  # type: ignore
+        assert len(response.data["results"]) == 3
 
     def test_list_as_member_exclude_by_status(self):
         """
@@ -283,7 +283,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 3  # type: ignore
+        assert len(response.data["results"]) == 3
 
     def test_list_as_member_filter_by_trigger(self):
         """
@@ -297,7 +297,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
+        assert len(response.data["results"]) == 1
 
     def test_list_as_member_filter_by_multiple_triggers(self):
         """
@@ -311,7 +311,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_member_exclude_by_trigger(self):
         """
@@ -325,7 +325,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_filter_by_created_by(self):
         """
@@ -335,11 +335,11 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         response = self.client.get(
             self.url,
             {
-                "created_by_suuid": self.members.get("member").suuid,  # type: ignore
+                "created_by_suuid": self.members.get("member").suuid,
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_as_member_exclude_by_created_by(self):
         """
@@ -349,11 +349,11 @@ class TestRunListAPI(BaseRunTest, APITestCase):
         response = self.client.get(
             self.url,
             {
-                "created_by_suuid__exclude": self.members.get("member").suuid,  # type: ignore
+                "created_by_suuid__exclude": self.members.get("member").suuid,
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 1  # type: ignore
+        assert len(response.data["results"]) == 1
 
     def test_list_as_member_filter_by_package_suuid(self):
         """
@@ -367,7 +367,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 5  # type: ignore
+        assert len(response.data["results"]) == 5
 
     def test_list_as_member_exclude_by_package_suuid(self):
         """
@@ -381,7 +381,7 @@ class TestRunListAPI(BaseRunTest, APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0  # type: ignore
+        assert len(response.data["results"]) == 0
 
 
 class TestRunDetailAPI(BaseRunTest, APITestCase):
@@ -419,7 +419,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         self.activate_user("admin")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert response.data["suuid"] == self.runs["run1"].suuid
 
     def test_detail_as_member(self):
         """
@@ -428,7 +428,7 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         self.activate_user("member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
+        assert response.data["suuid"] == self.runs["run1"].suuid
 
     def test_detail_as_member_other_run(self):
         """
@@ -437,9 +437,9 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         self.activate_user("member")
         response = self.client.get(self.url_run2)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run2"].suuid  # type: ignore
-        assert response.data["result"]["name"] == "someresult.txt"  # type: ignore
-        assert response.data["result"]["extension"] == "txt"  # type: ignore
+        assert response.data["suuid"] == self.runs["run2"].suuid
+        assert response.data["result"]["name"] == "someresult.txt"
+        assert response.data["result"]["extension"] == "txt"
 
     def test_detail_as_member_changed_membername(self):
         """
@@ -448,21 +448,21 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         self.activate_user("member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
-        assert response.data["created_by"]["name"] == "name of member in membership"  # type: ignore
+        assert response.data["suuid"] == self.runs["run1"].suuid
+        assert response.data["created_by"]["name"] == "name of member in membership"
 
         # now change membername to new membername
-        self.members.get("member").name = "new membername"  # type: ignore
-        self.members.get("member").save()  # type: ignore
+        self.members.get("member").name = "new membername"
+        self.members.get("member").save()
 
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
-        assert response.data["created_by"]["name"] == "new membername"  # type: ignore
+        assert response.data["suuid"] == self.runs["run1"].suuid
+        assert response.data["created_by"]["name"] == "new membername"
 
         # now change back new membername to membername
-        self.members.get("member").name = "membername"  # type: ignore
-        self.members.get("member").save()  # type: ignore
+        self.members.get("member").name = "membername"
+        self.members.get("member").save()
 
     def test_detail_as_member_workspace_membername_different_in_other_workspace(self):
         """
@@ -471,23 +471,23 @@ class TestRunDetailAPI(BaseRunTest, APITestCase):
         self.activate_user("member2")
 
         # Set avatar file for user
-        self.members.get("member").set_avatar(get_avatar_content_file())  # type: ignore
+        self.members.get("member").set_avatar(get_avatar_content_file())
 
         # first visit 1st workspace
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
-        assert response.data["created_by"]["name"] == "name of member in membership"  # type: ignore
-        assert response.data["created_by"]["avatar_files"] is not None  # type: ignore
+        assert response.data["suuid"] == self.runs["run1"].suuid
+        assert response.data["created_by"]["name"] == "name of member in membership"
+        assert response.data["created_by"]["avatar_file"] is not None
 
         # then visit 2nd workspace
         response = self.client.get(self.url_other_workspace)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run3"].suuid  # type: ignore
-        assert response.data["created_by"]["name"] == "member2"  # type: ignore
+        assert response.data["suuid"] == self.runs["run3"].suuid
+        assert response.data["created_by"]["name"] == "member2"
 
         # Delete avatar file for user
-        self.members.get("member").delete_avatar_files()  # type: ignore
+        self.members.get("member").delete_avatar_file()
 
     def test_detail_as_non_member(self):
         """
@@ -592,10 +592,10 @@ class TestRunChangeAPI(BaseRunTest, APITestCase):
     def run_test(self):
         initial_response = self.client.get(self.url)
         assert initial_response.status_code == status.HTTP_200_OK
-        assert initial_response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
-        assert initial_response.data["name"] == self.runs["run1"].name  # type: ignore
-        assert initial_response.data["description"] == self.runs["run1"].description  # type: ignore
-        assert date_parse(initial_response.data["modified_at"]) == self.runs["run1"].modified_at  # type: ignore
+        assert initial_response.data["suuid"] == self.runs["run1"].suuid
+        assert initial_response.data["name"] == self.runs["run1"].name
+        assert initial_response.data["description"] == self.runs["run1"].description
+        assert date_parse(initial_response.data["modified_at"]) == self.runs["run1"].modified_at
 
         response = self.client.patch(
             self.url,
@@ -606,10 +606,10 @@ class TestRunChangeAPI(BaseRunTest, APITestCase):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.runs["run1"].suuid  # type: ignore
-        assert response.data["name"] == "new name"  # type: ignore
-        assert response.data["description"] == "new description"  # type: ignore
-        assert date_parse(response.data["modified_at"]) != self.runs["run1"].modified_at  # type: ignore
+        assert response.data["suuid"] == self.runs["run1"].suuid
+        assert response.data["name"] == "new name"
+        assert response.data["description"] == "new description"
+        assert date_parse(response.data["modified_at"]) != self.runs["run1"].modified_at
 
         return True
 
