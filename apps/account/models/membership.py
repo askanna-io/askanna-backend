@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import io
-
 from django.core import signing
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.db import models
-from PIL import Image
 
 from core.models import BaseModel
 from core.permissions.askanna_roles import (
@@ -36,32 +33,13 @@ WS_ADMIN = "WA"
 WS_VIEWER = "WV"
 ROLES = ((WS_VIEWER, "viewer"), (WS_MEMBER, "member"), (WS_ADMIN, "admin"))
 
-AVATAR_SPECS = {
-    "icon": (60, 60),
-    "small": (120, 120),
-    "medium": (180, 180),
-    "large": (240, 240),
-}
-
 
 class MemberProfile(BaseModel):
     name = models.CharField("Name", blank=True, max_length=255)
     job_title = models.CharField("Job title", blank=True, default="", max_length=255)
+    avatar_file = models.OneToOneField("storage.File", on_delete=models.SET_NULL, null=True)
 
     _avatar_directory = None
-
-    @property
-    def avatar_files(self) -> models.QuerySet[File] | None:
-        try:
-            return self.objectreference.file_created_for.all()  # type: ignore
-        except ObjectDoesNotExist:
-            return None
-
-    def delete_avatar_files(self) -> models.QuerySet[File] | None:
-        try:
-            return self.objectreference.file_created_for.all().delete()  # type: ignore
-        except ObjectDoesNotExist:
-            return None
 
     @property
     def avatar_directory(self):
@@ -75,9 +53,9 @@ class MemberProfile(BaseModel):
     def set_avatar(self, avatar_file, created_by=None):
         created_by = created_by or self
 
-        self.delete_avatar_files()
+        self.delete_avatar_file()
 
-        File.objects.create(
+        self.avatar_file = File.objects.create(
             name=avatar_file.name,
             file=avatar_file,
             upload_to=self.avatar_directory,
@@ -85,20 +63,13 @@ class MemberProfile(BaseModel):
             created_by=created_by,
         )
 
-        with Image.open(avatar_file) as image:
-            for spec_name, spec_size in AVATAR_SPECS.items():
-                with io.BytesIO() as tmp_file, image.copy() as tmp_image:
-                    tmp_image.thumbnail(spec_size)
-                    tmp_image.save(fp=tmp_file, format="png")
+        self.save(update_fields=["avatar_file", "modified_at"])
 
-                    filename = f"{spec_name}.png"
-                    File.objects.create(
-                        name=filename,
-                        file=ContentFile(tmp_file.getvalue(), name=filename),
-                        upload_to=self.avatar_directory,
-                        created_for=self,
-                        created_by=created_by,
-                    )
+    def delete_avatar_file(self) -> None:
+        if self.avatar_file:
+            self.avatar_file.delete()
+            self.avatar_file = None
+            self.save(update_fields=["avatar_file", "modified_at"])
 
     class Meta(BaseModel.Meta):
         abstract = True
@@ -300,16 +271,6 @@ class Membership(MemberProfile):
 
         return WorkspaceNoMember
 
-    def get_role_serialized(self):
-        """
-        Role to be exposed to the outside
-        """
-        role = self.get_role()
-        return {
-            "code": role.code,
-            "name": role.name,
-        }
-
     def __str__(self):
         if self.get_name():
             return f"{self.get_name()} ({self.suuid})"
@@ -331,13 +292,13 @@ class Membership(MemberProfile):
             return self.user.job_title
         return self.job_title
 
-    def get_avatar_files(self):
+    def get_avatar_file(self):
         """
-        Get avatar_files, respecting the `use_global_profile` setting
+        Get avatar_file, respecting the `use_global_profile` setting
         """
         if self.use_global_profile and self.user:
-            return self.user.avatar_files
-        return self.avatar_files
+            return self.user.avatar_file
+        return self.avatar_file
 
     def to_deleted(self, removed_by=None):
         removed_by = removed_by or self
@@ -347,27 +308,27 @@ class Membership(MemberProfile):
             self.name = self.user.name
             self.job_title = self.user.job_title
             self.use_global_profile = False
+
+            self.delete_avatar_file()
+            if self.user.avatar_file:
+                with self.user.avatar_file.file.open() as image_file:
+                    self.avatar_file = File.objects.create(
+                        name=self.user.avatar_file.name,
+                        file=ContentFile(image_file.read(), name=self.user.avatar_file.name),
+                        upload_to=self.avatar_directory,
+                        created_for=self,
+                        created_by=removed_by,
+                    )
+
             self.save(
                 update_fields=[
                     "name",
                     "job_title",
+                    "avatar_file",
                     "use_global_profile",
                     "modified_at",
                 ]
             )
-
-            self.delete_avatar_files()
-            user_avatar_files: models.QuerySet = self.user.avatar_files
-            if isinstance(user_avatar_files, models.QuerySet) and user_avatar_files.count() > 0:
-                for avatar_file in user_avatar_files:
-                    with avatar_file.file as image_file:
-                        File.objects.create(
-                            name=avatar_file.name,
-                            file=ContentFile(image_file.read(), name=avatar_file.name),
-                            upload_to=self.avatar_directory,
-                            created_for=self,
-                            created_by=removed_by,
-                        )
 
         super().to_deleted()
 

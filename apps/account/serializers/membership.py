@@ -1,8 +1,8 @@
-from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from account.models.membership import Membership
-from account.serializers.user import AvatarSerializer, RoleSerializer
+from account.serializers.user import RoleSerializer
+from storage.serializers import FileDownloadInfoSerializer
 
 
 class MembershipRelationSerializer(serializers.ModelSerializer):
@@ -29,16 +29,7 @@ class MembershipRelationSerializer(serializers.ModelSerializer):
 
 
 class MembershipWithAvatarRelationSerializer(MembershipRelationSerializer):
-    avatar_files = serializers.SerializerMethodField()
-
-    @extend_schema_field(AvatarSerializer)
-    def get_avatar_files(self, instance):
-        avatar_files = instance.get_avatar_files()
-
-        if avatar_files:
-            return AvatarSerializer(avatar_files, context=self.context).data
-
-        return None
+    avatar_file = FileDownloadInfoSerializer(read_only=True, source="get_avatar_file")
 
     class Meta(MembershipRelationSerializer.Meta):
-        fields = MembershipRelationSerializer.Meta.fields + ("avatar_files",)
+        fields = MembershipRelationSerializer.Meta.fields + ("avatar_file",)

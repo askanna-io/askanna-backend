@@ -67,7 +67,7 @@ class TestWorkspacePeopleListAPI(BaseWorkspacePeopleAPI):
 
     def test_list_as_anonymous(self):
         """Anonymous users can not list people from a workspace."""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.get(self.private_url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -131,7 +131,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
 
     def test_retrieve_profile_as_anonymous_fails(self):
         """Anonymous users can not see profiles from a workspace."""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         url = reverse(
             "workspace-people-detail",
             kwargs={
@@ -158,9 +158,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
 
         response = self.client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert {"suuid": self.memberships["workspace_private_admin"].suuid}.items() <= dict(
-            response.data  # type: ignore
-        ).items()
+        assert {"suuid": self.memberships["workspace_private_admin"].suuid}.items() <= dict(response.data).items()
 
     def test_retrieve_profile_as_admin(self):
         """An admin can see existing profiles from a workspace."""
@@ -176,9 +174,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
 
         response = self.client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert {"suuid": self.memberships["workspace_private_member"].suuid}.items() <= dict(
-            response.data  # type: ignore
-        ).items()
+        assert {"suuid": self.memberships["workspace_private_member"].suuid}.items() <= dict(response.data).items()
 
     def test_retrieve_profile_avatar_as_member(self):
         """A member can get existing profile avatars from a private workspace."""
@@ -202,8 +198,8 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
         response = self.client.get(url)
         assert response.status_code == status.HTTP_200_OK
 
-        assert response.data["avatar_files"] is not None  # type: ignore
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        assert response.data["avatar_file"] is not None
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_200_OK
@@ -228,7 +224,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
             {"avatar": get_avatar_file()},
             format="multipart",
         )
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
         self.set_authorization(self.users["workspace_admin"])
@@ -265,7 +261,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
             },
         )
 
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         response = self.client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -275,10 +271,10 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
             {"avatar": get_avatar_file()},
             format="multipart",
         )
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         # Anonymous user cannot access membership profile info
         response = self.client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -299,7 +295,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
             },
         )
 
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         response = self.client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -309,10 +305,10 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
             {"avatar": get_avatar_file()},
             format="multipart",
         )
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
 
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         # Anonymous user cannot access membership profile info
         response = self.client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -401,7 +397,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["job_title"] == "a new job title"  # type: ignore
+        assert response.data["job_title"] == "a new job title"
 
     def test_member_can_change_own_avatar(self):
         self.set_authorization(self.users["workspace_member"])
@@ -415,7 +411,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
         )
         response = self.client.get(url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["avatar_files"] is None  # type: ignore
+        assert response.data["avatar_file"] is None
 
         response = self.client.patch(
             url,
@@ -424,18 +420,14 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["avatar_files"] is not None  # type: ignore
+        assert response.data["avatar_file"] is not None
 
-        avatar_files = response.data["avatar_files"]  # type: ignore
-        assert isinstance(avatar_files, dict)
-        assert avatar_files.get("original") is not None
+        avatar_file = response.data["avatar_file"]
+        assert isinstance(avatar_file, dict)
+        assert avatar_file.get("type") is not None
+        assert avatar_file.get("url") is not None
 
-        avatar_files_original = avatar_files.get("original")  # type: ignore
-        assert isinstance(avatar_files_original, dict)
-        assert avatar_files_original.get("type") is not None
-        assert avatar_files_original.get("url") is not None
-
-        avatar_url = response.data.get("avatar_files").get("original").get("url")  # type: ignore
+        avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_200_OK
@@ -447,7 +439,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["avatar_files"] is None  # type: ignore
+        assert response.data["avatar_file"] is None
 
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -470,7 +462,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["job_title"] == "a new job title"  # type: ignore
+        assert response.data["job_title"] == "a new job title"
 
     def test_admin_can_change_own_info(self):
         """The job_title of an admin can be changed by the admin itself."""
@@ -490,7 +482,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["job_title"] == "a new job title"  # type: ignore
+        assert response.data["job_title"] == "a new job title"
 
     def test_admin_can_change_member_role(self):
         """An admin can change the profile of a member to admin."""
@@ -510,7 +502,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["role"]["code"] == WS_ADMIN  # type: ignore
+        assert response.data["role"]["code"] == WS_ADMIN
         assert Membership.objects.get(pk=self.memberships["workspace_private_member"].pk).role == WS_ADMIN
 
         response = self.client.patch(
@@ -519,7 +511,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["role"]["code"] == WS_MEMBER  # type: ignore
+        assert response.data["role"]["code"] == WS_MEMBER
         assert Membership.objects.get(pk=self.memberships["workspace_private_member"].pk).role == WS_MEMBER
 
     def test_change_admin_role_by_self_fails(self):
@@ -641,7 +633,7 @@ class TestWorkspacePeopleDeleteAPI(BaseWorkspacePeopleAPI):
 
     def test_anonymous_cannot_remove_profile(self):
         """An anonymous request cannot remove profiles from it."""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         url = reverse(
             "workspace-people-detail",
             kwargs={

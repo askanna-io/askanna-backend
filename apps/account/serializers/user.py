@@ -7,13 +7,10 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode as uid_decoder
 from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import empty
 
-from account.models.membership import AVATAR_SPECS
 from account.models.user import User
 from account.signals import password_reset_signal
 from core.utils.config import get_setting
-from storage.serializers import FileDownloadInfoSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -39,23 +36,6 @@ class UserSerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.Serializer):
     name = serializers.CharField()
     code = serializers.CharField()
-
-
-class AvatarSerializer(serializers.Serializer):
-    def __init__(self, instance=None, data=empty, **kwargs):
-        if instance:
-            instance = {
-                avatar_file.name.split(".")[0]
-                if avatar_file.name.split(".")[0] in AVATAR_SPECS
-                else "original": avatar_file
-                for avatar_file in instance
-            }
-
-        super().__init__(instance, data=data, **kwargs)
-
-        self.fields["original"] = FileDownloadInfoSerializer()
-        for spec_name in AVATAR_SPECS.keys():
-            self.fields[spec_name] = FileDownloadInfoSerializer()
 
 
 class LoginSerializer(serializers.Serializer):

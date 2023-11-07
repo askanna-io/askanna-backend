@@ -1,12 +1,12 @@
 import io
 import logging
 
-from django.db import migrations
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.db import migrations, models
 from PIL import Image
 
-from account.models import User, Membership
+from account.models import Membership, User
 from core.models import ObjectReference
 
 logger = logging.getLogger(__name__)
@@ -92,5 +92,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AddField(
+            model_name="membership",
+            name="avatar_file",
+            field=models.OneToOneField(null=True, on_delete=models.deletion.SET_NULL, to="storage.file"),
+        ),
+        migrations.AddField(
+            model_name="user",
+            name="avatar_file",
+            field=models.OneToOneField(null=True, on_delete=models.deletion.SET_NULL, to="storage.file"),
+        ),
         migrations.RunPython(move_avatar_files, migrations.RunPython.noop),
     ]

@@ -67,7 +67,7 @@ class User(MemberProfile, AbstractUser):
         self.name = "deleted user"
         self.job_title = ""
 
-        self.delete_avatar_files()
+        self.delete_avatar_file()
         self.save(
             update_fields=[
                 "is_active",

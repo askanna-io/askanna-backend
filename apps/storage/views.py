@@ -1,8 +1,9 @@
 from pathlib import Path
 
 import sentry_sdk
+from django.core.cache import cache
 from django.http import FileResponse
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,6 +13,7 @@ from core.permissions import AskAnnaPermission
 from core.viewsets import AskAnnaGenericViewSet
 from storage.models import File
 from storage.serializers import FileInfoSerializer
+from storage.utils import filename_for_resized_image, resize_image
 
 
 def _validate_file_exists(instance: File) -> bool:
@@ -77,33 +79,54 @@ class FileViewSet(AskAnnaGenericViewSet):
         description=(
             "Download a file. The response contains the file content. The response header contain the file name and "
             "content type.<br><br>"
-            "Supported request headers:<br>"
-            "<ol>"
-            "<li><b>Range</b> - The value of this header is used to download a partial content of the file. Supported "
-            "values:"
-            "<ul>"
-            "  <li>bytes=0-100</li>"
-            "  <li>bytes=100- (start at byte 100 till the end of the file)</li>"
-            "  <li>bytes=-100 (get the last 100 bytes)</li>"
-            "</ul>"
-            "</li>"
-            "<li><b>Response-Content-Disposition</b> - The value of this header is used to set the "
-            "Content-Disposition of the response. If the value contains a filename, then this filename is used. The "
-            "HTTP context is either 'attachment' or 'inline'. Supported values:"
-            "<ul>"
-            '  <li>attachment; filename="filename.txt"</li>'
-            "  <li>attachment</li>"
-            '  <li>filename="filename.txt"</li>'
-            "</ul>"
-            "</li>"
-            "</ol>"
+            "When the file is an image, you can resize the image by setting the width parameter. It will return a "
+            "version of the image given the requested width."
         ),
+        parameters=[
+            OpenApiParameter(
+                name="width",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description=(
+                    "Only for image files with the purpose of creating avatar files that are smaller and square. The "
+                    "width is used to resize the image to the number of pixels set by the width parameter. The height "
+                    "is set to the same value as the width."
+                ),
+            ),
+            OpenApiParameter(
+                name="Range",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                description=(
+                    "Add the Range header to download a range from the file. Supported values:"
+                    "<ul>"
+                    "  <li>bytes=0-100</li>"
+                    "  <li>bytes=100- (start at byte 100 till the end of the file)</li>"
+                    "  <li>bytes=-100 (get the last 100 bytes)</li>"
+                    "</ul>"
+                    "</li>"
+                ),
+            ),
+            OpenApiParameter(
+                name="Response-Content-Disposition",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                description=(
+                    "Set the Content-Disposition of the response. If the value contains a filename, then this "
+                    "filename is used. The HTTP context is either 'attachment' or 'inline'. Supported values:"
+                    "<ul>"
+                    '  <li>attachment; filename="filename.txt"</li>'
+                    "  <li>attachment</li>"
+                    '  <li>filename="filename.txt"</li>'
+                    "</ul>"
+                    "</li>"
+                    "</ol>"
+                ),
+            ),
+        ],
         responses={
             200: OpenApiResponse(description="Content of a file (binary string)"),
             206: OpenApiResponse(description="Partial content of a file (binary string)"),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-            404: OpenApiResponse(description="File not found or no permission to access"),
-            416: OpenApiResponse(description="Invalid range request"),
         },
     )
     @action(detail=True, methods=["get"])
@@ -129,6 +152,57 @@ class FileViewSet(AskAnnaGenericViewSet):
                 filename = response_content_disposition[1].split("=")[1]
                 filename = filename[1:-1] if filename.startswith('"') else filename
 
+        width = request.query_params.get("width")
+        if width:
+            if "HTTP_RANGE" in request.META:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data={"detail": "Range header not supported in combination with the width parameter"},
+                )
+
+            try:
+                width = int(width)
+            except ValueError:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data={"detail": "Width parameter must be an integer"},
+                )
+
+            if width <= 0:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data={"detail": "Width parameter must be greater than 0"},
+                )
+
+            if width > 1000:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data={"detail": "Width parameter must be less than 1000"},
+                )
+
+            if content_type.startswith("image/") is False:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data={"detail": "Width parameter is only supported for image files"},
+                )
+
+            if "HTTP_RESPONSE_CONTENT_DISPOSITION" not in request.META or (
+                "HTTP_RESPONSE_CONTENT_DISPOSITION" in request.META
+                and "filename=" not in request.META["HTTP_RESPONSE_CONTENT_DISPOSITION"]
+            ):
+                filename = filename_for_resized_image(filename, width)
+
+            return FileResponse(
+                cache.get_or_set(
+                    f"image_{instance.suuid}_{width}",
+                    lambda: resize_image(file_object, width),
+                    timeout=60 * 60 * 4,  # 4 hours
+                ),
+                as_attachment=as_attachment,
+                filename=filename,
+                content_type=content_type,
+            )
+
         if "HTTP_RANGE" in request.META:
             response = RangeFileResponse(
                 file_object,
@@ -138,7 +212,7 @@ class FileViewSet(AskAnnaGenericViewSet):
             )
 
             if response.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE:
-                response = Response(status=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+                return Response(status=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
         else:
             response = FileResponse(
                 file_object,
@@ -146,6 +220,6 @@ class FileViewSet(AskAnnaGenericViewSet):
                 filename=filename,
                 content_type=content_type,
             )
-            response["Accept-Ranges"] = "bytes"
 
+        response["Accept-Ranges"] = "bytes"
         return response

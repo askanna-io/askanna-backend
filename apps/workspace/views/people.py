@@ -116,14 +116,9 @@ class WorkspacePeopleViewSet(
     queryset = (
         Membership.objects.active_members()
         .select_related(
+            "avatar_file",
+            "user__avatar_file",
             "invitation",
-            "objectreference",
-            "user",
-            "user__objectreference",
-        )
-        .prefetch_related(
-            "objectreference__file_created_for",
-            "user__objectreference__file_created_for",
         )
         .annotate(
             status=Case(

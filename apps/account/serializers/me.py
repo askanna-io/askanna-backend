@@ -3,13 +3,14 @@ from rest_framework import serializers
 
 from account.models.membership import Membership
 from account.models.user import User
-from account.serializers.user import AvatarSerializer, RoleSerializer
+from account.serializers.user import RoleSerializer
 from core.permissions.askanna_roles import (
     get_request_role,
     get_role_class,
     merge_role_permissions,
 )
 from core.serializers import ReadWriteSerializerMethodField
+from storage.serializers import FileDownloadInfoSerializer
 
 
 class MeSerializer(serializers.ModelSerializer):
@@ -27,8 +28,8 @@ class MeSerializer(serializers.ModelSerializer):
             "without uploading a new one."
         ),
     )
-    avatar_files = serializers.SerializerMethodField()
-    role = serializers.SerializerMethodField(read_only=True)
+    avatar_file = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
     permission = serializers.SerializerMethodField()
 
     @extend_schema_field(RoleSerializer)
@@ -36,20 +37,17 @@ class MeSerializer(serializers.ModelSerializer):
         role = get_request_role(self.context["request"])
         return RoleSerializer(role).data
 
-    @extend_schema_field(AvatarSerializer)
-    def get_avatar_files(self, instance):
+    @extend_schema_field(FileDownloadInfoSerializer)
+    def get_avatar_file(self, instance):
         if self.context["request"].user.is_anonymous:
             return None
 
-        if hasattr(instance, "get_avatar_files"):
-            avatar_files = instance.get_avatar_files()
+        if hasattr(instance, "get_avatar_file"):
+            avatar_file = instance.get_avatar_file()
         else:
-            avatar_files = instance.avatar_files
+            avatar_file = instance.avatar_file
 
-        if avatar_files:
-            return AvatarSerializer(avatar_files, context=self.context).data
-
-        return None
+        return FileDownloadInfoSerializer(instance=avatar_file, context=self.context).data if avatar_file else None
 
     def get_permission(self, instance) -> dict[str, bool]:
         user_roles = self.context["request"].user_roles
@@ -61,7 +59,7 @@ class MeSerializer(serializers.ModelSerializer):
             if avatar_file is not None:
                 instance.set_avatar(avatar_file)
             else:
-                instance.delete_avatar_files()
+                instance.delete_avatar_file()
 
         return super().update(instance, validated_data)
 
@@ -73,7 +71,7 @@ class MeSerializer(serializers.ModelSerializer):
             "email",
             "job_title",
             "avatar",
-            "avatar_files",
+            "avatar_file",
             "role",
             "permission",
         )
@@ -120,7 +118,7 @@ class MembershipMeSerializer(MeSerializer):
             "email",
             "job_title",
             "avatar",
-            "avatar_files",
+            "avatar_file",
             "use_global_profile",
             "role",
             "permission",
