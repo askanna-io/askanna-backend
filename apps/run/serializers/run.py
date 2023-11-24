@@ -7,18 +7,12 @@ from account.serializers.membership import (
     MembershipRelationSerializer,
     MembershipWithAvatarRelationSerializer,
 )
-from job.serializers import (
-    JobPayloadRelationSerializer,
-    JobRelationSerializer,
-    RunImageRelationSerializer,
-)
-from package.serializers.package_relation import PackageRelationSerializer
-from project.serializers import ProjectRelationSerializer
+from core.serializers import RelationSerializer
+from job.serializers import JobPayloadRelationSerializer, RunImageRelationSerializer
 from run.models import Run
 from run.serializers.artifact_relation import ArtifactRelationSerializer
 from run.serializers.log import LogRelationSerializer
 from run.serializers.result import ResultRelationSerializer
-from workspace.serializers import WorkspaceRelationSerializer
 
 
 class EnvironmentSerializer(serializers.Serializer):
@@ -51,13 +45,13 @@ class VariablesMetaSerializer(serializers.Serializer):
 
 
 class RunSerializer(serializers.ModelSerializer):
-    status = serializers.ReadOnlyField(source="get_status_external")
-    duration = serializers.ReadOnlyField(source="get_duration")
-    trigger = serializers.ReadOnlyField()
+    status = serializers.CharField(read_only=True, source="get_status_external")
+    duration = serializers.IntegerField(read_only=True, source="get_duration")
+    trigger = serializers.CharField(read_only=True)
 
     created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
 
-    package = PackageRelationSerializer(read_only=True)
+    package = RelationSerializer(read_only=True)
     payload = JobPayloadRelationSerializer(read_only=True)
 
     result = ResultRelationSerializer(read_only=True)
@@ -68,9 +62,9 @@ class RunSerializer(serializers.ModelSerializer):
 
     environment = serializers.SerializerMethodField()
 
-    job = JobRelationSerializer(read_only=True, source="jobdef")
-    project = ProjectRelationSerializer(read_only=True, source="jobdef.project")
-    workspace = WorkspaceRelationSerializer(read_only=True, source="jobdef.project.workspace")
+    job = RelationSerializer(read_only=True, source="jobdef")
+    project = RelationSerializer(read_only=True, source="jobdef.project")
+    workspace = RelationSerializer(read_only=True, source="jobdef.project.workspace")
 
     @extend_schema_field(MetricsMetaSerializer)
     def get_metrics_meta(self, instance):
@@ -175,13 +169,13 @@ class RunSerializer(serializers.ModelSerializer):
 
 
 class RunStatusSerializer(serializers.ModelSerializer):
-    name = serializers.ReadOnlyField()
-    status = serializers.ReadOnlyField(source="get_status_external")
+    name = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True, source="get_status_external")
     duration = serializers.IntegerField(read_only=True, source="get_duration")
     created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
-    job = JobRelationSerializer(read_only=True, source="jobdef")
-    project = ProjectRelationSerializer(read_only=True, source="jobdef.project")
-    workspace = WorkspaceRelationSerializer(read_only=True, source="jobdef.project.workspace")
+    job = RelationSerializer(read_only=True, source="jobdef")
+    project = RelationSerializer(read_only=True, source="jobdef.project")
+    workspace = RelationSerializer(read_only=True, source="jobdef.project.workspace")
     next_url = serializers.SerializerMethodField(allow_null=True)
 
     @extend_schema_field(OpenApiTypes.URI)
@@ -214,21 +208,4 @@ class RunStatusSerializer(serializers.ModelSerializer):
             "workspace",
             "created_at",
             "modified_at",
-        ]
-
-
-class RunRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = Run
-        fields = [
-            "relation",
-            "suuid",
-            "name",
         ]

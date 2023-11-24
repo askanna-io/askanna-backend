@@ -2,15 +2,9 @@ from project.models import Project
 
 
 def test_project_active(test_projects):
-    assert Project.objects.active().count() == 2  # type: ignore
+    assert Project.objects.active().count() == 3
     test_projects["project_private"].to_deleted()
-    assert Project.objects.active().count() == 1  # type: ignore
-
-
-def test_project_inactive(test_projects):
-    assert Project.objects.inactive().count() == 0  # type: ignore
-    test_projects["project_private"].to_deleted()
-    assert Project.objects.inactive().count() == 1  # type: ignore
+    assert Project.objects.active().count() == 2
 
 
 def test_project_visibility_private(test_projects):

@@ -38,7 +38,7 @@ class ReadWriteSerializerMethodField(serializers.Field):
         super().bind(field_name, parent)
 
     def to_representation(self, value):
-        method = getattr(self.parent, self.method_name)  # type: ignore
+        method = getattr(self.parent, self.method_name)
         return method(value)
 
     def to_internal_value(self, data):

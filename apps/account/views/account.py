@@ -28,9 +28,7 @@ class AccountViewSet(
     PartialUpdateModelMixin,
     AskAnnaGenericViewSet,
 ):
-    permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
-    lookup_field = "suuid"
     search_fields = ["suuid", "name", "email"]
 
     serializer_class = AccountSerializer
@@ -38,6 +36,7 @@ class AccountViewSet(
         "partial_update": AccountUpdateSerializer,
     }
 
+    permission_classes = [IsAuthenticated]
     permission_classes_by_action = {
         "list": [IsAdminUser],
         "retrieve": [IsOwnerOfUser | IsAdminUser],

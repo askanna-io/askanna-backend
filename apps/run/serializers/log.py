@@ -5,7 +5,7 @@ from run.models import RunLog
 
 class LogRelationSerializer(serializers.ModelSerializer):
     relation = serializers.CharField(read_only=True, default="log")
-    suuid = serializers.ReadOnlyField()
+    suuid = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True, default="log.json")
     size = serializers.IntegerField(read_only=True)
     lines = serializers.IntegerField(read_only=True)

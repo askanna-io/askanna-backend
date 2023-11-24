@@ -10,7 +10,10 @@ def settings(config, env):
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DATA_UPLOAD_MAX_MEMORY_SIZE
     # allow 250MB to be used in request.body
-    config.DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 250
+    config.DATA_UPLOAD_MAX_MEMORY_SIZE = 250 * 1024 * 1024  # 250MB
+
+    # FILE_MAX_MEMORY_SIZE is a.o. used to set the maximum memory size for SpooledTemporaryFile and the size of chunks
+    config.FILE_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
 
     # STATIC
     # ------------------------------------------------------------------------------
@@ -33,9 +36,6 @@ def settings(config, env):
 
     config.ARTIFACTS_DIR_NAME = "artifacts"
     config.ARTIFACTS_ROOT = config.STORAGE_ROOT / config.ARTIFACTS_DIR_NAME
-
-    config.PACKAGES_DIR_NAME = "packages"
-    config.PACKAGES_ROOT = config.STORAGE_ROOT / config.PACKAGES_DIR_NAME
 
     config.UPLOAD_DIR_NAME = "upload"
     config.UPLOAD_ROOT = config.STORAGE_ROOT / config.UPLOAD_DIR_NAME
@@ -60,8 +60,6 @@ def settings(config, env):
     }
 
     config.ASKANNA_FILESTORAGE = env.str("ASKANNA_FILESTORAGE", "filesystem")
-
-    config.ASKANNA_FILE_DOWNLOAD_VIA_DJANGO = env.bool("ASKANNA_FILE_DOWNLOAD_VIA_DJANGO", default=True)
 
     config.ASKANNA_DEFAULT_CONTENT_TYPE = "application/octet-stream"
 

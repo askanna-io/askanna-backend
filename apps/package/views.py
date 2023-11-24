@@ -1,30 +1,28 @@
-from pathlib import Path
-
 import django_filters
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Case, Q, When
-from django.http import Http404
-from django.utils import timezone
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import mixins, viewsets
-from rest_framework.decorators import action
-from rest_framework.exceptions import NotAuthenticated
+from drf_spectacular.utils import (
+    PolymorphicProxySerializer,
+    extend_schema,
+    extend_schema_view,
+)
+from rest_framework import mixins, status
+from rest_framework.exceptions import NotAuthenticated, NotFound, ValidationError
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from account.models.membership import MSP_WORKSPACE, Membership
+from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
-from core.mixins import ObjectRoleMixin, SerializerByActionMixin
-from core.permissions.role import RoleBasedPermission
-from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
-from package.models import ChunkedPackagePart, Package
-from package.serializers.chunked_package import ChunkedPackagePartSerializer
-from package.serializers.package import (
-    PackageCreateSerializer,
+from core.mixins import PartialUpdateModelMixin
+from core.permissions.askanna import AskAnnaPermissionByAction
+from core.viewsets import AskAnnaGenericViewSet
+from package.models import Package
+from package.serializers import (
+    PackageCreateBaseSerializer,
+    PackageCreateWithFileSerializer,
+    PackageCreateWithoutFileSerializer,
     PackageSerializer,
     PackageSerializerWithFileList,
 )
-from package.signals import package_upload_finish
 from project.models import Project
 
 
@@ -52,40 +50,71 @@ class PackageFilterSet(django_filters.FilterSet):
 
 
 @extend_schema_view(
-    list=extend_schema(description="List packages you have access to"),
-    create=extend_schema(description="Do a request to upload a new package"),
-    retrieve=extend_schema(description="Get info from a specific package"),
+    create=extend_schema(
+        summary="Create a new package",
+        request=PackageCreateBaseSerializer,
+        responses=PolymorphicProxySerializer(
+            component_name="PackageCreateSerializer",
+            serializers=[PackageCreateWithFileSerializer, PackageCreateWithoutFileSerializer],
+            resource_type_field_name=None,
+            many=False,
+        ),
+    ),
+    list=extend_schema(
+        summary="List packages",
+        description=(
+            "List all packages for a project for which you have access to. The list is paginated and you can use "
+            "ordering, search and fields to filter the list."
+        ),
+    ),
+    retrieve=extend_schema(
+        summary="Get package info",
+        responses=PackageSerializerWithFileList,
+    ),
+    partial_update=extend_schema(
+        summary="Update package info",
+        description="Update the package's `description`.",
+        request=PackageSerializer,
+        responses=PackageSerializer,
+    ),
+    destroy=extend_schema(
+        summary="Remove a package",
+        description=(
+            "Remove a package from a project."
+            "<p><strong>Warning:</strong> this action also deletes runs performed with the removed package.</p>"
+        ),
+    ),
 )
 class PackageViewSet(
-    ObjectRoleMixin,
-    SerializerByActionMixin,
-    BaseUploadFinishViewSet,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,
+    PartialUpdateModelMixin,
+    mixins.DestroyModelMixin,
+    AskAnnaGenericViewSet,
 ):
     """
-    List all packages and allow to finish upload action
+    List all packages, create new packages, update package info and remove packages for a project.
     """
 
-    queryset = (
-        Package.objects.active()
-        .select_related("project", "project__workspace", "created_by_user", "created_by_member__user")
-        .annotate(
-            member_name=Case(
-                When(created_by_member__use_global_profile=True, then="created_by_user__name"),
-                When(created_by_member__use_global_profile=False, then="created_by_member__name"),
+    queryset = Package.objects.active(add_select_related=True).annotate(
+        created_by_name=Case(
+            When(
+                package_file___created_by__account_membership__use_global_profile=True,
+                then="package_file___created_by__account_membership__user__name",
             ),
-        )
+            When(
+                package_file___created_by__account_membership__use_global_profile=False,
+                then="package_file___created_by__account_membership__name",
+            ),
+        ),
     )
-    lookup_field = "suuid"
-    search_fields = ["suuid", "name", "original_filename"]
+
+    search_fields = ["suuid", "package_file__name"]
     ordering_fields = [
+        "filename",
         "created_at",
         "modified_at",
-        "name",
-        "filename",
         "project.name",
         "project.suuid",
         "workspace.name",
@@ -93,177 +122,100 @@ class PackageViewSet(
         "created_by.name",
     ]
     ordering_fields_aliases = {
-        "filename": "original_filename",
+        "filename": "package_file__name",
         "workspace.name": "project__workspace__name",
         "workspace.suuid": "project__workspace__suuid",
-        "created_by.name": "member_name",
+        "created_by.name": "created_by_name",
     }
     filterset_class = PackageFilterSet
-
+    parser_classes = [MultiPartParser, JSONParser, FormParser]
     serializer_class = PackageSerializer
-    serializer_class_by_action = {
-        "retrieve": PackageSerializerWithFileList,
-        "create": PackageCreateSerializer,
-    }
-
-    permission_classes = [RoleBasedPermission]
-    rbac_permissions_by_action = {
-        "list": ["project.code.list"],
-        "retrieve": ["project.code.list"],
-        "create": ["project.code.create"],
-        "finish_upload": ["project.code.create"],
-        "download": ["project.code.list"],
-    }
-
-    upload_finished_signal = package_upload_finish
-    upload_finished_message = "package upload finished"
+    permission_classes = [AskAnnaPermissionByAction]
 
     def get_queryset(self):
         """
         Return only values from projects where the user is member of or has access to because it's public.
         """
-        user = self.request.user
-        if user.is_anonymous:
-            queryset = (
+        if self.request.user.is_anonymous:
+            return (
                 super()
                 .get_queryset()
                 .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
-        else:
-            member_of_workspaces = user.memberships.filter(
-                object_type=MSP_WORKSPACE, deleted_at__isnull=True
-            ).values_list("object_uuid", flat=True)
 
-            queryset = (
-                super()
-                .get_queryset()
-                .filter(
-                    Q(project__workspace__pk__in=member_of_workspaces)
-                    | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-                )
+        member_of_workspaces = self.request.user.active_memberships.filter(object_type=MSP_WORKSPACE).values_list(
+            "object_uuid", flat=True
+        )
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Q(project__workspace__pk__in=member_of_workspaces)
+                | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
+        )
 
-        if self.action == "finish_upload":
-            return queryset.filter(finished_at__isnull=True)
-        return queryset.filter(finished_at__isnull=False)
-
-    def get_object_project(self):
-        return self.current_object.project
-
-    def get_parrent_roles(self, request, *args, **kwargs):
+    def get_parrent_project(self, request) -> Project | None:
         """
-        The role for creating a package is based on the project and workspace. To create a package you need to be
-        authenticated.
-        For creating a package there is an indirect parent lookup because the project_suuid is part of the payload.
-        To get the parrent roles, we read the project SUUID from the payload and determine the user's role.
+        Creating a package is linked to the permissions of the project. To get the project we need to get the
+        project_suuid from the payload and provide the object to the permission class.
+
+        You can only create a package if you have the permission to create a package on the project, so you need
+        to be authenticated with an account that has a membership with matching permissions.
         """
         if self.action == "create":
             if request.user.is_anonymous:
                 raise NotAuthenticated
 
             project_suuid = request.data.get("project_suuid")
+            if not project_suuid:
+                raise ValidationError({"project_suuid": ["This field is required."]})
+
             try:
-                project = Project.objects.active().get(suuid=project_suuid)
-            except Project.DoesNotExist as exc:
-                raise Http404 from exc
+                return Project.objects.active(add_select_related=True).get(suuid=project_suuid)
+            except Project.DoesNotExist:
+                raise NotFound from None
 
-            return Membership.get_roles_for_project(request.user, project)
+        return None
 
-        return []
+    def create(self, request, *args, **kwargs):
+        """
+        Do a request to upload a new package to a project for which you have access to. At least a package or filename
+        is required.
 
-    def get_upload_location(self, obj) -> Path:
-        directory = settings.UPLOAD_ROOT / "project" / obj.project.suuid
-        Path.mkdir(directory, parents=True, exist_ok=True)
-        return directory
+        For large files it's recommended to use multipart upload. You can do this by providing a filename and NOT a
+        package. When you do such a request, in the response you will get uploading info.
 
-    def get_target_location(self, request, obj, **kwargs) -> Path:
-        return settings.PACKAGES_ROOT / obj.storage_location
+        If the upload info is of type `askanna` you can use the `upload_info.url` to upload file parts. By adding
+        `part` to the url you can upload a file part. When all parts are uploaded you can do a request to complete
+        the file by adding `complete` to the url. See the `storage` section in the API documentation for more info.
 
-    def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
-        # we specify the "member" also in the update_fields
-        # because this will be updated later in a listener
-        instance_obj.finished_at = timezone.now()
-        instance_obj.save(
-            update_fields=[
-                "created_by_member",
-                "finished_at",
-                "modified_at",
-            ]
+        If the upload info is of type `minio` you can use the `upload_info.url` as a presigned url to upload the file.
+
+        By providing optional values for `size` and `etag` in the request body, the file will be validated against
+        these values. If the values are not correct, the upload will fail.
+        """
+        if "package" not in request.FILES.keys() and "filename" not in request.data.keys():
+            return Response({"detail": ("Package or filename is required")}, status=status.HTTP_400_BAD_REQUEST)
+
+        self.serializer_class = (
+            PackageCreateWithFileSerializer if request.FILES.get("package") else PackageCreateWithoutFileSerializer
         )
 
-    @action(detail=True, methods=["get"])
-    def download(self, request, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
         """
-        Get info to download a package
+        Retrieve information about a package. This includes the package meta data, download info and a list of files
+        that are part of the package.
 
-        The request returns a response with the URI on the CDN where to find the package file.
+        If the download info is of type `askanna` the `download_info.url` can be used to download the package or to
+        get a specific file from the package you add the query parameter `file_path` to the url. See the `storage`
+        section in the API documentation for more info.
         """
-        package = self.get_object()
+        self.serializer_class = PackageSerializerWithFileList
+        return super().retrieve(request, *args, **kwargs)
 
-        return Response(
-            {
-                "action": "redirect",
-                "target": f"{settings.ASKANNA_CDN_URL}/files/packages/{package.storage_location}/{package.filename}",
-            }
-        )
-
-
-class ChunkedPackagePartViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
-    """Request an uuid to upload a package chunk"""
-
-    queryset = ChunkedPackagePart.objects.all().select_related(
-        "package__project",
-        "package__project__workspace",
-    )
-    serializer_class = ChunkedPackagePartSerializer
-    permission_classes = [RoleBasedPermission]
-
-    rbac_permissions_by_action = {
-        "list": ["project.code.list"],
-        "retrieve": ["project.code.list"],
-        "create": ["project.code.create"],
-        "chunk": ["project.code.create"],
-    }
-
-    def get_upload_location(self, chunkpart) -> Path:
-        directory = settings.UPLOAD_ROOT / "project" / chunkpart.package.project.suuid
-        Path.mkdir(directory, parents=True, exist_ok=True)
-        return directory
-
-    def get_object_project(self):
-        return self.current_object.package.project
-
-    def get_parrent_roles(self, request, *args, **kwargs):
-        """
-        The role for creating a package chunk is based on the package.
-        For creating a package chunk there is an indirect parent lookup because the package is linked to the project.
-        To get the parrent roles, we get the project from the package and determine the user's role.
-        """
-        if self.action == "create":
-            if request.user.is_anonymous:
-                raise NotAuthenticated
-
-            parents = self.get_parents_query_dict()
-            try:
-                package = Package.objects.get(suuid=parents.get("package__suuid"))
-                project = package.project
-            except ObjectDoesNotExist as exc:
-                raise Http404 from exc
-
-            return Membership.get_roles_for_project(request.user, project)
-
-        return []
-
-    def initial(self, request, *args, **kwargs):
-        super().initial(request, *args, **kwargs)
-        parents = self.get_parents_query_dict()
-        suuid = parents.get("package__suuid")
-        request.data.update(
-            **{
-                "package": str(
-                    Package.objects.get(
-                        suuid=suuid,
-                    ).pk
-                )
-            }
-        )
+    def perform_destroy(self, instance):
+        instance.to_deleted()

@@ -1,9 +1,8 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.serializers import RelationSerializer
 from job.models import JobDef, JobPayload, RunImage
-from project.serializers import ProjectRelationSerializer
-from workspace.serializers import WorkspaceRelationSerializer
 
 
 class ScheduleSerializer(serializers.Serializer):
@@ -24,12 +23,12 @@ class NotificationSerializer(serializers.Serializer):
 
 
 class JobSerializer(serializers.ModelSerializer):
-    environment = serializers.ReadOnlyField(source="get_environment_image")
-    timezone = serializers.ReadOnlyField()
+    environment = serializers.CharField(read_only=True, source="get_environment_image")
+    timezone = serializers.CharField(read_only=True)
     schedules = serializers.SerializerMethodField("get_schedules", allow_null=True)
     notifications = serializers.SerializerMethodField("get_notifications", allow_null=True)
-    project = ProjectRelationSerializer(read_only=True)
-    workspace = WorkspaceRelationSerializer(read_only=True, source="project.workspace")
+    project = RelationSerializer(read_only=True)
+    workspace = RelationSerializer(read_only=True, source="project.workspace")
 
     @extend_schema_field(NotificationSerializer)
     def get_notifications(self, instance):
@@ -73,23 +72,6 @@ class JobSerializer(serializers.ModelSerializer):
         ]
 
 
-class JobRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = JobDef
-        fields = [
-            "relation",
-            "suuid",
-            "name",
-        ]
-
-
 class RequestJobRunSerializer(serializers.Serializer):
     payload = serializers.JSONField(required=False, allow_null=True)
 
@@ -108,8 +90,8 @@ class JobPayloadSerializer(serializers.ModelSerializer):
 
 class JobPayloadRelationSerializer(serializers.ModelSerializer):
     relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField(source="filename")
+    suuid = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True, source="filename")
     size = serializers.IntegerField(read_only=True)
     lines = serializers.IntegerField(read_only=True)
 
@@ -129,10 +111,10 @@ class JobPayloadRelationSerializer(serializers.ModelSerializer):
 
 class RunImageRelationSerializer(serializers.ModelSerializer):
     relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-    tag = serializers.ReadOnlyField()
-    digest = serializers.ReadOnlyField()
+    suuid = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    tag = serializers.CharField(read_only=True)
+    digest = serializers.CharField(read_only=True)
 
     def get_relation(self, instance) -> str:
         return "image"

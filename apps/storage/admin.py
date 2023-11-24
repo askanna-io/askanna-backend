@@ -7,17 +7,24 @@ from storage.models import File
 class FileAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("uuid", "suuid")}),
-        ("File info", {"fields": ("name", "description", "file", "created_for", "created_by")}),
-        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+        (
+            "File info",
+            {"fields": ("name", "description", "file", "size", "etag", "content_type", "created_for", "created_by")},
+        ),
+        ("Dates", {"fields": ("modified_at", "created_at", "completed_at", "deleted_at")}),
     )
     readonly_fields = [
         "uuid",
         "suuid",
         "file",
+        "size",
+        "etag",
+        "content_type",
         "created_for",
         "created_by",
         "modified_at",
         "created_at",
+        "completed_at",
         "deleted_at",
     ]
 
@@ -32,6 +39,7 @@ class FileAdmin(admin.ModelAdmin):
     list_filter = [
         "created_at",
         "modified_at",
+        "completed_at",
         "deleted_at",
     ]
     search_fields = [

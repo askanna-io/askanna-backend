@@ -5,33 +5,34 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.db import models
+from django.utils import timezone
 
 from core.models import BaseModel
-from core.permissions.askanna_roles import (
+from core.permissions.role_utils import (
+    get_role_class,
+    get_user_role,
+    merge_role_permissions,
+)
+from core.permissions.roles import (
     ProjectAdmin,
     ProjectMember,
-    ProjectNoMember,
-    ProjectPublicViewer,
     ProjectViewer,
     WorkspaceAdmin,
     WorkspaceMember,
-    WorkspaceNoMember,
-    WorkspacePublicViewer,
     WorkspaceViewer,
-    get_request_role,
-    get_role_class,
-    merge_role_permissions,
 )
-from project.models import Project
 from storage.models import File
+from storage.utils import get_content_type_from_file, get_md5_from_file
 from workspace.models import Workspace
 
 MSP_WORKSPACE = "WS"
 MEMBERSHIPS = [(MSP_WORKSPACE, "Workspace")]
-WS_MEMBER = "WM"
-WS_ADMIN = "WA"
-WS_VIEWER = "WV"
-ROLES = ((WS_VIEWER, "viewer"), (WS_MEMBER, "member"), (WS_ADMIN, "admin"))
+
+ROLES = (
+    (WorkspaceViewer.code, WorkspaceViewer.name),
+    (WorkspaceMember.code, WorkspaceMember.name),
+    (WorkspaceAdmin.code, WorkspaceAdmin.name),
+)
 
 
 class MemberProfile(BaseModel):
@@ -39,18 +40,11 @@ class MemberProfile(BaseModel):
     job_title = models.CharField("Job title", blank=True, default="", max_length=255)
     avatar_file = models.OneToOneField("storage.File", on_delete=models.SET_NULL, null=True)
 
-    _avatar_directory = None
-
     @property
-    def avatar_directory(self):
-        if self._avatar_directory is None:
-            self._avatar_directory = (
-                "avatars/" + self.suuid[:2].lower() + "/" + self.suuid[2:4].lower() + "/" + self.suuid
-            )
+    def upload_directory(self):
+        return f"avatars/{self.suuid[:2].lower()}/{self.suuid[2:4].lower()}/{self.suuid}"
 
-        return self._avatar_directory
-
-    def set_avatar(self, avatar_file, created_by=None):
+    def set_avatar(self, avatar_file: ContentFile, created_by=None):
         created_by = created_by or self
 
         self.delete_avatar_file()
@@ -58,18 +52,25 @@ class MemberProfile(BaseModel):
         self.avatar_file = File.objects.create(
             name=avatar_file.name,
             file=avatar_file,
-            upload_to=self.avatar_directory,
+            size=avatar_file.size,
+            etag=get_md5_from_file(avatar_file),
+            content_type=get_content_type_from_file(avatar_file),
+            completed_at=timezone.now(),
             created_for=self,
             created_by=created_by,
         )
 
         self.save(update_fields=["avatar_file", "modified_at"])
 
-    def delete_avatar_file(self) -> None:
+    def delete_avatar_file(self):
         if self.avatar_file:
             self.avatar_file.delete()
             self.avatar_file = None
             self.save(update_fields=["avatar_file", "modified_at"])
+
+    def delete(self, using=None, keep_parents=False):
+        self.delete_avatar_file()
+        super().delete(using=using, keep_parents=keep_parents)
 
     class Meta(BaseModel.Meta):
         abstract = True
@@ -79,17 +80,28 @@ class MembershipQuerySet(models.QuerySet):
     def active_members(self):
         return self.filter(deleted_at__isnull=True)
 
+    def active_admins(self):
+        return self.active_members().filter(role=WorkspaceAdmin.code)
+
+    def get_workspace_membership(self, user, workspace: Workspace) -> Membership | None:
+        try:
+            return self.active_members().get(
+                object_uuid=workspace.uuid,
+                object_type=MSP_WORKSPACE,
+                user=user,
+            )
+        except ObjectDoesNotExist:
+            return None
+
 
 class Membership(MemberProfile):
     """
-    Membership holds the relation between
-    - workspace vs user
-    - project vs user
+    Membership holds the relation between workspace & user
     """
 
     object_uuid = models.UUIDField(db_index=True)
     object_type = models.CharField(max_length=2, choices=MEMBERSHIPS)
-    role = models.CharField(max_length=2, default=WS_MEMBER, choices=ROLES)
+    role = models.CharField(max_length=2, default=WorkspaceMember.code, choices=ROLES)
     user = models.ForeignKey(
         "account.User",
         on_delete=models.CASCADE,
@@ -146,131 +158,6 @@ class Membership(MemberProfile):
 
         raise ValueError(f"Unknown membership role: {self.role}")
 
-    @classmethod
-    def get_roles_for_project(
-        cls, user, project
-    ) -> list[
-        (
-            type[ProjectAdmin]
-            | type[ProjectMember]
-            | type[ProjectViewer]
-            | type[ProjectNoMember]
-            | type[ProjectPublicViewer]
-            | type[WorkspaceAdmin]
-            | type[WorkspaceMember]
-            | type[WorkspaceViewer]
-            | type[WorkspaceNoMember]
-            | type[WorkspacePublicViewer]
-        )
-    ]:
-        workspace_role = cls.get_workspace_role(user, project.workspace)
-        project_role = cls.get_project_role(user, project)
-        roles = [workspace_role, project_role]
-
-        if workspace_role.code == "WA" and ProjectAdmin not in roles:
-            roles.append(ProjectAdmin)
-        elif workspace_role.code == "WM" and ProjectMember not in roles:
-            roles.append(ProjectMember)
-        elif workspace_role.code == "WV" and ProjectViewer not in roles:
-            roles.append(ProjectViewer)
-
-        # Clean up the roles list. If multiple Project roles are present, remove the "lower" ones.
-        if ProjectNoMember in roles and any(r in roles for r in [ProjectAdmin, ProjectMember, ProjectViewer]):
-            roles.remove(ProjectNoMember)
-        if ProjectAdmin in roles and ProjectMember in roles:
-            roles.remove(ProjectMember)
-        if ProjectAdmin in roles and ProjectViewer in roles:
-            roles.remove(ProjectViewer)
-        if ProjectMember in roles and ProjectViewer in roles:
-            roles.remove(ProjectViewer)
-
-        return roles
-
-    @classmethod
-    def get_project_membership(cls, user, project: Project) -> Membership | None:
-        try:
-            membership = cls.objects.get(
-                object_uuid=str(project.uuid),
-                object_type="PR",
-                user=user,
-                deleted_at__isnull=True,
-            )
-        except ObjectDoesNotExist:
-            return None
-        else:
-            return membership
-
-    @classmethod
-    def get_project_role(
-        cls, user, project: Project
-    ) -> (
-        type[ProjectAdmin]
-        | type[ProjectMember]
-        | type[ProjectViewer]
-        | type[ProjectNoMember]
-        | type[ProjectPublicViewer]
-    ):
-        if (user.is_anonymous or not user.is_active) and (
-            project.visibility == "PRIVATE" or project.workspace.visibility == "PRIVATE"
-        ):
-            return ProjectNoMember
-
-        if (user.is_anonymous or not user.is_active) and (
-            project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC"
-        ):
-            return ProjectPublicViewer
-
-        membership = cls.get_project_membership(user, project)
-        if membership:
-            role = membership.get_role()
-            if role in (ProjectAdmin, ProjectMember, ProjectViewer):
-                return role
-
-        if project.visibility == "PUBLIC" and project.workspace.visibility == "PUBLIC":
-            return ProjectPublicViewer
-
-        return ProjectNoMember
-
-    @classmethod
-    def get_workspace_membership(cls, user, workspace: Workspace) -> Membership | None:
-        try:
-            membership = cls.objects.get(
-                object_uuid=str(workspace.uuid),
-                object_type="WS",
-                user=user,
-                deleted_at__isnull=True,
-            )
-        except ObjectDoesNotExist:
-            return None
-        else:
-            return membership
-
-    @classmethod
-    def get_workspace_role(
-        cls, user, workspace: Workspace
-    ) -> (
-        type[WorkspaceAdmin]
-        | type[WorkspaceMember]
-        | type[WorkspaceViewer]
-        | type[WorkspaceNoMember]
-        | type[WorkspacePublicViewer]
-    ):
-        if (user.is_anonymous or not user.is_active) and workspace.visibility == "PRIVATE":
-            return WorkspaceNoMember
-        if (user.is_anonymous or not user.is_active) and workspace.visibility == "PUBLIC":
-            return WorkspacePublicViewer
-
-        membership = cls.get_workspace_membership(user, workspace)
-        if membership:
-            role = membership.get_role()
-            if role in (WorkspaceAdmin, WorkspaceMember, WorkspaceViewer):
-                return role
-
-        if workspace.visibility == "PUBLIC":
-            return WorkspacePublicViewer
-
-        return WorkspaceNoMember
-
     def __str__(self):
         if self.get_name():
             return f"{self.get_name()} ({self.suuid})"
@@ -310,12 +197,12 @@ class Membership(MemberProfile):
             self.use_global_profile = False
 
             self.delete_avatar_file()
+
             if self.user.avatar_file:
                 with self.user.avatar_file.file.open() as image_file:
                     self.avatar_file = File.objects.create(
                         name=self.user.avatar_file.name,
                         file=ContentFile(image_file.read(), name=self.user.avatar_file.name),
-                        upload_to=self.avatar_directory,
                         created_for=self,
                         created_by=removed_by,
                     )
@@ -332,9 +219,9 @@ class Membership(MemberProfile):
 
         super().to_deleted()
 
-    def request_has_object_read_permission(self, request) -> bool:
+    def request_has_object_read_permission(self, request, view) -> bool:
         # User can always read its own membership as long as the membership is active
-        if self.is_active and request.user == self.user:
+        if request.user and request.user == self.user and self.is_active:
             return True
 
         # No read permission if membership is set to use the global user profile
@@ -356,7 +243,7 @@ class Membership(MemberProfile):
         )
 
         request_user_roles = list({membership.get_role() for membership in request_user_membership}) + [
-            get_request_role(request)
+            get_user_role(request.user)
         ]
 
         return merge_role_permissions(request_user_roles).get("workspace.info.view", False)

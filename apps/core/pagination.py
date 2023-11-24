@@ -393,7 +393,7 @@ class CursorPagination(pagination.CursorPagination):
             else:
                 attr = getattr(instance, field_name.split("__")[i + 1])
 
-        return attr  # type: ignore
+        return attr
 
     def get_next_link(self) -> str | None:
         if not self.has_next:
@@ -468,7 +468,7 @@ class CursorPagination(pagination.CursorPagination):
 
         cursor = Cursor(
             position=Position(
-                value=position,  # type: ignore
+                value=position,
                 is_reversed=self.cursor.position.is_reversed,
                 attr=self.cursor.position.attr,
                 type_is_char=self.cursor.position.type_is_char,
@@ -552,7 +552,7 @@ class CursorPagination(pagination.CursorPagination):
 
         cursor = Cursor(
             position=Position(
-                value=position,  # type: ignore
+                value=position,
                 is_reversed=self.cursor.position.is_reversed,
                 attr=self.cursor.position.attr,
                 type_is_char=self.cursor.position.type_is_char,

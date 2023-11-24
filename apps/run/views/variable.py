@@ -6,10 +6,11 @@ from rest_framework import mixins
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from account.models.membership import MSP_WORKSPACE, Membership
+from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_array, filter_multiple
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
+from core.permissions.role_utils import get_user_roles_for_project
 from core.viewsets import AskAnnaGenericViewSet
 from run.models import Run, RunVariable, RunVariableMeta
 from run.serializers.variable import RunVariableSerializer, RunVariableUpdateSerializer
@@ -23,13 +24,13 @@ class RunVariableObjectMixin(ObjectRoleMixin):
     }
 
     def get_parrent_roles(self, request, *args, **kwargs):
-        run_suuid = self.kwargs["parent_lookup_run__suuid"]  # type: ignore
+        run_suuid = self.kwargs["parent_lookup_run__suuid"]
         try:
-            run = Run.objects.active().get(suuid=run_suuid)  # type: ignore
+            run = Run.objects.active().get(suuid=run_suuid)
         except Run.DoesNotExist as exc:
             raise Http404 from exc
 
-        return Membership.get_roles_for_project(request.user, run.jobdef.project)
+        return get_user_roles_for_project(request.user, run.jobdef.project)
 
 
 class RunVariableFilterSet(FilterSet):
@@ -74,7 +75,6 @@ class RunVariableView(
     queryset = RunVariable.objects.all()
     max_page_size = 10000  # For variable listings we want to allow "a lot" of data in a single request
     search_fields = ["variable__name"]
-    serializer_class = RunVariableSerializer
     ordering_fields = [
         "created_at",
         "variable.name",
@@ -82,6 +82,8 @@ class RunVariableView(
         "variable.type",
     ]
     filterset_class = RunVariableFilterSet
+
+    serializer_class = RunVariableSerializer
 
     def get_object_project(self):
         return self.current_object.run.jobdef.project
@@ -102,9 +104,7 @@ class RunVariableView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
-            "object_uuid", flat=True
-        )
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()
@@ -149,9 +149,7 @@ class RunVariableUpdateView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
-            "object_uuid", flat=True
-        )
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()

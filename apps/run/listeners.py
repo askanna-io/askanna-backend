@@ -8,7 +8,7 @@ from django.dispatch import receiver
 from config.celery_app import app as celery_app
 
 from account.models.membership import MSP_WORKSPACE
-from core.utils import detect_file_mimetype, get_files_and_directories_in_zip_file
+from core.utils import get_files_and_directories_in_zip_file
 from run.models import (
     Run,
     RunArtifact,
@@ -19,6 +19,7 @@ from run.models import (
     RunVariableMeta,
 )
 from run.signals import artifact_upload_finish, result_upload_finish
+from storage.utils import get_content_type_from_file
 
 
 @receiver(result_upload_finish)
@@ -26,7 +27,7 @@ def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
     """
     After saving the result, determine the mime-type of the file using python-magic
     """
-    detected_mimetype = detect_file_mimetype(obj.stored_path)
+    detected_mimetype = get_content_type_from_file(obj.stored_path)
     if detected_mimetype:
         obj.mime_type = detected_mimetype
         obj.save(

@@ -16,7 +16,7 @@ class TestDatabaseSetting(unittest.TestCase):
         assert get_setting("some-setting", default=True, return_type=bool) is True
         assert get_setting("some-setting", default="some-value") == "some-value"
         with pytest.raises(TypeError):
-            get_setting("some-setting", default=[1, 2, 3])  # type: ignore
+            get_setting("some-setting", default=[1, 2, 3])
         assert get_setting("some-setting", default=[1, 2, 3], return_type=list) == [1, 2, 3]
 
     def test_get_setting_return_type_bool(self):

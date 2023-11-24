@@ -50,12 +50,10 @@ class RegistryImageHelper:
         **kwargs,
     ):
         self.image_path = image_path
-        self.image_repository, self.image_tag = docker.utils.parse_repository_tag(self.image_path)  # type: ignore
+        self.image_repository, self.image_tag = docker.utils.parse_repository_tag(self.image_path)
         if not self.image_tag:
             self.image_tag = ""
-        self.image_registry, self.image_repo_name = docker.auth.resolve_repository_name(  # type: ignore
-            self.image_repository
-        )
+        self.image_registry, self.image_repo_name = docker.auth.resolve_repository_name(self.image_repository)
 
         self.username = username
         self.password = password
@@ -78,7 +76,7 @@ class RegistryImageHelper:
             auth_config.update(**self.credentials)
             try:
                 loginresponse = self.client.login(**auth_config)
-            except docker.errors.APIError as exc:  # type: ignore
+            except docker.errors.APIError as exc:
                 message = f"Credentials are not correct to log in onto {self.image_registry}"
                 logger.info(message)
                 logger.info(get_descriptive_docker_error(exc.explanation))
@@ -99,7 +97,7 @@ class RegistryImageHelper:
             return {"username": self.username, "password": self.password}
         return {}
 
-    def get_image_info(self) -> docker.models.images.RegistryData:  # type: ignore
+    def get_image_info(self) -> docker.models.images.RegistryData:
         """
         Get information about the image, may require authentication
         We will always authenticate first before getting information if username and password is set
@@ -109,7 +107,7 @@ class RegistryImageHelper:
 
             try:
                 self.image_info = self.client.images.get_registry_data(self.image_path, auth_config=self.credentials)
-            except docker.errors.APIError as exc:  # type: ignore
+            except docker.errors.APIError as exc:
                 message = f"Could not pull image: {self.image_path}"
                 logger.info(message)
                 logger.info(get_descriptive_docker_error(exc.explanation))
@@ -141,7 +139,7 @@ class RegistryImageHelper:
         try:
             logger.info(f"Pulling image: {self.image_path}")
             image = self.client.api.pull(**pull_spec)
-        except (docker.errors.NotFound, docker.errors.APIError) as exc:  # type: ignore
+        except (docker.errors.NotFound, docker.errors.APIError) as exc:
             message = f"Could not pull image: {self.image_path}"
             logger.info(message)
             logger.info(get_descriptive_docker_error(exc.explanation))
@@ -229,7 +227,7 @@ class ContainerImageBuilder:
         """Check if an image is available locally."""
         try:
             self.client.images.get(image)
-        except docker.errors.ImageNotFound:  # type: ignore
+        except docker.errors.ImageNotFound:
             return False
         else:
             return True
@@ -267,7 +265,7 @@ class ContainerImageBuilder:
         askanna_repository_image = f"{repository_name}:{repository_tag}"
 
         try:
-            image, _ = self.client.images.build(  # type: ignore
+            image, _ = self.client.images.build(
                 path=self.image_dockerfile_path,
                 dockerfile=self.image_dockerfile,
                 pull=True,
@@ -276,7 +274,7 @@ class ContainerImageBuilder:
                 forcerm=True,
                 buildargs={"IMAGE": from_image},
             )
-        except docker.errors.DockerException as exc:  # type: ignore
+        except docker.errors.DockerException as exc:
             self.logger(f"Preparing the run image with image '{self.image_helper.image_repository}' failed:")
             self.logger(exc.msg)
             self.logger("Please follow the instructions on https://docs.askanna.io/ to build your own image.")

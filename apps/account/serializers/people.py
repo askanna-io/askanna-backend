@@ -10,10 +10,10 @@ from rest_framework import serializers
 
 from account.models.membership import ROLES, Invitation, Membership
 from account.serializers.user import RoleSerializer
-from core.permissions.askanna_roles import get_role_class
+from core.permissions.role_utils import get_role_class
+from core.serializers import RelationSerializer
 from core.utils.config import get_setting
 from storage.serializers import FileDownloadInfoSerializer
-from workspace.serializers import WorkspaceRelationSerializer
 
 
 def is_email_active_in_object_membership(email: str, object_uuid: str) -> bool:
@@ -84,7 +84,7 @@ class PeopleSerializer(serializers.ModelSerializer):
         ),
     )
     avatar_file = FileDownloadInfoSerializer(read_only=True, source="get_avatar_file")
-    workspace = WorkspaceRelationSerializer(read_only=True)
+    workspace = RelationSerializer(read_only=True)
     role = serializers.SerializerMethodField()
     role_code = serializers.ChoiceField(write_only=True, required=False, choices=ROLES)
 
@@ -157,7 +157,7 @@ class InviteSerializer(serializers.Serializer):
     job_title = serializers.CharField(required=False)
     role = RoleSerializer(read_only=True, source="get_role")
     role_code = serializers.ChoiceField(write_only=True, required=False, choices=ROLES)
-    workspace = WorkspaceRelationSerializer(read_only=True)
+    workspace = RelationSerializer(read_only=True)
     front_end_url = serializers.URLField(write_only=True, required=False)
 
     def validate(self, data=None):
@@ -263,7 +263,6 @@ class AcceptInviteSerializer(serializers.Serializer):
             .filter(
                 user=user,
                 object_uuid=self.instance.object_uuid,
-                deleted_at__isnull=True,
             )
             .exists()
         ):
@@ -285,7 +284,7 @@ class InviteInfoSerializer(AcceptInviteSerializer):
     status = serializers.CharField(source="get_status", read_only=True)
     email = serializers.EmailField(read_only=True)
     role = RoleSerializer(source="get_role")
-    workspace = WorkspaceRelationSerializer(read_only=True)
+    workspace = RelationSerializer(read_only=True)
 
 
 class ResendInviteSerializer(serializers.Serializer):

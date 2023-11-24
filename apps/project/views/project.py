@@ -12,7 +12,8 @@ from core.mixins import (
     PartialUpdateModelMixin,
     SerializerByActionMixin,
 )
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
+from core.permissions.role_utils import get_user_workspace_role
 from core.viewsets import AskAnnaGenericViewSet
 from project.models import Project
 from project.serializers import ProjectCreateSerializer, ProjectSerializer
@@ -50,10 +51,7 @@ class ProjectView(
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    queryset = Project.objects.active().select_related(  # type: ignore
-        "workspace", "created_by_user", "created_by_member__user"
-    )
-    lookup_field = "suuid"
+    queryset = Project.objects.active(add_select_related=True)
     search_fields = ["suuid", "name"]
     ordering_fields = [
         "created_at",
@@ -93,13 +91,12 @@ class ProjectView(
                 .annotate(is_member=Value(False, BooleanField()))
             )
 
-        member_of_workspaces = user.memberships.filter(  # type: ignore
-            object_type=MSP_WORKSPACE, deleted_at__isnull=True
-        ).values_list("object_uuid")
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
+            "object_uuid"
+        )
 
-        memberships = Membership.objects.filter(
-            Q(user=user, deleted_at__isnull=True, object_uuid=OuterRef("pk"))
-            | Q(user=user, deleted_at__isnull=True, object_uuid=OuterRef("workspace__pk"))
+        memberships = Membership.objects.active_members().filter(
+            Q(user=user, object_uuid=OuterRef("pk")) | Q(user=user, object_uuid=OuterRef("workspace__pk"))
         )
 
         return (
@@ -127,11 +124,11 @@ class ProjectView(
 
             workspace_suuid = request.data.get("workspace_suuid")
             try:
-                workspace = Workspace.objects.active().get(suuid=workspace_suuid)  # type: ignore
+                workspace = Workspace.objects.active().get(suuid=workspace_suuid)
             except Workspace.DoesNotExist as exc:
                 raise Http404 from exc
 
-            return [Membership.get_workspace_role(request.user, workspace)]
+            return [get_user_workspace_role(request.user, workspace)]
 
         return []
 

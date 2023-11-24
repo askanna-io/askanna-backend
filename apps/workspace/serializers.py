@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
-from account.models.membership import Membership
 from account.serializers.membership import MembershipWithAvatarRelationSerializer
-from core.permissions.askanna_roles import merge_role_permissions
+from core.permissions.role_utils import get_user_workspace_role, merge_role_permissions
 from workspace.models import Workspace
 
 
@@ -13,7 +12,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
     def get_permission(self, instance) -> dict[str, bool]:
         user_request_roles = self.context["request"].user_roles
-        user_workspace_role = Membership.get_workspace_role(self.context["request"].user, instance)
+        user_workspace_role = get_user_workspace_role(self.context["request"].user, instance)
         user_roles = user_request_roles + [user_workspace_role]
         return merge_role_permissions(user_roles)
 
@@ -43,20 +42,3 @@ class WorkspaceSerializer(serializers.ModelSerializer):
                 "allow_blank": False,
             },
         }
-
-
-class WorkspaceRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = Workspace
-        fields = [
-            "relation",
-            "suuid",
-            "name",
-        ]

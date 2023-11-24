@@ -20,11 +20,11 @@ class ChunkedRunResultPartSerializer(serializers.ModelSerializer):
 
 class ResultRelationSerializer(serializers.ModelSerializer):
     relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField(default="result.json")
+    suuid = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True, default="result.json")
     size = serializers.IntegerField(read_only=True)
-    extension = serializers.ReadOnlyField()
-    mime_type = serializers.ReadOnlyField()
+    extension = serializers.CharField(read_only=True)
+    mime_type = serializers.CharField(read_only=True)
 
     def get_relation(self, instance) -> str:
         return "result"

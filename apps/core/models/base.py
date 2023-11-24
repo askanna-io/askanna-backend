@@ -74,7 +74,9 @@ class NameDescriptionBaseModel(BaseModel):
     description = models.TextField(blank=True, null=False, default="")
 
     def __str__(self):
-        return f"{self.name} ({self.suuid})"
+        if self.name:
+            return f"{self.__class__.__name__}: {self.name} ({self.suuid})"
+        return f"{self.__class__.__name__} object ({self.suuid})"
 
     class Meta:
         abstract = True

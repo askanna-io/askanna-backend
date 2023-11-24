@@ -118,6 +118,11 @@ class TestMinio(TestCase):
             f"http://localhost:9000/{self.storage.bucket_name}/{self.file}?X-Amz-Algorithm="
         )
 
+    def test_upload_url(self):
+        assert self.storage.upload_url(self.file).startswith(
+            f"http://localhost:9000/{self.storage.bucket_name}/{self.file}?X-Amz-Algorithm="
+        )
+
     def test_url_without_external_endpoint(self):
         minio_settings = get_setting("MINIO_SETTINGS", dict)
         settings = MinioSettings(
@@ -153,4 +158,4 @@ class TestMinio(TestCase):
     def test_file_s3_error_other_then_not_exist(self, mock_get_stat_object):
         with pytest.raises(S3Error) as exc:
             assert self.storage.exists(self.file)
-            assert exc.code == "test"  # type: ignore
+            assert exc.code == "test"

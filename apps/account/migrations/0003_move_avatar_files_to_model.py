@@ -87,7 +87,7 @@ def move_avatar_files(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("account", "0002_alter_membership_job_title_delete_userprofile"),
-        ("core", "0004_add_objectreference"),
+        ("core", "0005_objectreference_add_package"),
         ("storage", "__first__"),
     ]
 
@@ -102,5 +102,5 @@ class Migration(migrations.Migration):
             name="avatar_file",
             field=models.OneToOneField(null=True, on_delete=models.deletion.SET_NULL, to="storage.file"),
         ),
-        migrations.RunPython(move_avatar_files, migrations.RunPython.noop),
+        migrations.RunPython(move_avatar_files, migrations.RunPython.noop, elidable=True),
     ]

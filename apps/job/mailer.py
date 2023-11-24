@@ -14,12 +14,68 @@ from variable.models import Variable
 logger = logging.getLogger(__name__)
 
 
-def fill_in_mail_variable(string, variables):
+def fill_in_mail_variable(string: str, variables: dict) -> list[str]:
     receivers = parse_string(string, variables)
     return sorted(list(set(receivers.split(","))))
 
 
-def send_run_notification(
+def get_job_notification_receivers(receivers: list[str], variables: dict, job: Job) -> list[str]:
+    notification_receivers = flatten(
+        list(
+            map(
+                lambda receiver: fill_in_mail_variable(receiver, variables),
+                receivers,
+            )
+        )
+    )
+
+    if "workspace admins" in notification_receivers:
+        notification_receivers.extend(
+            admin.user.email
+            for admin in Membership.objects.active_admins().filter(object_uuid=job.project.workspace.uuid)
+        )
+        notification_receivers.remove("workspace admins")
+
+    if "workspace members" in notification_receivers:
+        notification_receivers.extend(
+            member.user.email
+            for member in Membership.objects.active_members().filter(object_uuid=job.project.workspace.uuid)
+        )
+        notification_receivers.remove("workspace members")
+
+    # Clean up and deduplicate
+    return list(
+        set(
+            map(
+                lambda receiver: receiver.strip(),
+                notification_receivers,
+            )
+        )
+    )
+
+
+def get_notification_variables(job: Job, run: Run | None = None) -> dict:
+    variables = {}
+
+    project_variables = Variable.objects.filter(project=job.project)
+    for variable in project_variables:
+        variables[variable.name] = variable.value
+
+    if run and run.payload and isinstance(run.payload.payload, dict):
+        for key, value in run.payload.payload.items():
+            if isinstance(value, list | dict):
+                # limit to 10.000 chars
+                variables[key] = json.dumps(value)[:10000]
+            elif isinstance(value, str):
+                # limit to 10.000 chars
+                variables[key] = value[:10000]
+            else:
+                variables[key] = value
+
+    return variables
+
+
+def send_notification(
     run_status: str,
     job_config: JobConfig,
     run: Run | None = None,
@@ -46,7 +102,7 @@ def send_run_notification(
     # determine the notification levels
     # info receivers receive all
     # warning receivers receive warning and error
-    # errorr receivers receive errors only
+    # error receivers receive errors only
     # format: "event type": ["notification group(s) to receive the notifications"]
     notification_receivers_lookup = {
         "info": ["all"],
@@ -63,44 +119,14 @@ def send_run_notification(
     }
 
     event_type = notification_levels[run_status]
-    notification_receivers = job_config.get_notifications(levels=notification_receivers_lookup[event_type])
 
-    # inject external information to fill the variables
-    project_variables = Variable.objects.filter(project=job.project)
-    vars = {}
-    for variable in project_variables:
-        vars[variable.name] = variable.value
+    variables = get_notification_variables(job=job, run=run)
 
-    if run and run.payload and isinstance(run.payload.payload, dict):
-        # we have a valid dict from the payload
-        for k, v in run.payload.payload.items():
-            if isinstance(v, list | dict):
-                # limit to 10.000 chars
-                vars[k] = json.dumps(v)[:10000]
-            elif isinstance(v, str):
-                # limit to 10.000 chars
-                vars[k] = v[:10000]
-            else:
-                # we have a bool or number
-                vars[k] = v
-
-    notification_receivers = flatten(list(map(lambda mail: fill_in_mail_variable(mail, vars), notification_receivers)))
-
-    # send to workspace admins if this is defined
-    if "workspace admins" in notification_receivers:
-        # append the e-mail addresses of the workspace admins
-        admins = Membership.objects.active_admins().filter(object_uuid=job.project.workspace.uuid)
-        for member in admins:
-            notification_receivers.append(member.user.email)
-
-    if "workspace members" in notification_receivers:
-        # append the e-mail addresses of the workspace members
-        members = Membership.objects.active_members().filter(object_uuid=job.project.workspace.uuid)
-        for member in members:
-            notification_receivers.append(member.user.email)
-
-    # deduplicate
-    notification_receivers = list(set(map(lambda x: x.strip(), notification_receivers)))
+    notification_receivers = get_job_notification_receivers(
+        job=job,
+        receivers=job_config.get_notifications(levels=notification_receivers_lookup[event_type]),
+        variables=variables,
+    )
 
     email_template = {
         "SUBMITTED": "run_queued",
@@ -173,9 +199,8 @@ def send_run_notification(
         )
 
     for email in notification_receivers:
-        # first validate the email address
         if not is_valid_email(email):
-            # we skip sending e-mail to this invalid e-mail adress
+            # skip sending e-mail to an invalid e-mail adress, but continue with the rest
             continue
 
         try:

@@ -8,6 +8,6 @@ class StorageConfig(AppConfig):
     def ready(self):
         from health_check.storage.backends import DefaultFileStorageHealthCheck
 
-        from storage import listeners  # noqa: F401
+        from storage import listeners, signals  # noqa: F401
 
         plugin_dir.register(DefaultFileStorageHealthCheck)

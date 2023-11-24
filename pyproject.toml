@@ -3,6 +3,7 @@ DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 addopts="--capture=tee-sys"
 norecursedirs = [".*", ".env", "storage_root"]
+required_plugins = ["pytest-django", "Faker"]
 
 [tool.black]
 line-length = 119

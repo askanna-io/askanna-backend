@@ -57,7 +57,7 @@ def get_project_variables(run):
         labels = [{"name": "source", "value": "project", "type": "string"}]
         is_masked = pv.is_masked
         if is_masked:
-            labels.append({"name": "is_masked", "value": None, "type": "tag"})  # type: ignore
+            labels.append({"name": "is_masked", "value": None, "type": "tag"})
         log_run_variables(
             run=run,
             variable_name=pv.name,
@@ -89,7 +89,7 @@ def start_run(self, run_uuid):
     jd = run.jobdef
     pl = run.payload
     pr = jd.project
-    op = run.output  # type: ignore
+    op = run.output
 
     package = run.package
     if not package:
@@ -246,7 +246,7 @@ def start_run(self, run_uuid):
     )
     try:
         run_image = builder.get_image()
-    except (RegistryContainerPullError, docker.errors.DockerException, TimeoutError):  # type: ignore
+    except (RegistryContainerPullError, docker.errors.DockerException, TimeoutError):
         op.log("", print_log=docker_debug_log)
         op.log("Run failed", print_log=docker_debug_log)
         return run.to_failed()
@@ -299,7 +299,7 @@ def start_run(self, run_uuid):
             cpu_period=10000,  # The length of a CPU period in microseconds.
             cpu_quota=40000,  # Microseconds of CPU time that the container can get in a CPU period.
         )
-    except (docker.errors.APIError, docker.errors.DockerException) as exc:  # type: ignore
+    except (docker.errors.APIError, docker.errors.DockerException) as exc:
         op.log(
             f"Run could not be started because of run errors in the image {job_image}",
             print_log=docker_debug_log,
@@ -314,7 +314,7 @@ def start_run(self, run_uuid):
         return run.to_failed()
 
     logline = []
-    for idx, log in enumerate(container.logs(stream=True, timestamps=True)):  # type: ignore
+    for idx, log in enumerate(container.logs(stream=True, timestamps=True)):
         logline = [idx] + log.decode("utf-8").split(sep=" ", maxsplit=1)
         logline[-1] = logline[-1].rstrip()
         op.log(message=logline[2], timestamp=logline[1], print_log=docker_debug_log)

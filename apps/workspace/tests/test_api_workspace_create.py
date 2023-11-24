@@ -3,7 +3,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from account.models.membership import MSP_WORKSPACE, WS_ADMIN, Membership
+from account.models.membership import MSP_WORKSPACE, Membership
+from core.permissions.roles import WorkspaceAdmin
 from core.tests.base import BaseUserPopulation
 from workspace.models import Workspace
 
@@ -25,7 +26,7 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
         new_workspace = {"name": "New workspace name"}
         response = self.client.post(self.url, new_workspace, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_create_workspace_as_anna(self):
         """An member without access to a workspace can create a workspace."""
@@ -139,4 +140,4 @@ class TestWorkspaceCreateAPI(BaseWorkspace, APITestCase):
 
         membership = Membership.objects.get(object_uuid=workspace.uuid, object_type=MSP_WORKSPACE, user=user)
         self.assertIsNotNone(membership)
-        self.assertEqual(membership.role, WS_ADMIN)
+        self.assertEqual(membership.role, WorkspaceAdmin.code)

@@ -1,8 +1,11 @@
 from django.http import Http404
 from rest_framework.response import Response
 
-from account.models.membership import Membership
-from core.permissions.askanna_roles import get_request_role
+from core.permissions.role_utils import (
+    get_user_role,
+    get_user_roles_for_project,
+    get_user_workspace_role,
+)
 from core.views import get_object_or_404
 
 
@@ -14,8 +17,8 @@ class UpdateModelWithoutPartialUpateMixin:
     """
 
     def update(self, request, *args, **kwargs):
-        instance = self.get_object()  # type: ignore
-        serializer = self.get_serializer(instance, data=request.data, partial=False)  # type: ignore
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -38,8 +41,8 @@ class PartialUpdateModelMixin:
     """
 
     def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()  # type: ignore
-        serializer = self.get_serializer(instance, data=request.data, partial=True)  # type: ignore
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -136,12 +139,12 @@ class ObjectRoleMixin:
     def get_workspace_role(self, user, workspace=None, *args, **kwargs):
         if not workspace:
             workspace = self.get_object_workspace()
-        return Membership.get_workspace_role(user, workspace)
+        return get_user_workspace_role(user, workspace)
 
     def get_roles_for_project(self, user, project=None, *args, **kwargs):
         if not project:
             project = self.get_object_project()
-        return Membership.get_roles_for_project(user, project)
+        return get_user_roles_for_project(user, project)
 
     def get_object_without_permissioncheck(self):
         queryset = self.filter_queryset(self.get_queryset())
@@ -156,7 +159,7 @@ class ObjectRoleMixin:
             return get_object_or_404(queryset, **filter_kwargs)
         except Http404 as exc:
             if hasattr(self, "get_object_fallback"):
-                return self.get_object_fallback()  # type: ignore
+                return self.get_object_fallback()
             raise Http404 from exc
 
     def get_object_roles(self, request) -> list:
@@ -188,7 +191,7 @@ class ObjectRoleMixin:
         """
         This initial method sets the roles of the user in relation to the request and the request's object.
         """
-        request.user_roles = [get_request_role(request)]
+        request.user_roles = [get_user_role(request.user)]
 
         if self.detail:
             object_roles = self.get_object_roles(request)

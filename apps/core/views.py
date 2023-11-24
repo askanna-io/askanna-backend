@@ -100,13 +100,13 @@ class BaseUploadFinishViewSet:
     @action(detail=True, methods=["post"])
     def finish_upload(self, request, **kwargs):
         """Register that the upload of all chunks is finished"""
-        obj = self.get_object()  # type: ignore
+        obj = self.get_object()
 
         storage_location = FileSystemStorage(location=str(self.get_upload_location(obj)))
         target_location = FileSystemStorage(location=str(self.get_target_location(request=request, obj=obj)))
         r = ResumableFile(storage_location, request.POST)
         if r.is_complete:
-            target_location.save(str(self.get_filename(obj)), r)  # type: ignore
+            target_location.save(str(self.get_filename(obj)), r)
             self.post_finish_upload_update_instance(request, obj, r)
             r.delete_chunks()
 

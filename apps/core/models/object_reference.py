@@ -26,6 +26,8 @@ class ObjectReference(models.Model):
     account_user = models.OneToOneField("account.User", blank=True, null=True, on_delete=models.CASCADE)
     account_membership = models.OneToOneField("account.Membership", blank=True, null=True, on_delete=models.CASCADE)
 
+    package_package = models.OneToOneField("package.Package", blank=True, null=True, on_delete=models.CASCADE)
+
     def __str__(self):
         return f"Object: {repr(self.object)}"
 
@@ -41,7 +43,13 @@ class ObjectReference(models.Model):
         fields_with_value = [
             getattr(self, field.name)
             for field in self._meta.get_fields()
-            if field.name in ["account_user", "account_membership"] and getattr(self, field.name)
+            if field.name
+            in [
+                "account_user",
+                "account_membership",
+                "package_package",
+            ]
+            and getattr(self, field.name)
         ]
 
         assert len(fields_with_value) == 1, "One field and only one field should be set"
@@ -53,15 +61,14 @@ class ObjectReference(models.Model):
         return f"{self.object._meta.app_label}.{self.object._meta.object_name}"
 
     @classmethod
-    def get_or_create(cls, object: int | _uuid.UUID | models.Model) -> tuple[ObjectReference, bool]:
-        assert isinstance(object, models.Model), "object_type should be set if object is not a model"
+    def get_or_create(cls, object: models.Model) -> tuple[ObjectReference, bool]:
+        assert isinstance(object, models.Model), f"Object '{object}' with type '{type(object)}' must be a Django model"
 
         object_type = f"{object._meta.app_label}.{object._meta.object_name}"
-
         object_field = object_type.lower().replace(".", "_")
         assert hasattr(cls, object_field), f"{object_type} is not (yet) an available object in model core.Object"
 
         return cache.get_or_set(
-            f"core.Object_{object_field}_{object.suuid}",  # type: ignore
-            lambda: cls.objects.get_or_create(**{object_field: object}),  # type: ignore
+            f"core.Object_{object_field}_{object.suuid}",
+            lambda: cls.objects.get_or_create(**{object_field: object}),
         )

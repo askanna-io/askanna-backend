@@ -1,24 +1,30 @@
+from pathlib import Path
+
 import pytest
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 from rest_framework import status
 
 from core.utils.suuid import create_suuid
 from storage.models import File
-from tests import AskAnnaAPITestCASE
+from tests import AskAnnaAPITestCase
 
 
-class BaseStorageFileAPI(AskAnnaAPITestCASE):
+class BaseStorageFileAPI(AskAnnaAPITestCase):
     @pytest.fixture(autouse=True)
-    def _set_fixtures(self, test_users, test_avatar_files):
+    def _set_fixtures(self, test_users, test_avatar_files, test_storage_files):
         self.users = test_users
+        self.storage_files = test_storage_files
         self.avatar_files = test_avatar_files
 
 
 class TestStorageFileInfo(BaseStorageFileAPI):
     def test_get_file_info(self):
         self.set_authorization(self.users["workspace_admin"])
+
         file_suuid = self.avatar_files["workspace_admin"].suuid
         response = self.client.get(reverse("storage-file-info", kwargs={"version": "v1", "suuid": file_suuid}))
         assert response.status_code == status.HTTP_200_OK
@@ -28,7 +34,8 @@ class TestStorageFileInfo(BaseStorageFileAPI):
 
     def test_get_file_info_db_field_name_is_empty(self):
         self.set_authorization(self.users["workspace_admin"])
-        file = self.avatar_files["workspace_admin"]
+
+        file = self.storage_files["file_private_project_with_config"]
         file.name = ""
         file.save()
 
@@ -41,20 +48,29 @@ class TestStorageFileInfo(BaseStorageFileAPI):
 
     def test_get_file_info_as_public_user_no_permissions(self):
         self.set_authorization(self.users["no_workspace_member"])
-        file_suuid = self.avatar_files["workspace_admin"].suuid
-        response = self.client.get(reverse("storage-file-info", kwargs={"version": "v1", "suuid": file_suuid}))
+
+        response = self.client.get(
+            reverse(
+                "storage-file-info",
+                kwargs={"version": "v1", "suuid": self.storage_files["file_private_project_with_config"].suuid},
+            )
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_get_file_info_as_public_user_not_existing_suuid(self):
         self.set_authorization(self.users["no_workspace_member"])
+
         response = self.client.get(reverse("storage-file-info", kwargs={"version": "v1", "suuid": create_suuid()}))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_get_file_info_as_anonymous_no_permissions(self):
-        self.client.credentials()
-        file_suuid = self.avatar_files["workspace_admin"].suuid
-        response = self.client.get(reverse("storage-file-info", kwargs={"version": "v1", "suuid": file_suuid}))
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        response = self.client.get(
+            reverse(
+                "storage-file-info",
+                kwargs={"version": "v1", "suuid": self.storage_files["file_private_project_with_config"].suuid},
+            )
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_get_file_info_as_anonymous_not_existing_suuid(self):
         self.client.credentials()
@@ -77,6 +93,17 @@ class TestStorageFileInfo(BaseStorageFileAPI):
 
         response = self.client.get(reverse("storage-file-info", kwargs={"version": "v1", "suuid": file_object.suuid}))
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_file_info_not_complete(self):
+        self.set_authorization(self.users["workspace_admin"])
+        file_object = self.storage_files["file_private_not_completed"]
+
+        response = self.client.get(reverse("storage-file-info", kwargs={"version": "v1", "suuid": file_object.suuid}))
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["detail"]
+            == "File upload is not completed. It is not possible to download a file that is not completed."
+        )
 
 
 class TestStorageFileDownload(BaseStorageFileAPI):
@@ -199,6 +226,7 @@ class TestStorageFileDownload(BaseStorageFileAPI):
             name="test.txt",
             created_for=self.users["workspace_admin"],
             created_by=self.users["workspace_admin"],
+            completed_at=timezone.now(),
         )
         response = self.client.get(
             f'{reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})}?width=10',
@@ -210,8 +238,13 @@ class TestStorageFileDownload(BaseStorageFileAPI):
 
     def test_get_file_download_as_public_user_no_permissions(self):
         self.set_authorization(self.users["no_workspace_member"])
-        file_suuid = self.avatar_files["workspace_admin"].suuid
-        response = self.client.get(reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_suuid}))
+
+        response = self.client.get(
+            reverse(
+                "storage-file-download",
+                kwargs={"version": "v1", "suuid": self.storage_files["file_private_project_with_config"].suuid},
+            )
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_get_file_downlaod_as_public_user_not_existing_suuid(self):
@@ -220,10 +253,13 @@ class TestStorageFileDownload(BaseStorageFileAPI):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_get_file_download_as_anonymous_no_permissions(self):
-        self.client.credentials()
-        file_suuid = self.avatar_files["workspace_admin"].suuid
-        response = self.client.get(reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_suuid}))
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        response = self.client.get(
+            reverse(
+                "storage-file-download",
+                kwargs={"version": "v1", "suuid": self.storage_files["file_private_project_with_config"].suuid},
+            )
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_get_file_download_as_anonymous_not_existing_suuid(self):
         self.client.credentials()
@@ -251,3 +287,76 @@ class TestStorageFileDownload(BaseStorageFileAPI):
             reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_file_download_not_complete(self):
+        self.set_authorization(self.users["workspace_admin"])
+        file_object = self.storage_files["file_private_not_completed"]
+
+        response = self.client.get(
+            reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["detail"]
+            == "File upload is not completed. It is not possible to download a file that is not completed."
+        )
+
+
+class TestStorageFileDownloadPath(BaseStorageFileAPI):
+    def test_get_file_download_get_file_path(self):
+        self.set_authorization(self.users["workspace_admin"])
+        file_object = self.storage_files["file_private_project_with_config"]
+        test_file = Path(settings.TEST_RESOURCES_DIR / "projects/project-001/README.md")
+
+        response = self.client.get(
+            reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})
+            + "?file_path=README.md"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.streaming_content is not None
+        assert response.get("Content-Disposition").startswith('attachment; filename="README.md"')
+        assert response.get("Content-Type") == "text/plain"
+
+        content = b"".join(response.streaming_content)
+        assert response.get("Content-Length") == str(test_file.stat().st_size)
+        assert response.get("Content-Length") == str(len(content))
+        assert content == test_file.read_bytes()
+
+    def test_get_file_download_get_file_path_not_complete(self):
+        self.set_authorization(self.users["workspace_admin"])
+        file_object = self.storage_files["file_private_not_completed"]
+
+        response = self.client.get(
+            reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})
+            + "?file_path=README.md"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["detail"]
+            == "File upload is not completed. It is not possible to download a file that is not completed."
+        )
+
+    def test_get_file_download_get_file_path_no_zip_file(self):
+        self.set_authorization(self.users["workspace_admin"])
+        file_object = self.avatar_files["workspace_admin"]
+
+        response = self.client.get(
+            reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})
+            + "?file_path=README.md"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["detail"]
+            == "The file_path parameter is only supported for zip files and the requested file is not a zip file."
+        )
+
+    def test_get_file_download_get_file_path_not_existing_file(self):
+        self.set_authorization(self.users["workspace_admin"])
+        file_object = self.storage_files["file_private_project_with_config"]
+
+        response = self.client.get(
+            reverse("storage-file-download", kwargs={"version": "v1", "suuid": file_object.suuid})
+            + "?file_path=READ.md"
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data["detail"] == "File path 'READ.md' not found in this zip file."

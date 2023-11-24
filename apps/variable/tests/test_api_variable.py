@@ -73,30 +73,30 @@ class TestVariableListAPI(BaseProjectVariable):
         self.activate_user("anna")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_admin(self):
         self.activate_user("admin")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 5  # type: ignore
+        assert len(response.data["results"]) == 5
 
     def test_list_as_member(self):
         self.activate_user("member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 5  # type: ignore
+        assert len(response.data["results"]) == 5
 
     def test_list_as_nonmember(self):
         self.activate_user("non_member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_anonymous(self):
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_filter_by_project(self):
         self.activate_user("admin")
@@ -105,7 +105,7 @@ class TestVariableListAPI(BaseProjectVariable):
             {"project_suuid": self.projects["project_a_wp_private_pr_private"].suuid},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_filter_by_workspace(self):
         self.activate_user("admin")
@@ -114,7 +114,7 @@ class TestVariableListAPI(BaseProjectVariable):
             {"workspace_suuid": self.workspaces["workspace_a"].suuid},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 3  # type: ignore
+        assert len(response.data["results"]) == 3
 
 
 class TestVariableDetailAPI(BaseProjectVariable):
@@ -138,29 +138,29 @@ class TestVariableDetailAPI(BaseProjectVariable):
         self.activate_user("admin")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "TestVariable"  # type: ignore
-        assert response.data["value"] == "TestValue"  # type: ignore
+        assert response.data["name"] == "TestVariable"
+        assert response.data["value"] == "TestValue"
 
     def test_detail_as_admin_masked_variable(self):
         self.activate_user("admin")
         response = self.client.get(self.url_for_masked_var)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "TestVariableMasked"  # type: ignore
-        assert response.data["value"] == "***masked***"  # type: ignore
+        assert response.data["name"] == "TestVariableMasked"
+        assert response.data["value"] == "***masked***"
 
     def test_detail_as_member(self):
         self.activate_user("member")
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "TestVariable"  # type: ignore
-        assert response.data["value"] == "TestValue"  # type: ignore
+        assert response.data["name"] == "TestVariable"
+        assert response.data["value"] == "TestValue"
 
     def test_detail_as_member_maskedvariable(self):
         self.activate_user("member")
         response = self.client.get(self.url_for_masked_var)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "TestVariableMasked"  # type: ignore
-        assert response.data["value"] == "***masked***"  # type: ignore
+        assert response.data["name"] == "TestVariableMasked"
+        assert response.data["value"] == "***masked***"
 
     def test_detail_as_non_member(self):
         self.activate_user("non_member")
@@ -205,8 +205,8 @@ class TestVariableCreateAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["name"] == "TestVariable"  # type: ignore
-        assert response.data["value"] == "TestValue"  # type: ignore
+        assert response.data["name"] == "TestVariable"
+        assert response.data["value"] == "TestValue"
 
     def test_create_as_member(self):
         self.activate_user("member")
@@ -221,8 +221,8 @@ class TestVariableCreateAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["name"] == "TestVariableMasked"  # type: ignore
-        assert response.data["value"] == "***masked***"  # type: ignore
+        assert response.data["name"] == "TestVariableMasked"
+        assert response.data["value"] == "***masked***"
 
     def test_create_as_member_empty_value(self):
         self.activate_user("member")
@@ -237,8 +237,8 @@ class TestVariableCreateAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["name"] == "TestVariable"  # type: ignore
-        assert response.data["value"] == ""  # type: ignore
+        assert response.data["name"] == "TestVariable"
+        assert response.data["value"] == ""
 
     def test_create_as_member_empty_value_masked(self):
         self.activate_user("member")
@@ -253,8 +253,8 @@ class TestVariableCreateAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["name"] == "TestVariable"  # type: ignore
-        assert response.data["value"] == "***masked***"  # type: ignore
+        assert response.data["name"] == "TestVariable"
+        assert response.data["value"] == "***masked***"
 
     def test_create_as_member_no_value(self):
         self.activate_user("member")
@@ -267,8 +267,8 @@ class TestVariableCreateAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["name"] == "TestVariable"  # type: ignore
-        assert response.data["value"] is None  # type: ignore
+        assert response.data["name"] == "TestVariable"
+        assert response.data["value"] is None
 
     def test_create_as_non_member(self):
         self.activate_user("non_member")
@@ -327,9 +327,9 @@ class TestVariableChangeAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "newname"  # type: ignore
-        assert response.data["value"] == "newvalue"  # type: ignore
-        assert response.data["created_at"] != response.data["modified_at"]  # type: ignore
+        assert response.data["name"] == "newname"
+        assert response.data["value"] == "newvalue"
+        assert response.data["created_at"] != response.data["modified_at"]
 
     def test_change_as_member(self):
         self.activate_user("member")
@@ -343,9 +343,9 @@ class TestVariableChangeAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "newname"  # type: ignore
-        assert response.data["value"] == "***masked***"  # type: ignore
-        assert response.data["created_at"] != response.data["modified_at"]  # type: ignore
+        assert response.data["name"] == "newname"
+        assert response.data["value"] == "***masked***"
+        assert response.data["created_at"] != response.data["modified_at"]
 
     def test_change_as_member_empty_value(self):
         self.activate_user("member")
@@ -359,9 +359,9 @@ class TestVariableChangeAPI(BaseProjectVariable):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "newname"  # type: ignore
-        assert response.data["value"] == ""  # type: ignore
-        assert response.data["created_at"] != response.data["modified_at"]  # type: ignore
+        assert response.data["name"] == "newname"
+        assert response.data["value"] == ""
+        assert response.data["created_at"] != response.data["modified_at"]
 
     def test_change_as_non_member(self):
         self.activate_user("non_member")

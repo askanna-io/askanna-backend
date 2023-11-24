@@ -5,4 +5,4 @@ class PackageConfig(AppConfig):
     name = "package"
 
     def ready(self):
-        from package import listeners, signals  # noqa: F401
+        from package import listeners  # noqa: F401

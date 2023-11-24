@@ -1,21 +1,10 @@
-from django.conf.urls import include
-from django.urls import re_path
-
 from core.urls import router
-from package.views import ChunkedPackagePartViewSet, PackageViewSet
+from package.views import PackageViewSet
 
-package_router = router.register(
+router.register(
     r"package",
     PackageViewSet,
     basename="package",
 )
-package_router.register(
-    r"packagechunk",
-    ChunkedPackagePartViewSet,
-    basename="package-packagechunk",
-    parents_query_lookups=["package__suuid"],
-)
 
-urlpatterns = [
-    re_path(r"^(?P<version>(v1))/", include(router.urls)),
-]
+urlpatterns = []

@@ -34,8 +34,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RoleSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    code = serializers.CharField()
+    name = serializers.CharField(read_only=True)
+    code = serializers.CharField(read_only=True)
 
 
 class LoginSerializer(serializers.Serializer):

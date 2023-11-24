@@ -6,7 +6,7 @@ from rest_framework import mixins
 from account.models.membership import MSP_WORKSPACE, Membership
 from core.filters import case_insensitive
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
 from core.viewsets import AskAnnaGenericViewSet
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer
@@ -37,9 +37,9 @@ class WorkspaceViewSet(
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    queryset = Workspace.objects.active().select_related("created_by_user", "created_by_member__user")  # type: ignore
+    queryset = Workspace.objects.active().select_related("created_by_user", "created_by_member__user")
     serializer_class = WorkspaceSerializer
-    lookup_field = "suuid"
+
     search_fields = ["suuid", "name"]
     ordering_fields = ["created_at", "modified_at", "name", "visibility", "is_member"]
     filterset_class = WorkspaceFilterSet
@@ -61,9 +61,9 @@ class WorkspaceViewSet(
         if user.is_anonymous:
             return super().get_queryset().filter(visibility="PUBLIC").annotate(is_member=Value(False, BooleanField()))
 
-        member_of_workspaces = user.memberships.filter(  # type: ignore
-            object_type=MSP_WORKSPACE, deleted_at__isnull=True
-        ).values_list("object_uuid")
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
+            "object_uuid"
+        )
 
         memberships = Membership.objects.filter(user=user, deleted_at__isnull=True, object_uuid=OuterRef("pk"))
 

@@ -60,12 +60,15 @@ def clean_containers_after_run():
 @celery_app.task(name="job.tasks.delete_jobs")
 def delete_jobs():
     """
-    We delete jobs that are marked for deleted longer than 5 mins ago
-    We also check whether the Project (and higher in the hierarchy) is not scheduled for deletion
-    This will otherwise conflict with the delete operation of Job
+    We delete jobs that are marked to delete. We also check whether the Project (and higher in the hierarchy) is not
+    scheduled for deletion. This will otherwise conflict with the delete operation of Job.
+
+    We pass on the queryset to get all objects these will be filtered in the function remove_objects which will handle
+    the deletion of the objects after checking the deletion delay.
     """
     remove_objects(
         JobDef.objects.filter(
+            deleted_at__isnull=False,
             project__deleted_at__isnull=True,
             project__workspace__deleted_at__isnull=True,
         )

@@ -1,24 +1,25 @@
 from rest_framework import serializers
 
-from account.models.membership import Membership
 from account.serializers.membership import MembershipWithAvatarRelationSerializer
-from core.permissions.askanna_roles import merge_role_permissions
-from package.serializers.package_relation import PackageRelationSerializer
+from core.permissions.role_utils import (
+    get_user_roles_for_project,
+    merge_role_permissions,
+)
+from core.serializers import RelationSerializer
 from project.models import Project
 from workspace.models import Workspace
-from workspace.serializers import WorkspaceRelationSerializer
 
 
 class ProjectSerializer(serializers.ModelSerializer):
-    workspace = WorkspaceRelationSerializer(read_only=True)
-    package = PackageRelationSerializer(allow_null=True, read_only=True, source="last_created_package")
+    workspace = RelationSerializer(read_only=True)
+    package = RelationSerializer(read_only=True, allow_null=True, source="last_created_package")
     created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
     is_member = serializers.BooleanField(read_only=True)
     permission = serializers.SerializerMethodField()
 
     def get_permission(self, instance) -> dict[str, bool]:
         user_request_roles = self.context["request"].user_roles
-        user_project_roles = Membership.get_roles_for_project(self.context["request"].user, instance)
+        user_project_roles = get_user_roles_for_project(self.context["request"].user, instance)
         user_roles = user_request_roles + user_project_roles
         return merge_role_permissions(user_roles)
 
@@ -63,20 +64,3 @@ class ProjectCreateSerializer(ProjectSerializer):
 
     class Meta(ProjectSerializer.Meta):
         fields = ProjectSerializer.Meta.fields + ["workspace_suuid"]
-
-
-class ProjectRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-
-    def get_relation(self, instance) -> str:
-        return self.Meta.model.__name__.lower()
-
-    class Meta:
-        model = Project
-        fields = [
-            "relation",
-            "suuid",
-            "name",
-        ]

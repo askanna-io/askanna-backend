@@ -5,7 +5,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
 from account.serializers.me import MeSerializer
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
 from core.viewsets import AskAnnaGenericViewSet
 
 

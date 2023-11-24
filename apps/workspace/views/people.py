@@ -27,12 +27,9 @@ from account.serializers.people import (
 )
 from core.filters import case_insensitive
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.askanna_roles import (
-    WorkspaceAdmin,
-    WorkspaceMember,
-    WorkspaceViewer,
-)
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
+from core.permissions.role_utils import get_user_workspace_role
+from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceViewer
 from core.utils.config import get_setting
 from core.viewsets import AskAnnaGenericViewSet
 from workspace.models import Workspace
@@ -137,8 +134,6 @@ class WorkspacePeopleViewSet(
             ),
         )
     )
-    serializer_class = PeopleSerializer
-    lookup_field = "suuid"
     search_fields = ["suuid", "member_name", "user__email", "invitation__email"]
     ordering_fields = [
         "created_at",
@@ -152,22 +147,23 @@ class WorkspacePeopleViewSet(
         "name": "member_name",
         "job_title": "member_job_title",
     }
+    filterset_class = PeopleFilterSet
 
     parser_classes = [MultiPartParser, JSONParser, FormParser]
-    filterset_class = PeopleFilterSet
+
+    serializer_class = PeopleSerializer
+
     permission_classes = [
         RoleBasedPermission,
         RoleUpdateByAdminOnlyPermission,
         RequestHasAccessToMembershipPermission,
     ]
-
     rbac_permissions_by_action = {
         "list": ["workspace.people.list"],
         "retrieve": ["workspace.people.list"],
         "destroy": ["workspace.people.remove", "workspace.people.invite.remove"],
         "update": ["workspace.people.edit"],
         "partial_update": ["workspace.people.edit", "workspace.me.edit"],
-        "avatar": ["workspace.people.edit", "workspace.me.edit"],
         "invite": ["workspace.people.invite.create"],
         "invite_check_email": ["workspace.people.invite.create"],
         "invite_info": ["workspace.people.invite.info"],
@@ -206,7 +202,7 @@ class WorkspacePeopleViewSet(
         self.request_data = request.data.copy()
         self.request_data.update(self.get_parents_query_dict())
 
-        workspace_role = Membership.get_workspace_role(request.user, self.workspace)
+        workspace_role = get_user_workspace_role(request.user, self.workspace)
         self.request_user_workspace_role = workspace_role
         self.request_user_is_workspace_member = workspace_role in [WorkspaceMember, WorkspaceAdmin, WorkspaceViewer]
         self.request_user_is_workspace_admin = workspace_role in [WorkspaceAdmin]

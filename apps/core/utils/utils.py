@@ -1,5 +1,4 @@
 import datetime
-import json
 import os
 import re
 import zoneinfo
@@ -9,17 +8,16 @@ from wsgiref.util import FileWrapper
 from zipfile import ZipFile
 
 import croniter
-import filetype
-import magic
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db.models.fields.files import FieldFile
 from django.http import HttpResponseNotFound, StreamingHttpResponse
-from jinja2 import Environment
+from jinja2 import Environment, select_autoescape
 from rest_framework import status
 
 
-def parse_string(string, variables):
-    env = Environment(variable_start_string="${", variable_end_string="}")  # nosec: B701
+def parse_string(string: str, variables: dict) -> str:
+    env = Environment(variable_start_string="${", variable_end_string="}", autoescape=select_autoescape())
     template = env.from_string(string)
     return template.render(variables)
 
@@ -102,40 +100,6 @@ def parse_cron_line(cron_line: str | dict) -> str:
         cron_line,
         cron_line_parsed,
     )
-
-
-# File mimetype detection logic
-def is_jsonfile(filepath: Path) -> bool:
-    """
-    Determine whether we are dealing with a JSON file
-    returns True/False
-    """
-
-    try:
-        json.load(filepath.open())
-    except json.decoder.JSONDecodeError:
-        return False
-    return True
-
-
-def detect_file_mimetype(filepath: Path) -> str:
-    """
-    Use libmagic to determine what file we find on `filepath`. If the mimetype is text/plain, we do an additional check
-    to see if it is a JSON file. If so, we return application/json.
-    """
-
-    detected_mimetype = magic.from_file(filepath, mime=True)
-
-    if not detected_mimetype:
-        filetype_guess = filetype.guess(filepath)
-        if filetype_guess:
-            detected_mimetype = filetype_guess.mime
-
-    if detected_mimetype and detected_mimetype == "text/plain":
-        if is_jsonfile(filepath):
-            detected_mimetype = "application/json"
-
-    return detected_mimetype
 
 
 def is_valid_timezone(timezone: str) -> bool:
@@ -221,14 +185,18 @@ def get_directory_size_from_filelist(directory: str, filelist: list) -> int:
     )
 
 
-def get_items_in_zip_file(zip_file_path: str | os.PathLike) -> tuple[list, list]:
+def get_items_in_zip_file(zip_file: str | os.PathLike | FieldFile) -> tuple[list, list]:
     """
     Reading a zip archive and returns a list with items and a list with paths in the zip file.
     """
-    zip_files = []
-    zip_paths = []
-    with ZipFile(Path(zip_file_path), mode="r") as zip_file:
-        for item in zip_file.infolist():
+    files_in_zip = []
+    dirs_in_zip = []
+
+    if not isinstance(zip_file, FieldFile):
+        zip_file = Path(zip_file)
+
+    with ZipFile(zip_file) as zip_file_object:
+        for item in zip_file_object.infolist():
             if (
                 item.filename.startswith(".git/")
                 or item.filename.startswith(".askanna/")
@@ -240,14 +208,14 @@ def get_items_in_zip_file(zip_file_path: str | os.PathLike) -> tuple[list, list]
                 continue
 
             if item.is_dir():
-                zip_paths.append(item.filename)
+                dirs_in_zip.append(item.filename)
                 continue
 
             filename_parts = item.filename.split("/")
             filename_path = "/".join(filename_parts[: len(filename_parts) - 1])
             name = item.filename.replace(filename_path + "/", "")
 
-            zip_paths.append(filename_path)
+            dirs_in_zip.append(filename_path)
 
             if not name:
                 # If the name becomes blank, we remove the entry
@@ -262,12 +230,12 @@ def get_items_in_zip_file(zip_file_path: str | os.PathLike) -> tuple[list, list]
                 "last_modified": datetime.datetime(*item.date_time),
             }
 
-            zip_files.append(zip_item)
+            files_in_zip.append(zip_item)
 
-    return zip_files, zip_paths
+    return files_in_zip, dirs_in_zip
 
 
-def get_all_directories(paths: list) -> list:
+def get_all_directories(paths: list) -> list[str]:
     """
     Get a list of all directories from a list of paths. By unwinding the paths we make sure that all (sub)directories
     are available in the list of directories we return.
@@ -287,35 +255,34 @@ def get_all_directories(paths: list) -> list:
     return sorted(list(set(directories) - {"/"} - {""}))
 
 
-def get_files_and_directories_in_zip_file(zip_file_path: str | os.PathLike) -> list:
+def get_files_and_directories_in_zip_file(zip_file: str | os.PathLike | FieldFile) -> list[dict]:
     """
     Reading a zip archive and returns the information about which files and directories are in the archive
     """
+    files_in_zip, dirs_in_zip = get_items_in_zip_file(zip_file)
+    directories_in_zip = get_all_directories(dirs_in_zip)
 
-    zip_files, zip_paths = get_items_in_zip_file(zip_file_path)
-    zip_directories = get_all_directories(zip_paths)
-
-    for zip_dir in zip_directories:
-        zip_dir_parts = zip_dir.split("/")
-        zip_dir_path = "/".join(zip_dir_parts[: len(zip_dir_parts) - 1])
-        name = zip_dir.replace(zip_dir_path + "/", "")
+    for directory in directories_in_zip:
+        directory_parts = directory.split("/")
+        directory_path = "/".join(directory_parts[: len(directory_parts) - 1])
+        name = directory.replace(directory_path + "/", "")
 
         if not name:
-            # If the name becomes blank, we remove the entry
+            # If the name is blank, there is nothing to add
             continue
 
-        zip_files.append(
+        files_in_zip.append(
             {
-                "path": zip_dir,
-                "parent": zip_dir_path or "/",
+                "path": directory,
+                "parent": directory_path or "/",
                 "name": name,
-                "size": get_directory_size_from_filelist(zip_dir, zip_files),
+                "size": get_directory_size_from_filelist(directory, files_in_zip),
                 "type": "directory",
-                "last_modified": get_last_modified_in_directory(zip_dir, zip_files),
+                "last_modified": get_last_modified_in_directory(directory, files_in_zip),
             }
         )
 
-    return sorted(zip_files, key=lambda x: (x["type"].lower(), x["name"].lower()))
+    return sorted(files_in_zip, key=lambda x: (x["type"].lower(), x["name"].lower()))
 
 
 # The 'RangeFileWrapper' class and method 'stream' is used to setup streaming of content via an REST API endpoint

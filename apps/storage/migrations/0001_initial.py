@@ -26,11 +26,20 @@ class Migration(migrations.Migration):
                 ),
                 ("suuid", models.CharField(editable=False, max_length=32, unique=True, verbose_name="SUUID")),
                 ("created_at", core.fields.CreationDateTimeField(auto_now_add=True)),
+                (
+                    "completed_at",
+                    models.DateTimeField(
+                        default=None, null=True, help_text="Date and time when upload of this file was finished"
+                    ),
+                ),
                 ("modified_at", core.fields.ModificationDateTimeField(auto_now=True)),
                 ("deleted_at", models.DateTimeField(blank=True, null=True)),
                 ("name", models.CharField(blank=True, max_length=255)),
                 ("description", models.TextField(blank=True, default="")),
                 ("file", models.FileField(upload_to=storage.models.get_upload_file_to)),
+                ("size", models.IntegerField(help_text="Size of the file in bytes", null=True)),
+                ("etag", models.CharField(blank=True, help_text="MD5 digest of the file", max_length=255)),
+                ("content_type", models.CharField(blank=True, help_text="Content type of the file", max_length=255)),
                 (
                     "_created_by",
                     models.ForeignKey(

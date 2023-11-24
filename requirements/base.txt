@@ -47,4 +47,3 @@ minio==7.1.15                 # https://github.com/minio/minio-py
 # Detect fileformats
 # ----------------------------------------------------------------------------------------------------
 python-magic~=0.4.27          # http://github.com/ahupp/python-magic
-filetype~=1.2.0               # https://github.com/h2non/filetype.py
