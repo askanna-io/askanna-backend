@@ -62,11 +62,11 @@ class TestProjectListAPI(BaseProjectTest):
         self.activate_user("anna")
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
         assert self.project.suuid not in str(response.content)
         assert self.unused_project.suuid not in str(response.content)
 
-        for project in response.data["results"]:  # type: ignore
+        for project in response.data["results"]:
             assert project["visibility"] == "PUBLIC"
 
     def test_list_project_as_admin(self):
@@ -74,7 +74,7 @@ class TestProjectListAPI(BaseProjectTest):
         self.activate_user("admin")
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 7  # type: ignore
+        assert len(response.data["results"]) == 7
         assert self.project.suuid in str(response.content)
         assert self.unused_project.suuid not in str(response.content)
 
@@ -83,7 +83,7 @@ class TestProjectListAPI(BaseProjectTest):
         self.activate_user("member")
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 6  # type: ignore
+        assert len(response.data["results"]) == 6
         assert self.project.suuid in str(response.content)
         assert self.unused_project.suuid not in str(response.content)
 
@@ -92,11 +92,11 @@ class TestProjectListAPI(BaseProjectTest):
         self.activate_user("non_member")
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
         assert self.project.suuid not in str(response.content)
         assert self.unused_project.suuid not in str(response.content)
 
-        for project in response.data["results"]:  # type: ignore
+        for project in response.data["results"]:
             assert project["visibility"] == "PUBLIC"
 
     def test_list_project_as_anonymous(self):
@@ -105,11 +105,11 @@ class TestProjectListAPI(BaseProjectTest):
         """
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
         assert self.project.suuid not in str(response.content)
         assert self.unused_project.suuid not in str(response.content)
 
-        for project in response.data["results"]:  # type: ignore
+        for project in response.data["results"]:
             assert project["visibility"] == "PUBLIC"
 
 
@@ -143,14 +143,14 @@ class TestProjectDetailAPI(BaseProjectTest):
 
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.project.suuid  # type: ignore
+        assert response.data["suuid"] == self.project.suuid
 
     def test_member_can_get_project(self):
         """A member of the workspace can get a project."""
         self.activate_user("member")
         response = self.client.get(self.url, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["suuid"] == self.project.suuid  # type: ignore
+        assert response.data["suuid"] == self.project.suuid
 
     def test_non_member_cannot_get_project(self):
         """Non-member do not have access to the project."""
@@ -246,7 +246,7 @@ class TestProjectCreateAPI(BaseProjectTest):
             format="json",
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["visibility"] == "PUBLIC"  # type: ignore
+        assert response.data["visibility"] == "PUBLIC"
 
 
 class TestProjectUpdateAPI(BaseProjectTest):
@@ -271,7 +271,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
         self.activate_user("admin")
         response = self.client.patch(self.url, {"name": "a new name"}, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["name"] == "a new name"  # type: ignore
+        assert response.data["name"] == "a new name"
 
     def test_member_cannot_update_project(self):
         """A member of the workspace cannot update info of a project."""
@@ -295,7 +295,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
         self.activate_user("admin")
         response = self.client.patch(self.url, {"visibility": "PUBLIC"}, format="json")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["visibility"] == "PUBLIC"  # type: ignore
+        assert response.data["visibility"] == "PUBLIC"
 
     def test_member_cannot_set_public_project(self):
         """Members cannot update project visibliity"""
@@ -319,7 +319,7 @@ class TestProjectUpdateAPI(BaseProjectTest):
         self.activate_user("admin")
         response = self.client.patch(self.url, {"visibility": "PUBLICTYPO"}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["visibility"] == ['"PUBLICTYPO" is not a valid choice.']  # type: ignore
+        assert response.data["visibility"] == ['"PUBLICTYPO" is not a valid choice.']
 
 
 class TestProjectDeleteAPI(BaseProjectTest):
@@ -389,7 +389,7 @@ class TestWorkspaceProjectListAPI(BaseProjectTest):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
     def test_list_project_as_anonymous(self):
         response = self.client.get(
@@ -400,7 +400,7 @@ class TestWorkspaceProjectListAPI(BaseProjectTest):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0  # type: ignore
+        assert len(response.data["results"]) == 0
 
     def test_list_project_as_nonmember(self):
         self.activate_user("non_member")
@@ -413,7 +413,7 @@ class TestWorkspaceProjectListAPI(BaseProjectTest):
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0  # type: ignore
+        assert len(response.data["results"]) == 0
 
 
 class TestProjectListWithFilterAPI(BaseProjectTest):
@@ -429,11 +429,11 @@ class TestProjectListWithFilterAPI(BaseProjectTest):
 
         response = self.client.get(self.url, {"is_member": "true"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0  # type: ignore
+        assert len(response.data["results"]) == 0
 
         response = self.client.get(self.url, {"is_member": "false"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_admin(self):
         """List the workspace as an admin of the workspace a, but also this admin is member of workspace b"""
@@ -441,51 +441,51 @@ class TestProjectListWithFilterAPI(BaseProjectTest):
 
         response = self.client.get(self.url, {"is_member": "true"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 5  # type: ignore
+        assert len(response.data["results"]) == 5
 
         response = self.client.get(self.url, {"is_member": "false"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
         response = self.client.get(self.url, {"order_by": "is_member"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 7  # type: ignore
+        assert len(response.data["results"]) == 7
 
         response = self.client.get(self.url, {"order_by": "-is_member"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 7  # type: ignore
+        assert len(response.data["results"]) == 7
 
         response = self.client.get(self.url, {"order_by": "-is_member,-created_at"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 7  # type: ignore
+        assert len(response.data["results"]) == 7
 
     def test_list_as_member(self):
         self.activate_user("member")
 
         response = self.client.get(self.url, {"is_member": "true"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4  # type: ignore
+        assert len(response.data["results"]) == 4
 
         response = self.client.get(self.url, {"is_member": "false"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_non_member(self):
         self.activate_user("non_member")
 
         response = self.client.get(self.url, {"is_member": "true"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0  # type: ignore
+        assert len(response.data["results"]) == 0
 
         response = self.client.get(self.url, {"is_member": "false"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2
 
     def test_list_as_anonymous(self):
         response = self.client.get(self.url, {"is_member": "true"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0  # type: ignore
+        assert len(response.data["results"]) == 0
 
         response = self.client.get(self.url, {"is_member": "false"})
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2  # type: ignore
+        assert len(response.data["results"]) == 2

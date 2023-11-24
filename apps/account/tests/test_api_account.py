@@ -3,10 +3,10 @@ from django.urls import reverse
 from rest_framework import status
 
 from account.models.user import User
-from tests import AskAnnaAPITestCASE
+from tests import AskAnnaAPITestCase
 
 
-class BaseAccountAPI(AskAnnaAPITestCASE):
+class BaseAccountAPI(AskAnnaAPITestCase):
     url = reverse("account-list", kwargs={"version": "v1"})
 
     @pytest.fixture(autouse=True)
@@ -33,9 +33,9 @@ class TestAccountListAPI(BaseAccountAPI):
 
     def test_list_accounts_anonymous(self):
         """We cannot list user accounts as anonymous user"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
         response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 class TestAccountCreateAPI(BaseAccountAPI):
@@ -57,7 +57,7 @@ class TestAccountCreateAPI(BaseAccountAPI):
         )
         assert response.status_code == status.HTTP_201_CREATED
 
-        User.objects.get(suuid=response.data["suuid"]).delete()  # type: ignore
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_account_as_regular_member(self):
         """We should not be able to create a user account as regular user"""
@@ -77,7 +77,7 @@ class TestAccountCreateAPI(BaseAccountAPI):
 
     def test_create_account_as_anonymous(self):
         """We can create a user when anonymous (new member signup)"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.post(
             self.url,
@@ -91,7 +91,7 @@ class TestAccountCreateAPI(BaseAccountAPI):
         )
         assert response.status_code == status.HTTP_201_CREATED
 
-        User.objects.get(suuid=response.data["suuid"]).delete()  # type: ignore
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_account_as_anonymous_with_workspace(self):
         """We can create a user when anonymous (new member signup) and automatically create a workspace"""
@@ -108,14 +108,14 @@ class TestAccountCreateAPI(BaseAccountAPI):
         )
         assert response.status_code == status.HTTP_201_CREATED
 
-        User.objects.get(suuid=response.data["suuid"]).delete()  # type: ignore
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_account_as_anonymous_email_already_used(self):
         """
         We can create a user account as anonymous (new member signup)
         Here we repeat the signup and will get an error that the e-mail is already used
         """
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.post(
             self.url,
@@ -140,16 +140,16 @@ class TestAccountCreateAPI(BaseAccountAPI):
             format="json",
         )
         assert response_2.status_code == status.HTTP_400_BAD_REQUEST
-        assert "This email is already used." == response_2.data["email"][0]  # type: ignore
+        assert "This email is already used." == response_2.data["email"][0]
 
-        User.objects.get(suuid=response.data["suuid"]).delete()  # type: ignore
+        User.objects.get(suuid=response.data["suuid"]).delete()
 
     def test_create_account_as_anonymous_missing_terms_of_use(self):
         """
         We can create a user account as anonymous (new member signup)
         But we need to accept the terms of use
         """
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.post(
             self.url,
@@ -161,7 +161,7 @@ class TestAccountCreateAPI(BaseAccountAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "This field is required." == response.data["terms_of_use"][0]  # type: ignore
+        assert "This field is required." == response.data["terms_of_use"][0]
 
         response = self.client.post(
             self.url,
@@ -174,14 +174,14 @@ class TestAccountCreateAPI(BaseAccountAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Please accept the terms of use." == response.data["terms_of_use"][0]  # type: ignore
+        assert "Please accept the terms of use." == response.data["terms_of_use"][0]
 
     def test_create_account_as_anonymous_too_short_password(self):
         """
         We can create a user account as anonymous (new member signup)
         But the password is too short and we get the feedback
         """
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.post(
             self.url,
@@ -194,10 +194,7 @@ class TestAccountCreateAPI(BaseAccountAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert (
-            "This password is too short. It must contain at least 10 characters."
-            == response.data["password"][0]  # type: ignore
-        )
+        assert "This password is too short. It must contain at least 10 characters." == response.data["password"][0]
 
 
 class TestAccountUpdateAPI(BaseAccountAPI):
@@ -261,7 +258,7 @@ class TestAccountUpdateAPI(BaseAccountAPI):
 
     def test_update_account_as_anonymous(self):
         """A not logged in user cannot update anything"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.patch(
             self.url,
@@ -272,7 +269,7 @@ class TestAccountUpdateAPI(BaseAccountAPI):
             },
             format="json",
         )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_update_account_as_user_missing_old_password(self):
         """We can NOT update an user as user on own user account without current password"""
@@ -288,7 +285,7 @@ class TestAccountUpdateAPI(BaseAccountAPI):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert (
             "To change your password, you also need to provide the current password."
-            == response.data["old_password"][0]  # type: ignore
+            == response.data["old_password"][0]
         )
 
     def test_update_account_without_email(self):
@@ -301,7 +298,7 @@ class TestAccountUpdateAPI(BaseAccountAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "This field may not be blank." == response.data["email"][0]  # type: ignore
+        assert "This field may not be blank." == response.data["email"][0]
 
     def test_update_account_as_user_with_wrong_password(self):
         """We can update an user as user on own user account, but with wrong password expect error"""
@@ -316,4 +313,4 @@ class TestAccountUpdateAPI(BaseAccountAPI):
             format="json",
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "The old password is incorrect." == response.data["old_password"][0]  # type: ignore
+        assert "The old password is incorrect." == response.data["old_password"][0]

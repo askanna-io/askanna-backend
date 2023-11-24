@@ -13,15 +13,9 @@ def test_create_workspace_without_creator_fails(db):
 
 
 def test_object_active(test_workspaces):
-    assert Workspace.objects.active().count() == 2  # type: ignore
+    assert Workspace.objects.active().count() == 3
     test_workspaces["workspace_private"].to_deleted()
-    assert Workspace.objects.active().count() == 1  # type: ignore
-
-
-def test_object_inactive(test_workspaces):
-    assert Workspace.objects.inactive().count() == 0  # type: ignore
-    test_workspaces["workspace_private"].to_deleted()
-    assert Workspace.objects.inactive().count() == 1  # type: ignore
+    assert Workspace.objects.active().count() == 2
 
 
 def test_workspace_visibility_private(test_workspaces):

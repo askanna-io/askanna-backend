@@ -4,9 +4,9 @@ from rest_framework import serializers
 from account.models.membership import Membership
 from account.models.user import User
 from account.serializers.user import RoleSerializer
-from core.permissions.askanna_roles import (
-    get_request_role,
+from core.permissions.role_utils import (
     get_role_class,
+    get_user_role,
     merge_role_permissions,
 )
 from core.serializers import ReadWriteSerializerMethodField
@@ -34,7 +34,7 @@ class MeSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(RoleSerializer)
     def get_role(self, instance):
-        role = get_request_role(self.context["request"])
+        role = get_user_role(self.context["request"].user)
         return RoleSerializer(role).data
 
     @extend_schema_field(FileDownloadInfoSerializer)

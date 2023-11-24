@@ -26,7 +26,7 @@ sys.path.insert(0, str(APPS_DIR))
 
 env = environ.Env()
 
-if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):  # type: ignore
+if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):
     # OS environment variables take precedence over variables from .env
     env.read_env(str(BASE_DIR / ".env"))
 
@@ -34,8 +34,8 @@ if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):  # type: ignore
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/stable/ref/settings/#debug
-DEBUG = env.bool("DJANGO_DEBUG", default=False)  # type: ignore
-DEBUG_SQL = env.bool("DJANGO_DEBUG_SQL", default=False)  # type: ignore
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
+DEBUG_SQL = env.bool("DJANGO_DEBUG_SQL", default=False)
 TEST = False
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-tz
@@ -57,7 +57,7 @@ DATABASES = {
         "HOST": env.str("POSTGRES_HOST"),
         "PORT": env.str("POSTGRES_PORT"),
         "ATOMIC_REQUESTS": True,
-        "CONN_MAX_AGE": env.int("CONN_MAX_AGE", default=60),  # type: ignore
+        "CONN_MAX_AGE": env.int("CONN_MAX_AGE", default=60),
     },
 }
 
@@ -171,17 +171,17 @@ FIXTURE_DIRS = (str(BASE_DIR / "fixtures"),)
 # ADMIN
 # ------------------------------------------------------------------------------
 # Django Admin URL path.
-ADMIN_URL = env.str("DJANGO_ADMIN_URL", default="admin/")  # type: ignore
+ADMIN_URL = env.str("DJANGO_ADMIN_URL", default="admin/")
 
 
 # Encrypted field settings
-FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")  # type: ignore
+FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "AguxqQU93Ikh5LWq9NvX9KROx44VMpXqEH0xqpwdFbc=")
 
 
 # CACHES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/stable/ref/settings/#caches
-if env.str("REDIS_URL", default=None):  # type: ignore
+if env.str("REDIS_URL", default=None):
     REDIS_URL = env.str("REDIS_URL")
     CACHES = {
         "default": {
@@ -210,11 +210,11 @@ celery.settings(locals(), env)
 # ------------------------------------------------------------------------------
 # https://django-health-check.readthedocs.io/en/stable/settings.html
 HEALTH_CHECK = {
-    "DISK_USAGE_MAX": env.float("HEALTHCHECK_DISK_USAGE_MAX", 90),  # type: ignore | percentage
-    "MEMORY_MIN": env.float("HEALTHCHECK_MEMORY_MIN", 100),  # type: ignore | MB
+    "DISK_USAGE_MAX": env.float("HEALTHCHECK_DISK_USAGE_MAX", 90),  # percentage
+    "MEMORY_MIN": env.float("HEALTHCHECK_MEMORY_MIN", 100),  # MB
 }
 
-HEALTHCHECK_CELERY_QUEUE_TIMEOUT = env.float("HEALTHCHECK_CELERY_QUEUE_TIMEOUT", 3)  # type: ignore | seconds
+HEALTHCHECK_CELERY_QUEUE_TIMEOUT = env.float("HEALTHCHECK_CELERY_QUEUE_TIMEOUT", 3)  # seconds
 HEALTHCHECK_CELERY_RESULT_TIMEOUT = env.float(
     "HEALTHCHECK_CELERY_RESULT_TIMEOUT", HEALTHCHECK_CELERY_QUEUE_TIMEOUT + 1  # seconds
 )

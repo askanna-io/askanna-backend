@@ -7,13 +7,8 @@ from django.db import models
 
 from account.models.membership import MSP_WORKSPACE, MemberProfile
 from core.models import BaseModel
-from core.permissions.askanna_roles import (
-    AskAnnaAdmin,
-    AskAnnaMember,
-    AskAnnaPermissions,
-    get_request_role,
-    merge_role_permissions,
-)
+from core.permissions.role_utils import get_user_role, merge_role_permissions
+from core.permissions.roles import AskAnnaAdmin, AskAnnaMember, AskAnnaPermissions
 from workspace.models import Workspace
 
 
@@ -44,7 +39,7 @@ class User(MemberProfile, AbstractUser):
 
     @property
     def active_memberships(self):
-        return self.memberships.active_members()  # type: ignore
+        return self.memberships.active_members()
 
     def to_deleted(self):
         """
@@ -58,7 +53,7 @@ class User(MemberProfile, AbstractUser):
         for membership in self.active_memberships:
             membership.to_deleted()
 
-        self.auth_token.delete()  # type: ignore
+        self.auth_token.delete()
         self.set_unusable_password()
 
         self.is_active = False
@@ -68,6 +63,7 @@ class User(MemberProfile, AbstractUser):
         self.job_title = ""
 
         self.delete_avatar_file()
+
         self.save(
             update_fields=[
                 "is_active",
@@ -81,9 +77,9 @@ class User(MemberProfile, AbstractUser):
 
         super().to_deleted()
 
-    def request_has_object_read_permission(self, request) -> bool:
-        # User can always read its own user
-        if request.user and request.user == self:
+    def request_has_object_read_permission(self, request, view) -> bool:
+        # User can always read its own user as long as the user is active
+        if request.user and request.user == self and self.is_active:
             return True
 
         # Workspace memberships can be set to use the user profile. Select all memberships that use this user profile.
@@ -92,7 +88,7 @@ class User(MemberProfile, AbstractUser):
         ).values_list("object_uuid", flat=True)
 
         # Read permission to this user is given for PUBLIC workspaces where this user has a membership with the
-        # profile set to use this user profile
+        # profile set to use this user's profile
         if Workspace.objects.filter(uuid__in=memberships_workspace_uuids, visibility="PUBLIC").exists():
             return True
 
@@ -105,7 +101,7 @@ class User(MemberProfile, AbstractUser):
         request_user_memberships = request.user.active_memberships.filter(object_uuid__in=memberships_workspace_uuids)
 
         request_user_roles = list({membership.get_role() for membership in request_user_memberships}) + [
-            get_request_role(request)
+            get_user_role(request.user)
         ]
 
         return merge_role_permissions(request_user_roles).get("workspace.info.view", False)

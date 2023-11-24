@@ -1,17 +1,16 @@
 from rest_framework import serializers
 
+from core.serializers import RelationSerializer
 from project.models import Project
-from project.serializers import ProjectRelationSerializer
 from variable.models import Variable
-from workspace.serializers import WorkspaceRelationSerializer
 
 
 class VariableSerializer(serializers.ModelSerializer):
     value = serializers.CharField(
         source="get_value", default=None, trim_whitespace=False, allow_blank=True, required=False
     )
-    project = ProjectRelationSerializer(read_only=True)
-    workspace = WorkspaceRelationSerializer(read_only=True, source="project.workspace")
+    project = RelationSerializer(read_only=True)
+    workspace = RelationSerializer(read_only=True, source="project.workspace")
 
     def validate_is_masked(self, value):
         if self.instance and self.instance.is_masked is True and value is False:
@@ -45,7 +44,7 @@ class VariableCreateSerializer(VariableSerializer):
         slug_field="suuid",
         write_only=True,
         required=True,
-        queryset=Project.objects.active(),
+        queryset=Project.objects.active(add_select_related=True),
         source="project",
     )
     value = serializers.CharField(default=None, trim_whitespace=False, allow_blank=True, required=False)

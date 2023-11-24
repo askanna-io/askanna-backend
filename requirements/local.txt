@@ -6,6 +6,7 @@ psycopg2-binary~=2.9.9          # https://github.com/psycopg/psycopg2
 # Testing
 # ---------------------------------------------------------------------------------
 django-coverage-plugin~=3.1     # https://github.com/nedbat/django_coverage_plugin
+Faker~=19.12                    # https://github.com/joke2k/faker/tree/master
 pytest~=7.4                     # https://github.com/pytest-dev/pytest
 pytest-cov~=4.1                 # https://github.com/pytest-dev/pytest-cov
 pytest-django~=4.5              # https://github.com/pytest-dev/pytest-django
@@ -14,9 +15,9 @@ pytest-xdist~=3.3               # https://github.com/pytest-dev/pytest-xdist
 
 # Code quality
 # ---------------------------------------------------------------------------------
-ruff~=0.1.0                     # https://github.com/charliermarsh/ruff
+ruff~=0.1.5                     # https://github.com/charliermarsh/ruff
 bandit[toml]~=1.7               # https://github.com/PyCQA/bandit
-black~=23.9                     # https://github.com/ambv/black
+black~=23.11                    # https://github.com/ambv/black
 isort~=5.12                     # https://github.com/pycqa/isort
 pre-commit~=3.5                 # https://github.com/pre-commit/pre-commit
 

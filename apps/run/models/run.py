@@ -47,6 +47,7 @@ class RunQuerySet(models.QuerySet):
             jobdef__deleted_at__isnull=True,
             jobdef__project__deleted_at__isnull=True,
             jobdef__project__workspace__deleted_at__isnull=True,
+            package__deleted_at__isnull=True,
         )
 
     def inactive(self):

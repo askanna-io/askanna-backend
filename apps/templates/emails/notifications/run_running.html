@@ -1,5 +1,8 @@
-{% extends "emails/notifications/base.html" %} {% block title %} Title for
-failed {% endblock title %} {% block content %}
+{% extends "emails/notifications/base.html" %}
+
+{% block title %} Title for failed {% endblock title %}
+
+{% block content %}
 <table
   class="module"
   role="module"
@@ -64,6 +67,9 @@ failed {% endblock title %} {% block content %}
     </tr>
   </tbody>
 </table>
+{{ block.super }}
+{% endblock content %}
+
 {% block duratation %}
 <table
   border="0"
@@ -207,4 +213,3 @@ failed {% endblock title %} {% block content %}
   </tbody>
 </table>
 {% endblock duratation %}
-{{ block.super }}

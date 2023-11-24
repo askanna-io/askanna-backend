@@ -12,7 +12,6 @@ from pathlib import Path
 from tempfile import SpooledTemporaryFile
 
 from django.conf import settings
-from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils.deconstruct import deconstructible
@@ -23,6 +22,7 @@ from minio.error import S3Error
 from urllib3.response import HTTPResponse
 
 from core.utils.config import get_setting
+from storage.file import File
 
 logger = logging.getLogger(__name__)
 MinioSettings = namedtuple(
@@ -42,7 +42,7 @@ MinioSettings = namedtuple(
 class MinioFile(File):
     """A Django File class which buffers the MinIO object into a local SpooledTemporaryFile."""
 
-    max_memory_size: int = 10 * 1024 * 1024
+    max_memory_size: int = settings.FILE_MAX_MEMORY_SIZE
 
     def __init__(self, name: str, mode: str, storage: "MinioStorage"):
         self.name: str = name
@@ -57,7 +57,10 @@ class MinioFile(File):
             minio_object = None
             try:
                 minio_object = self._storage.get_object(self.name)
-                self._file = SpooledTemporaryFile(max_size=self.max_memory_size)
+                self._file = SpooledTemporaryFile(
+                    max_size=self.max_memory_size,
+                    suffix=".MinioFile",
+                )
                 for chunk in minio_object.stream(amt=1024 * 1024):
                     self._file.write(chunk)
                 self._file.seek(0)
@@ -104,6 +107,7 @@ class MinioStorage(Storage):
     """A Django Storage class for the MinIO object storage using the MinIO Python Client."""
 
     file_class = MinioFile
+    support_chunks = False
     default_content_type = settings.ASKANNA_DEFAULT_CONTENT_TYPE
     default_bucket_name = "askanna"
 
@@ -260,6 +264,10 @@ class MinioStorage(Storage):
     def url(self, name: str) -> str:
         """Returns the URL where the contents of a file referenced by name can be accessed."""
         return self.client_external.presigned_get_object(self.bucket_name, self._normalize_name(name))
+
+    def upload_url(self, name: str) -> str:
+        """Returns the URL where the contents of a file referenced by name can be uploaded to."""
+        return self.client_external.presigned_put_object(self.bucket_name, self._normalize_name(name))
 
     def path(self, name):
         """MinIO Storage doesn't support path"""

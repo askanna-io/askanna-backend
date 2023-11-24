@@ -27,6 +27,10 @@ celery_app.conf.beat_schedule = {
         "task": "job.tasks.delete_jobs",
         "schedule": crontab(minute="3-58/5"),
     },
+    "askanna.delete_packages": {
+        "task": "package.tasks.delete_packages",
+        "schedule": crontab(minute="3-58/5"),
+    },
     "askanna.delete_projects": {
         "task": "project.tasks.delete_projects",
         "schedule": crontab(minute="3-58/5"),

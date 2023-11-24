@@ -7,9 +7,9 @@ from rest_framework import mixins, status
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from account.models.membership import Membership
 from core.mixins import ObjectRoleMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
+from core.permissions.role_utils import get_user_roles_for_project
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from core.viewsets import AskAnnaGenericViewSet
 from run.models import ChunkedRunResultPart, Run, RunResult
@@ -26,6 +26,7 @@ class BaseRunResultCreateView(
         "list": ["project.run.list"],
         "retrieve": ["project.run.list"],
         "create": ["project.run.create"],
+        "finish_upload": ["project.run.create"],
     }
 
     def get_object_project(self):
@@ -34,11 +35,11 @@ class BaseRunResultCreateView(
     def get_parrent_roles(self, request, *args, **kwargs):
         parents = self.get_parents_query_dict()
         try:
-            run = Run.objects.active().get(suuid=parents.get("run__suuid"))  # type: ignore
+            run = Run.objects.active().get(suuid=parents.get("run__suuid"))
         except ObjectDoesNotExist as exc:
             raise Http404 from exc
 
-        return Membership.get_roles_for_project(request.user, run.jobdef.project)
+        return get_user_roles_for_project(request.user, run.jobdef.project)
 
 
 class RunResultCreateView(
@@ -50,7 +51,7 @@ class RunResultCreateView(
     """Do a request to upload a new result"""
 
     queryset = RunResult.objects.filter(run__deleted_at__isnull=True)
-    lookup_field = "suuid"
+
     serializer_class = RunResultSerializer
 
     upload_finished_signal = result_upload_finish
@@ -138,4 +139,4 @@ class ChunkedJobResultViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         except ObjectDoesNotExist as exc:
             raise Http404 from exc
 
-        return Membership.get_roles_for_project(request.user, runresult.run.jobdef.project)
+        return get_user_roles_for_project(request.user, runresult.run.jobdef.project)

@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from account.models.membership import MSP_WORKSPACE
 from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
 from core.utils import stream
 from core.viewsets import AskAnnaGenericViewSet
 from run.models import RedisLogQueue
@@ -151,7 +151,7 @@ class RunView(
     AskAnnaGenericViewSet,
 ):
     queryset = (
-        Run.objects.active()  # type: ignore
+        Run.objects.active()
         .select_related(
             "jobdef__project__workspace",
             "payload",
@@ -183,7 +183,6 @@ class RunView(
             ),
         )
     )
-    lookup_field = "suuid"
     search_fields = ["suuid", "name"]
     ordering_fields = [
         "created_at",
@@ -218,7 +217,8 @@ class RunView(
         "retrieve": ["project.run.list"],
         "log": ["project.run.list"],
         "manifest": ["project.run.list"],
-        "result_download": ["project.run.list"],
+        "status": ["project.run.list"],
+        "result": ["project.run.list"],
         "create": ["project.run.create"],
         "destroy": ["project.run.remove"],
         "partial_update": ["project.run.edit"],
@@ -236,9 +236,7 @@ class RunView(
                 .filter(Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
-            "object_uuid", flat=True
-        )
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()

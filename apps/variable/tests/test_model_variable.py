@@ -6,15 +6,15 @@ pytestmark = pytest.mark.django_db
 
 
 def test_variable_active(test_variables):
-    assert Variable.objects.active().count() == 4  # type: ignore
+    assert Variable.objects.active().count() == 4
     test_variables["variable_private"].to_deleted()
-    assert Variable.objects.active().count() == 3  # type: ignore
+    assert Variable.objects.active().count() == 3
 
 
 def test_variable_inactive(test_variables):
-    assert Variable.objects.inactive().count() == 0  # type: ignore
+    assert Variable.objects.inactive().count() == 0
     test_variables["variable_private"].to_deleted()
-    assert Variable.objects.inactive().count() == 1  # type: ignore
+    assert Variable.objects.inactive().count() == 1
 
 
 def test_masked(db):

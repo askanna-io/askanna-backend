@@ -6,21 +6,16 @@ from collections.abc import Callable
 
 from rest_framework import status
 
-from account.models.membership import (
-    MSP_WORKSPACE,
-    WS_ADMIN,
-    WS_MEMBER,
-    WS_VIEWER,
-    Membership,
-)
+from account.models.membership import MSP_WORKSPACE, Membership
 from account.models.user import User
+from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceViewer
 from project.models import Project
 from workspace.models import Workspace
 
 
 class BaseUserPopulation:
     def setUp(self):
-        super().setUp()  # type: ignore
+        super().setUp()
         self.users = {
             "anna": User.objects.create(
                 username="anna",
@@ -138,7 +133,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member"],
-                role=WS_MEMBER,
+                role=WorkspaceMember.code,
                 name="name of member in membership",
                 job_title="job_title of member in membership",
                 use_global_profile=False,
@@ -148,7 +143,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["admin2"],
-                role=WS_ADMIN,
+                role=WorkspaceAdmin.code,
                 name="name of admin2 in membership",
                 job_title="job_title of admin2 in membership",
                 use_global_profile=False,
@@ -157,7 +152,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member2"],
-                role=WS_MEMBER,
+                role=WorkspaceMember.code,
                 name="name of member2 in membership",
                 job_title="job_title of member2 in membership",
                 use_global_profile=False,
@@ -166,7 +161,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member_wv"],
-                role=WS_VIEWER,
+                role=WorkspaceViewer.code,
                 name="name of member_wv in membership",
                 job_title="job_title of member_wv in membership",
                 use_global_profile=True,
@@ -175,7 +170,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["admin_inactive"],
-                role=WS_ADMIN,
+                role=WorkspaceAdmin.code,
                 name="name of admin_inactive in membership",
                 job_title="job_title of admin_inactive in membership",
                 use_global_profile=False,
@@ -185,7 +180,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_a.uuid,
                 user=self.users["member_inactive"],
-                role=WS_MEMBER,
+                role=WorkspaceMember.code,
                 name="name of member_inactive in membership",
                 job_title="job_title of member_inactive in membership",
                 use_global_profile=False,
@@ -200,7 +195,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_b.uuid,
                 user=self.users["admin"],
-                role=WS_ADMIN,
+                role=WorkspaceAdmin.code,
                 name="name of admin in membership",
                 job_title="job_title of admin in membership",
             ),
@@ -211,7 +206,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_b.uuid,
                 user=self.users["member2"],
-                role=WS_MEMBER,
+                role=WorkspaceMember.code,
                 name="name of member2 in membership",
                 job_title="job_title of member2 in membership",
                 use_global_profile=True,
@@ -221,7 +216,7 @@ class BaseUserPopulation:
                 object_type=MSP_WORKSPACE,
                 object_uuid=self.workspace_b.uuid,
                 user=self.users["member_inactive"],
-                role=WS_MEMBER,
+                role=WorkspaceMember.code,
                 name="name of member_inactive in membership",
                 job_title="job_title of member_inactive in membership",
                 use_global_profile=False,
@@ -233,11 +228,11 @@ class BaseUserPopulation:
         if username not in self.users.keys():
             raise ValueError(f"{username} is not part of the test population")
 
-        token = self.users.get(username).auth_token  # type: ignore
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)  # type: ignore
+        token = self.users.get(username).auth_token
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
     def tearDown(self):
-        super().tearDown()  # type: ignore
+        super().tearDown()
         for user in self.users.values():
             user.delete()
 
@@ -252,11 +247,11 @@ class BaseUploadTestMixin:
     def do_create_entry(self, create_url, filename, filesize):
         payload = {
             "filename": filename,
-            "project_suuid": self.runs["run1"].jobdef.project.suuid,  # type: ignore
+            "project_suuid": self.runs["run_1"].jobdef.project.suuid,
             "size": filesize,
         }
 
-        response = self.client.post(  # type: ignore
+        response = self.client.post(
             create_url,
             payload,
             format="json",
@@ -312,14 +307,14 @@ class BaseUploadTestMixin:
             if not create_chunk_url:
                 raise ValueError("create_chunk_url is not set")
 
-            req_chunk = self.client.post(  # type: ignore
+            req_chunk = self.client.post(
                 create_chunk_url(parent_object),
                 config,
                 format="json",
             )
             assert req_chunk.status_code == status.HTTP_201_CREATED
 
-            chunk_uuid = req_chunk.data.get("uuid")
+            chunk_suuid = req_chunk.data.get("suuid")
             chunkinfo = {
                 "resumableChunkSize": file_size,
                 "resumableTotalSize": file_size,
@@ -336,8 +331,8 @@ class BaseUploadTestMixin:
             if not upload_chunk_url:
                 raise ValueError("upload_chunk_url is not set")
 
-            chunk_upload_req = self.client.post(  # type: ignore
-                upload_chunk_url(parent_object, chunk_uuid),
+            chunk_upload_req = self.client.post(
+                upload_chunk_url(parent_object, chunk_suuid),
                 chunkinfo,
                 format="multipart",
             )
@@ -359,7 +354,7 @@ class BaseUploadTestMixin:
         if not finish_upload_url:
             raise ValueError("finish_upload_url is not set")
 
-        final_upload_req = self.client.post(  # type: ignore
+        final_upload_req = self.client.post(
             finish_upload_url(parent_object),
             data=final_call_payload,
         )

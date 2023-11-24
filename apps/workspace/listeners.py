@@ -1,7 +1,8 @@
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from account.models.membership import MSP_WORKSPACE, WS_ADMIN, Membership
+from account.models.membership import MSP_WORKSPACE, Membership
+from core.permissions.roles import WorkspaceAdmin
 from workspace.models import Workspace
 
 
@@ -27,7 +28,7 @@ def set_memberships_for_workspace_creator(sender, instance: Workspace, created, 
         membership = Membership.objects.create(
             object_uuid=instance.uuid,
             object_type=MSP_WORKSPACE,
-            role=WS_ADMIN,
+            role=WorkspaceAdmin.code,
             user=instance.created_by_user,
         )
 

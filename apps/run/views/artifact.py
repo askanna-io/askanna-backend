@@ -10,9 +10,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from account.models.membership import MSP_WORKSPACE, Membership
+from account.models.membership import MSP_WORKSPACE
 from core.mixins import ObjectRoleMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
+from core.permissions.role_utils import get_user_roles_for_project
 from core.views import BaseChunkedPartViewSet, BaseUploadFinishViewSet
 from core.viewsets import AskAnnaGenericViewSet
 from run.models import ChunkedRunArtifactPart as ChunkedArtifactPart
@@ -49,7 +50,7 @@ class RunArtifactView(
     """
 
     queryset = RunArtifact.objects.all()
-    lookup_field = "suuid"
+
     serializer_class = RunArtifactSerializer
 
     permission_classes = [RoleBasedPermission]
@@ -81,9 +82,7 @@ class RunArtifactView(
                 )
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list(  # type: ignore
-            "object_uuid", flat=True
-        )
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
 
         return (
             super()
@@ -107,7 +106,7 @@ class RunArtifactView(
         except ObjectDoesNotExist as exc:
             raise Http404 from exc
 
-        return Membership.get_roles_for_project(request.user, run.jobdef.project)
+        return get_user_roles_for_project(request.user, run.jobdef.project)
 
     def get_upload_location(self, obj) -> Path:
         # directory structure is containing the run-suuid
@@ -197,7 +196,7 @@ class ChunkedArtifactViewSet(ObjectRoleMixin, BaseChunkedPartViewSet):
         except ObjectDoesNotExist as exc:
             raise Http404 from exc
 
-        return Membership.get_roles_for_project(request.user, artifact.run.jobdef.project)
+        return get_user_roles_for_project(request.user, artifact.run.jobdef.project)
 
     def get_object(self):
         return self.get_object_without_permissioncheck()

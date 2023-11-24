@@ -6,14 +6,23 @@ from django.http import FileResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from core.http import RangeFileResponse
-from core.permissions import AskAnnaPermission
+from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
 from storage.models import File
-from storage.serializers import FileInfoSerializer
-from storage.utils import filename_for_resized_image, resize_image
+from storage.serializers import (
+    FileInfoSerializer,
+    FileUploadCompleteSerializer,
+    FileUploadPartSerializer,
+)
+from storage.utils import (
+    filename_for_resized_image,
+    get_content_type_from_file,
+    resize_image,
+)
 
 
 def _validate_file_exists(instance: File) -> bool:
@@ -42,31 +51,29 @@ def _validate_file_exists(instance: File) -> bool:
 
 
 class FileViewSet(AskAnnaGenericViewSet):
-    queryset = File.objects.active(add_select_related=True)  # type: ignore
-    lookup_field = "suuid"
+    queryset = File.objects.active(add_select_related=True)
+    serializer_class = FileInfoSerializer
+    permission_classes = [AskAnnaPermissionByAction]
+    parser_classes = [MultiPartParser, JSONParser, FormParser]
 
-    permission_classes = [AskAnnaPermission]
-
-    @extend_schema(
-        summary="Get info about a file",
-        description=(
-            "Get information about a file, including the download URL. The information for downloading the file "
-            "contains the type of service used and the URL to download the file. The type can be used to determine "
-            "which features are available to download the file."
-        ),
-        responses={
-            200: FileInfoSerializer,
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-            404: OpenApiResponse(description="File not found or no permission to access"),
-        },
-    )
-    @action(
-        detail=True,
-        methods=["get"],
-        serializer_class=FileInfoSerializer,
-    )
+    @extend_schema(summary="Get info about a file")
+    @action(detail=True, methods=["get"])
     def info(self, request, *args, **kwargs):
+        """
+        Get information about a file, including the download URL. The information for downloading the file contains
+        the type of service used and the URL to download the file. The type can be used to determine which features
+        are available to download the file.
+        """
         instance = self.get_object()
+
+        if instance.completed_at is None:
+            return Response(
+                {
+                    "detail": "File upload is not completed. It is not possible to download a file that is not "
+                    "completed."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if _validate_file_exists(instance) is False:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -83,6 +90,16 @@ class FileViewSet(AskAnnaGenericViewSet):
             "version of the image given the requested width."
         ),
         parameters=[
+            OpenApiParameter(
+                name="file_path",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description=(
+                    "When the file_path is set and the file is a zip file, then the file requested by file_path is "
+                    "extracted and send as the response content or i.c.w. the Range header a specific range from the "
+                    "file."
+                ),
+            ),
             OpenApiParameter(
                 name="width",
                 type=int,
@@ -133,14 +150,49 @@ class FileViewSet(AskAnnaGenericViewSet):
     def download(self, request, *args, **kwargs):
         instance = self.get_object()
 
+        if instance.completed_at is None:
+            return Response(
+                {
+                    "detail": "File upload is not completed. It is not possible to download a file that is not "
+                    "completed."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if _validate_file_exists(instance) is False:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        file_object = instance.file.file
-        filename = Path(file_object.name).name
-        content_type = file_object.content_type
-        as_attachment = True
+        file_path = request.query_params.get("file_path")
+        if file_path:
+            file_path = file_path.strip('"')
 
+            if not instance.is_zipfile:
+                return Response(
+                    {
+                        "detail": (
+                            "The file_path parameter is only supported for zip files and the requested file is not "
+                            "a zip file."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                file_object = instance.get_file_from_zipfile(file_path)
+            except FileNotFoundError:
+                return Response(
+                    {"detail": f"File path '{file_path}' not found in this zip file."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            filename = Path(file_path).name
+            content_type = get_content_type_from_file(file_object)
+        else:
+            file_object = instance.file.file
+            filename = instance.name or Path(file_object.name).name
+            content_type = instance.content_type or file_object.content_type
+
+        as_attachment = True
         if "HTTP_RESPONSE_CONTENT_DISPOSITION" in request.META:
             response_content_disposition = request.META["HTTP_RESPONSE_CONTENT_DISPOSITION"].split(";")
 
@@ -223,3 +275,124 @@ class FileViewSet(AskAnnaGenericViewSet):
 
         response["Accept-Ranges"] = "bytes"
         return response
+
+    @extend_schema(summary="Upload part of a file")
+    @action(detail=True, methods=["put"], url_path="upload/part", serializer_class=FileUploadPartSerializer)
+    def upload_part(self, request, *args, **kwargs):
+        """
+        Upload a part of a file by doing a request with the part number and the content of the part. Optionally
+        you can add the ETag of the part. If you submit the ETag, it will be used to validate the sended part.
+
+        The response contains the part number and ETag of the part. The information can be used in the final request to
+        complete the upload.
+        """
+        instance = self.get_object()
+
+        if instance.completed_at:
+            return Response(
+                {"detail": "File upload is already completed and uploading new parts is not allowed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save_part()
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Complete an upload",
+        responses={
+            200: OpenApiResponse(
+                description=(
+                    "Upload completed and the file is stored in the storage. The response contains information about "
+                    "the file."
+                ),
+                response=FileInfoSerializer,
+            ),
+        },
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="upload/complete",
+        serializer_class=FileUploadCompleteSerializer,
+    )
+    def upload_complete(self, request, *args, **kwargs):
+        """
+        Do a request to complete an upload. This will merge all uploaded parts into one file and store it in the
+        storage. The uploaded parts will be deleted after the merge is completed.
+
+        Before the upload is completed, the uploaded file is validated. For validation you can submit the ETag and an
+        array listing all parts that are uploaded. For each part you need to submit the part number and optionally the
+        ETag. This information was provided via the response after uploading the part.
+        """
+        instance = self.get_object()
+
+        if instance.completed_at:
+            return Response(
+                {"detail": "File upload is already completed and uploading new parts is not allowed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Block the file from being processed by f.e. a second complete upload request.
+        if cache.get(f"storage.File:{instance.suuid}:lock", default=False) is True:
+            return Response(
+                {"detail": "File is locked by another process and upload cannot be completed at this moment."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        cache.set(f"storage.File:{instance.suuid}:lock", True)
+
+        if not instance.part_filenames:
+            return Response(
+                {"detail": "No uploaded parts found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.complete_upload()
+
+        instance.refresh_from_db()
+        serializer_after_complete = FileInfoSerializer(instance, context=self.get_serializer_context())
+
+        return Response(serializer_after_complete.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Abort an upload",
+        responses={
+            204: OpenApiResponse(description="Upload aborted and all uploaded parts are deleted"),
+        },
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="upload/abort",
+    )
+    def upload_abort(self, request, *args, **kwargs):
+        """
+        Do a request to abort an upload. All uploaded parts will be deleted and the object the uploaded was created
+        for might be deleted as well. The latter is depending on the related object configuration.
+
+        Abort an upload is only possible when the upload is not completed yet.
+        """
+        instance = self.get_object()
+
+        if instance.completed_at:
+            return Response(
+                {"detail": "Upload is already completed. It is not possible to abort an upload that is completed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Block the file from being processed by f.e. a second abort upload request.
+        locked = cache.get(f"storage.File:{instance.suuid}:lock", default=False)
+        if locked is True:
+            return Response(
+                {"detail": "File is locked by another process and upload cannot be aborted at this moment."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        cache.set(f"storage.File:{instance.suuid}:lock", True)
+
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

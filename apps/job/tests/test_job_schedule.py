@@ -1,4 +1,5 @@
 import datetime
+import time
 
 import pytest
 
@@ -24,6 +25,8 @@ def test_model_update_last():
     scheduled_job.refresh_from_db()
     assert scheduled_job.last_run_at == datetime.datetime(2025, 6, 30, 8, 21, 0, tzinfo=datetime.UTC)
 
+    scheduled_job.delete()
+
 
 def test_model_setnext():
     scheduled_job = ScheduledJob.objects.create(
@@ -43,6 +46,8 @@ def test_model_setnext():
     scheduled_job.update_next(current_dt=datetime.datetime(2050, 3, 15, 0, 15, 0, tzinfo=datetime.UTC))
     scheduled_job.refresh_from_db()
     assert scheduled_job.next_run_at == datetime.datetime(2050, 3, 15, 0, 20, 0, tzinfo=datetime.UTC)
+
+    scheduled_job.delete()
 
 
 def test_fix_missed_scheduledjobs(test_jobs):
@@ -67,26 +72,48 @@ def test_fix_missed_scheduledjobs(test_jobs):
     assert scheduled_job.next_run_at != datetime_next_run
     assert scheduled_job.next_run_at > now
 
+    scheduled_job.delete()
+
 
 def test_launch_scheduled_jobs(test_memberships, test_jobs):
-    datetime_next_run = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=10)
+    # It can happen that the next_run_at is 'just' in the past and we don't launch a new run. By implementing a retry
+    # we try to make sure that we do launch a new run within this test.
+    retry = 0
+    max_retry = 5
+    while True:
+        datetime_next_run = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=1)
 
-    scheduled_job = ScheduledJob.objects.create(
-        **{
-            "cron_definition": "*/5 * 1,15 * *",
-            "cron_timezone": "Europe/Amsterdam",
-            "last_run_at": datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=datetime.UTC),
-            "next_run_at": datetime_next_run,
-            "job": test_jobs.get("job_private"),
-            "member": test_memberships.get("workspace_private_admin"),
-        }
-    )
+        scheduled_job = ScheduledJob.objects.create(
+            **{
+                "cron_definition": "*/5 * 1,15 * *",
+                "cron_timezone": "Europe/Amsterdam",
+                "last_run_at": datetime.datetime(2021, 3, 3, 0, 10, 0, tzinfo=datetime.UTC),
+                "next_run_at": datetime_next_run,
+                "job": test_jobs.get("job_private"),
+                "member": test_memberships.get("workspace_private_admin"),
+            }
+        )
 
-    assert scheduled_job.next_run_at == datetime_next_run
-    assert Run.objects.all().count() == 0
+        assert scheduled_job.next_run_at == datetime_next_run
+        assert Run.objects.all().count() == 0
 
-    launch_scheduled_jobs()
-    scheduled_job.refresh_from_db()
+        launch_scheduled_jobs()
+        scheduled_job.refresh_from_db()
 
-    assert scheduled_job.next_run_at >= datetime_next_run
-    assert Run.objects.all().count() == 1
+        assert scheduled_job.next_run_at >= datetime_next_run
+
+        scheduled_job.delete()
+
+        retry_run = 0
+        max_retry_run = 5
+        while True:
+            if run_count := Run.objects.all().count() == 1 or (retry_run := retry_run + 1 > max_retry_run):
+                break
+
+            time.sleep(0.5)
+
+        if run_count == 1:
+            break
+
+        if retry := retry + 1 > max_retry:
+            raise Exception("Run not created")

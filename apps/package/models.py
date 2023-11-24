@@ -1,49 +1,48 @@
-import uuid
-from pathlib import Path
-
-from django.conf import settings
 from django.db import models
-from django.db.models import Q
 
 from core.config import AskAnnaConfig
-from core.models import AuthorModel, FileBaseModel, NameDescriptionBaseModel
-from package.signals import package_upload_finish
+from core.models import BaseModel
+from job.models import JobDef, ScheduledJob
 
 
 class PackageQuerySet(models.QuerySet):
-    def active(self):
-        return self.filter(
+    def active(self, add_select_related=False):
+        active_query = self.filter(
             deleted_at__isnull=True,
+            package_file__deleted_at__isnull=True,
+            package_file__completed_at__isnull=False,
             project__deleted_at__isnull=True,
             project__workspace__deleted_at__isnull=True,
-        ).exclude(original_filename="")
+        ).select_related("package_file")
 
-    def active_and_finished(self):
-        return self.active().filter(finished_at__isnull=False)
+        if add_select_related:
+            return active_query.select_related(
+                "project__workspace",
+                "package_file___created_by__account_membership__user",
+            )
 
-    def inactive(self):
-        return self.filter(
-            Q(deleted_at__isnull=False)
-            | Q(project__deleted_at__isnull=False)
-            | Q(project__workspace__deleted_at__isnull=False)
-        )
+        return active_query
 
 
-class Package(FileBaseModel, AuthorModel, NameDescriptionBaseModel):
-    original_filename = models.CharField(max_length=1000, default="")
-
-    project = models.ForeignKey(
-        "project.Project",
-        on_delete=models.CASCADE,
-        related_name="packages",
-        null=True,
-        blank=True,
-        default=None,
+class Package(BaseModel):
+    project = models.ForeignKey("project.Project", on_delete=models.CASCADE, related_name="packages")
+    package_file = models.OneToOneField(
+        "storage.File", null=True, on_delete=models.CASCADE, related_name="package_file"
     )
-    size = models.IntegerField(help_text="Size of this package in bytes")
 
-    # Store when it was finished uploading
-    finished_at = models.DateTimeField(
+    # TODO: remove these field after migration 0004_move_package_files_to_storage is applied
+    archive_filename = models.CharField(max_length=1000, default="")
+    archive_size = models.IntegerField(null=True, default=None, help_text="Size of this package in bytes")
+    archive_description = models.TextField(default="", blank=True)
+    archive_created_by_user = models.ForeignKey(
+        "account.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="packages_archived_created_by_user",
+    )
+    archive_created_by_member = models.ForeignKey("account.Membership", on_delete=models.CASCADE, null=True)
+    archive_finished_at = models.DateTimeField(
         "Finished upload at",
         blank=True,
         auto_now_add=False,
@@ -55,81 +54,94 @@ class Package(FileBaseModel, AuthorModel, NameDescriptionBaseModel):
 
     objects = PackageQuerySet().as_manager()
 
-    file_type = "package"
-    file_extension = "zip"
-    file_readmode = "rb"
-    file_writemode = "wb"
+    permission_by_action = {
+        "list": "project.code.list",
+        ("retrieve", "info", "download"): "project.code.view",
+        ("create", "upload_part", "upload_complete", "upload_abort"): "project.code.create",
+        "partial_update": "project.code.edit",
+        "destroy": "project.code.remove",
+    }
 
-    def __str__(self):
-        if self.original_filename:
-            return f"{self.original_filename} ({self.suuid})"
-        return self.suuid
+    @property
+    def upload_directory(self):
+        return "packages/" + self.suuid[:2].lower() + "/" + self.suuid[2:4].lower() + "/" + self.suuid
 
-    def get_storage_location(self) -> Path:
-        return Path(self.project.uuid.hex) / self.uuid.hex
-
-    def get_root_location(self) -> Path:
-        return settings.PACKAGES_ROOT
-
-    def write(self, stream):
-        """
-        Write contents to the filesystem
-        """
-        super().write(stream)
-
-        # unpack the package via signal
-        package_upload_finish.send(
-            sender=self.__class__,
-            postheaders={},
-            obj=self,
-        )
-
-    def get_askanna_yml_path(self) -> Path | None:
-        """
-        Read the askanna.yml from the package stored on the settings.BLOB_ROOT
-        If file doesn't exist, return None
-        """
-        package_path = settings.BLOB_ROOT / str(self.uuid)
-
-        # read config from askanna.yml
-        askanna_yml_path = package_path / "askanna.yml"
-        if Path.exists(askanna_yml_path):
-            return askanna_yml_path
-
-        askanna_yml_path = package_path / "askanna.yaml"
-        if Path.exists(askanna_yml_path):
-            return askanna_yml_path
-
+    def get_name(self) -> str | None:
+        if self.package_file:
+            return self.package_file.name
         return None
 
     def get_askanna_config(self) -> AskAnnaConfig | None:
         """
         Reads the askanna.yml as is and return as AskAnnaConfig or None
         """
-        askanna_yml = self.get_askanna_yml_path()
-        if not askanna_yml:
+        if (
+            not self.package_file
+            or not self.package_file.file
+            or "askanna.yml" not in self.package_file.zipfile_namelist
+        ):
             return None
-        return AskAnnaConfig.from_stream(Path(askanna_yml).open())
+
+        with self.package_file.get_file_from_zipfile("askanna.yml") as config_file:
+            return AskAnnaConfig.from_stream(config_file.read())
+
+    def extract_jobs_from_askanna_config(self):
+        """
+        If jobs are defined in the askanna config related to this package, then create/update the JobDef and
+        ScheduledJob objects.
+        """
+        askanna_config = self.get_askanna_config()
+        if askanna_config is None:
+            return
+
+        for _, job in askanna_config.jobs.items():
+            job_def, _ = JobDef.objects.get_or_create(name=job.name, project=self.project)
+
+            job_def.environment_image = job.environment.image
+            job_def.timezone = job.timezone
+            job_def.deleted_at = None
+            job_def.save(
+                update_fields=[
+                    "environment_image",
+                    "timezone",
+                    "deleted_at",
+                    "modified_at",
+                ]
+            )
+
+            # Check what existing schedules where and store the last_run_at and raw_definition
+            existing_schedules = ScheduledJob.objects.filter(job=job_def)
+            old_schedules = [
+                {"last_run_at": schedule.last_run_at, "raw_definition": schedule.raw_definition}
+                for schedule in existing_schedules
+            ]
+
+            # Clear existing schedules
+            existing_schedules.delete()
+
+            for schedule in job.schedules:
+                schedule_def = {
+                    "job": job_def,
+                    "raw_definition": schedule.raw_definition,
+                    "cron_definition": schedule.cron_definition,
+                    "cron_timezone": schedule.cron_timezone,
+                    "member": self.package_file.created_by,
+                }
+
+                # Check if from the old schedules we can find a last_run_at looking at the raw_definition.
+                # We assume that the raw_definition is unique for a schedule.
+                last_run_at = [
+                    old.get("last_run_at")
+                    for old in old_schedules
+                    if str(old.get("raw_definition")) == str(schedule.raw_definition)
+                    and old.get("last_run_at") is not None
+                ]
+                if len(last_run_at) > 0:
+                    schedule_def["last_run_at"] = max(last_run_at)
+
+                scheduled_job = ScheduledJob.objects.create(**schedule_def)
+                scheduled_job.update_next()
 
     class Meta:
         get_latest_by = "created_at"
         ordering = ["-created_at"]
-
-
-class ChunkedPackagePart(models.Model):
-    uuid = models.UUIDField(primary_key=True, db_index=True, editable=False, default=uuid.uuid4)
-    filename = models.CharField(max_length=500)
-    size = models.IntegerField(help_text="Size of this chunk of the package")
-    file_no = models.IntegerField()
-    is_last = models.BooleanField(default=False)
-
-    package = models.ForeignKey(Package, on_delete=models.CASCADE, blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    deleted_at = models.DateTimeField(null=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.filename} - part {self.file_no} ({self.uuid})"

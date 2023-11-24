@@ -36,7 +36,7 @@ class TestCronLineExceptions:
     def test_parse_cron_line_type_error(self):
         cron_line = ["* 1 * 2 *"]
         with pytest.raises(ValueError) as exc:
-            parse_cron_line(cron_line)  # type: ignore
+            parse_cron_line(cron_line)
         assert "Invalid cron_line type" in str(exc.value)
 
     def test_parse_cron_line_str_error(self):

@@ -1,6 +1,6 @@
 {% extends "emails/notifications/base.html" %}
-{% block title %}Error | Scheduled job {{ job.name }} of {{job.project.name}} didn't start
-{% endblock title %}
+
+{% block title %}Error | Scheduled job {{ job.name }} of {{job.project.name}} didn't start{% endblock title %}
 
 {% block content %}
 <table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
@@ -252,4 +252,4 @@ We will reschedule the job for the next scheduled run.
     </tr>
   </tbody>
 </table>
-{% endblock %}
+{% endblock content %}

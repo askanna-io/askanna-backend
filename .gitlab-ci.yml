@@ -147,7 +147,6 @@ code_quality:
     ASKANNA_CDN_URL: http://localhost:8000/files
     ASKANNA_UI_URL: http://localhost:4173
     ASKANNA_FILESTORAGE: filesystem
-    ASKANNA_FILE_DOWNLOAD_VIA_DJANGO: "True"
   services:
     - name: postgres:12
       alias: postgres

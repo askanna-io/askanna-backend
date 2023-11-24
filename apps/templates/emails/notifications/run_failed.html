@@ -1,5 +1,8 @@
-{% extends "emails/notifications/base.html" %} {% block title %} Title for
-failed {% endblock title %} {% block content %}
+{% extends "emails/notifications/base.html" %}
+
+{% block title %} Title for failed {% endblock title %}
+
+{% block content %}
 <table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
   style="table-layout: fixed" data-muid="a0df340d-26c9-4554-86ff-793a33313c44">
   <tbody>
@@ -33,7 +36,9 @@ failed {% endblock title %} {% block content %}
   </tbody>
 </table>
 
-{{ block.super }} {% if log %}
+{{ block.super }}
+
+{% if log %}
 <table class="module" role="module" data-type="spacer" border="0" cellpadding="0" cellspacing="0" width="100%"
   style="table-layout: fixed" data-muid="2befe393-ef0e-4ca4-ba1d-367e6cf5f378">
   <tbody>
@@ -78,14 +83,16 @@ failed {% endblock title %} {% block content %}
             margin: 0px;
             padding: 10px 15px;
           ">
-{% for line in log %}{{line|last}}
-{% endfor %}</pre>
+          {% for line in log %}{{line|last}}{% endfor %}
+        </pre>
       </td>
     </tr>
   </tbody>
 </table>
+{% endif %}
 
-{% endif %} {% endblock %}
+{% endblock content %}
+
 {% block rundate %}
 <table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" role="module" data-type="columns"
   style="padding: 0px 0px 0px 0px" bgcolor="#FFFFFF" data-distribution="1,3">
@@ -165,6 +172,7 @@ failed {% endblock title %} {% block content %}
   </tbody>
 </table>
 {% endblock rundate %}
+
 {% block duratation %}
 <table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" role="module" data-type="columns"
   style="padding: 0px 0px 0px 0px" bgcolor="#FFFFFF" data-distribution="1,3">

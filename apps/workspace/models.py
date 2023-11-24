@@ -7,9 +7,6 @@ class WorkspaceQuerySet(models.QuerySet):
     def active(self):
         return self.filter(deleted_at__isnull=True)
 
-    def inactive(self):
-        return self.filter(deleted_at__isnull=False)
-
 
 class Workspace(AuthorModel, VisibilityModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=False, null=False, db_index=True, default="New workspace")

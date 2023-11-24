@@ -1,5 +1,6 @@
-{% extends "emails/base.html" %} {% block content %}
+{% extends "emails/base.html" %}
 
+{% block content %}
 <table
   class="module"
   role="module"
@@ -483,8 +484,10 @@
     </tr>
   </tbody>
 </table>
-{% block rundate %} {% endblock %}
-{% block duratation %} {% endblock %}
+
+{% block rundate %} {% endblock rundate %}
+{% block duratation %} {% endblock duratation %}
+
 <table
   class="module"
   role="module"
@@ -956,4 +959,6 @@
     </tr>
   </tbody>
 </table>
-{% endif %} {% endblock %}
+{% endif %}
+
+{% endblock content %}

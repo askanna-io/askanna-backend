@@ -2,18 +2,19 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-from account.models.membership import MSP_WORKSPACE, WS_ADMIN, WS_MEMBER, Membership
-from tests import AskAnnaAPITestCASE
-from tests.utils import get_avatar_file
+from account.models.membership import MSP_WORKSPACE, Membership
+from core.permissions.roles import WorkspaceAdmin, WorkspaceMember
+from tests import AskAnnaAPITestCase
 from workspace.models import Workspace
 
 
-class BaseWorkspacePeopleAPI(AskAnnaAPITestCASE):
+class BaseWorkspacePeopleAPI(AskAnnaAPITestCase):
     @pytest.fixture(autouse=True)
-    def _set_fixtures(self, test_users, test_workspaces, test_memberships):
+    def _set_fixtures(self, test_users, test_workspaces, test_memberships, avatar_file):
         self.users = test_users
         self.workspaces = test_workspaces
         self.memberships = test_memberships
+        self.avatar_file = avatar_file
 
 
 class TestWorkspacePeopleListAPI(BaseWorkspacePeopleAPI):
@@ -70,10 +71,10 @@ class TestWorkspacePeopleListAPI(BaseWorkspacePeopleAPI):
         self.client.credentials()
 
         response = self.client.get(self.private_url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         response = self.client.get(self.public_url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
@@ -142,7 +143,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
         )
 
         response = self.client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_retrieve_profile_as_member(self):
         """A member can see existing profiles from a workspace."""
@@ -190,7 +191,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
         self.set_authorization(self.users["workspace_admin"])
         self.client.patch(
             url,
-            {"avatar": get_avatar_file()},
+            {"avatar": self.avatar_file},
             format="multipart",
         )
 
@@ -221,7 +222,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
         self.set_authorization(self.users["workspace_admin"])
         response = self.client.patch(
             url,
-            {"avatar": get_avatar_file()},
+            {"avatar": self.avatar_file},
             format="multipart",
         )
         avatar_url = response.data.get("avatar_file").get("url")
@@ -263,12 +264,12 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
 
         self.client.credentials()
         response = self.client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         self.set_authorization(self.users["workspace_admin"])
         response = self.client.patch(
             url,
-            {"avatar": get_avatar_file()},
+            {"avatar": self.avatar_file},
             format="multipart",
         )
         avatar_url = response.data.get("avatar_file").get("url")
@@ -277,10 +278,9 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
         self.client.credentials()
         # Anonymous user cannot access membership profile info
         response = self.client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        # ...but can access avatar file of membership profile (a.o. used for showing avatar on run page)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
         response = self.client.get(avatar_url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         self.set_authorization(self.users["workspace_admin"])
         self.client.patch(url, {"avatar": ""}, format="multipart")
@@ -297,12 +297,12 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
 
         self.client.credentials()
         response = self.client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         self.set_authorization(self.users["workspace_admin"])
         response = self.client.patch(
             url,
-            {"avatar": get_avatar_file()},
+            {"avatar": self.avatar_file},
             format="multipart",
         )
         avatar_url = response.data.get("avatar_file").get("url")
@@ -311,7 +311,7 @@ class TestWorkspacePeopleDetailAPI(BaseWorkspacePeopleAPI):
         self.client.credentials()
         # Anonymous user cannot access membership profile info
         response = self.client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
         # ...but can access avatar file of membership profile (a.o. used for showing avatar on run page)
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_200_OK
@@ -371,7 +371,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
 
         response = self.client.patch(
             url,
-            {"role_code": WS_ADMIN},
+            {"role_code": WorkspaceAdmin.code},
             format="json",
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -415,7 +415,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
 
         response = self.client.patch(
             url,
-            {"avatar": get_avatar_file()},
+            {"avatar": self.avatar_file},
             format="multipart",
         )
 
@@ -498,21 +498,21 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
 
         response = self.client.patch(
             url,
-            {"role_code": WS_ADMIN},
+            {"role_code": WorkspaceAdmin.code},
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["role"]["code"] == WS_ADMIN
-        assert Membership.objects.get(pk=self.memberships["workspace_private_member"].pk).role == WS_ADMIN
+        assert response.data["role"]["code"] == WorkspaceAdmin.code
+        assert Membership.objects.get(pk=self.memberships["workspace_private_member"].pk).role == WorkspaceAdmin.code
 
         response = self.client.patch(
             url,
-            {"role_code": WS_MEMBER},
+            {"role_code": WorkspaceMember.code},
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["role"]["code"] == WS_MEMBER
-        assert Membership.objects.get(pk=self.memberships["workspace_private_member"].pk).role == WS_MEMBER
+        assert response.data["role"]["code"] == WorkspaceMember.code
+        assert Membership.objects.get(pk=self.memberships["workspace_private_member"].pk).role == WorkspaceMember.code
 
     def test_change_admin_role_by_self_fails(self):
         """An admin can not itself change its role."""
@@ -528,7 +528,7 @@ class TestWorkspacePeopleUpdateAPI(BaseWorkspacePeopleAPI):
 
         response = self.client.patch(
             url,
-            {"role_code": WS_MEMBER},
+            {"role_code": WorkspaceMember.code},
             format="json",
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -644,5 +644,5 @@ class TestWorkspacePeopleDeleteAPI(BaseWorkspacePeopleAPI):
         )
 
         response = self.client.delete(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert Membership.objects.get(uuid=self.memberships["workspace_private_member"].uuid).deleted_at is None

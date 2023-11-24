@@ -1,18 +1,14 @@
 from rest_framework import serializers
 
-from core.serializers import BaseArchiveDetailSerializer
-from job.serializers import JobRelationSerializer
-from project.serializers import ProjectRelationSerializer
+from core.serializers import BaseArchiveDetailSerializer, RelationSerializer
 from run.models import ChunkedRunArtifactPart, RunArtifact
-from run.serializers.run import RunRelationSerializer
-from workspace.serializers import WorkspaceRelationSerializer
 
 
 class RunArtifactSerializer(serializers.ModelSerializer):
-    run = RunRelationSerializer(read_only=True)
-    job = JobRelationSerializer(read_only=True, source="run.jobdef")
-    project = ProjectRelationSerializer(read_only=True, source="run.jobdef.project")
-    workspace = WorkspaceRelationSerializer(read_only=True, source="run.jobdef.project.workspace")
+    run = RelationSerializer(read_only=True)
+    job = RelationSerializer(read_only=True, source="run.jobdef")
+    project = RelationSerializer(read_only=True, source="run.jobdef.project")
+    workspace = RelationSerializer(read_only=True, source="run.jobdef.project.workspace")
 
     class Meta:
         model = RunArtifact

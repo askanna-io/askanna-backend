@@ -3,10 +3,10 @@ from django.urls import reverse
 from rest_framework import status
 
 from core.utils.suuid import create_suuid
-from tests import AskAnnaAPITestCASE
+from tests import AskAnnaAPITestCase
 
 
-class BaseProjectMeAPI(AskAnnaAPITestCASE):
+class BaseProjectMeAPI(AskAnnaAPITestCase):
     @pytest.fixture(autouse=True)
     def _set_fixtures(self, test_users, test_workspaces, test_memberships, test_projects):
         self.users = test_users
@@ -54,7 +54,7 @@ class TestProjectMeGet(BaseProjectMeAPI):
 
         response = self.client.get(self.url_private)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["project.remove"] is True  # type: ignore
+        assert response.data["permission"]["project.remove"] is True
 
     def test_me_as_workspace_member(self):
         """A workspace member can get /me on a private project if the user is a member of the workspace"""
@@ -62,8 +62,8 @@ class TestProjectMeGet(BaseProjectMeAPI):
 
         response = self.client.get(self.url_private)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["project.remove"] is False  # type: ignore
-        assert response.data["permission"]["project.run.edit"] is True  # type: ignore
+        assert response.data["permission"]["project.remove"] is False
+        assert response.data["permission"]["project.run.edit"] is True
 
     def test_me_as_user_public_project(self):
         """A user can get /me on a public workspace"""
@@ -72,8 +72,8 @@ class TestProjectMeGet(BaseProjectMeAPI):
         response = self.client.get(self.url_public)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["project.remove"] is False  # type: ignore
-        assert response.data["permission"]["project.run.edit"] is False  # type: ignore
+        assert response.data["permission"]["project.remove"] is False
+        assert response.data["permission"]["project.run.edit"] is False
 
     def test_me_as_user_private_project(self):
         """A user can get /me on a public workspace"""
@@ -91,15 +91,15 @@ class TestProjectMeGet(BaseProjectMeAPI):
 
     def test_me_as_anonymous_private_project(self):
         """An anonymous user cannot get /me on a private project"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.get(self.url_private)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_me_as_anonymous_public_project(self):
         """An anonymous user can get /me on a public project"""
-        self.client.credentials()  # type: ignore
+        self.client.credentials()
 
         response = self.client.get(self.url_public)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["permission"]["project.me.view"] is True  # type: ignore
+        assert response.data["permission"]["project.me.view"] is True

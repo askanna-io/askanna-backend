@@ -6,10 +6,10 @@ from django.urls import reverse
 from rest_framework import status
 
 from account.models.user import PasswordResetLog
-from tests import AskAnnaAPITestCASE
+from tests import AskAnnaAPITestCase
 
 
-class BaseAuthPasswordResetAPI(AskAnnaAPITestCASE):
+class BaseAuthPasswordResetAPI(AskAnnaAPITestCase):
     url = reverse("rest_password_reset", kwargs={"version": "v1"})
     status_url = reverse("rest_password_reset_token_status", kwargs={"version": "v1"})
 
@@ -88,7 +88,7 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert len(mail.outbox) == 0
-        assert response.data["email"] == ["Enter a valid email address."]  # type: ignore
+        assert response.data["email"] == ["Enter a valid email address."]
 
     def test_reset_email_empty(self):
         """Request a reset without specifying the email"""
@@ -102,7 +102,7 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert len(mail.outbox) == 0
-        assert response.data["email"] == ["This field may not be blank."]  # type: ignore
+        assert response.data["email"] == ["This field may not be blank."]
 
     def test_reset_invalid_email_absent(self):
         """Request a reset without specifying the email"""
@@ -115,7 +115,7 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
         )
 
         self.assertTrue(len(mail.outbox) == 0)
-        self.assertTrue(response.data.get("email") == ["This field is required."])  # type: ignore
+        self.assertTrue(response.data.get("email") == ["This field is required."])
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_reset_existing_account_checklog(self):
@@ -163,11 +163,11 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")  # type: ignore
-        uid = invite_link.group("uid")  # type: ignore
+        token = invite_link.group("token")
+        uid = invite_link.group("uid")
 
-        assert invite_link.group("scheme") == "http"  # type: ignore
-        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
+        assert invite_link.group("scheme") == "http"
+        assert invite_link.group("domain") == "front.end.statuscheck"
 
         response = self.client.get(
             self.status_url,
@@ -178,7 +178,7 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["status"] == "valid"  # type: ignore
+        assert response.data["status"] == "valid"
 
     def test_reset_existing_account_check_status_missing_token(self):
         """Request a reset for an existing account and check the status of the reset request without token"""
@@ -208,10 +208,10 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
             re.I | re.M,
         )
 
-        uid = invite_link.group("uid")  # type: ignore
+        uid = invite_link.group("uid")
 
-        assert invite_link.group("scheme") == "http"  # type: ignore
-        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
+        assert invite_link.group("scheme") == "http"
+        assert invite_link.group("domain") == "front.end.statuscheck"
 
         response = self.client.get(
             self.status_url,
@@ -222,7 +222,7 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["token"] == ["This field may not be blank."]  # type: ignore
+        assert response.data["token"] == ["This field may not be blank."]
 
     def test_reset_existing_account_check_status_missing_uid(self):
         """Request a reset for an existing account and check the status of the reset request without uid"""
@@ -252,10 +252,10 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")  # type: ignore
+        token = invite_link.group("token")
 
-        assert invite_link.group("scheme") == "http"  # type: ignore
-        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
+        assert invite_link.group("scheme") == "http"
+        assert invite_link.group("domain") == "front.end.statuscheck"
 
         response = self.client.get(
             self.status_url,
@@ -266,7 +266,7 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["uid"] == ["This field may not be blank."]  # type: ignore
+        assert response.data["uid"] == ["This field may not be blank."]
 
     def test_reset_existing_account_check_status_invalid_token(self):
         response = self.client.post(
@@ -295,10 +295,10 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
             re.I | re.M,
         )
 
-        uid = invite_link.group("uid")  # type: ignore
+        uid = invite_link.group("uid")
 
-        assert invite_link.group("scheme") == "http"  # type: ignore
-        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
+        assert invite_link.group("scheme") == "http"
+        assert invite_link.group("domain") == "front.end.statuscheck"
 
         response = self.client.get(
             self.status_url,
@@ -309,8 +309,8 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["detail"][0] == "The User UID and token combination is invalid."  # type: ignore
-        assert response.data["status"][0] == "invalid"  # type: ignore
+        assert response.data["detail"][0] == "The User UID and token combination is invalid."
+        assert response.data["status"][0] == "invalid"
 
     def test_reset_existing_account_check_status_invalid_uid(self):
         response = self.client.post(
@@ -339,10 +339,10 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
             re.I | re.M,
         )
 
-        token = invite_link.group("token")  # type: ignore
+        token = invite_link.group("token")
 
-        assert invite_link.group("scheme") == "https"  # type: ignore
-        assert invite_link.group("domain") == "front.end.statuscheck"  # type: ignore
+        assert invite_link.group("scheme") == "https"
+        assert invite_link.group("domain") == "front.end.statuscheck"
 
         response = self.client.get(
             self.status_url,
@@ -353,5 +353,5 @@ class TestResetPasswordAPI(BaseAuthPasswordResetAPI):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["uid"][0] == "User UID value is invalid."  # type: ignore
-        assert response.data["status"][0] == "invalid"  # type: ignore
+        assert response.data["uid"][0] == "User UID value is invalid."
+        assert response.data["status"][0] == "invalid"

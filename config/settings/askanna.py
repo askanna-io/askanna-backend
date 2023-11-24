@@ -28,9 +28,6 @@ def settings(config, env):
     parsed_url = urlparse(config.ASKANNA_API_URL)
     config.ASKANNA_ENVIRONMENT = api_environments.get(parsed_url.netloc.split(".")[0], "review")
 
-    # Setting for internal job runs
-    config.JOB_CREATE_PROJECT_SUUID = "640q-2AMP-T5BL-Cnml"
-
     # Set default Docker image for the runner
     config.RUNNER_DEFAULT_DOCKER_IMAGE = env.str("RUNNER_DEFAULT_DOCKER_IMAGE", default="askanna/python:3.11")
     config.RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME = env.str("RUNNER_DEFAULT_DOCKER_IMAGE_USERNAME", default=None)

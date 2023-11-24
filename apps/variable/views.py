@@ -5,14 +5,15 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins
 from rest_framework.exceptions import NotAuthenticated
 
-from account.models.membership import MSP_WORKSPACE, Membership
+from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
 from core.mixins import (
     ObjectRoleMixin,
     PartialUpdateModelMixin,
     SerializerByActionMixin,
 )
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
+from core.permissions.role_utils import get_user_roles_for_project
 from core.viewsets import AskAnnaGenericViewSet
 from project.models import Project
 from variable.models import Variable
@@ -50,8 +51,7 @@ class VariableView(
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    queryset = Variable.objects.active().select_related("project", "project__workspace")  # type: ignore
-    lookup_field = "suuid"
+    queryset = Variable.objects.active().select_related("project", "project__workspace")
     search_fields = ["suuid", "name"]
     ordering_fields = [
         "created_at",
@@ -99,11 +99,11 @@ class VariableView(
 
             project_suuid = request.data.get("project_suuid")
             try:
-                project = Project.objects.active().get(suuid=project_suuid)  # type: ignore
+                project = Project.objects.active(add_select_related=True).get(suuid=project_suuid)
             except Project.DoesNotExist as exc:
                 raise Http404 from exc
 
-            return Membership.get_roles_for_project(request.user, project)
+            return get_user_roles_for_project(request.user, project)
 
         return []
 
@@ -119,9 +119,9 @@ class VariableView(
                 .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
 
-        member_of_workspaces = user.memberships.filter(  # type: ignore
-            object_type=MSP_WORKSPACE, deleted_at__isnull=True
-        ).values_list("object_uuid", flat=True)
+        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
+            "object_uuid", flat=True
+        )
 
         return (
             super()

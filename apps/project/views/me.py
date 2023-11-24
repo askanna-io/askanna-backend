@@ -6,7 +6,7 @@ from rest_framework import mixins
 from account.models.membership import Membership
 from account.serializers.me import MembershipMeSerializer
 from core.mixins import ObjectRoleMixin
-from core.permissions.role import RoleBasedPermission
+from core.permissions.askanna import RoleBasedPermission
 from core.viewsets import AskAnnaGenericViewSet
 from project.models import Project
 

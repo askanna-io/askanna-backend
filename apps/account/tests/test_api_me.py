@@ -2,17 +2,17 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-from tests import AskAnnaAPITestCASE
-from tests.utils import get_avatar_file
+from tests import AskAnnaAPITestCase
 
 
-class BaseMeAPI(AskAnnaAPITestCASE):
+class BaseMeAPI(AskAnnaAPITestCase):
     url = reverse("me", kwargs={"version": "v1"})
 
     @pytest.fixture(autouse=True)
-    def _set_users(self, test_users, test_memberships):
+    def _set_fixtures(self, test_users, test_memberships, avatar_file):
         self.users = test_users
         self.memberships = test_memberships
+        self.avatar_file = avatar_file
 
 
 class TestMeGet(BaseMeAPI):
@@ -78,7 +78,7 @@ class TestMeGet(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -98,7 +98,7 @@ class TestMeGet(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -123,7 +123,7 @@ class TestMeGet(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -147,7 +147,7 @@ class TestMeGet(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -160,7 +160,7 @@ class TestMeGet(BaseMeAPI):
 
         self.client.credentials()
         response = self.client.get(avatar_url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         self.set_authorization(self.users["workspace_admin"])
         response = self.client.patch(self.url, {"avatar": ""})
@@ -171,7 +171,7 @@ class TestMeGet(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -196,7 +196,7 @@ class TestMeGet(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -307,7 +307,7 @@ class TestMePatch(BaseMeAPI):
         response = self.client.patch(
             self.url,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -339,7 +339,7 @@ class TestMePatch(BaseMeAPI):
             },
             format="json",
         )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 class TestMeDelete(BaseMeAPI):
@@ -362,4 +362,4 @@ class TestMeDelete(BaseMeAPI):
         self.client.credentials()
 
         response = self.client.delete(self.url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

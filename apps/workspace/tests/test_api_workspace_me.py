@@ -3,16 +3,16 @@ from django.urls import reverse
 from rest_framework import status
 
 from core.utils.suuid import create_suuid
-from tests import AskAnnaAPITestCASE
-from tests.utils import get_avatar_file
+from tests import AskAnnaAPITestCase
 
 
-class BaseWorkspaceMeAPI(AskAnnaAPITestCASE):
+class BaseWorkspaceMeAPI(AskAnnaAPITestCase):
     @pytest.fixture(autouse=True)
-    def _set_fixtures(self, test_users, test_workspaces, test_memberships):
+    def _set_fixtures(self, test_users, test_workspaces, test_memberships, avatar_file):
         self.users = test_users
         self.workspaces = test_workspaces
         self.memberships = test_memberships
+        self.avatar_file = avatar_file
 
     def setUp(self):
         super().setUp()
@@ -91,7 +91,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         self.client.credentials()
 
         response = self.client.get(self.url_private)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_me_as_anonymous_public_workspace(self):
         """An anonymous user can get /me on a public workspace"""
@@ -109,13 +109,14 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_private,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
 
         avatar_url = response.data.get("avatar_file").get("url")
         assert avatar_url is not None
+
         response = self.client.get(avatar_url)
         assert response.status_code == status.HTTP_200_OK
 
@@ -131,7 +132,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_public,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -153,7 +154,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_public,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -174,7 +175,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_private,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -184,7 +185,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
 
         self.client.credentials()
         response = self.client.get(avatar_url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         self.set_authorization(self.users["workspace_admin"])
         response = self.client.patch(self.url_private, {"avatar": ""})
@@ -195,7 +196,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_private,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -217,7 +218,7 @@ class TestWorkspaceMeGet(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_private,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -300,7 +301,7 @@ class TestWorkspaceMePatch(BaseWorkspaceMeAPI):
         response = self.client.patch(
             self.url_private,
             {
-                "avatar": get_avatar_file(),
+                "avatar": self.avatar_file,
             },
             format="multipart",
         )
@@ -327,7 +328,7 @@ class TestWorkspaceMePatch(BaseWorkspaceMeAPI):
             },
             format="json",
         )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 class TestWorkspaceMeDelete(BaseWorkspaceMeAPI):
@@ -388,4 +389,4 @@ class TestWorkspaceMeDelete(BaseWorkspaceMeAPI):
     def test_me_as_anonymous(self):
         """Anonymous cannot delete workspace /me"""
         response = self.client.delete(self.url_private)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
