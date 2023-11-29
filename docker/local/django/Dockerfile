@@ -33,7 +33,7 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install --no-install-recommends --assume-yes \
       # Develop dependencies
-      sudo bash-completion vim git \
+      sudo bash bash-completion vim git \
       # Psycopg2 dependency
       libpq-dev \
       # Pillow dependencies

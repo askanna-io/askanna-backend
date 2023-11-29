@@ -14,7 +14,7 @@ def delete_workspaces():
     """
 
     remove_objects(
-        Workspace.objects.all(
+        Workspace.objects.filter(
             deleted_at__isnull=False,
         )
     )

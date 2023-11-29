@@ -26,7 +26,9 @@ class PackageSerializer(serializers.ModelSerializer):
         help_text="Content type of the file. For packages only zip files are allowed.",
     )
 
-    description = serializers.CharField(default="", source="package_file.description")
+    description = serializers.CharField(
+        required=False, default="", allow_blank=True, source="package_file.description"
+    )
 
     download_info = FileDownloadInfoSerializer(read_only=True, source="package_file")
 
@@ -92,8 +94,6 @@ class PackageCreateBaseSerializer(PackageSerializer):
     filename = serializers.CharField(required=False, source="package_file.name")
     size = serializers.IntegerField(required=False, source="package_file.size")
     etag = serializers.CharField(required=False, source="package_file.etag", help_text="MD5 digest of the file")
-
-    description = serializers.CharField(required=False, source="package_file.description")
 
     def create(self, validated_data):
         package_file = validated_data.pop("package", None)
