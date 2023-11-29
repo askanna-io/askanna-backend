@@ -1,7 +1,7 @@
 from django.http import Http404
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 
 from account.serializers.me import MeSerializer
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
@@ -16,7 +16,7 @@ class MeMixin(
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    parser_classes = [MultiPartParser, JSONParser, FormParser]
+    parser_classes = [MultiPartParser, JSONParser]
     permission_classes = [RoleBasedPermission]
 
     def perform_destroy(self, instance):

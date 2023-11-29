@@ -7,12 +7,13 @@ from drf_spectacular.utils import (
 )
 from rest_framework import mixins, status
 from rest_framework.exceptions import NotAuthenticated, NotFound, ValidationError
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 
 from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
-from core.mixins import PartialUpdateModelMixin
+from core.mixins import PartialUpdateModelMixin, SerializerByActionMixin
 from core.permissions.askanna import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
 from package.models import Package
@@ -50,6 +51,13 @@ class PackageFilterSet(django_filters.FilterSet):
 
 
 @extend_schema_view(
+    list=extend_schema(
+        summary="List packages",
+        description=(
+            "List all packages for a project for which you have access to. The list is paginated and you can use "
+            "ordering, search and fields to filter the list."
+        ),
+    ),
     create=extend_schema(
         summary="Create a new package",
         request=PackageCreateBaseSerializer,
@@ -60,22 +68,19 @@ class PackageFilterSet(django_filters.FilterSet):
             many=False,
         ),
     ),
-    list=extend_schema(
-        summary="List packages",
-        description=(
-            "List all packages for a project for which you have access to. The list is paginated and you can use "
-            "ordering, search and fields to filter the list."
-        ),
-    ),
     retrieve=extend_schema(
         summary="Get package info",
-        responses=PackageSerializerWithFileList,
+        description=(
+            "Retrieve information about a package. This includes the package meta data, download info and a list of "
+            "files that are part of the package."
+            "<p>If the download info is of type `askanna` the `download_info.url` can be used to download the package "
+            "or to get a specific file from the package you add the query parameter `file_path` to the url. See the "
+            "`storage` section in the API documentation for more info.</p>"
+        ),
     ),
     partial_update=extend_schema(
         summary="Update package info",
         description="Update the package's `description`.",
-        request=PackageSerializer,
-        responses=PackageSerializer,
     ),
     destroy=extend_schema(
         summary="Remove a package",
@@ -86,6 +91,7 @@ class PackageFilterSet(django_filters.FilterSet):
     ),
 )
 class PackageViewSet(
+    SerializerByActionMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -128,9 +134,15 @@ class PackageViewSet(
         "created_by.name": "created_by_name",
     }
     filterset_class = PackageFilterSet
-    parser_classes = [MultiPartParser, JSONParser, FormParser]
-    serializer_class = PackageSerializer
+    parser_classes = [MultiPartParser, JSONParser]
     permission_classes = [AskAnnaPermissionByAction]
+
+    serializer_class = PackageSerializer
+    serializer_class_by_action = {
+        "list": PackageSerializer,
+        "retrieve": PackageSerializerWithFileList,
+        "partial_update": PackageSerializerWithFileList,
+    }
 
     def get_queryset(self):
         """
@@ -155,6 +167,12 @@ class PackageViewSet(
                 | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
+
+    def get_parsers(self):
+        if self.action == "partial_update":
+            return [parser() for parser in api_settings.DEFAULT_PARSER_CLASSES]
+
+        return [parser() for parser in self.parser_classes]
 
     def get_parrent_project(self, request) -> Project | None:
         """
@@ -204,18 +222,6 @@ class PackageViewSet(
         )
 
         return super().create(request, *args, **kwargs)
-
-    def retrieve(self, request, *args, **kwargs):
-        """
-        Retrieve information about a package. This includes the package meta data, download info and a list of files
-        that are part of the package.
-
-        If the download info is of type `askanna` the `download_info.url` can be used to download the package or to
-        get a specific file from the package you add the query parameter `file_path` to the url. See the `storage`
-        section in the API documentation for more info.
-        """
-        self.serializer_class = PackageSerializerWithFileList
-        return super().retrieve(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.to_deleted()

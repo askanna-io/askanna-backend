@@ -6,7 +6,7 @@ from django.http import FileResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from core.http import RangeFileResponse
@@ -54,7 +54,7 @@ class FileViewSet(AskAnnaGenericViewSet):
     queryset = File.objects.active(add_select_related=True)
     serializer_class = FileInfoSerializer
     permission_classes = [AskAnnaPermissionByAction]
-    parser_classes = [MultiPartParser, JSONParser, FormParser]
+    parser_classes = [MultiPartParser, JSONParser]
 
     @extend_schema(summary="Get info about a file")
     @action(detail=True, methods=["get"])

@@ -12,7 +12,13 @@ def settings(config, _env):
         ],
         "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
         "DEFAULT_PAGINATION_CLASS": "core.pagination.CursorPagination",
-        "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+        "DEFAULT_PARSER_CLASSES": [
+            "rest_framework.parsers.JSONParser",
+            "rest_framework.parsers.MultiPartParser",
+        ],
+        "DEFAULT_RENDERER_CLASSES": [
+            "rest_framework.renderers.JSONRenderer",
+        ],
         "DEFAULT_FILTER_BACKENDS": [
             "core.filters.OrderingFilter",
             "rest_framework.filters.SearchFilter",

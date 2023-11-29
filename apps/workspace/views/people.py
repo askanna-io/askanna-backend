@@ -5,7 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import mixins
 from rest_framework.decorators import action
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -149,7 +149,7 @@ class WorkspacePeopleViewSet(
     }
     filterset_class = PeopleFilterSet
 
-    parser_classes = [MultiPartParser, JSONParser, FormParser]
+    parser_classes = [MultiPartParser, JSONParser]
 
     serializer_class = PeopleSerializer
 
