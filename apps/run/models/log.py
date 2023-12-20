@@ -21,20 +21,23 @@ class RunLog(BaseModel):
     exit_code = models.IntegerField(default=0)
     stdout = models.JSONField(blank=True, null=True)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.logqueue = RedisLogQueue(suuid=self.run.suuid)
-        self.log_idx = 0
-
     def log(self, message: str | None = None, timestamp: str | None = None, print_log: bool = False):
+        if not self.logqueue:
+            self.logqueue = RedisLogQueue(suuid=self.run.suuid)
+            self.log_idx = 0
+
         self.log_idx += 1
         if not timestamp:
             timestamp = datetime.datetime.utcnow().isoformat()
         self.logqueue.append([self.log_idx, timestamp, message])
+
         if print_log:
             logger.info([self.log_idx, timestamp, message])
 
     def save_stdout(self):
+        if not self.logqueue:
+            return
+
         self.stdout = self.logqueue.get()
         self.save(
             update_fields=[
@@ -43,7 +46,6 @@ class RunLog(BaseModel):
             ]
         )
 
-        # remove the queue after saving
         self.logqueue.remove()
 
     def save_exitcode(self, exit_code=0):

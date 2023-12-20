@@ -13,12 +13,13 @@ from rest_framework.response import Response
 
 from account.models.membership import MSP_WORKSPACE
 from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
-from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.askanna import RoleBasedPermission
+from core.mixins import PartialUpdateModelMixin, SerializerByActionMixin
+from core.permissions.askanna import AskAnnaPermissionByAction
 from core.utils import stream
 from core.viewsets import AskAnnaGenericViewSet
 from run.models import RedisLogQueue
 from run.models.run import STATUS_MAPPING, Run, get_status_external
+from run.serializers.artifact import RunArtifactSerializer
 from run.serializers.run import RunSerializer, RunStatusSerializer
 
 
@@ -137,51 +138,57 @@ class RunFilterSet(FilterSet):
 
 
 @extend_schema_view(
-    list=extend_schema(description="List the runs you have access to"),
-    retrieve=extend_schema(description="Get info from a specific run"),
-    partial_update=extend_schema(description="Update a run"),
-    destroy=extend_schema(description="Remove a run"),
+    list=extend_schema(
+        summary="List runs",
+        description="List the runs you have access to",
+    ),
+    retrieve=extend_schema(
+        summary="Get run info",
+        description="Get info from a specific run",
+    ),
+    partial_update=extend_schema(
+        summary="Update run info",
+        description="Update the info of a specific run",
+    ),
+    destroy=extend_schema(
+        summary="Remove a run",
+        description="Remove a run",
+    ),
+    manifest=extend_schema(
+        summary="Get run manifest",
+    ),
+    log=extend_schema(
+        summary="Get run log",
+    ),
+    result=extend_schema(
+        summary="Get run result",
+    ),
+    status=extend_schema(
+        summary="Get run status",
+    ),
 )
 class RunView(
-    ObjectRoleMixin,
+    SerializerByActionMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     PartialUpdateModelMixin,
     mixins.DestroyModelMixin,
     AskAnnaGenericViewSet,
 ):
-    queryset = (
-        Run.objects.active()
-        .select_related(
-            "jobdef__project__workspace",
-            "payload",
-            "package",
-            "created_by_member__avatar_file",
-            "created_by_user__avatar_file",
-            "run_image",
-            "result",
-            "output",
-        )
-        .prefetch_related(
-            "artifact",
-            "metrics_meta",
-            "variables_meta",
-        )
-        .annotate(
-            member_name=Case(
-                When(created_by_member__use_global_profile=True, then="created_by_user__name"),
-                When(created_by_member__use_global_profile=False, then="created_by_member__name"),
-            ),
-            status_external=Case(
-                When(status="SUBMITTED", then=Value(get_status_external("SUBMITTED"))),
-                When(status="PENDING", then=Value(get_status_external("PENDING"))),
-                When(status="PAUSED", then=Value(get_status_external("PAUSED"))),
-                When(status="IN_PROGRESS", then=Value(get_status_external("IN_PROGRESS"))),
-                When(status="FAILED", then=Value(get_status_external("FAILED"))),
-                When(status="SUCCESS", then=Value(get_status_external("SUCCESS"))),
-                When(status="COMPLETED", then=Value(get_status_external("COMPLETED"))),
-            ),
-        )
+    queryset = Run.objects.active(add_select_related=True).annotate(
+        member_name=Case(
+            When(created_by_member__use_global_profile=True, then="created_by_member__user__name"),
+            When(created_by_member__use_global_profile=False, then="created_by_member__name"),
+        ),
+        status_external=Case(
+            When(status="SUBMITTED", then=Value(get_status_external("SUBMITTED"))),
+            When(status="PENDING", then=Value(get_status_external("PENDING"))),
+            When(status="PAUSED", then=Value(get_status_external("PAUSED"))),
+            When(status="IN_PROGRESS", then=Value(get_status_external("IN_PROGRESS"))),
+            When(status="FAILED", then=Value(get_status_external("FAILED"))),
+            When(status="SUCCESS", then=Value(get_status_external("SUCCESS"))),
+            When(status="COMPLETED", then=Value(get_status_external("COMPLETED"))),
+        ),
     )
     search_fields = ["suuid", "name"]
     ordering_fields = [
@@ -210,19 +217,12 @@ class RunView(
     filterset_class = RunFilterSet
 
     serializer_class = RunSerializer
-
-    permission_classes = [RoleBasedPermission]
-    rbac_permissions_by_action = {
-        "list": ["project.run.list"],
-        "retrieve": ["project.run.list"],
-        "log": ["project.run.list"],
-        "manifest": ["project.run.list"],
-        "status": ["project.run.list"],
-        "result": ["project.run.list"],
-        "create": ["project.run.create"],
-        "destroy": ["project.run.remove"],
-        "partial_update": ["project.run.edit"],
+    serializer_class_by_action = {
+        "artifact": RunArtifactSerializer,
+        "status": RunStatusSerializer,
     }
+
+    permission_classes = [AskAnnaPermissionByAction]
 
     def get_queryset(self):
         """
@@ -246,9 +246,6 @@ class RunView(
                 | (Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
             )
         )
-
-    def get_object_project(self):
-        return self.current_object.jobdef.project
 
     def perform_destroy(self, instance):
         instance.to_deleted()
@@ -365,7 +362,7 @@ class RunView(
         },
     )
     @action(detail=True, methods=["get"], serializer_class=None)
-    def log(self, request, suuid, **kwargs):
+    def log(self, request, **kwargs):
         "Get the log from a run"
         instance = self.get_object()
         if instance.is_finished:
@@ -401,8 +398,8 @@ class RunView(
         return Response(response_json, status=status.HTTP_200_OK)
 
     @extend_schema(responses={200: OpenApiTypes.BYTE})
-    @action(detail=True, methods=["get", "head"], serializer_class=None)
-    def result(self, request, suuid, **kwargs):
+    @action(detail=True, methods=["get"], serializer_class=None)
+    def result(self, request, **kwargs):
         """Get the result from a specific run"""
         run = self.get_object()
         try:
@@ -419,9 +416,9 @@ class RunView(
 
         return stream(request, run.result.stored_path, content_type=content_type, size=size)
 
-    @action(detail=True, methods=["get"], serializer_class=RunStatusSerializer)
-    def status(self, request, suuid, **kwargs):
+    @action(detail=True, methods=["get"])
+    def status(self, request, *args, **kwargs):
         """Get the status from a specific run"""
-        run = self.get_object()
-        serializer = RunStatusSerializer(run, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)

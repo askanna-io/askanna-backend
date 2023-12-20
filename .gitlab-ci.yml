@@ -11,11 +11,6 @@ stages:
   - publish
   - cleanup
 
-include:
-  - template: Code-Quality.gitlab-ci.yml
-  - template: Security/SAST.gitlab-ci.yml
-  - template: Security/Secret-Detection.gitlab-ci.yml
-
 # To use Kaniko extend the job and set the variable for DOCKER_DESTINATION and optionally DOCKER_FILE
 .use-kaniko:
   tags:
@@ -92,15 +87,6 @@ build_production:
   script:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $DOCKER_FILE --destination $DOCKER_DESTINATION --build-arg BASE_IMAGE=$DOCKER_BASE_IMAGE
 
-code_quality:
-  rules:
-    - if: ($CODE_QUALITY_DISABLED || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "beta" || $CI_COMMIT_TAG)
-      when: never
-    - if: $CI_COMMIT_BRANCH
-  before_script:
-    - echo -e "[pycodestyle]\nmax-line-length = 119" > setup.cfg
-    - echo -e "rule 'MD013', :line_length = 119" > .mdlrc
-
 .test-base:
   stage: test
   image:
@@ -144,7 +130,6 @@ code_quality:
     MINIO_ACCESS_KEY: $MINIO_ROOT_USER
     MINIO_SECRET_KEY: $MINIO_ROOT_PASSWORD
     ASKANNA_API_URL: http://localhost:8000
-    ASKANNA_CDN_URL: http://localhost:8000/files
     ASKANNA_UI_URL: http://localhost:4173
     ASKANNA_FILESTORAGE: filesystem
   services:

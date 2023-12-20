@@ -61,7 +61,7 @@ class TestModelFile:
             created_for=test_users["workspace_admin"],
             created_by=test_users["workspace_admin"],
         )
-        with pytest.raises(ValueError) as exc:
+        with pytest.raises(AssertionError) as exc:
             file.zipfile_namelist  # noqa: B018
 
         assert "File is not a Zipfile" in str(exc.value)
@@ -82,7 +82,7 @@ class TestModelFile:
             created_for=test_users["workspace_admin"],
             created_by=test_users["workspace_admin"],
         )
-        with pytest.raises(ValueError) as exc:
+        with pytest.raises(AssertionError) as exc:
             file.get_file_from_zipfile("askanna.yml")
 
         assert "File is not a Zipfile" in str(exc.value)

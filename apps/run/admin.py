@@ -18,7 +18,7 @@ from run.models import (
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {"fields": ("uuid", "suuid", "jobdef", "created_by_user", "created_by_member")}),
+        (None, {"fields": ("uuid", "suuid", "jobdef", "created_by_member")}),
         ("Run info", {"fields": ("name", "description", "status", "celery_task_id", "duration")}),
         ("Metadata", {"fields": ("package", "trigger", "payload", "environment_name", "run_image", "timezone")}),
         ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
@@ -26,35 +26,32 @@ class RunAdmin(admin.ModelAdmin):
     readonly_fields = [
         "uuid",
         "suuid",
+        "jobdef",
+        "created_by_member",
         "celery_task_id",
+        "package",
         "trigger",
+        "payload",
         "started_at",
         "finished_at",
         "duration",
         "environment_name",
+        "run_image",
         "timezone",
         "modified_at",
         "created_at",
-    ]
-    raw_id_fields = [
-        "jobdef",
-        "package",
-        "created_by_user",
-        "created_by_member",
-        "payload",
-        "run_image",
     ]
 
     list_display = [
         "suuid",
         "name",
-        "job_name",
+        "jobdef",
         "project",
         "status",
         "created_at",
         "started_at",
         "finished_at",
-        "created_by_user",
+        "created_by_member",
     ]
     date_hierarchy = "created_at"
     list_filter = [
@@ -62,6 +59,7 @@ class RunAdmin(admin.ModelAdmin):
         "created_at",
         "started_at",
         "finished_at",
+        "modified_at",
         "deleted_at",
     ]
     search_fields = [
@@ -70,14 +68,7 @@ class RunAdmin(admin.ModelAdmin):
         "name",
         "jobdef__uuid",
         "jobdef__suuid",
-        "jobdef__name",
     ]
-
-    def project(self, obj):  # pragma: no cover
-        return obj.jobdef.project.name
-
-    def job_name(self, obj):  # pragma: no cover
-        return obj.jobdef.name
 
     def has_add_permission(self, request):
         return False
@@ -88,41 +79,31 @@ class RunAdmin(admin.ModelAdmin):
 
 @admin.register(RunArtifact)
 class RunArtifactAdmin(admin.ModelAdmin):
-    fields = [
-        "suuid",
-        "run",
-        "size",
-        "count_dir",
-        "count_files",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
+    fieldsets = (
+        (None, {"fields": ("uuid", "suuid", "run")}),
+        ("Artifact info", {"fields": ("artifact_file",)}),
+        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
+    )
     readonly_fields = [
+        "uuid",
         "suuid",
-        "size",
-        "count_dir",
-        "count_files",
+        "run",
+        "artifact_file",
         "modified_at",
         "created_at",
-    ]
-    raw_id_fields = [
-        "run",
     ]
 
     list_display = [
         "suuid",
         "run",
-        "job_name",
+        "job",
         "project",
-        "count_dir",
-        "count_files",
-        "size",
         "created_at",
     ]
     date_hierarchy = "created_at"
     list_filter = [
         "created_at",
+        "modified_at",
         "deleted_at",
     ]
     search_fields = [
@@ -130,13 +111,13 @@ class RunArtifactAdmin(admin.ModelAdmin):
         "suuid",
         "run__uuid",
         "run__suuid",
+        "run__jobdef__uuid",
+        "run__jobdef__suuid",
+        "run__jobdef__project__uuid",
+        "run__jobdef__project__suuid",
+        "run__jobdef__project__workspace__uuid",
+        "run__jobdef__project__workspace__suuid",
     ]
-
-    def project(self, obj):  # pragma: no cover
-        return obj.run.jobdef.project.name
-
-    def job_name(self, obj):  # pragma: no cover
-        return obj.run.jobdef.name
 
     def has_add_permission(self, request):
         return False
@@ -174,7 +155,7 @@ class RunLogAdmin(admin.ModelAdmin):
     list_display = [
         "suuid",
         "run",
-        "job_name",
+        "job",
         "project",
         "exit_code",
         "lines",
@@ -194,13 +175,13 @@ class RunLogAdmin(admin.ModelAdmin):
         "run__suuid",
     ]
 
-    def project(self, obj):  # pragma: no cover
-        return obj.run.jobdef.project.name
+    def project(self, obj):
+        return obj.run.jobdef.project
 
-    def job_name(self, obj):  # pragma: no cover
-        return obj.run.jobdef.name
+    def job(self, obj):
+        return obj.run.jobdef
 
-    def log_preview(self, obj):  # pragma: no cover
+    def log_preview(self, obj):
         if obj.lines > 50:
             log_first = json.dumps(obj.stdout[:20], indent=4)
             log_last = json.dumps(obj.stdout[-20:], indent=4)
@@ -245,7 +226,7 @@ class RunResultAdmin(admin.ModelAdmin):
     list_display = [
         "suuid",
         "run",
-        "job_name",
+        "job",
         "project",
         "size",
         "created_at",
@@ -262,11 +243,11 @@ class RunResultAdmin(admin.ModelAdmin):
         "run__suuid",
     ]
 
-    def project(self, obj):  # pragma: no cover
-        return obj.run.jobdef.project.name
+    def project(self, obj):
+        return obj.run.jobdef.project
 
-    def job_name(self, obj):  # pragma: no cover
-        return obj.run.jobdef.name
+    def job(self, obj):
+        return obj.run.jobdef
 
     def has_add_permission(self, request):
         return False
@@ -280,7 +261,7 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
     list_display = [
         "suuid",
         "run",
-        "job_name",
+        "job",
         "count",
         "size",
         "created_at",
@@ -297,7 +278,7 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {"fields": ("suuid", "run", "job_name", "project_name", "workspace_name")}),
+        (None, {"fields": ("suuid", "run", "job", "project", "workspace")}),
         ("Metrics meta", {"fields": ("count", "size", "metric_names", "label_names")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
@@ -313,13 +294,13 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
         "deleted_at",
     ]
 
-    def job_name(self, obj):  # pragma: no cover
+    def job(self, obj):
         return obj.run.jobdef
 
-    def project_name(self, obj):  # pragma: no cover
+    def project(self, obj):
         return obj.run.jobdef.project
 
-    def workspace_name(self, obj):  # pragma: no cover
+    def workspace(self, obj):
         return obj.run.jobdef.project.workspace
 
     def has_add_permission(self, request):
@@ -336,7 +317,7 @@ class RunMetricMetaAdmin(admin.ModelAdmin):
 class RunMetricAdmin(admin.ModelAdmin):
     list_display = [
         "run",
-        "job_name",
+        "job",
         "metric_preview",
         "label_preview",
         "created_at",
@@ -358,15 +339,15 @@ class RunMetricAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {"fields": ("run", "job_name", "project_name", "workspace_name")}),
+        (None, {"fields": ("run", "job", "project", "workspace")}),
         ("Metric", {"fields": ("metric", "label")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "run",
-        "job_name",
-        "project_name",
-        "workspace_name",
+        "job",
+        "project",
+        "workspace",
         "metric",
         "label",
         "modified_at",
@@ -374,19 +355,19 @@ class RunMetricAdmin(admin.ModelAdmin):
         "deleted_at",
     ]
 
-    def job_name(self, obj):  # pragma: no cover
+    def job(self, obj):
         return obj.run.jobdef
 
-    def project_name(self, obj):  # pragma: no cover
+    def project(self, obj):
         return obj.run.jobdef.project
 
-    def workspace_name(self, obj):  # pragma: no cover
+    def workspace(self, obj):
         return obj.run.jobdef.project.workspace
 
-    def metric_preview(self, obj):  # pragma: no cover
+    def metric_preview(self, obj):
         return truncatechars(obj.metric, 100)
 
-    def label_preview(self, obj):  # pragma: no cover
+    def label_preview(self, obj):
         return truncatechars(obj.label, 100)
 
     def has_add_permission(self, request):
@@ -404,7 +385,7 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
     list_display = [
         "suuid",
         "run",
-        "job_name",
+        "job",
         "count",
         "size",
         "created_at",
@@ -421,7 +402,7 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {"fields": ("suuid", "run", "job_name", "project_name", "workspace_name")}),
+        (None, {"fields": ("suuid", "run", "job", "project", "workspace")}),
         ("Variables meta", {"fields": ("count", "size", "variable_names", "label_names")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
@@ -437,13 +418,13 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
         "deleted_at",
     ]
 
-    def job_name(self, obj):  # pragma: no cover
+    def job(self, obj):
         return obj.run.jobdef
 
-    def project_name(self, obj):  # pragma: no cover
+    def project(self, obj):
         return obj.run.jobdef.project
 
-    def workspace_name(self, obj):  # pragma: no cover
+    def workspace(self, obj):
         return obj.run.jobdef.project.workspace
 
     def has_add_permission(self, request):
@@ -460,7 +441,7 @@ class RunVariableMetaAdmin(admin.ModelAdmin):
 class RunVariableAdmin(admin.ModelAdmin):
     list_display = [
         "run",
-        "job_name",
+        "job",
         "variable_preview",
         "is_masked",
         "label_preview",
@@ -484,15 +465,15 @@ class RunVariableAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {"fields": ("run", "job_name", "project_name", "workspace_name")}),
+        (None, {"fields": ("run", "job", "project", "workspace")}),
         ("Metric", {"fields": ("variable", "is_masked", "label")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
         "run",
-        "job_name",
-        "project_name",
-        "workspace_name",
+        "job",
+        "project",
+        "workspace",
         "variable",
         "is_masked",
         "label",
@@ -501,19 +482,19 @@ class RunVariableAdmin(admin.ModelAdmin):
         "deleted_at",
     ]
 
-    def job_name(self, obj):  # pragma: no cover
+    def job(self, obj):
         return obj.run.jobdef
 
-    def project_name(self, obj):  # pragma: no cover
+    def project(self, obj):
         return obj.run.jobdef.project
 
-    def workspace_name(self, obj):  # pragma: no cover
+    def workspace(self, obj):
         return obj.run.jobdef.project.workspace
 
-    def variable_preview(self, obj):  # pragma: no cover
+    def variable_preview(self, obj):
         return truncatechars(obj.variable, 100)
 
-    def label_preview(self, obj):  # pragma: no cover
+    def label_preview(self, obj):
         return truncatechars(obj.label, 100)
 
     def has_add_permission(self, request):

@@ -1,5 +1,3 @@
-from zipfile import ZipFile
-
 from django.conf import settings
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.db.transaction import on_commit
@@ -8,18 +6,16 @@ from django.dispatch import receiver
 from config.celery_app import app as celery_app
 
 from account.models.membership import MSP_WORKSPACE
-from core.utils import get_files_and_directories_in_zip_file
 from run.models import (
     Run,
-    RunArtifact,
     RunLog,
     RunMetricMeta,
     RunResult,
     RunVariable,
     RunVariableMeta,
 )
-from run.signals import artifact_upload_finish, result_upload_finish
-from storage.utils import get_content_type_from_file
+from run.signals import result_upload_finish
+from storage.utils.file import get_content_type_from_file
 
 
 @receiver(result_upload_finish)
@@ -36,39 +32,6 @@ def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
                 "modified_at",
             ]
         )
-
-
-@receiver(artifact_upload_finish)
-def handle_upload(sender, signal, postheaders, obj, **kwargs):
-    """
-    After saving the artifact, we extract the contents of the artifact to
-    BLOB_ROOT, which is served on the CDN to allow us to retrieve the individual
-    files one by one.
-    """
-    source_location = settings.ARTIFACTS_ROOT
-    target_location = settings.BLOB_ROOT
-
-    source_path = source_location / obj.storage_location / obj.filename
-    target_path = target_location / str(obj.uuid)
-
-    zip_list = get_files_and_directories_in_zip_file(source_path)
-    obj.count_dir = sum(map(lambda x: x["type"] == "directory", zip_list))
-    obj.count_files = sum(map(lambda x: x["type"] == "file", zip_list))
-    obj.save(
-        update_fields=[
-            "count_dir",
-            "count_files",
-            "modified_at",
-        ]
-    )
-
-    with ZipFile(source_path, mode="r") as zip_file:
-        zip_file.extractall(path=target_path)
-
-
-@receiver(pre_delete, sender=RunArtifact)
-def delete_artifact(sender, instance, **kwargs):
-    instance.prune()
 
 
 @receiver(pre_delete, sender=RunResult)

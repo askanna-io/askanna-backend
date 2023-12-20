@@ -1,6 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q
 from django.db.transaction import on_commit
 from django.utils import timezone
 
@@ -41,8 +40,8 @@ def get_status_external(status: str) -> str:
 
 
 class RunQuerySet(models.QuerySet):
-    def active(self):
-        return self.filter(
+    def active(self, add_select_related: bool = False):
+        active_query = self.filter(
             deleted_at__isnull=True,
             jobdef__deleted_at__isnull=True,
             jobdef__project__deleted_at__isnull=True,
@@ -50,13 +49,23 @@ class RunQuerySet(models.QuerySet):
             package__deleted_at__isnull=True,
         )
 
-    def inactive(self):
-        return self.filter(
-            Q(deleted_at__isnull=False)
-            | Q(jobdef__deleted_at__isnull=False)
-            | Q(jobdef__project__deleted_at__isnull=False)
-            | Q(jobdef__project__workspace__deleted_at__isnull=False)
-        )
+        if add_select_related is True:
+            active_query = active_query.select_related(
+                "jobdef__project__workspace",
+                "payload",
+                "package__package_file",
+                "created_by_member__avatar_file",
+                "created_by_member__user__avatar_file",
+                "run_image",
+                "result",
+                "output",
+            ).prefetch_related(
+                "artifacts__artifact_file",
+                "metrics_meta",
+                "variables_meta",
+            )
+
+        return active_query
 
 
 class Run(AuthorModel, NameDescriptionBaseModel):
@@ -85,9 +94,17 @@ class Run(AuthorModel, NameDescriptionBaseModel):
 
     objects = RunQuerySet().as_manager()
 
+    permission_by_action = {
+        "list": "project.run.list",
+        ("retrieve", "log", "manifest", "status", "result", "artifact"): "project.run.view",
+        ("create", "upload_part", "upload_complete", "upload_abort"): "project.run.create",
+        "partial_update": "project.run.edit",
+        "destroy": "project.run.remove",
+    }
+
     @property
-    def output(self):
-        return self.output
+    def project(self):
+        return self.jobdef.project
 
     @property
     def is_finished(self):

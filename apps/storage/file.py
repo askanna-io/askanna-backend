@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.files import File as DjangoFile
 from django.utils.functional import cached_property
 
-from storage.utils import get_content_type_from_file
+from storage.utils.file import get_content_type_from_file
 
 
 class File(DjangoFile):

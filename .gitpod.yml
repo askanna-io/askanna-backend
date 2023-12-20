@@ -16,7 +16,6 @@ tasks:
       cp .env.minio.example .env.minio
     command: |
       sed -i "s~ASKANNA_API_URL.*~ASKANNA_API_URL=$(gp url 8000)~g" .env.django
-      sed -i "s~ASKANNA_CDN_URL.*~ASKANNA_CDN_URL=$(gp url 8000)~g" .env.django
       sed -i "s~ASKANNA_UI_URL.*~ASKANNA_UI_URL=$(gp url 4173)~g" .env.django
       docker compose up --detach --build
       while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000/ht/)" != "200" ]]; do sleep 5; done

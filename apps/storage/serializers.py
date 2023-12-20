@@ -9,7 +9,7 @@ from rest_framework import serializers
 from core.serializers import RelationSerializer
 from storage.file import MultipartFile
 from storage.models import File
-from storage.utils import get_md5_from_file
+from storage.utils.file import get_md5_from_file
 
 
 class FileUploadURLField(serializers.HyperlinkedIdentityField):
@@ -38,6 +38,15 @@ class FileDownloadInfoSerializer(serializers.ModelSerializer):
             "type",
             "url",
         ]
+
+
+class FilelistFileInfoSerializer(serializers.Serializer):
+    path = serializers.CharField(read_only=True)
+    parent = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    size = serializers.IntegerField(read_only=True)
+    type = serializers.CharField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
 
 
 class FileInfoSerializer(serializers.ModelSerializer):

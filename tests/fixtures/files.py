@@ -8,7 +8,7 @@ import pytest
 from django.core.files.base import ContentFile
 from PIL import Image
 
-from storage.utils import get_md5_from_file
+from storage.utils.file import get_md5_from_file
 from tests import fake
 
 

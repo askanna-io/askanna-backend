@@ -6,7 +6,7 @@ from job.models import JobDef, ScheduledJob
 
 
 class PackageQuerySet(models.QuerySet):
-    def active(self, add_select_related=False):
+    def active(self, add_select_related: bool = False):
         active_query = self.filter(
             deleted_at__isnull=True,
             package_file__deleted_at__isnull=True,
@@ -15,7 +15,7 @@ class PackageQuerySet(models.QuerySet):
             project__workspace__deleted_at__isnull=True,
         ).select_related("package_file")
 
-        if add_select_related:
+        if add_select_related is True:
             return active_query.select_related(
                 "project__workspace",
                 "package_file___created_by__account_membership__user",

@@ -9,11 +9,14 @@ from rest_framework import mixins, status
 from rest_framework.exceptions import NotAuthenticated, NotFound, ValidationError
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.settings import api_settings
 
 from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
-from core.mixins import PartialUpdateModelMixin, SerializerByActionMixin
+from core.mixins import (
+    ParserByActionMixin,
+    PartialUpdateModelMixin,
+    SerializerByActionMixin,
+)
 from core.permissions.askanna import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
 from package.models import Package
@@ -91,6 +94,7 @@ class PackageFilterSet(django_filters.FilterSet):
     ),
 )
 class PackageViewSet(
+    ParserByActionMixin,
     SerializerByActionMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -115,7 +119,6 @@ class PackageViewSet(
             ),
         ),
     )
-
     search_fields = ["suuid", "package_file__name"]
     ordering_fields = [
         "filename",
@@ -134,8 +137,6 @@ class PackageViewSet(
         "created_by.name": "created_by_name",
     }
     filterset_class = PackageFilterSet
-    parser_classes = [MultiPartParser, JSONParser]
-    permission_classes = [AskAnnaPermissionByAction]
 
     serializer_class = PackageSerializer
     serializer_class_by_action = {
@@ -143,6 +144,12 @@ class PackageViewSet(
         "retrieve": PackageSerializerWithFileList,
         "partial_update": PackageSerializerWithFileList,
     }
+
+    parser_classes_by_action = {
+        "create": [MultiPartParser, JSONParser],
+    }
+
+    permission_classes = [AskAnnaPermissionByAction]
 
     def get_queryset(self):
         """
@@ -167,12 +174,6 @@ class PackageViewSet(
                 | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
-
-    def get_parsers(self):
-        if self.action == "partial_update":
-            return [parser() for parser in api_settings.DEFAULT_PARSER_CLASSES]
-
-        return [parser() for parser in self.parser_classes]
 
     def get_parrent_project(self, request) -> Project | None:
         """
@@ -199,23 +200,21 @@ class PackageViewSet(
 
     def create(self, request, *args, **kwargs):
         """
-        Do a request to upload a new package to a project for which you have access to. At least a package or filename
-        is required.
+        Do a request to upload a new package to a project for which you have access to. At least a package file or
+        filename is required.
 
         For large files it's recommended to use multipart upload. You can do this by providing a filename and NOT a
-        package. When you do such a request, in the response you will get uploading info.
+        package file. When you do such a request, in the response you will get upload info.
 
         If the upload info is of type `askanna` you can use the `upload_info.url` to upload file parts. By adding
         `part` to the url you can upload a file part. When all parts are uploaded you can do a request to complete
         the file by adding `complete` to the url. See the `storage` section in the API documentation for more info.
 
-        If the upload info is of type `minio` you can use the `upload_info.url` as a presigned url to upload the file.
-
         By providing optional values for `size` and `etag` in the request body, the file will be validated against
         these values. If the values are not correct, the upload will fail.
         """
         if "package" not in request.FILES.keys() and "filename" not in request.data.keys():
-            return Response({"detail": ("Package or filename is required")}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": ("package or filename is required")}, status=status.HTTP_400_BAD_REQUEST)
 
         self.serializer_class = (
             PackageCreateWithFileSerializer if request.FILES.get("package") else PackageCreateWithoutFileSerializer

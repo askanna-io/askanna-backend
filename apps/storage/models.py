@@ -9,6 +9,7 @@ from django.utils.functional import cached_property
 
 from core.models import NameDescriptionBaseModel, ObjectReference
 from core.permissions.askanna import AskAnnaPermissionByAction
+from storage.utils.zipfile import get_files_and_directories_in_zipfile
 
 
 def get_upload_file_to(instance, filename):
@@ -19,7 +20,7 @@ def get_upload_file_to(instance, filename):
 
 
 class FileQuerySet(models.QuerySet):
-    def active(self, add_select_related=False):
+    def active(self, add_select_related: bool = False):
         active_query = self.filter(
             deleted_at__isnull=True,
             _created_for__account_user__deleted_at__isnull=True,
@@ -31,7 +32,7 @@ class FileQuerySet(models.QuerySet):
             "_created_for__package_package__project__workspace__created_by_user",
         )
 
-        if add_select_related:
+        if add_select_related is True:
             return active_query.select_related(
                 "_created_by__account_user",
                 "_created_by__account_membership__user",
@@ -83,8 +84,6 @@ class File(NameDescriptionBaseModel):
     # We use the property upload_to to have the option to dynamically set the upload_to path when uploading a file
     _upload_to = None
 
-    _part_filenames = None
-
     objects = FileManager.from_queryset(FileQuerySet)()
 
     def __str__(self):
@@ -124,15 +123,28 @@ class File(NameDescriptionBaseModel):
 
     @cached_property
     def zipfile_namelist(self) -> list[str]:
-        if not self.is_zipfile:
-            raise ValueError("File is not a Zipfile")
+        assert self.is_zipfile, "File is not a Zipfile"
 
         with self.file.open() as zip_file:
             return ZipFile(zip_file).namelist()
 
+    @cached_property
+    def files_and_directories_in_zipfile(self) -> list[dict]:
+        assert self.is_zipfile, "File is not a Zipfile"
+        return get_files_and_directories_in_zipfile(self.file)
+
+    @cached_property
+    def count_dir_from_zipfile(self) -> int:
+        assert self.is_zipfile, "File is not a Zipfile"
+        return sum(map(lambda x: x["type"] == "directory", self.files_and_directories_in_zipfile))
+
+    @cached_property
+    def count_files_from_zipfile(self) -> int:
+        assert self.is_zipfile, "File is not a Zipfile"
+        return sum(map(lambda x: x["type"] == "file", self.files_and_directories_in_zipfile))
+
     def get_file_from_zipfile(self, file_path: str) -> SpooledTemporaryFile:
-        if not self.is_zipfile:
-            raise ValueError("File is not a Zipfile")
+        assert self.is_zipfile, "File is not a Zipfile"
 
         if file_path not in self.zipfile_namelist:
             raise FileNotFoundError(f"File {file_path} not found in zipfile")
@@ -147,20 +159,17 @@ class File(NameDescriptionBaseModel):
 
         return file
 
-    @property
+    @cached_property
     def part_filenames(self) -> list[str]:
-        if not self._part_filenames:
-            if settings.ASKANNA_FILESTORAGE == "filesystem" and not self.storage.exists(self.upload_to):
-                return []
+        if settings.ASKANNA_FILESTORAGE == "filesystem" and not self.storage.exists(self.upload_to):
+            return []
 
-            filenames = sorted(self.storage.listdir(self.upload_to)[1])
-            self._part_filenames = [
-                filename
-                for filename in filenames
-                if filename.startswith(f"{self.suuid}_part_") and filename.endswith(".part")
-            ]
-
-        return self._part_filenames
+        filenames = sorted(self.storage.listdir(self.upload_to)[1])
+        return [
+            filename
+            for filename in filenames
+            if filename.startswith(f"{self.suuid}_part_") and filename.endswith(".part")
+        ]
 
     def delete_parts(self):
         for file in self.part_filenames:

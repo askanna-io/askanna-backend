@@ -1,5 +1,6 @@
 import warnings
 
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import permissions
 
 from core.permissions.role_utils import request_has_permission
@@ -67,7 +68,10 @@ class AskAnnaPermissionByAction(permissions.BasePermission):
         if hasattr(model, "permission_by_action"):
             permission = self._get_permission(model, view.action)
 
-            project = view.get_parrent_project(request) if hasattr(view, "get_parrent_project") else None
+            try:
+                project = view.get_parrent_project(request=request) if hasattr(view, "get_parrent_project") else None
+            except ObjectDoesNotExist:
+                return False
 
             return request_has_permission(request, permission, project=project)
 

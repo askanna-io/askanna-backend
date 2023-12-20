@@ -23,10 +23,12 @@ class ObjectReference(models.Model):
 
     uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
 
-    account_user = models.OneToOneField("account.User", blank=True, null=True, on_delete=models.CASCADE)
-    account_membership = models.OneToOneField("account.Membership", blank=True, null=True, on_delete=models.CASCADE)
+    account_user = models.OneToOneField("account.User", null=True, on_delete=models.CASCADE)
+    account_membership = models.OneToOneField("account.Membership", null=True, on_delete=models.CASCADE)
 
-    package_package = models.OneToOneField("package.Package", blank=True, null=True, on_delete=models.CASCADE)
+    package_package = models.OneToOneField("package.Package", null=True, on_delete=models.CASCADE)
+
+    run_artifact = models.OneToOneField("run.RunArtifact", null=True, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Object: {repr(self.object)}"
@@ -48,6 +50,7 @@ class ObjectReference(models.Model):
                 "account_user",
                 "account_membership",
                 "package_package",
+                "run_artifact",
             ]
             and getattr(self, field.name)
         ]
@@ -65,7 +68,7 @@ class ObjectReference(models.Model):
         assert isinstance(object, models.Model), f"Object '{object}' with type '{type(object)}' must be a Django model"
 
         object_type = f"{object._meta.app_label}.{object._meta.object_name}"
-        object_field = object_type.lower().replace(".", "_")
+        object_field = object._meta.db_table
         assert hasattr(cls, object_field), f"{object_type} is not (yet) an available object in model core.Object"
 
         return cache.get_or_set(

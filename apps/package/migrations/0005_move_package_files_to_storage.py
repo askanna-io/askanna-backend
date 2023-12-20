@@ -10,7 +10,7 @@ from account.models import User
 from core.models import ObjectReference
 from package.models import Package
 from storage.models import File
-from storage.utils import get_md5_from_file
+from storage.utils.file import get_md5_from_file
 
 logger = logging.getLogger(__name__)
 
@@ -83,19 +83,18 @@ def move_package_files(apps, schema_editor):
 
     for project_directory in package_root_path.iterdir():
         if not project_directory.is_dir():
-            logger.info(f"Path '{project_directory}' is not a directory, not removing it")
             continue
 
         for package_directory in project_directory.iterdir():
             try:
                 package_directory.rmdir()
             except OSError:
-                logger.info(f"Directory '{package_directory}' is not empty, not removing it")
+                pass
 
         try:
             project_directory.rmdir()
         except OSError:
-            logger.info(f"Directory '{project_directory}' is not empty, not removing it")
+            pass
 
     try:
         package_root_path.rmdir()
@@ -105,7 +104,7 @@ def move_package_files(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0005_objectreference_add_package"),
+        ("core", "0006_objectreference_add_run_artifact"),
         ("storage", "0001_initial"),
         ("package", "0004_rename_package_and_delete_chunkedpackage"),
     ]

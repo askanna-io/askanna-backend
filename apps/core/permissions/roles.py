@@ -270,9 +270,6 @@ project_permissions = {
         ProjectAdmin,
         ProjectMember,
     ],
-    "project.code.list": [
-        ProjectAdmin,
-    ],
     "project.code.remove": [
         ProjectAdmin,
     ],
@@ -300,6 +297,12 @@ project_permissions = {
     "variable.remove": [
         ProjectAdmin,
         ProjectMember,
+    ],
+    "project.run.view": [
+        ProjectAdmin,
+        ProjectMember,
+        ProjectViewer,
+        ProjectPublicViewer,
     ],
     "project.run.create": [
         ProjectAdmin,

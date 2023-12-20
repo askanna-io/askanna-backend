@@ -1,33 +1,11 @@
 import hashlib
 import json
 import mimetypes
-from io import BytesIO
 from os import PathLike
 
 import magic
 from django.conf import settings
-from django.core.files.base import ContentFile, File
-from PIL import Image, ImageOps
-
-
-def is_json_file(file: File | PathLike | bytes) -> bool:
-    """
-    Determine whether we are dealing with a JSON file
-    returns True/False
-    """
-
-    try:
-        if hasattr(file, "read"):
-            file.seek(0)
-            json.load(file)
-        else:
-            with file.open() as f:
-                json.load(f)
-
-    except json.decoder.JSONDecodeError:
-        return False
-
-    return True
+from django.core.files.base import File
 
 
 def get_content_type_from_file(file: File | PathLike | str | bytes, default: str = None) -> str:
@@ -108,46 +86,21 @@ def get_md5_from_file(file) -> str:
     return md5.hexdigest()
 
 
-def filename_for_resized_image(filename: str, width: int) -> str:
+def is_json_file(file: File | PathLike | bytes) -> bool:
     """
-    Generate a filename for a resized image. The filename will be the same as the original filename, but with the width
-    appended to the filename, just before the extension.
-
-    Args:
-        filename (str): filename of the original image
-        width (int): the width of the square to resize the image to
-
-    Returns:
-        str: the filename for the resized image
+    Determine whether we are dealing with a JSON file
+    returns True/False
     """
-    filename = filename.split(".")
 
-    if len(filename) == 1:
-        filename = f"{filename[0]}_{width}x{width}"
-    else:
-        filename[-2] = f"{filename[-2]}_{width}x{width}"
-        filename = ".".join(filename)
+    try:
+        if hasattr(file, "read"):
+            file.seek(0)
+            json.load(file)
+        else:
+            with file.open() as f:
+                json.load(f)
 
-    return filename
+    except json.decoder.JSONDecodeError:
+        return False
 
-
-def resize_image(image_object: File, width: int) -> ContentFile:
-    """
-    Resize an image to a square of the given width.
-
-    Args:
-        image_object (File): a Django File object containing an image file
-        width (int): the width of the square to resize the image to
-
-    Returns:
-        ContentFile: a Django ContentFile object containing the resized image
-    """
-    filename = filename_for_resized_image(image_object.name, width)
-
-    with image_object as image_file, Image.open(image_file) as image, BytesIO() as tmp_file:
-        ImageOps.fit(
-            ImageOps.exif_transpose(image),  # Make sure the image is rotated correctly
-            (width, width),
-        ).save(tmp_file, format=image.format)
-
-        return ContentFile(tmp_file.getvalue(), name=filename)
+    return True

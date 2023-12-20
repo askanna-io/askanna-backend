@@ -4,10 +4,10 @@ from core.models import AuthorModel, NameDescriptionBaseModel, VisibilityModel
 
 
 class ProjectQuerySet(models.QuerySet):
-    def active(self, add_select_related=False):
+    def active(self, add_select_related: bool = False):
         active_query = self.filter(deleted_at__isnull=True, workspace__deleted_at__isnull=True)
 
-        if add_select_related:
+        if add_select_related is True:
             return active_query.select_related("workspace", "created_by_user", "created_by_member__user")
 
         return active_query

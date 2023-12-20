@@ -18,7 +18,6 @@ def settings(config, env):
 
     config.ASKANNA_API_URL = env.str("ASKANNA_API_URL")
     config.ASKANNA_UI_URL = env.str("ASKANNA_UI_URL", "")
-    config.ASKANNA_CDN_URL = env.str("ASKANNA_CDN_URL", "")
 
     # Determine whether we are beta/production/review, defaults to 'review'
     api_environments = {

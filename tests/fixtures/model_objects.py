@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from account.models.membership import MSP_WORKSPACE, Membership
 from account.models.user import User
+from core.models.object_reference import ObjectReference
 from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceViewer
 from job.models import JobDef
 from package.models import Package
@@ -22,7 +23,7 @@ from run.models import (
     RunVariableMeta,
 )
 from storage.models import File
-from storage.utils import get_content_type_from_file, get_md5_from_file
+from storage.utils.file import get_content_type_from_file, get_md5_from_file
 from variable.models import Variable
 from workspace.models import Workspace
 
@@ -247,7 +248,7 @@ def test_packages(test_projects, test_memberships) -> dict[str, Package]:
     }
 
     file_project_with_config = ContentFile(
-        content=Path(settings.TEST_RESOURCES_DIR / "projects/project-001.zip").read_bytes(),
+        content=Path(settings.TEST_RESOURCES_DIR / "projects" / "project-001.zip").read_bytes(),
         name="project_with_config.zip",
     )
 
@@ -450,15 +451,29 @@ def test_runs(
 
 
 @pytest.fixture()
-def test_run_artifacts(test_runs) -> dict[str, RunArtifact]:
+def test_run_artifacts(test_runs, test_memberships) -> dict[str, RunArtifact]:
     artifacts = {
-        "artifact_1": RunArtifact.objects.create(
-            run=test_runs["run_1"],
-            size=500,
-        ),
+        "artifact_1": RunArtifact.objects.create(run=test_runs["run_1"]),
     }
 
-    artifacts["artifact_1"].write((settings.TEST_RESOURCES_DIR / "artifacts" / "artifact-aa.zip").open("rb"))
+    ObjectReference.objects.create(run_artifact=artifacts["artifact_1"])
+
+    artifact_1_content_file = ContentFile(
+        content=Path(settings.TEST_RESOURCES_DIR / "artifacts" / "artifact-aa.zip").read_bytes(),
+        name="artifact-aa.zip",
+    )
+
+    artifacts["artifact_1"].artifact_file = File.objects.create(
+        name=artifact_1_content_file.name,
+        file=artifact_1_content_file,
+        size=artifact_1_content_file.size,
+        etag=get_md5_from_file(artifact_1_content_file),
+        content_type=get_content_type_from_file(artifact_1_content_file),
+        completed_at=timezone.now(),
+        created_for=artifacts["artifact_1"],
+        created_by=test_memberships["workspace_private_admin"],
+    )
+    artifacts["artifact_1"].save()
 
     yield artifacts
 

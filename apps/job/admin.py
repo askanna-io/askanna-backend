@@ -99,9 +99,6 @@ class JobPayloadAdmin(admin.ModelAdmin):
         "jobdef__suuid",
     ]
 
-    def project(self, obj):  # pragma: no cover
-        return obj.jobdef.project.name
-
     def has_add_permission(self, request):
         return False
 
@@ -185,8 +182,8 @@ class ScheduledJobAdmin(admin.ModelAdmin):
 
     list_display = [
         "suuid",
-        "job_name",
-        "project_name",
+        "job",
+        "project",
         "raw_definition",
         "cron_definition",
         "cron_timezone",
@@ -209,12 +206,6 @@ class ScheduledJobAdmin(admin.ModelAdmin):
         "cron_definition",
         "cron_timezone",
     ]
-
-    def job_name(self, obj):  # pragma: no cover
-        return obj.job.name
-
-    def project_name(self, obj):  # pragma: no cover
-        return obj.job.project.name
 
     def has_add_permission(self, request):
         return False

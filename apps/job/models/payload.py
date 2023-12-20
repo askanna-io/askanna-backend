@@ -47,6 +47,10 @@ class JobPayload(FileBaseModel):
     objects = PayloadManager()
 
     @property
+    def project(self):
+        return self.jobdef.project
+
+    @property
     def filename(self) -> str:
         return "payload.json"
 

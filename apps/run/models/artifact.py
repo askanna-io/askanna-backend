@@ -1,47 +1,74 @@
-from pathlib import Path
-
-from django.conf import settings
 from django.db import models
 
-from core.models import BaseModel, FileBaseModel
+from core.models import BaseModel
 
 
-class RunArtifact(FileBaseModel):
+class RunArtifactQuerySet(models.QuerySet):
+    def active(self, add_select_related: bool = False):
+        active_query = self.filter(
+            deleted_at__isnull=True,
+            artifact_file__deleted_at__isnull=True,
+            artifact_file__completed_at__isnull=False,
+            run__deleted_at__isnull=True,
+            run__jobdef__deleted_at__isnull=True,
+            run__jobdef__project__deleted_at__isnull=True,
+            run__jobdef__project__workspace__deleted_at__isnull=True,
+        ).select_related("artifact_file")
+
+        if add_select_related is True:
+            return active_query.select_related(
+                "run__jobdef__project__workspace",
+                "artifact_file___created_by__account_membership__user",
+            )
+
+        return active_query
+
+
+class RunArtifact(BaseModel):
     """
     Artifact of a run stored into an archive file
     """
 
-    file_type = "artifact"
-    file_extension = "zip"
-    file_readmode = "rb"
-    file_writemode = "wb"
+    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="artifacts")
+    artifact_file = models.OneToOneField(
+        "storage.File", null=True, on_delete=models.CASCADE, related_name="artifact_file"
+    )
 
-    def get_storage_location(self) -> Path:
-        return Path(self.run.jobdef.project.uuid.hex) / self.run.jobdef.uuid.hex / self.run.uuid.hex
+    objects = RunArtifactQuerySet().as_manager()
 
-    def get_root_location(self) -> Path:
-        return settings.ARTIFACTS_ROOT
+    permission_by_action = {
+        "list": "project.run.view",
+        ("retrieve", "info", "download"): "project.run.view",
+        ("create", "upload_part", "upload_complete", "upload_abort"): "project.run.create",
+        "partial_update": "project.run.edit",
+    }
 
-    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="artifact")
+    @property
+    def project(self):
+        return self.run.jobdef.project
 
-    size = models.PositiveIntegerField(editable=False, default=0)
-    count_dir = models.PositiveIntegerField(editable=False, default=0)
-    count_files = models.PositiveIntegerField(editable=False, default=0)
+    @property
+    def job(self):
+        return self.run.jobdef
+
+    @property
+    def upload_directory(self):
+        return (
+            "runs/"
+            + self.run.suuid[:2].lower()
+            + "/"
+            + self.run.suuid[2:4].lower()
+            + "/"
+            + self.run.suuid
+            + "/artifacts"
+        )
+
+    def get_name(self) -> str | None:
+        if self.artifact_file:
+            return self.artifact_file.name
+        return None
 
     class Meta:
         db_table = "run_artifact"
+        get_latest_by = "created_at"
         ordering = ["-created_at"]
-
-
-class ChunkedRunArtifactPart(BaseModel):
-    filename = models.CharField(max_length=500)
-    size = models.IntegerField(help_text="Size of this artifactchunk")
-    file_no = models.IntegerField()
-    is_last = models.BooleanField(default=False)
-
-    artifact = models.ForeignKey("RunArtifact", on_delete=models.CASCADE, blank=True, null=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = "Run artifact chunk"
-        verbose_name_plural = "Run artifacts chunks"
