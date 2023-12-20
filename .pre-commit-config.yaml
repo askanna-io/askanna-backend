@@ -18,12 +18,12 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.37.0
+    rev: v0.38.0
     hooks:
       - id: markdownlint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.6
+    rev: v0.1.8
     hooks:
       - id: ruff
         args:
@@ -31,17 +31,17 @@ repos:
           - --exit-non-zero-on-fix
 
   - repo: https://github.com/ambv/black
-    rev: 23.11.0
+    rev: 23.12.0
     hooks:
       - id: black
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.7.6
     hooks:
       - id: bandit
         additional_dependencies: [".[toml]"]
