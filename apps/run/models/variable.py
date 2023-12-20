@@ -21,7 +21,7 @@ class RunVariableMeta(FileBaseModel):
         return Path(self.run.jobdef.project.uuid.hex) / self.run.jobdef.uuid.hex / self.run.uuid.hex
 
     def get_root_location(self) -> Path:
-        return settings.ARTIFACTS_ROOT
+        return settings.VARIABLE_ROOT
 
     run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="variables_meta")
 

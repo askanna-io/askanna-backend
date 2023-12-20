@@ -1,20 +1,22 @@
-from django.urls import include, re_path
+from django.conf.urls import include
+from django.urls import re_path
+from rest_framework import routers
+from rest_framework_extensions.routers import ExtendedSimpleRouter
 
-from core.urls import router
-from job.views import JobPayloadView
-from run.views import (
-    ChunkedArtifactViewSet,
-    ChunkedJobResultViewSet,
-    RunArtifactView,
-    RunMetricUpdateView,
-    RunMetricView,
-    RunResultCreateView,
-    RunVariableUpdateView,
-    RunVariableView,
+from job.views.payload import JobPayloadView
+from run.views.artifact import RunArtifactView
+from run.views.metric import RunMetricUpdateView, RunMetricView
+from run.views.result import ChunkedJobResultViewSet, RunResultCreateView
+from run.views.run import RunView
+from run.views.variable import RunVariableUpdateView, RunVariableView
+
+router = ExtendedSimpleRouter()
+
+run_router = router.register(
+    r"run",
     RunView,
+    basename="run",
 )
-
-run_router = router.register(r"run", RunView)
 
 run_router.register(
     r"metric",
@@ -51,19 +53,6 @@ run_router.register(
     parents_query_lookups=["run__suuid"],
 )
 
-artifact_router = run_router.register(
-    r"artifact",
-    RunArtifactView,
-    basename="run-artifact",
-    parents_query_lookups=["run__suuid"],
-)
-artifact_router.register(
-    r"artifactchunk",
-    ChunkedArtifactViewSet,
-    basename="artifact-artifactchunk",
-    parents_query_lookups=["artifact__run__suuid", "artifact__suuid"],
-)
-
 result_router = run_router.register(
     r"result-upload",
     RunResultCreateView,
@@ -77,7 +66,14 @@ result_router.register(
     parents_query_lookups=["runresult__run__suuid", "runresult__suuid"],
 )
 
+artifact_router = routers.SimpleRouter()
+artifact_router.register(
+    r"run/artifact",
+    RunArtifactView,
+    basename="run-artifact",
+)
 
 urlpatterns = [
+    re_path(r"^(?P<version>(v1))/", include(artifact_router.urls)),
     re_path(r"^(?P<version>(v1))/", include(router.urls)),
 ]

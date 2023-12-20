@@ -33,20 +33,28 @@ class NameTypeCountSerializer(NameTypeSerializer):
 class MetricsMetaSerializer(serializers.Serializer):
     count = serializers.IntegerField(read_only=True, default=0)
     size = serializers.IntegerField(read_only=True, default=0)
-    metric_names = NameTypeCountSerializer(many=True)
-    label_names = NameTypeSerializer(many=True)
+    metric_names = NameTypeCountSerializer(many=True, default=[])
+    label_names = NameTypeSerializer(many=True, default=[])
 
 
 class VariablesMetaSerializer(serializers.Serializer):
     count = serializers.IntegerField(read_only=True, default=0)
     size = serializers.IntegerField(read_only=True, default=0)
-    variable_names = NameTypeCountSerializer(many=True)
-    label_names = NameTypeSerializer(many=True)
+    variable_names = NameTypeCountSerializer(many=True, default=[])
+    label_names = NameTypeSerializer(many=True, default=[])
 
 
 class RunSerializer(serializers.ModelSerializer):
+    suuid = serializers.CharField(read_only=True)
+
+    name = serializers.CharField()
+    description = serializers.CharField()
+
     status = serializers.CharField(read_only=True, source="get_status_external")
+    started_at = serializers.DateTimeField(read_only=True)
+    finished_at = serializers.DateTimeField(read_only=True)
     duration = serializers.IntegerField(read_only=True, source="get_duration")
+
     trigger = serializers.CharField(read_only=True)
 
     created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
@@ -55,7 +63,7 @@ class RunSerializer(serializers.ModelSerializer):
     payload = JobPayloadRelationSerializer(read_only=True)
 
     result = ResultRelationSerializer(read_only=True)
-    artifact = serializers.SerializerMethodField()
+    artifact = ArtifactRelationSerializer(read_only=True, many=True, source="artifacts")
     metrics_meta = serializers.SerializerMethodField()
     variables_meta = serializers.SerializerMethodField()
     log = LogRelationSerializer(read_only=True, source="output")
@@ -66,56 +74,63 @@ class RunSerializer(serializers.ModelSerializer):
     project = RelationSerializer(read_only=True, source="jobdef.project")
     workspace = RelationSerializer(read_only=True, source="jobdef.project.workspace")
 
+    created_at = serializers.DateTimeField(read_only=True)
+    modified_at = serializers.DateTimeField(read_only=True)
+
     @extend_schema_field(MetricsMetaSerializer)
     def get_metrics_meta(self, instance):
+        metrics_meta_data = {
+            "count": 0,
+            "size": 0,
+            "metric_names": [],
+            "label_names": [],
+        }
         try:
-            metrics_meta = instance.metrics_meta.get()
+            metrics_meta = instance.metrics_meta.first()
         except ObjectDoesNotExist:
-            metrics_meta_data = {
-                "count": 0,
-                "size": 0,
-                "metric_names": [],
-                "label_names": [],
-            }
+            pass
         else:
-            metrics_meta_data = {
-                "count": metrics_meta.count,
-                "size": metrics_meta.size,
-                "metric_names": metrics_meta.metric_names or [],
-                "label_names": metrics_meta.label_names or [],
-            }
+            if metrics_meta:
+                metrics_meta_data = {
+                    "count": metrics_meta.count,
+                    "size": metrics_meta.size,
+                    "metric_names": metrics_meta.metric_names or [],
+                    "label_names": metrics_meta.label_names or [],
+                }
 
         return MetricsMetaSerializer(metrics_meta_data).data
 
     @extend_schema_field(VariablesMetaSerializer)
     def get_variables_meta(self, instance):
+        run_variables_meta = {
+            "count": 0,
+            "size": 0,
+            "variable_names": [],
+            "label_names": [],
+        }
         try:
-            variables_meta = instance.variables_meta.get()
+            variables_meta = instance.variables_meta.first()
         except ObjectDoesNotExist:
-            run_variables_meta = {
-                "count": 0,
-                "size": 0,
-                "variable_names": [],
-                "label_names": [],
-            }
+            pass
         else:
-            # For the frontend we make sure that if labels 'source' and/or 'is_masked' are in the label_names
-            # dictionary, that we add them as the first label in the list.
-            label_names = []
-            if variables_meta.label_names:
-                label_names = list(filter(lambda x: x["name"] != "is_masked", variables_meta.label_names))
-                if len(label_names) != len(variables_meta.label_names):
-                    label_names = [{"name": "is_masked", "type": "tag"}] + label_names
-                label_names = list(filter(lambda x: x["name"] != "source", label_names))
-                if len(label_names) != len(variables_meta.label_names):
-                    label_names = [{"name": "source", "type": "string"}] + label_names
+            if variables_meta:
+                # For the frontend we make sure that if labels 'source' and/or 'is_masked' are in the label_names
+                # dictionary, that we add them as the first label in the list.
+                label_names = []
+                if variables_meta.label_names:
+                    label_names = list(filter(lambda x: x["name"] != "is_masked", variables_meta.label_names))
+                    if len(label_names) != len(variables_meta.label_names):
+                        label_names = [{"name": "is_masked", "type": "tag"}] + label_names
+                    label_names = list(filter(lambda x: x["name"] != "source", label_names))
+                    if len(label_names) != len(variables_meta.label_names):
+                        label_names = [{"name": "source", "type": "string"}] + label_names
 
-            run_variables_meta = {
-                "count": variables_meta.count,
-                "size": variables_meta.size,
-                "variable_names": variables_meta.variable_names or [],
-                "label_names": label_names,
-            }
+                run_variables_meta = {
+                    "count": variables_meta.count,
+                    "size": variables_meta.size,
+                    "variable_names": variables_meta.variable_names or [],
+                    "label_names": label_names,
+                }
 
         return VariablesMetaSerializer(run_variables_meta).data
 
@@ -127,18 +142,6 @@ class RunSerializer(serializers.ModelSerializer):
             "timezone": instance.timezone,
         }
         return EnvironmentSerializer(environment).data
-
-    @extend_schema_field(ArtifactRelationSerializer)
-    def get_artifact(self, instance):
-        try:
-            artifact = instance.artifact.first()
-        except (AttributeError, ObjectDoesNotExist):
-            pass
-        else:
-            if artifact:
-                return ArtifactRelationSerializer(artifact).data
-
-        return None
 
     class Meta:
         model = Run

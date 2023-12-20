@@ -80,7 +80,7 @@ class RunResultCreateView(
         return directory
 
     def get_target_location(self, request, obj, **kwargs) -> Path:
-        return settings.ARTIFACTS_ROOT / obj.storage_location
+        return settings.RESULT_ROOT / obj.storage_location
 
     def post_finish_upload_update_instance(self, request, instance_obj, resume_obj):
         instance_obj.size = resume_obj.size

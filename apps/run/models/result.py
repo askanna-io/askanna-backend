@@ -29,7 +29,7 @@ class RunResult(FileBaseModel, NameDescriptionBaseModel):
         return Path(self.run.jobdef.project.uuid.hex) / self.run.jobdef.uuid.hex / self.run.uuid.hex
 
     def get_root_location(self) -> Path:
-        return settings.ARTIFACTS_ROOT
+        return settings.RESULT_ROOT
 
     @property
     def extension(self) -> str:

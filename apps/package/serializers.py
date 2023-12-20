@@ -1,17 +1,18 @@
-from datetime import datetime
-
 from django.utils import timezone
 from rest_framework import serializers
 
 from account.models import Membership
 from account.serializers.membership import MembershipRelationSerializer
 from core.serializers import RelationSerializer
-from core.utils import get_files_and_directories_in_zip_file
 from package.models import Package
 from project.models import Project
 from storage.models import File
-from storage.serializers import FileDownloadInfoSerializer, FileUploadInfoSerializer
-from storage.utils import get_content_type_from_file, get_md5_from_file
+from storage.serializers import (
+    FileDownloadInfoSerializer,
+    FilelistFileInfoSerializer,
+    FileUploadInfoSerializer,
+)
+from storage.utils.file import get_content_type_from_file, get_md5_from_file
 
 
 class PackageSerializer(serializers.ModelSerializer):
@@ -70,11 +71,9 @@ class PackageSerializer(serializers.ModelSerializer):
 
 
 class PackageSerializerWithFileList(PackageSerializer):
-    files = serializers.SerializerMethodField("get_files_for_archive", read_only=True)
-
-    def get_files_for_archive(self, instance) -> list[dict[str, str | int]]:
-        """On the fly reading a zip archive and returns the information about what files are in the archive"""
-        return get_files_and_directories_in_zip_file(instance.package_file.file)
+    files = serializers.ListField(
+        read_only=True, child=FilelistFileInfoSerializer(), source="package_file.files_and_directories_in_zipfile"
+    )
 
     class Meta(PackageSerializer.Meta):
         fields = PackageSerializer.Meta.fields + ["files"]
@@ -116,15 +115,12 @@ class PackageCreateBaseSerializer(PackageSerializer):
             created_by=Membership.objects.get_workspace_membership(
                 user=self.context.get("request").user, workspace=instance.project.workspace
             ),
-            completed_at=timezone.make_aware(datetime.now()) if package_file else None,
+            completed_at=timezone.now() if package_file else None,
         )
 
         instance.package_file = file
         instance.save()
         instance.refresh_from_db()
-
-        if package_file:
-            instance.extract_jobs_from_askanna_config()
 
         return instance
 

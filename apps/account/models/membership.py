@@ -22,7 +22,7 @@ from core.permissions.roles import (
     WorkspaceViewer,
 )
 from storage.models import File
-from storage.utils import get_content_type_from_file, get_md5_from_file
+from storage.utils.file import get_content_type_from_file, get_md5_from_file
 from workspace.models import Workspace
 
 MSP_WORKSPACE = "WS"

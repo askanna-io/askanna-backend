@@ -34,8 +34,9 @@ def settings(config, env):
     else:
         config.STORAGE_ROOT = config.BASE_DIR / "storage_root"
 
-    config.ARTIFACTS_DIR_NAME = "artifacts"
-    config.ARTIFACTS_ROOT = config.STORAGE_ROOT / config.ARTIFACTS_DIR_NAME
+    config.RESULT_ROOT = config.STORAGE_ROOT / "artifacts"
+    config.METRIC_ROOT = config.STORAGE_ROOT / "artifacts"
+    config.VARIABLE_ROOT = config.STORAGE_ROOT / "artifacts"
 
     config.UPLOAD_DIR_NAME = "upload"
     config.UPLOAD_ROOT = config.STORAGE_ROOT / config.UPLOAD_DIR_NAME
@@ -82,5 +83,4 @@ def settings(config, env):
     if config.ASKANNA_FILESTORAGE == "filesystem":
         config.STORAGES["default"]["OPTIONS"] = {
             "location": str(config.STORAGE_ROOT),
-            "base_url": str(config.ASKANNA_CDN_URL),
         }

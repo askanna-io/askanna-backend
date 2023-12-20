@@ -1,4 +1,4 @@
-from .artifact import ChunkedRunArtifactPart, RunArtifact  # noqa: F401
+from .artifact import RunArtifact  # noqa: F401
 from .log import RedisLogQueue, RunLog  # noqa: F401
 from .metric import RunMetricMeta  # noqa: F401
 from .metric import RunMetricRow as RunMetric  # noqa: F401

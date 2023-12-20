@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 
 from package.models import Package
 from storage.models import File
-from storage.utils import get_md5_from_file
+from storage.utils.file import get_md5_from_file
 from tests import AskAnnaAPITestCase
 
 
@@ -440,7 +440,7 @@ class TestPackageCreateFails(TestPackageCreateBase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data.get("detail") == "Package or filename is required"
+        assert response.data.get("detail") == "package or filename is required"
 
     def test_package_create_with_file_and_wrong_etag(self):
         self.set_authorization(self.users["workspace_admin"])

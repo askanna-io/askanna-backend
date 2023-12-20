@@ -28,6 +28,10 @@ class ScheduledJob(BaseModel):
         help_text="We store the datetime with timzone in UTC of the next run to be queried on",
     )
 
+    @property
+    def project(self):
+        return self.job.project
+
     def update_last(self, timestamp: datetime.datetime):
         self.last_run_at = timestamp
         self.save(

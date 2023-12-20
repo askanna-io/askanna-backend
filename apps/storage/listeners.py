@@ -10,7 +10,7 @@ def check_set_file_completed_at(sender, instance, created, update_fields, **kwar
     """
     Send file_complete signal when a file completed_at is set
     """
-    if (created or (update_fields and "completed_at" in update_fields)) and instance.completed_at is not None:
+    if (created is True or (update_fields and "completed_at" in update_fields)) and instance.completed_at is not None:
         file_complete.send(sender=sender, instance=instance, created=created)
 
 

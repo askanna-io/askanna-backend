@@ -69,14 +69,13 @@ def move_avatar_files(apps, schema_editor):
 
     for directory in avatar_directories:
         if directory.exists():
-            logger.info(f"Removing directory '{directory}' because it was not removed while moving the avatar files")
             for file in directory.iterdir():
                 if file.is_file():
                     file.unlink()
             try:
                 directory.rmdir()
             except OSError:
-                logger.info(f"Directory '{directory}' is not empty, not removing it")
+                pass
 
     try:
         avatar_root_path.rmdir()
@@ -87,7 +86,7 @@ def move_avatar_files(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("account", "0002_alter_membership_job_title_delete_userprofile"),
-        ("core", "0005_objectreference_add_package"),
+        ("core", "0006_objectreference_add_run_artifact"),
         ("storage", "__first__"),
     ]
 

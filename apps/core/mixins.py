@@ -86,7 +86,36 @@ class PermissionByActionMixin:
         try:
             return [permission() for permission in self.permission_classes_by_action[self.action]]
         except KeyError:
-            return [permission() for permission in self.permission_classes]
+            return super().get_permissions()
+
+
+class ParserByActionMixin:
+    """
+    Return different parser classes for each action if this is defined. Otherwise return default 'parser_classes'.
+
+    Example setup:
+        parser_classes_by_action = {
+            "create": [MultiPartParser, JSONParser],
+            "update": [JSONParser, MultiPartParser],
+        }
+    """
+
+    action = None
+    parser_classes_by_action = None
+
+    def get_parsers(self):
+        assert self.parser_classes_by_action is not None, (
+            f"'{self.__class__.__name__}' should include a `parser_classes_by_action` attribute, or don't inherit "
+            f"the 'ParserByActionMixin' class."
+        )
+
+        if self.action is None:
+            return super().get_parsers()
+
+        try:
+            return [parser() for parser in self.parser_classes_by_action[self.action]]
+        except KeyError:
+            return super().get_parsers()
 
 
 class SerializerByActionMixin:

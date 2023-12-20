@@ -60,6 +60,20 @@ class TestRunStatusAPI(BaseAPITestRun):
         assert response.data["status"] == "finished"
         assert response.data["duration"] > 0
 
+    def test_retrieve_as_viewer(self):
+        """
+        We can get the status for a run as a member
+        """
+        self.set_authorization(self.users["workspace_viewer"])
+
+        response = self.client.get(
+            self.url,
+            HTTP_HOST="testserver",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "finished"
+        assert response.data["duration"] > 0
+
     def test_retrieve_as_non_member(self):
         """
         We cannot get the status for a run as a non-member

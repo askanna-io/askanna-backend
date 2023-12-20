@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path, reverse_lazy
 from django.views import defaults as default_views
@@ -51,7 +50,3 @@ if settings.DEBUG:
         ),
         path("500/", default_views.server_error),
     ]
-
-    if settings.ASKANNA_FILESTORAGE == "filesystem":
-        # When ASKANNA_FILESTORAGE is "filesystem" this pattern allows the serving of files during development
-        urlpatterns += static("/files/", document_root=settings.STORAGE_ROOT)

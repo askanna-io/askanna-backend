@@ -18,11 +18,8 @@ from storage.serializers import (
     FileUploadCompleteSerializer,
     FileUploadPartSerializer,
 )
-from storage.utils import (
-    filename_for_resized_image,
-    get_content_type_from_file,
-    resize_image,
-)
+from storage.utils.file import get_content_type_from_file
+from storage.utils.image import filename_for_resized_image, resize_image
 
 
 def _validate_file_exists(instance: File) -> bool:
