@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from account.serializers.membership import MembershipWithAvatarRelationSerializer
+from account.serializers.membership import MembershipRelationSerializer
 from core.permissions.role_utils import (
     get_user_roles_for_project,
     merge_role_permissions,
@@ -13,7 +13,7 @@ from workspace.models import Workspace
 class ProjectSerializer(serializers.ModelSerializer):
     workspace = RelationSerializer(read_only=True)
     package = RelationSerializer(read_only=True, allow_null=True, source="last_created_package")
-    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
+    created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
     is_member = serializers.BooleanField(read_only=True)
     permission = serializers.SerializerMethodField()
 

@@ -1,12 +1,12 @@
 from rest_framework import serializers
 
-from account.serializers.membership import MembershipWithAvatarRelationSerializer
+from account.serializers.membership import MembershipRelationSerializer
 from core.permissions.role_utils import get_user_workspace_role, merge_role_permissions
 from workspace.models import Workspace
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
-    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
+    created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
     is_member = serializers.BooleanField(read_only=True)
     permission = serializers.SerializerMethodField()
 

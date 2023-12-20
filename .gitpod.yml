@@ -27,6 +27,8 @@ tasks:
       cd ../askanna-frontend
     init: |
       cp .env.development .env.production.local
+      npm install
+      npm run build
     command: |
       sed -i "s~VITE_APP_URL=.*~VITE_APP_URL=$(gp url 4173)~g" .env.production.local
       sed -i "s~VITE_APP_API_URL=.*~VITE_APP_API_URL=$(gp url 8000)~g" .env.production.local
@@ -38,7 +40,8 @@ tasks:
       cd ../askanna-docs
     init: |
       git lfs install && git lfs pull
-      python -m venv .venv
+      python -m venv .venv && source .venv/bin/activate
+      pip install -r requirements-dev.txt
     command: |
       source .venv/bin/activate
       pip install -r requirements-dev.txt
@@ -55,7 +58,9 @@ tasks:
     before: |
       cd ../askanna-cli
     init: |
-      python -m venv .venv
+      python -m venv .venv && source .venv/bin/activate
+      make install-dev
+      pre-commit install --install-hooks
     command: |
       source .venv/bin/activate
       make install-dev
@@ -64,7 +69,9 @@ tasks:
       while ! command -v askanna > /dev/null; do echo "CLI & SDK is not ready yet..." && sleep 10; done && echo "CLI & SDK is ready!" && askanna login --remote $(gp url 8000) --email admin@localhost.com --password DevAskAnna
   - name: Backend
     init: |
-      python -m venv .venv
+      python -m venv .venv && source .venv/bin/activate
+      pip install -r requirements/local.txt
+      pre-commit install --install-hooks
     command: |
       source .venv/bin/activate
       pip install -r requirements/local.txt

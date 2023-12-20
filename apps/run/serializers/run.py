@@ -3,10 +3,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from account.serializers.membership import (
-    MembershipRelationSerializer,
-    MembershipWithAvatarRelationSerializer,
-)
+from account.serializers.membership import MembershipRelationSerializer
 from core.serializers import RelationSerializer
 from job.serializers import JobPayloadRelationSerializer, RunImageRelationSerializer
 from run.models import Run
@@ -49,7 +46,7 @@ class RunSerializer(serializers.ModelSerializer):
     duration = serializers.IntegerField(read_only=True, source="get_duration")
     trigger = serializers.CharField(read_only=True)
 
-    created_by = MembershipWithAvatarRelationSerializer(read_only=True, source="created_by_member")
+    created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
 
     package = RelationSerializer(read_only=True)
     payload = JobPayloadRelationSerializer(read_only=True)
