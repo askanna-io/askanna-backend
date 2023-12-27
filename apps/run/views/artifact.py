@@ -15,7 +15,7 @@ from core.mixins import (
     PartialUpdateModelMixin,
     SerializerByActionMixin,
 )
-from core.permissions.askanna import AskAnnaPermissionByAction
+from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
 from project.models import Project
 from run.models import Run, RunArtifact
@@ -127,7 +127,7 @@ class RunArtifactView(
                 raise ValidationError({"run_suuid": ["This field is required."]})
 
             try:
-                return Run.objects.active(add_select_related=True).get(suuid=run_suuid).jobdef.project
+                return Run.objects.active(add_select_related=True).get(suuid=run_suuid).project
             except Run.DoesNotExist:
                 raise NotFound from None
 

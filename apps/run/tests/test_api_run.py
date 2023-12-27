@@ -380,7 +380,10 @@ class TestRunDetailAPI(BaseAPITestRun):
         super().setUp()
         self.url = reverse(
             "run-detail",
-            kwargs={"version": "v1", "suuid": self.runs["run_1"].suuid},
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run_1"].suuid,
+            },
         )
 
     def test_detail_as_askanna_admin(self):

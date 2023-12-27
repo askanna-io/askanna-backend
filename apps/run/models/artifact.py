@@ -38,8 +38,13 @@ class RunArtifact(BaseModel):
 
     permission_by_action = {
         "list": "project.run.view",
-        ("retrieve", "info", "download"): "project.run.view",
-        ("create", "upload_part", "upload_complete", "upload_abort"): "project.run.create",
+        ("retrieve", "storage_file_info", "storage_file_download"): "project.run.view",
+        (
+            "create",
+            "storage_file_upload_part",
+            "storage_file_upload_complete",
+            "storage_file_upload_abort",
+        ): "project.run.create",
         "partial_update": "project.run.edit",
     }
 
@@ -53,15 +58,7 @@ class RunArtifact(BaseModel):
 
     @property
     def upload_directory(self):
-        return (
-            "runs/"
-            + self.run.suuid[:2].lower()
-            + "/"
-            + self.run.suuid[2:4].lower()
-            + "/"
-            + self.run.suuid
-            + "/artifacts"
-        )
+        return self.run.upload_directory + "/artifacts"
 
     def get_name(self) -> str | None:
         if self.artifact_file:

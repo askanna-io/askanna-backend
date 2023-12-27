@@ -14,14 +14,7 @@ from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceVie
 from job.models import JobDef
 from package.models import Package
 from project.models import Project
-from run.models import (
-    Run,
-    RunArtifact,
-    RunLog,
-    RunMetricMeta,
-    RunResult,
-    RunVariableMeta,
-)
+from run.models import Run, RunArtifact, RunLog, RunMetricMeta, RunVariableMeta
 from storage.models import File
 from storage.utils.file import get_content_type_from_file, get_md5_from_file
 from variable.models import Variable
@@ -435,6 +428,38 @@ def test_runs(
     run_variables["run_5"].variables = variable_response_good_small_no_label
     run_variables["run_5"].save()
 
+    result_content_file = ContentFile(
+        content=io.BytesIO(b"some private result content").read(),
+        name="result_private.txt",
+    )
+    runs["run_2"].result = File.objects.create(
+        name=result_content_file.name,
+        file=result_content_file,
+        size=result_content_file.size,
+        etag=get_md5_from_file(result_content_file),
+        content_type=get_content_type_from_file(result_content_file),
+        completed_at=timezone.now(),
+        created_for=runs["run_2"],
+        created_by=runs["run_2"].created_by_member,
+    )
+    runs["run_2"].save()
+
+    result_content_file = ContentFile(
+        content=io.BytesIO(b"some public result content").read(),
+        name="result_public.txt",
+    )
+    runs["run_4"].result = File.objects.create(
+        name=result_content_file.name,
+        file=result_content_file,
+        size=result_content_file.size,
+        etag=get_md5_from_file(result_content_file),
+        content_type=get_content_type_from_file(result_content_file),
+        completed_at=timezone.now(),
+        created_for=runs["run_4"],
+        created_by=runs["run_4"].created_by_member,
+    )
+    runs["run_4"].save()
+
     yield runs
 
     for run_variable in run_variables.values():
@@ -479,23 +504,6 @@ def test_run_artifacts(test_runs, test_memberships) -> dict[str, RunArtifact]:
 
     for artifact in artifacts.values():
         artifact.delete()
-
-
-@pytest.fixture()
-def test_run_results(test_runs) -> dict[str, RunResult]:
-    results = {
-        "result_2": RunResult.objects.create(
-            name="test_result_2.txt",
-            run=test_runs["run_2"],
-        ),
-    }
-
-    results["result_2"].write(io.BytesIO(b"some result content"))
-
-    yield results
-
-    for result in results.values():
-        result.delete()
 
 
 @pytest.fixture()

@@ -17,7 +17,7 @@ from core.mixins import (
     PartialUpdateModelMixin,
     SerializerByActionMixin,
 )
-from core.permissions.askanna import AskAnnaPermissionByAction
+from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
 from package.models import Package
 from package.serializers import (

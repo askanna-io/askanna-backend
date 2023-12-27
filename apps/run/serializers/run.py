@@ -7,9 +7,9 @@ from account.serializers.membership import MembershipRelationSerializer
 from core.serializers import RelationSerializer
 from job.serializers import JobPayloadRelationSerializer, RunImageRelationSerializer
 from run.models import Run
-from run.serializers.artifact_relation import ArtifactRelationSerializer
+from run.serializers.artifact import ArtifactRelationSerializer
 from run.serializers.log import LogRelationSerializer
-from run.serializers.result import ResultRelationSerializer
+from storage.serializers import FileDownloadInfoSerializer
 
 
 class EnvironmentSerializer(serializers.Serializer):
@@ -25,6 +25,14 @@ class NameTypeSerializer(serializers.Serializer):
 
 class NameTypeCountSerializer(NameTypeSerializer):
     count = serializers.IntegerField(read_only=True)
+
+
+class ResultSerializer(serializers.Serializer):
+    filename = serializers.CharField(read_only=True, source="name")
+    size = serializers.IntegerField(read_only=True)
+    etag = serializers.CharField(read_only=True)
+    content_type = serializers.CharField(read_only=True)
+    download_info = FileDownloadInfoSerializer(read_only=True, source="*")
 
 
 class MetricsMetaSerializer(serializers.Serializer):
@@ -59,7 +67,7 @@ class RunSerializer(serializers.ModelSerializer):
     package = RelationSerializer(read_only=True)
     payload = JobPayloadRelationSerializer(read_only=True)
 
-    result = ResultRelationSerializer(read_only=True)
+    result = ResultSerializer(read_only=True)
     artifact = ArtifactRelationSerializer(read_only=True, many=True, source="artifacts")
     metrics_meta = serializers.SerializerMethodField()
     variables_meta = serializers.SerializerMethodField()

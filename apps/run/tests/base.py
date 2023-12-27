@@ -13,7 +13,6 @@ class BaseAPITestRun(AskAnnaAPITestCase):
         test_jobs,
         test_runs,
         test_run_artifacts,
-        test_run_results,
         test_run_logs,
         test_run_metrics,
         test_run_variables,
@@ -26,7 +25,6 @@ class BaseAPITestRun(AskAnnaAPITestCase):
         self.jobs = test_jobs
         self.runs = test_runs
         self.artifacts = test_run_artifacts
-        self.results = test_run_results
         self.run_logs = test_run_logs
         self.run_metrics = test_run_metrics
         self.run_variables = test_run_variables

@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.askanna import RoleBasedPermission
+from core.permissions import RoleBasedPermission
 from core.viewsets import AskAnnaGenericViewSet
 from job.models import JobDef, JobPayload, ScheduledJob
 from job.serializers import JobSerializer, RequestJobRunSerializer

@@ -28,6 +28,7 @@ class ObjectReference(models.Model):
 
     package_package = models.OneToOneField("package.Package", null=True, on_delete=models.CASCADE)
 
+    run_run = models.OneToOneField("run.Run", null=True, on_delete=models.CASCADE)
     run_artifact = models.OneToOneField("run.RunArtifact", null=True, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -50,6 +51,7 @@ class ObjectReference(models.Model):
                 "account_user",
                 "account_membership",
                 "package_package",
+                "run_run",
                 "run_artifact",
             ]
             and getattr(self, field.name)

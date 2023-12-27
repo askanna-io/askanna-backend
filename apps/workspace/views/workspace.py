@@ -6,7 +6,7 @@ from rest_framework import mixins
 from account.models.membership import MSP_WORKSPACE, Membership
 from core.filters import case_insensitive
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.askanna import RoleBasedPermission
+from core.permissions import RoleBasedPermission
 from core.viewsets import AskAnnaGenericViewSet
 from workspace.models import Workspace
 from workspace.serializers import WorkspaceSerializer

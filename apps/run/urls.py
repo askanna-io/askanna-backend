@@ -6,7 +6,6 @@ from rest_framework_extensions.routers import ExtendedSimpleRouter
 from job.views.payload import JobPayloadView
 from run.views.artifact import RunArtifactView
 from run.views.metric import RunMetricUpdateView, RunMetricView
-from run.views.result import ChunkedJobResultViewSet, RunResultCreateView
 from run.views.run import RunView
 from run.views.variable import RunVariableUpdateView, RunVariableView
 
@@ -51,19 +50,6 @@ run_router.register(
     JobPayloadView,
     basename="run-payload",
     parents_query_lookups=["run__suuid"],
-)
-
-result_router = run_router.register(
-    r"result-upload",
-    RunResultCreateView,
-    basename="run-result",
-    parents_query_lookups=["run__suuid"],
-)
-result_router.register(
-    r"resultchunk",
-    ChunkedJobResultViewSet,
-    basename="result-resultchunk",
-    parents_query_lookups=["runresult__run__suuid", "runresult__suuid"],
 )
 
 artifact_router = routers.SimpleRouter()

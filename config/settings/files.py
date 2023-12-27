@@ -34,15 +34,11 @@ def settings(config, env):
     else:
         config.STORAGE_ROOT = config.BASE_DIR / "storage_root"
 
-    config.RESULT_ROOT = config.STORAGE_ROOT / "artifacts"
     config.METRIC_ROOT = config.STORAGE_ROOT / "artifacts"
     config.VARIABLE_ROOT = config.STORAGE_ROOT / "artifacts"
 
     config.UPLOAD_DIR_NAME = "upload"
     config.UPLOAD_ROOT = config.STORAGE_ROOT / config.UPLOAD_DIR_NAME
-
-    config.BLOB_DIR_NAME = "blob"
-    config.BLOB_ROOT = config.STORAGE_ROOT / config.BLOB_DIR_NAME
 
     config.PROJECT_DIR_NAME = "projects"
     config.PROJECTS_ROOT = config.STORAGE_ROOT / config.PROJECT_DIR_NAME

@@ -21,6 +21,8 @@ class RunLog(BaseModel):
     exit_code = models.IntegerField(default=0)
     stdout = models.JSONField(blank=True, null=True)
 
+    logqueue = None
+
     def log(self, message: str | None = None, timestamp: str | None = None, print_log: bool = False):
         if not self.logqueue:
             self.logqueue = RedisLogQueue(suuid=self.run.suuid)

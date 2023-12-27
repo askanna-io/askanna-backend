@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
-from run.serializers.artifact import RunArtifactSerializer
-from run.serializers.artifact_relation import ArtifactRelationSerializer
+from run.serializers.artifact import ArtifactRelationSerializer, RunArtifactSerializer
 
 
 def test_artifact_relation_serializer(test_run_artifacts):

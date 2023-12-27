@@ -4,7 +4,7 @@ import pytest
 from django.test import RequestFactory, TestCase
 from rest_framework import mixins, serializers
 
-from core.permissions.askanna import AskAnnaPermissionByAction
+from core.permissions import AskAnnaPermissionByAction
 from core.permissions.role_utils import (
     get_request_roles,
     get_user_role,
@@ -25,7 +25,7 @@ from core.permissions.roles import (
     WorkspaceNoMember,
     WorkspacePublicViewer,
 )
-from core.views import AskAnnaGenericViewSet
+from core.viewsets import AskAnnaGenericViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -65,12 +65,12 @@ class TestAskAnnaPermissionByAction(TestCase):
         obj = Mock()
         obj.permission_by_action = {
             "list": "project.code.list",
-            ("retrieve", "info", "download"): "project.code.view",
+            ("retrieve", "storage_file_info", "storage_file_download"): "project.code.view",
         }
         permission = AskAnnaPermissionByAction()
 
         assert permission._get_permission(obj, "list") == "project.code.list"
-        assert permission._get_permission(obj, "info") == "project.code.view"
+        assert permission._get_permission(obj, "storage_file_info") == "project.code.view"
 
         with pytest.raises(KeyError):
             permission._get_permission(obj, "create")

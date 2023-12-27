@@ -10,7 +10,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_array, filter_multiple
 from core.mixins import ObjectRoleMixin, UpdateModelWithoutPartialUpateMixin
-from core.permissions.askanna import RoleBasedPermission
+from core.permissions import RoleBasedPermission
 from core.permissions.role_utils import get_user_roles_for_project
 from core.viewsets import AskAnnaGenericViewSet
 from run.models import Run, RunMetric, RunMetricMeta
