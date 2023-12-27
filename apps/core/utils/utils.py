@@ -1,15 +1,9 @@
-import os
-import re
 import zoneinfo
-from pathlib import Path
-from wsgiref.util import FileWrapper
 
 import croniter
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.http import HttpResponseNotFound, StreamingHttpResponse
 from jinja2 import Environment, select_autoescape
-from rest_framework import status
 
 
 def parse_string(string: str, variables: dict) -> str:
@@ -151,70 +145,3 @@ def pretty_time_delta(seconds: int) -> str:
 
 def flatten(t):
     return [item for sublist in t for item in sublist]
-
-
-# The 'RangeFileWrapper' class and method 'stream' is used to setup streaming of content via an REST API endpoint
-class RangeFileWrapper:
-    def __init__(self, filelike, blksize=8192, offset=0, length=None):
-        self.filelike = filelike
-        self.filelike.seek(offset, os.SEEK_SET)
-        self.remaining = length
-        self.blksize = blksize
-
-    def close(self):
-        if hasattr(self.filelike, "close"):
-            self.filelike.close()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.remaining is None:
-            # If remaining is None, we're reading the entire file.
-            data = self.filelike.read(self.blksize)
-            if data:
-                return data
-            raise StopIteration()
-
-        if self.remaining <= 0:
-            raise StopIteration()
-
-        data = self.filelike.read(min(self.remaining, self.blksize))
-
-        if not data:
-            raise StopIteration()
-
-        self.remaining -= len(data)
-        return data
-
-
-def stream(request, path, content_type, size):
-    range_header = request.META.get("HTTP_RANGE", "").strip()
-
-    # https://gist.github.com/dcwatson/cb5d8157a8fa5a4a046e
-    range_re = re.compile(r"bytes\s*=\s*(\d+)\s*-\s*(\d*)", re.I)
-    range_match = range_re.match(range_header)
-
-    if range_match:
-        first_byte, last_byte = range_match.groups()
-        first_byte = int(first_byte) if first_byte else 0
-        last_byte = int(last_byte) if last_byte else size - 1
-        if last_byte >= size:
-            last_byte = size - 1
-        length = last_byte - first_byte + 1
-        resp = StreamingHttpResponse(
-            RangeFileWrapper(Path.open(path, "rb"), offset=first_byte, length=length),
-            status=status.HTTP_206_PARTIAL_CONTENT,
-            content_type=content_type,
-        )
-        resp["Content-Length"] = str(length)
-        resp["Content-Range"] = f"bytes {first_byte}-{last_byte}/{size}"
-    else:
-        try:
-            resp = StreamingHttpResponse(FileWrapper(Path.open(path, "rb")), content_type=content_type)
-        except FileNotFoundError:
-            return HttpResponseNotFound()
-
-        resp["Content-Length"] = str(size)
-    resp["Accept-Ranges"] = "bytes"
-    return resp

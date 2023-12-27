@@ -9,7 +9,6 @@ from run.models import (
     RunLog,
     RunMetric,
     RunMetricMeta,
-    RunResult,
     RunVariable,
     RunVariableMeta,
 )
@@ -20,7 +19,10 @@ class RunAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("uuid", "suuid", "jobdef", "created_by_member")}),
         ("Run info", {"fields": ("name", "description", "status", "celery_task_id", "duration")}),
-        ("Metadata", {"fields": ("package", "trigger", "payload", "environment_name", "run_image", "timezone")}),
+        (
+            "Metadata",
+            {"fields": ("package", "trigger", "payload", "result", "environment_name", "run_image", "timezone")},
+        ),
         ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [
@@ -29,15 +31,16 @@ class RunAdmin(admin.ModelAdmin):
         "jobdef",
         "created_by_member",
         "celery_task_id",
+        "duration",
         "package",
         "trigger",
         "payload",
-        "started_at",
-        "finished_at",
-        "duration",
+        "result",
         "environment_name",
         "run_image",
         "timezone",
+        "started_at",
+        "finished_at",
         "modified_at",
         "created_at",
     ]
@@ -188,66 +191,6 @@ class RunLogAdmin(admin.ModelAdmin):
             return f"{log_first} \n\n...\n\n {log_last}"
 
         return json.dumps(obj.stdout, indent=4)
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(RunResult)
-class RunResultAdmin(admin.ModelAdmin):
-    fields = [
-        "suuid",
-        "run",
-        "name",
-        "size",
-        "extension",
-        "mime_type",
-        "description",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
-    readonly_fields = [
-        "suuid",
-        "name",
-        "size",
-        "extension",
-        "mime_type",
-        "modified_at",
-        "created_at",
-    ]
-    raw_id_fields = [
-        "run",
-    ]
-
-    list_display = [
-        "suuid",
-        "run",
-        "job",
-        "project",
-        "size",
-        "created_at",
-    ]
-    date_hierarchy = "created_at"
-    list_filter = [
-        "created_at",
-        "deleted_at",
-    ]
-    search_fields = [
-        "uuid",
-        "suuid",
-        "run__uuid",
-        "run__suuid",
-    ]
-
-    def project(self, obj):
-        return obj.run.jobdef.project
-
-    def job(self, obj):
-        return obj.run.jobdef
 
     def has_add_permission(self, request):
         return False

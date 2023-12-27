@@ -56,8 +56,13 @@ class Package(BaseModel):
 
     permission_by_action = {
         "list": "project.code.list",
-        ("retrieve", "info", "download"): "project.code.view",
-        ("create", "upload_part", "upload_complete", "upload_abort"): "project.code.create",
+        ("retrieve", "storage_file_info", "storage_file_download"): "project.code.view",
+        (
+            "create",
+            "storage_file_upload_part",
+            "storage_file_upload_complete",
+            "storage_file_upload_abort",
+        ): "project.code.create",
         "partial_update": "project.code.edit",
         "destroy": "project.code.remove",
     }

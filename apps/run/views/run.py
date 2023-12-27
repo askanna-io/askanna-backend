@@ -1,25 +1,36 @@
-from pathlib import Path
-
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Case, Q, Value, When
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django_filters import FilterSet
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    PolymorphicProxySerializer,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import mixins, status
 from rest_framework.decorators import action
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from account.models.membership import MSP_WORKSPACE
 from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
-from core.mixins import PartialUpdateModelMixin, SerializerByActionMixin
-from core.permissions.askanna import AskAnnaPermissionByAction
-from core.utils import stream
+from core.mixins import (
+    ParserByActionMixin,
+    PartialUpdateModelMixin,
+    SerializerByActionMixin,
+)
+from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
-from run.models import RedisLogQueue
+from run.models.log import RedisLogQueue
 from run.models.run import STATUS_MAPPING, Run, get_status_external
 from run.serializers.artifact import RunArtifactSerializer
+from run.serializers.result import (
+    RunResultCreateBaseSerializer,
+    RunResultCreateWithFileSerializer,
+    RunResultCreateWithoutFileSerializer,
+)
 from run.serializers.run import RunSerializer, RunStatusSerializer
 
 
@@ -161,13 +172,14 @@ class RunFilterSet(FilterSet):
         summary="Get run log",
     ),
     result=extend_schema(
-        summary="Get run result",
+        summary="Create a run result",
     ),
     status=extend_schema(
         summary="Get run status",
     ),
 )
 class RunView(
+    ParserByActionMixin,
     SerializerByActionMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -216,13 +228,17 @@ class RunView(
     }
     filterset_class = RunFilterSet
 
+    permission_classes = [AskAnnaPermissionByAction]
+
     serializer_class = RunSerializer
     serializer_class_by_action = {
         "artifact": RunArtifactSerializer,
         "status": RunStatusSerializer,
     }
 
-    permission_classes = [AskAnnaPermissionByAction]
+    parser_classes_by_action = {
+        "result": [MultiPartParser, JSONParser],
+    }
 
     def get_queryset(self):
         """
@@ -397,24 +413,52 @@ class RunView(
 
         return Response(response_json, status=status.HTTP_200_OK)
 
-    @extend_schema(responses={200: OpenApiTypes.BYTE})
-    @action(detail=True, methods=["get"], serializer_class=None)
+    @extend_schema(
+        request=RunResultCreateBaseSerializer,
+        responses={
+            status.HTTP_201_CREATED: PolymorphicProxySerializer(
+                component_name="RunResultCreateSerializer",
+                serializers=[RunResultCreateWithFileSerializer, RunResultCreateWithoutFileSerializer],
+                resource_type_field_name=None,
+                many=False,
+            )
+        },
+    )
+    @action(detail=True, methods=["post"])
     def result(self, request, **kwargs):
-        """Get the result from a specific run"""
+        """
+        Do a request to upload a result for a run. At least a result file or filename is required.
+
+        For large files it's recommended to use multipart upload. You can do this by providing a filename and NOT a
+        result file. When you do such a request, in the response you will get upload info.
+
+        If the upload info is of type `askanna` you can use the `upload_info.url` to upload file parts. By adding
+        `part` to the url you can upload a file part. When all parts are uploaded you can do a request to complete
+        the file by adding `complete` to the url. See the `storage` section in the API documentation for more info.
+
+        By providing optional values for `size`, `etag` and `content_type` in the request body, the file will be
+        validated against these values. If the values are not correct, the upload will fail.
+        """
+
         run = self.get_object()
-        try:
-            _ = run.result.uuid
-        except ObjectDoesNotExist:
-            return Response(None, status=status.HTTP_404_NOT_FOUND)
+        if run.result:
+            return Response({"detail": "Run already has a result"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not Path.exists(run.result.stored_path):
-            return Response(None, status=status.HTTP_404_NOT_FOUND)
+        if "result" not in request.FILES.keys() and "filename" not in request.data.keys():
+            return Response({"detail": ("result or filename is required")}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get the requested content-type header, if not set get it from the result object
-        content_type = request.headers.get("content-type", run.result.mime_type)
-        size = run.result.size
+        self.serializer_class = (
+            RunResultCreateWithFileSerializer if request.FILES.get("result") else RunResultCreateWithoutFileSerializer
+        )
 
-        return stream(request, run.result.stored_path, content_type=content_type, size=size)
+        context = self.get_serializer_context()
+        context["run"] = run
+
+        serializer = self.get_serializer(data=request.data, context=context)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["get"])
     def status(self, request, *args, **kwargs):

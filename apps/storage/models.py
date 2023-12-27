@@ -8,7 +8,7 @@ from django.db import models
 from django.utils.functional import cached_property
 
 from core.models import NameDescriptionBaseModel, ObjectReference
-from core.permissions.askanna import AskAnnaPermissionByAction
+from core.permissions import AskAnnaPermissionByAction
 from storage.utils.zipfile import get_files_and_directories_in_zipfile
 
 
@@ -205,7 +205,11 @@ class File(NameDescriptionBaseModel):
                     break
 
     def request_has_object_read_permission(self, request, view) -> bool:
-        return AskAnnaPermissionByAction().has_object_permission(request, view, self.created_for)
+        return AskAnnaPermissionByAction().has_object_permission(
+            request, view, obj=self.created_for, action_prefix="storage_file"
+        )
 
     def request_has_object_write_permission(self, request, view) -> bool:
-        return AskAnnaPermissionByAction().has_object_permission(request, view, self.created_for)
+        return AskAnnaPermissionByAction().has_object_permission(
+            request, view, obj=self.created_for, action_prefix="storage_file"
+        )

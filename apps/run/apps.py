@@ -5,4 +5,4 @@ class RunConfig(AppConfig):
     name = "run"
 
     def ready(self):
-        from run import listeners, signals  # noqa: F401
+        from run import listeners  # noqa: F401

@@ -27,7 +27,7 @@ from account.serializers.people import (
 )
 from core.filters import case_insensitive
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions.askanna import RoleBasedPermission
+from core.permissions import RoleBasedPermission
 from core.permissions.role_utils import get_user_workspace_role
 from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceViewer
 from core.utils.config import get_setting

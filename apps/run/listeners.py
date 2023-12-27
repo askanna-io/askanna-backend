@@ -6,37 +6,7 @@ from django.dispatch import receiver
 from config.celery_app import app as celery_app
 
 from account.models.membership import MSP_WORKSPACE
-from run.models import (
-    Run,
-    RunLog,
-    RunMetricMeta,
-    RunResult,
-    RunVariable,
-    RunVariableMeta,
-)
-from run.signals import result_upload_finish
-from storage.utils.file import get_content_type_from_file
-
-
-@receiver(result_upload_finish)
-def handle_result_upload(sender, signal, postheaders, obj, **kwargs):
-    """
-    After saving the result, determine the mime-type of the file using python-magic
-    """
-    detected_mimetype = get_content_type_from_file(obj.stored_path)
-    if detected_mimetype:
-        obj.mime_type = detected_mimetype
-        obj.save(
-            update_fields=[
-                "mime_type",
-                "modified_at",
-            ]
-        )
-
-
-@receiver(pre_delete, sender=RunResult)
-def delete_runresult(sender, instance, **kwargs):
-    instance.prune()
+from run.models import Run, RunLog, RunMetricMeta, RunVariable, RunVariableMeta
 
 
 @receiver(post_save, sender=Run)

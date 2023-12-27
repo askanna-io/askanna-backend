@@ -19,7 +19,7 @@ class AskAnnaPermissionByAction(permissions.BasePermission):
         class Project(BaseModel):
             permission_by_action = {
                 "list": "project.code.list",
-                ("retrieve", "info", "download"): "project.code.view",
+                ("retrieve", "storage_file_info", "storage_file_download"): "project.code.view",
             }
 
             # Other model code
@@ -40,7 +40,7 @@ class AskAnnaPermissionByAction(permissions.BasePermission):
 
         raise KeyError(f"Action '{action}' not found in 'permission_by_action'.")
 
-    def has_permission(self, request, view):
+    def has_permission(self, request, view, action_prefix: str | None = None):
         assert isinstance(view, AskAnnaGenericViewSet), "View needs to inherrit from AskAnnaGenericViewSet"
 
         # When the view has a detail attribute, we need to check if the user has permission to the object. This is
@@ -66,7 +66,8 @@ class AskAnnaPermissionByAction(permissions.BasePermission):
             return getattr(model, method_name)(request, view)
 
         if hasattr(model, "permission_by_action"):
-            permission = self._get_permission(model, view.action)
+            action = f"{action_prefix}_{view.action}" if action_prefix else view.action
+            permission = self._get_permission(model, action)
 
             try:
                 project = view.get_parrent_project(request=request) if hasattr(view, "get_parrent_project") else None
@@ -80,7 +81,7 @@ class AskAnnaPermissionByAction(permissions.BasePermission):
             "property 'permission_by_action'."
         )
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj, action_prefix: str | None = None):
         if request.method in permissions.SAFE_METHODS:
             method_name = "request_has_object_read_permission"
         else:
@@ -96,7 +97,8 @@ class AskAnnaPermissionByAction(permissions.BasePermission):
             return getattr(obj, method_name)(request, view)
 
         if hasattr(obj, "permission_by_action"):
-            permission = self._get_permission(obj, view.action)
+            action = f"{action_prefix}_{view.action}" if action_prefix else view.action
+            permission = self._get_permission(obj, action)
 
             project = obj.project if hasattr(obj, "project") else None
             workspace = obj.workspace if hasattr(obj, "workspace") else None

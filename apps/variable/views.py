@@ -12,7 +12,7 @@ from core.mixins import (
     PartialUpdateModelMixin,
     SerializerByActionMixin,
 )
-from core.permissions.askanna import RoleBasedPermission
+from core.permissions import RoleBasedPermission
 from core.permissions.role_utils import get_user_roles_for_project
 from core.viewsets import AskAnnaGenericViewSet
 from project.models import Project

@@ -12,7 +12,7 @@ from job.mailer import (
     send_notification,
 )
 from job.models import JobDef, JobPayload
-from run.models.run import Run
+from run.models import Run
 from variable.models import Variable
 
 pytestmark = pytest.mark.django_db

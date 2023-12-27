@@ -73,13 +73,13 @@ class NameDescriptionBaseModel(BaseModel):
     name = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True, null=False, default="")
 
+    class Meta:
+        abstract = True
+
     def __str__(self):
         if self.name:
             return f"{self.__class__.__name__}: {self.name} ({self.suuid})"
         return f"{self.__class__.__name__} object ({self.suuid})"
-
-    class Meta:
-        abstract = True
 
 
 class AuthorModel(models.Model):
@@ -103,6 +103,11 @@ class FileBaseModel(BaseModel):
     file_extension = ""
     file_readmode = "r"
     file_writemode = "w"
+
+    class Meta:
+        abstract = True
+        get_latest_by = "modified_at"
+        ordering = ["-modified_at"]
 
     @property
     def filename(self) -> str:
@@ -150,11 +155,6 @@ class FileBaseModel(BaseModel):
         # If the directory is not empty or does not exist, we don't want to remove it
         except (FileNotFoundError, OSError):
             pass
-
-    class Meta:
-        abstract = True
-        get_latest_by = "modified_at"
-        ordering = ["-modified_at"]
 
 
 class VisibilityModel(models.Model):

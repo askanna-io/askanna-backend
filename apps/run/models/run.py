@@ -52,13 +52,13 @@ class RunQuerySet(models.QuerySet):
         if add_select_related is True:
             active_query = active_query.select_related(
                 "jobdef__project__workspace",
-                "payload",
-                "package__package_file",
                 "created_by_member__avatar_file",
                 "created_by_member__user__avatar_file",
-                "run_image",
+                "payload",
+                "package__package_file",
                 "result",
                 "output",
+                "run_image",
             ).prefetch_related(
                 "artifacts__artifact_file",
                 "metrics_meta",
@@ -74,6 +74,7 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)
     payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
+    result = models.OneToOneField("storage.File", null=True, on_delete=models.CASCADE, related_name="run_result_file")
 
     status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
 
@@ -96,8 +97,14 @@ class Run(AuthorModel, NameDescriptionBaseModel):
 
     permission_by_action = {
         "list": "project.run.list",
-        ("retrieve", "log", "manifest", "status", "result", "artifact"): "project.run.view",
-        ("create", "upload_part", "upload_complete", "upload_abort"): "project.run.create",
+        ("retrieve", "log", "manifest", "status", "storage_file_download", "artifact"): "project.run.view",
+        (
+            "create",
+            "result",
+            "storage_file_upload_part",
+            "storage_file_upload_complete",
+            "storage_file_upload_abort",
+        ): "project.run.create",
         "partial_update": "project.run.edit",
         "destroy": "project.run.remove",
     }
@@ -105,6 +112,18 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     @property
     def project(self):
         return self.jobdef.project
+
+    @property
+    def workspace(self):
+        return self.jobdef.project.workspace
+
+    @property
+    def upload_directory(self):
+        return "runs/" + self.suuid[:2].lower() + "/" + self.suuid[2:4].lower() + "/" + self.suuid
+
+    @property
+    def upload_result_directory(self):
+        return self.upload_directory + "/result"
 
     @property
     def is_finished(self):

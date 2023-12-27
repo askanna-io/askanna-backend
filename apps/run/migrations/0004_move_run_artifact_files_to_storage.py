@@ -124,12 +124,22 @@ def move_run_artifact_files(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0006_objectreference_add_run_artifact"),
+        ("core", "0006_objectreference_add_run_run_and_run_artifact"),
         ("run", "0003_rename_runartifact_fields_and_delete_chunkedrunartifactpart"),
         ("storage", "0001_initial"),
     ]
 
     operations = [
+        migrations.AddField(
+            model_name="run",
+            name="result",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="run_result_file",
+                to="storage.file",
+            ),
+        ),
         migrations.AddField(
             model_name="runartifact",
             name="artifact_file",
