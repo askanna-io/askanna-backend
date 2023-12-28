@@ -271,6 +271,8 @@ class FileViewSet(AskAnnaGenericViewSet):
             )
 
         response["Accept-Ranges"] = "bytes"
+        response["X-Frame-Options"] = "SAMEORIGIN"
+
         return response
 
     @extend_schema(summary="Upload part of a file")
