@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.core.files.base import ContentFile
 from django.urls import reverse
@@ -7,6 +9,7 @@ from run.models import RunArtifact
 from run.tests.base import BaseAPITestRun
 from storage.models import File
 from storage.utils.file import get_md5_from_file
+from tests import fake
 
 
 class TestArtifactDetailAPI(BaseAPITestRun):
@@ -133,33 +136,52 @@ class TestArtifactCreateAPI(BaseAPITestRun):
 
     def setUp(self):
         super().setUp()
-        self.artifact_url = reverse("run-artifact-list", kwargs={"version": "v1"})
+        self.url = reverse(
+            "run-artifact",
+            kwargs={
+                "version": "v1",
+                "suuid": self.runs["run_1"].suuid,
+            },
+        )
 
     @pytest.fixture(autouse=True)
-    def _set_artifact_fixtures(self, mixed_format_zipfile, avatar_file):
+    def _set_artifact_fixtures(self, mixed_format_zipfile, temp_dir):
         self.zipfile = mixed_format_zipfile
-        self.avatar_file = avatar_file
+
+        self.json_file = temp_dir / "json_file.json"
+        with self.json_file.open("w") as f:
+            json.dump(
+                fake.json(
+                    data_columns=[
+                        ("Name", "name"),
+                        ("Address", "address"),
+                        ("City", "city"),
+                        ("Points", "pyint", {"min_value": 50, "max_value": 100}),
+                    ],
+                    num_rows=fake.random_int(min=1, max=10),
+                ),
+                f,
+            )
 
     def test_artifact_create_with_file(self):
         """
         Test if create artifact with file work and confirm it only work for project admins and members
         """
 
-        def artifact_create_with_file_test(user_name: str | None, expected_status_code: int) -> bool:
+        def artifact_create_with_file_test(user_name: str | None, expect_to_fail: bool = False) -> bool:
             self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
             with self.zipfile["file"].open("rb") as artifact:
                 response = self.client.post(
-                    self.artifact_url,
+                    self.url,
                     {
-                        "run_suuid": self.runs["run_1"].suuid,
                         "artifact": artifact,
                     },
                     format="multipart",
                 )
 
-            if expected_status_code != status.HTTP_201_CREATED:
-                assert response.status_code == expected_status_code
+            if expect_to_fail is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
@@ -170,54 +192,31 @@ class TestArtifactCreateAPI(BaseAPITestRun):
             assert response.data.get("etag") == self.zipfile["etag"]
             assert response.data.get("content_type") == "application/zip"
 
-            RunArtifact.objects.get(suuid=response.data.get("suuid")).artifact_file.delete_file_and_empty_directories()
+            # Clean up
+            RunArtifact.objects.get(suuid=response.data.get("suuid")).artifact_file.delete()
 
             return True
 
-        assert (
-            artifact_create_with_file_test(user_name="workspace_admin", expected_status_code=status.HTTP_201_CREATED)
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(user_name="workspace_member", expected_status_code=status.HTTP_201_CREATED)
-            is True
-        )
+        assert artifact_create_with_file_test(user_name="workspace_admin") is True
+        assert artifact_create_with_file_test(user_name="workspace_member") is True
 
-        assert (
-            artifact_create_with_file_test(
-                user_name="askanna_super_admin", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(
-                user_name="workspace_viewer", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(
-                user_name="no_workspace_member", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(user_name=None, expected_status_code=status.HTTP_401_UNAUTHORIZED) is True
-        )
+        assert artifact_create_with_file_test(user_name="askanna_super_admin", expect_to_fail=True) is True
+        assert artifact_create_with_file_test(user_name="workspace_viewer", expect_to_fail=True) is True
+        assert artifact_create_with_file_test(user_name="no_workspace_member", expect_to_fail=True) is True
+        assert artifact_create_with_file_test(user_name=None, expect_to_fail=True) is True
 
     def test_artifact_create_with_file_and_meta_info(self):
         """
         Test if create artifact with file work and confirm it only work for project admins and members
         """
 
-        def artifact_create_with_file_test(user_name: str | None, expected_status_code: int) -> bool:
+        def artifact_create_with_file_test(user_name: str | None, expect_to_fail: bool = False) -> bool:
             self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
             with self.zipfile["file"].open("rb") as artifact:
                 response = self.client.post(
-                    self.artifact_url,
+                    self.url,
                     {
-                        "run_suuid": self.runs["run_1"].suuid,
                         "artifact": artifact,
                         "etag": self.zipfile["etag"],
                         "size": self.zipfile["size"],
@@ -225,8 +224,8 @@ class TestArtifactCreateAPI(BaseAPITestRun):
                     format="multipart",
                 )
 
-            if expected_status_code != status.HTTP_201_CREATED:
-                assert response.status_code == expected_status_code
+            if expect_to_fail is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
@@ -237,63 +236,40 @@ class TestArtifactCreateAPI(BaseAPITestRun):
             assert response.data.get("etag") == self.zipfile["etag"]
             assert response.data.get("content_type") == "application/zip"
 
-            RunArtifact.objects.get(suuid=response.data.get("suuid")).artifact_file.delete_file_and_empty_directories()
+            # Clean up
+            RunArtifact.objects.get(suuid=response.data.get("suuid")).artifact_file.delete()
 
             return True
 
-        assert (
-            artifact_create_with_file_test(user_name="workspace_admin", expected_status_code=status.HTTP_201_CREATED)
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(user_name="workspace_member", expected_status_code=status.HTTP_201_CREATED)
-            is True
-        )
+        assert artifact_create_with_file_test(user_name="workspace_admin") is True
+        assert artifact_create_with_file_test(user_name="workspace_member") is True
 
-        assert (
-            artifact_create_with_file_test(
-                user_name="askanna_super_admin", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(
-                user_name="workspace_viewer", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(
-                user_name="no_workspace_member", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_file_test(user_name=None, expected_status_code=status.HTTP_401_UNAUTHORIZED) is True
-        )
+        assert artifact_create_with_file_test(user_name="askanna_super_admin", expect_to_fail=True) is True
+        assert artifact_create_with_file_test(user_name="workspace_viewer", expect_to_fail=True) is True
+        assert artifact_create_with_file_test(user_name="no_workspace_member", expect_to_fail=True) is True
+        assert artifact_create_with_file_test(user_name=None, expect_to_fail=True) is True
 
     def test_artifact_create_with_filename(self):
         """
         Test if create artifact with filename work and confirm it only work for project admins and members
         """
 
-        def artifact_create_with_filename_test(user_name: str | None, expected_status_code: int) -> bool:
+        def artifact_create_with_filename_test(user_name: str | None, expect_to_fail: bool = False) -> bool:
             self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
             response = self.client.post(
-                self.artifact_url,
+                self.url,
                 {
-                    "run_suuid": self.runs["run_1"].suuid,
                     "filename": "mixed_format_archive.zip",
                 },
                 format="multipart",
             )
 
-            if expected_status_code != status.HTTP_201_CREATED:
-                assert response.status_code == expected_status_code
+            if expect_to_fail is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
-            assert response.status_code == 201
+            assert response.status_code == status.HTTP_201_CREATED
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("project").get("suuid") == self.runs["run_1"].jobdef.project.suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
@@ -303,49 +279,32 @@ class TestArtifactCreateAPI(BaseAPITestRun):
 
             return True
 
-        assert (
-            artifact_create_with_filename_test(
-                user_name="workspace_admin", expected_status_code=status.HTTP_201_CREATED
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_filename_test(
-                user_name="workspace_member", expected_status_code=status.HTTP_201_CREATED
-            )
-            is True
-        )
+        assert artifact_create_with_filename_test(user_name="workspace_admin") is True
+        assert artifact_create_with_filename_test(user_name="workspace_member") is True
 
-        assert artifact_create_with_filename_test(
-            user_name="askanna_super_admin", expected_status_code=status.HTTP_404_NOT_FOUND
-        )
-        assert artifact_create_with_filename_test(
-            user_name="workspace_viewer", expected_status_code=status.HTTP_404_NOT_FOUND
-        )
-        assert artifact_create_with_filename_test(
-            user_name="no_workspace_member", expected_status_code=status.HTTP_404_NOT_FOUND
-        )
-        assert artifact_create_with_filename_test(user_name=None, expected_status_code=status.HTTP_401_UNAUTHORIZED)
+        assert artifact_create_with_filename_test(user_name="askanna_super_admin", expect_to_fail=True)
+        assert artifact_create_with_filename_test(user_name="workspace_viewer", expect_to_fail=True)
+        assert artifact_create_with_filename_test(user_name="no_workspace_member", expect_to_fail=True)
+        assert artifact_create_with_filename_test(user_name=None, expect_to_fail=True)
 
     def test_artifact_create_with_multipart_one_part(self):
         """
         Test if create artifact with multipart work and confirm it only work for project admins and members
         """
 
-        def artifact_create_with_multipart_one_part_test(user_name: str | None, expected_status_code: int) -> bool:
+        def artifact_create_with_multipart_one_part_test(user_name: str | None, expect_to_fail: bool = False) -> bool:
             self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
             response = self.client.post(
-                self.artifact_url,
+                self.url,
                 {
-                    "run_suuid": self.runs["run_1"].suuid,
                     "filename": "mixed_format_archive.zip",
                 },
                 format="multipart",
             )
 
-            if expected_status_code != status.HTTP_201_CREATED:
-                assert response.status_code == expected_status_code
+            if expect_to_fail is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
@@ -381,47 +340,22 @@ class TestArtifactCreateAPI(BaseAPITestRun):
             assert response.data.get("content_type") == "application/zip"
             assert response.data.get("created_for").get("suuid") == artifact_suuid
 
-            File.objects.get(suuid=response.data.get("suuid")).delete_file_and_empty_directories()
+            # Clean up
+            File.objects.get(suuid=response.data.get("suuid")).delete()
 
             return True
 
-        assert (
-            artifact_create_with_multipart_one_part_test(
-                user_name="workspace_admin", expected_status_code=status.HTTP_201_CREATED
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_multipart_one_part_test(
-                user_name="workspace_member", expected_status_code=status.HTTP_201_CREATED
-            )
-            is True
-        )
+        assert artifact_create_with_multipart_one_part_test(user_name="workspace_admin") is True
+        assert artifact_create_with_multipart_one_part_test(user_name="workspace_member") is True
 
         assert (
-            artifact_create_with_multipart_one_part_test(
-                user_name="askanna_super_admin", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
+            artifact_create_with_multipart_one_part_test(user_name="askanna_super_admin", expect_to_fail=True) is True
         )
+        assert artifact_create_with_multipart_one_part_test(user_name="workspace_viewer", expect_to_fail=True) is True
         assert (
-            artifact_create_with_multipart_one_part_test(
-                user_name="workspace_viewer", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
+            artifact_create_with_multipart_one_part_test(user_name="no_workspace_member", expect_to_fail=True) is True
         )
-        assert (
-            artifact_create_with_multipart_one_part_test(
-                user_name="no_workspace_member", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
-            is True
-        )
-        assert (
-            artifact_create_with_multipart_one_part_test(
-                user_name=None, expected_status_code=status.HTTP_401_UNAUTHORIZED
-            )
-            is True
-        )
+        assert artifact_create_with_multipart_one_part_test(user_name=None, expect_to_fail=True) is True
 
     def test_artifact_create_with_multipart_multiple_parts(self):
         """
@@ -429,24 +363,23 @@ class TestArtifactCreateAPI(BaseAPITestRun):
         """
 
         def artifact_createwith_multipart_multiple_parts_test(
-            user_name: str | None, expected_status_code: int
+            user_name: str | None, expect_to_fail: bool = False
         ) -> bool:
             self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
             response = self.client.post(
-                self.artifact_url,
+                self.url,
                 {
-                    "run_suuid": self.runs["run_1"].suuid,
                     "filename": "mixed_format_archive.zip",
                 },
                 format="multipart",
             )
 
-            if expected_status_code != status.HTTP_201_CREATED:
-                assert response.status_code == expected_status_code
+            if expect_to_fail is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
-            assert response.status_code == 201
+            assert response.status_code == status.HTTP_201_CREATED
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("project").get("suuid") == self.runs["run_1"].jobdef.project.suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
@@ -495,134 +428,285 @@ class TestArtifactCreateAPI(BaseAPITestRun):
             assert response.data.get("content_type") == "application/zip"
             assert response.data.get("created_for").get("suuid") == artifact_suuid
 
-            File.objects.get(suuid=response.data.get("suuid")).delete_file_and_empty_directories()
+            # Clean up
+            File.objects.get(suuid=response.data.get("suuid")).delete()
 
             return True
 
+        assert artifact_createwith_multipart_multiple_parts_test(user_name="workspace_admin") is True
+        assert artifact_createwith_multipart_multiple_parts_test(user_name="workspace_member") is True
+
         assert (
-            artifact_createwith_multipart_multiple_parts_test(
-                user_name="workspace_admin", expected_status_code=status.HTTP_201_CREATED
-            )
+            artifact_createwith_multipart_multiple_parts_test(user_name="askanna_super_admin", expect_to_fail=True)
             is True
         )
         assert (
-            artifact_createwith_multipart_multiple_parts_test(
-                user_name="workspace_member", expected_status_code=status.HTTP_201_CREATED
-            )
-            is True
-        )
-
-        assert (
-            artifact_createwith_multipart_multiple_parts_test(
-                user_name="askanna_super_admin", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
+            artifact_createwith_multipart_multiple_parts_test(user_name="workspace_viewer", expect_to_fail=True)
             is True
         )
         assert (
-            artifact_createwith_multipart_multiple_parts_test(
-                user_name="workspace_viewer", expected_status_code=status.HTTP_404_NOT_FOUND
-            )
+            artifact_createwith_multipart_multiple_parts_test(user_name="no_workspace_member", expect_to_fail=True)
             is True
         )
-        assert (
-            artifact_createwith_multipart_multiple_parts_test(
-                user_name="no_workspace_member", expected_status_code=status.HTTP_404_NOT_FOUND
+        assert artifact_createwith_multipart_multiple_parts_test(user_name=None, expect_to_fail=True) is True
+
+    def test_create_artifact_with_not_existing_run_suuid_test(self):
+        """
+        Test if create artifact with invalid run suuid result in not found
+        """
+
+        def artifact_create_with_not_existing_run_suuid_test(user_name: str | None) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
+
+            response = self.client.post(
+                reverse(
+                    "run-artifact",
+                    kwargs={
+                        "version": "v1",
+                        "suuid": "1234-1234-1234-1234",
+                    },
+                ),
+                {
+                    "filename": "mixed_format_archive.zip",
+                },
+                format="multipart",
             )
-            is True
-        )
-        assert (
-            artifact_createwith_multipart_multiple_parts_test(
-                user_name=None, expected_status_code=status.HTTP_401_UNAUTHORIZED
-            )
-            is True
-        )
 
-    def test_create_artifact_without_run_suuid(self):
-        artifact_url = reverse("run-artifact-list", kwargs={"version": "v1"})
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            return True
 
-        self.set_authorization("workspace_admin")
-        response = self.client.post(artifact_url)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "This field is required." in response.data["run_suuid"]
+        assert artifact_create_with_not_existing_run_suuid_test(user_name="workspace_admin") is True
+        assert artifact_create_with_not_existing_run_suuid_test(user_name="workspace_member") is True
 
-    def test_create_artifact_with_not_existing_run_suuid(self):
-        self.set_authorization("workspace_admin")
-
-        response = self.client.post(
-            self.artifact_url,
-            {
-                "run_suuid": "1234-1234-1234-1234",
-            },
-            format="multipart",
-        )
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert artifact_create_with_not_existing_run_suuid_test(user_name="askanna_super_admin") is True
+        assert artifact_create_with_not_existing_run_suuid_test(user_name="workspace_viewer") is True
+        assert artifact_create_with_not_existing_run_suuid_test(user_name="no_workspace_member") is True
+        assert artifact_create_with_not_existing_run_suuid_test(user_name=None) is True
 
     def test_create_artifact_without_filename_or_artifact(self):
-        self.set_authorization("workspace_admin")
+        """
+        Test if create artifact without filename or file result in bad request and confirm it only work for
+        project admins and members
+        """
 
-        response = self.client.post(
-            self.artifact_url,
-            {
-                "run_suuid": self.runs["run_1"].suuid,
-            },
-            format="multipart",
+        def artifact_create_without_filename_or_file_test(
+            user_name: str | None, expect_bad_request: bool = False, expect_no_access: bool = False
+        ) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
+
+            response = self.client.post(
+                self.url,
+                format="multipart",
+            )
+
+            if expect_bad_request is True:
+                assert response.status_code == status.HTTP_400_BAD_REQUEST
+                assert response.data.get("detail") == "artifact or filename is required"
+                return True
+
+            if expect_no_access is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
+                return True
+
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
+            )
+
+        assert (
+            artifact_create_without_filename_or_file_test(user_name="workspace_admin", expect_bad_request=True) is True
+        )
+        assert (
+            artifact_create_without_filename_or_file_test(user_name="workspace_member", expect_bad_request=True)
+            is True
         )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data.get("detail") == "artifact or filename is required"
+        assert (
+            artifact_create_without_filename_or_file_test(user_name="askanna_super_admin", expect_no_access=True)
+            is True
+        )
+        assert (
+            artifact_create_without_filename_or_file_test(user_name="workspace_viewer", expect_no_access=True) is True
+        )
+        assert (
+            artifact_create_without_filename_or_file_test(user_name="no_workspace_member", expect_no_access=True)
+            is True
+        )
+        assert artifact_create_without_filename_or_file_test(user_name=None, expect_no_access=True) is True
 
     def test_artifact_create_with_file_and_wrong_etag(self):
-        self.set_authorization(self.users["workspace_admin"])
+        """
+        Test if create artifact with file and wrong etag result in bad request and confirm it only work for
+        project admins and members
+        """
 
-        with self.zipfile["file"].open("rb") as artifact:
-            response = self.client.post(
-                self.artifact_url,
-                {
-                    "run_suuid": self.runs["run_1"].suuid,
-                    "artifact": artifact,
-                    "etag": 1,
-                    "size": self.zipfile["size"],
-                },
-                format="multipart",
+        def artifact_create_with_file_and_wrong_etag_test(
+            user_name: str | None, expect_bad_request: bool = False, expect_no_access: bool = False
+        ) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
+
+            with self.zipfile["file"].open("rb") as artifact:
+                response = self.client.post(
+                    self.url,
+                    {
+                        "artifact": artifact,
+                        "etag": "wrong_etag",
+                    },
+                    format="multipart",
+                )
+
+            if expect_bad_request is True:
+                assert response.status_code == status.HTTP_400_BAD_REQUEST
+                assert (
+                    f"ETag 'wrong_etag' does not match the ETag of the received file '{self.zipfile['etag']}'."
+                    in response.data.get("etag")
+                )
+                return True
+
+            if expect_no_access is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
+                return True
+
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
             )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert f"ETag '1' does not match the ETag of the received file '{self.zipfile['etag']}'." in response.data.get(
-            "etag"
+        assert (
+            artifact_create_with_file_and_wrong_etag_test(user_name="workspace_admin", expect_bad_request=True) is True
         )
+        assert (
+            artifact_create_with_file_and_wrong_etag_test(user_name="workspace_member", expect_bad_request=True)
+            is True
+        )
+
+        assert (
+            artifact_create_with_file_and_wrong_etag_test(user_name="askanna_super_admin", expect_no_access=True)
+            is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_etag_test(user_name="workspace_viewer", expect_no_access=True) is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_etag_test(user_name="no_workspace_member", expect_no_access=True)
+            is True
+        )
+        assert artifact_create_with_file_and_wrong_etag_test(user_name=None, expect_no_access=True) is True
 
     def test_artifact_create_with_file_and_wrong_size(self):
-        self.set_authorization(self.users["workspace_admin"])
+        """
+        Test if create artifact with file and wrong size result in bad request and confirm it only work for
+        project admins and members
+        """
 
-        with self.zipfile["file"].open("rb") as artifact:
-            response = self.client.post(
-                self.artifact_url,
-                {
-                    "run_suuid": self.runs["run_1"].suuid,
-                    "artifact": artifact,
-                    "size": 1,
-                },
-                format="multipart",
+        def artifact_create_with_file_and_wrong_size_test(
+            user_name: str | None, expect_bad_request: bool = False, expect_no_access: bool = False
+        ) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
+
+            with self.zipfile["file"].open("rb") as artifact:
+                response = self.client.post(
+                    self.url,
+                    {
+                        "artifact": artifact,
+                        "size": 1,
+                    },
+                    format="multipart",
+                )
+
+            if expect_bad_request is True:
+                assert response.status_code == status.HTTP_400_BAD_REQUEST
+                assert (
+                    f"Size '1' does not match the size of the received file '{self.zipfile['size']}'."
+                    in response.data.get("size")
+                )
+                return True
+
+            if expect_no_access is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
+                return True
+
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
             )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert f"Size '1' does not match the size of the received file '{self.zipfile['size']}'." in response.data.get(
-            "size"
+        assert (
+            artifact_create_with_file_and_wrong_size_test(user_name="workspace_admin", expect_bad_request=True) is True
         )
+        assert (
+            artifact_create_with_file_and_wrong_size_test(user_name="workspace_member", expect_bad_request=True)
+            is True
+        )
+
+        assert (
+            artifact_create_with_file_and_wrong_size_test(user_name="askanna_super_admin", expect_no_access=True)
+            is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_size_test(user_name="workspace_viewer", expect_no_access=True) is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_size_test(user_name="no_workspace_member", expect_no_access=True)
+            is True
+        )
+        assert artifact_create_with_file_and_wrong_size_test(user_name=None, expect_no_access=True) is True
 
     def test_artifact_create_with_file_and_wrong_content_type(self):
-        self.set_authorization(self.users["workspace_admin"])
+        """
+        Test if create artifact with a non zip file result in bad request and confirm it only work for project admins
+        and project members
+        """
 
-        response = self.client.post(
-            self.artifact_url,
-            {
-                "run_suuid": self.runs["run_1"].suuid,
-                "artifact": self.avatar_file,
-                "size": 1,
-            },
-            format="multipart",
+        def artifact_create_with_file_and_wrong_content_type_test(
+            user_name: str | None, expect_bad_request: bool = False, expect_no_access: bool = False
+        ) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
+
+            with self.json_file.open("rb") as artifact:
+                response = self.client.post(
+                    self.url,
+                    {
+                        "artifact": artifact,
+                    },
+                    format="multipart",
+                )
+
+            if expect_bad_request is True:
+                assert response.status_code == status.HTTP_400_BAD_REQUEST
+                assert "Only zip files are allowed for artifacts" in response.data.get("artifact")
+                return True
+
+            if expect_no_access is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND
+                return True
+
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
+            )
+
+        assert (
+            artifact_create_with_file_and_wrong_content_type_test(user_name="workspace_admin", expect_bad_request=True)
+            is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_content_type_test(
+                user_name="workspace_member", expect_bad_request=True
+            )
+            is True
         )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Only zip files are allowed for artifacts" in response.data.get("artifact")
+        assert (
+            artifact_create_with_file_and_wrong_content_type_test(
+                user_name="askanna_super_admin", expect_no_access=True
+            )
+            is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_content_type_test(user_name="workspace_viewer", expect_no_access=True)
+            is True
+        )
+        assert (
+            artifact_create_with_file_and_wrong_content_type_test(
+                user_name="no_workspace_member", expect_no_access=True
+            )
+            is True
+        )
+        assert artifact_create_with_file_and_wrong_content_type_test(user_name=None, expect_no_access=True) is True

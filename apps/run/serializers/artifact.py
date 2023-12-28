@@ -5,7 +5,7 @@ from account.models import Membership
 from account.serializers.membership import MembershipRelationSerializer
 from core.models import ObjectReference
 from core.serializers import RelationSerializer
-from run.models import Run, RunArtifact
+from run.models import RunArtifact
 from storage.models import File
 from storage.serializers import (
     FileDownloadInfoSerializer,
@@ -106,14 +106,6 @@ class RunArtifactSerializerWithFileList(RunArtifactSerializer):
 
 
 class RunArtifactCreateBaseSerializer(RunArtifactSerializer):
-    run_suuid = serializers.SlugRelatedField(
-        slug_field="suuid",
-        write_only=True,
-        required=True,
-        queryset=Run.objects.active(add_select_related=True),
-        source="run",
-    )
-
     artifact = serializers.FileField(write_only=True, required=False)
 
     filename = serializers.CharField(required=False, source="artifact_file.name")
@@ -121,6 +113,8 @@ class RunArtifactCreateBaseSerializer(RunArtifactSerializer):
     etag = serializers.CharField(required=False, source="artifact_file.etag", help_text="MD5 digest of the file")
 
     def create(self, validated_data):
+        validated_data["run"] = self.context["run"]
+
         artifact_file = validated_data.pop("artifact", None)
         artifact_file_info = validated_data.pop("artifact_file", {})
 
@@ -153,7 +147,7 @@ class RunArtifactCreateBaseSerializer(RunArtifactSerializer):
         return instance
 
     class Meta(RunArtifactSerializer.Meta):
-        fields = ["run_suuid", "artifact"] + RunArtifactSerializer.Meta.fields
+        fields = ["artifact"] + RunArtifactSerializer.Meta.fields
 
 
 class RunArtifactCreateWithFileSerializer(RunArtifactCreateBaseSerializer):
@@ -192,7 +186,6 @@ class RunArtifactCreateWithoutFileSerializer(RunArtifactCreateBaseSerializer):
 
     class Meta(RunArtifactCreateBaseSerializer.Meta):
         fields = [
-            "run_suuid",
             "suuid",
             "upload_info",
             "filename",

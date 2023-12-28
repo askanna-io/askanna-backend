@@ -113,9 +113,8 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
         )
 
     @pytest.fixture(autouse=True)
-    def _set_result_fixtures(self, mixed_format_zipfile, avatar_file):
+    def _set_result_fixtures(self, mixed_format_zipfile):
         self.zipfile = mixed_format_zipfile
-        self.avatar_file = avatar_file
 
     def test_result_create_with_file(self):
         """
@@ -139,7 +138,6 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
-
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
             assert response.data.get("size") == self.zipfile["size"]
@@ -190,7 +188,6 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
-
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
             assert response.data.get("size") == self.zipfile["size"]
@@ -237,7 +234,6 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
-
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
             assert response.data.get("size") is None
@@ -284,7 +280,6 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
-
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
             assert response.data.get("size") is None
@@ -359,7 +354,6 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 return True
 
             assert response.status_code == status.HTTP_201_CREATED
-
             assert response.data.get("run").get("suuid") == self.runs["run_1"].suuid
             assert response.data.get("filename") == "mixed_format_archive.zip"
             assert response.data.get("size") is None
@@ -550,7 +544,9 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
-            return False
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
+            )
 
         assert (
             result_create_without_filename_or_file_test(user_name="workspace_admin", expect_bad_request=True) is True
@@ -601,7 +597,9 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
-            return False
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
+            )
 
         assert (
             result_create_with_file_and_wrong_etag_test(user_name="workspace_admin", expect_bad_request=True) is True
@@ -652,7 +650,9 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
-            return False
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
+            )
 
         assert (
             result_create_with_file_and_wrong_size_test(user_name="workspace_admin", expect_bad_request=True) is True
@@ -703,7 +703,9 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
                 assert response.status_code == status.HTTP_404_NOT_FOUND
                 return True
 
-            return False
+            raise ValueError(
+                "This test should not be able to reach this point. Set expect_bad_request or expect_no_access to True."
+            )
 
         assert (
             result_create_with_file_and_wrong_content_type_test(user_name="workspace_admin", expect_bad_request=True)

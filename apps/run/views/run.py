@@ -1,7 +1,6 @@
 from django.db.models import Case, Q, Value, When
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django_filters import FilterSet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiParameter,
@@ -15,7 +14,6 @@ from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from account.models.membership import MSP_WORKSPACE
-from core.filters import MultiUpperValueCharFilter, MultiValueCharFilter
 from core.mixins import (
     ParserByActionMixin,
     PartialUpdateModelMixin,
@@ -23,129 +21,20 @@ from core.mixins import (
 )
 from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
+from run.filters import RunFilterSet
 from run.models.log import RedisLogQueue
-from run.models.run import STATUS_MAPPING, Run, get_status_external
-from run.serializers.artifact import RunArtifactSerializer
+from run.models.run import Run, get_status_external
+from run.serializers.artifact import (
+    RunArtifactCreateBaseSerializer,
+    RunArtifactCreateWithFileSerializer,
+    RunArtifactCreateWithoutFileSerializer,
+)
 from run.serializers.result import (
     RunResultCreateBaseSerializer,
     RunResultCreateWithFileSerializer,
     RunResultCreateWithoutFileSerializer,
 )
 from run.serializers.run import RunSerializer, RunStatusSerializer
-
-
-class MultiRunStatusFilter(MultiValueCharFilter):
-    def filter(self, qs, value):
-        if not value:
-            # No point filtering if empty
-            return qs
-
-        # Map "external" status values to internal values
-        mapped_values = []
-        for v in value:
-            for key, val in STATUS_MAPPING.items():
-                if val == v:
-                    mapped_values.append(key)
-
-        if not mapped_values:
-            # There are no valid values, so return an empty queryset
-            return qs.none()
-
-        return super().filter(qs, mapped_values)
-
-
-class RunFilterSet(FilterSet):
-    run_suuid = MultiValueCharFilter(
-        field_name="suuid",
-        help_text="Filter runs on a run suuid. For multiple values, separate the values with commas.",
-    )
-    run_suuid__exclude = MultiValueCharFilter(
-        field_name="suuid",
-        exclude=True,
-        help_text="Exclude runs on a run suuid. For multiple values, separate the values with commas.",
-    )
-
-    status = MultiRunStatusFilter(
-        field_name="status",
-        help_text=(
-            "Filter runs on a status. For multiple values, separate the values with commas."
-            "</br><i>Available values:</i> queued, running, finished, failed"
-        ),
-    )
-    status__exclude = MultiRunStatusFilter(
-        field_name="status",
-        exclude=True,
-        help_text=(
-            "Exclude runs on a status. For multiple values, separate the values with commas."
-            "</br><i>Available values:</i> queued, running, finished, failed"
-        ),
-    )
-
-    trigger = MultiUpperValueCharFilter(
-        field_name="trigger",
-        help_text=(
-            "Filter runs on a trigger. For multiple values, separate the values with commas."
-            "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker"
-        ),
-    )
-    trigger__exclude = MultiUpperValueCharFilter(
-        field_name="trigger",
-        exclude=True,
-        help_text=(
-            "Exclude runs on a trigger. For multiple values, separate the values with commas."
-            "</br><i>Available values:</i> api, cli, python-sdk, webui, schedule, worker"
-        ),
-    )
-
-    job_suuid = MultiValueCharFilter(
-        field_name="jobdef__suuid",
-        help_text="Filter runs on a job suuid. For multiple values, separate the values with commas.",
-    )
-    job_suuid__exclude = MultiValueCharFilter(
-        field_name="jobdef__suuid",
-        exclude=True,
-        help_text="Exclude runs on a job suuid. For multiple values, separate the values with commas.",
-    )
-
-    project_suuid = MultiValueCharFilter(
-        field_name="jobdef__project__suuid",
-        help_text="Filter runs on a project suuid. For multiple values, separate the values with commas.",
-    )
-    project_suuid__exclude = MultiValueCharFilter(
-        field_name="jobdef__project__suuid",
-        exclude=True,
-        help_text="Exclude runs on a project suuid. For multiple values, separate the values with commas.",
-    )
-
-    workspace_suuid = MultiValueCharFilter(
-        field_name="jobdef__project__workspace__suuid",
-        help_text="Filter runs on a workspace suuid. For multiple values, separate the values with commas.",
-    )
-    workspace_suuid__exclude = MultiValueCharFilter(
-        field_name="jobdef__project__workspace__suuid",
-        exclude=True,
-        help_text="Exclude runs on a workspace suuid. For multiple values, separate the values with commas.",
-    )
-
-    created_by_suuid = MultiValueCharFilter(
-        field_name="created_by_member__suuid",
-        help_text="Filter runs on a member suuid. For multiple values, separate the values with commas.",
-    )
-    created_by_suuid__exclude = MultiValueCharFilter(
-        field_name="created_by_member__suuid",
-        exclude=True,
-        help_text="Exclude runs on a member suuid. For multiple values, separate the values with commas.",
-    )
-
-    package_suuid = MultiValueCharFilter(
-        field_name="package__suuid",
-        help_text="Filter runs on a package suuid. For multiple values, separate the values with commas.",
-    )
-    package_suuid__exclude = MultiValueCharFilter(
-        field_name="package__suuid",
-        exclude=True,
-        help_text="Exclude runs on a package suuid. For multiple values, separate the values with commas.",
-    )
 
 
 @extend_schema_view(
@@ -173,6 +62,9 @@ class RunFilterSet(FilterSet):
     ),
     result=extend_schema(
         summary="Create a run result",
+    ),
+    artifact=extend_schema(
+        summary="Create a new run artifact",
     ),
     status=extend_schema(
         summary="Get run status",
@@ -232,11 +124,11 @@ class RunView(
 
     serializer_class = RunSerializer
     serializer_class_by_action = {
-        "artifact": RunArtifactSerializer,
         "status": RunStatusSerializer,
     }
 
     parser_classes_by_action = {
+        "artifact": [MultiPartParser, JSONParser],
         "result": [MultiPartParser, JSONParser],
     }
 
@@ -449,6 +341,51 @@ class RunView(
 
         self.serializer_class = (
             RunResultCreateWithFileSerializer if request.FILES.get("result") else RunResultCreateWithoutFileSerializer
+        )
+
+        context = self.get_serializer_context()
+        context["run"] = run
+
+        serializer = self.get_serializer(data=request.data, context=context)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=RunArtifactCreateBaseSerializer,
+        responses=PolymorphicProxySerializer(
+            component_name="RunArtifactCreateSerializer",
+            serializers=[RunArtifactCreateWithFileSerializer, RunArtifactCreateWithoutFileSerializer],
+            resource_type_field_name=None,
+            many=False,
+        ),
+    )
+    @action(detail=True, methods=["post"])
+    def artifact(self, request, **kwargs):
+        """
+        Do a request to upload an artifact for a run. At least an artifact file or filename is required.
+
+        For large files it's recommended to use multipart upload. You can do this by providing a filename and NOT an
+        artifact file. When you do such a request, in the response you will get upload info.
+
+        If the upload info is of type `askanna` you can use the `upload_info.url` to upload file parts. By adding
+        `part` to the url you can upload a file part. When all parts are uploaded you can do a request to complete
+        the file by adding `complete` to the url. See the `storage` section in the API documentation for more info.
+
+        By providing optional values for `size` and `etag` in the request body, the file will be validated against
+        these values. If the values are not correct, the upload will fail.
+        """
+
+        run = self.get_object()
+
+        if "artifact" not in request.FILES.keys() and "filename" not in request.data.keys():
+            return Response({"detail": ("artifact or filename is required")}, status=status.HTTP_400_BAD_REQUEST)
+
+        self.serializer_class = (
+            RunArtifactCreateWithFileSerializer
+            if request.FILES.get("artifact")
+            else RunArtifactCreateWithoutFileSerializer
         )
 
         context = self.get_serializer_context()
