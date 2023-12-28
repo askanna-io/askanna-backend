@@ -97,10 +97,17 @@ class Run(AuthorModel, NameDescriptionBaseModel):
 
     permission_by_action = {
         "list": "project.run.list",
-        ("retrieve", "log", "manifest", "status", "storage_file_download", "artifact"): "project.run.view",
+        (
+            "retrieve",
+            "log",
+            "manifest",
+            "status",
+            "storage_file_download",
+        ): "project.run.view",
         (
             "create",
             "result",
+            "artifact",
             "storage_file_upload_part",
             "storage_file_upload_complete",
             "storage_file_upload_abort",

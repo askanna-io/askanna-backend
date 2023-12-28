@@ -24,7 +24,11 @@ from core.viewsets import AskAnnaGenericViewSet
 from run.filters import RunFilterSet
 from run.models.log import RedisLogQueue
 from run.models.run import Run, get_status_external
-from run.serializers.artifact import RunArtifactSerializer
+from run.serializers.artifact import (
+    RunArtifactCreateBaseSerializer,
+    RunArtifactCreateWithFileSerializer,
+    RunArtifactCreateWithoutFileSerializer,
+)
 from run.serializers.result import (
     RunResultCreateBaseSerializer,
     RunResultCreateWithFileSerializer,
@@ -58,6 +62,9 @@ from run.serializers.run import RunSerializer, RunStatusSerializer
     ),
     result=extend_schema(
         summary="Create a run result",
+    ),
+    artifact=extend_schema(
+        summary="Create a new run artifact",
     ),
     status=extend_schema(
         summary="Get run status",
@@ -117,11 +124,11 @@ class RunView(
 
     serializer_class = RunSerializer
     serializer_class_by_action = {
-        "artifact": RunArtifactSerializer,
         "status": RunStatusSerializer,
     }
 
     parser_classes_by_action = {
+        "artifact": [MultiPartParser, JSONParser],
         "result": [MultiPartParser, JSONParser],
     }
 
@@ -334,6 +341,51 @@ class RunView(
 
         self.serializer_class = (
             RunResultCreateWithFileSerializer if request.FILES.get("result") else RunResultCreateWithoutFileSerializer
+        )
+
+        context = self.get_serializer_context()
+        context["run"] = run
+
+        serializer = self.get_serializer(data=request.data, context=context)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=RunArtifactCreateBaseSerializer,
+        responses=PolymorphicProxySerializer(
+            component_name="RunArtifactCreateSerializer",
+            serializers=[RunArtifactCreateWithFileSerializer, RunArtifactCreateWithoutFileSerializer],
+            resource_type_field_name=None,
+            many=False,
+        ),
+    )
+    @action(detail=True, methods=["post"])
+    def artifact(self, request, **kwargs):
+        """
+        Do a request to upload an artifact for a run. At least an artifact file or filename is required.
+
+        For large files it's recommended to use multipart upload. You can do this by providing a filename and NOT an
+        artifact file. When you do such a request, in the response you will get upload info.
+
+        If the upload info is of type `askanna` you can use the `upload_info.url` to upload file parts. By adding
+        `part` to the url you can upload a file part. When all parts are uploaded you can do a request to complete
+        the file by adding `complete` to the url. See the `storage` section in the API documentation for more info.
+
+        By providing optional values for `size` and `etag` in the request body, the file will be validated against
+        these values. If the values are not correct, the upload will fail.
+        """
+
+        run = self.get_object()
+
+        if "artifact" not in request.FILES.keys() and "filename" not in request.data.keys():
+            return Response({"detail": ("artifact or filename is required")}, status=status.HTTP_400_BAD_REQUEST)
+
+        self.serializer_class = (
+            RunArtifactCreateWithFileSerializer
+            if request.FILES.get("artifact")
+            else RunArtifactCreateWithoutFileSerializer
         )
 
         context = self.get_serializer_context()
