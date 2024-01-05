@@ -37,15 +37,6 @@ def settings(config, env):
     config.METRIC_ROOT = config.STORAGE_ROOT / "artifacts"
     config.VARIABLE_ROOT = config.STORAGE_ROOT / "artifacts"
 
-    config.UPLOAD_DIR_NAME = "upload"
-    config.UPLOAD_ROOT = config.STORAGE_ROOT / config.UPLOAD_DIR_NAME
-
-    config.PROJECT_DIR_NAME = "projects"
-    config.PROJECTS_ROOT = config.STORAGE_ROOT / config.PROJECT_DIR_NAME
-
-    config.PAYLOADS_DIR_NAME = "payloads"
-    config.PAYLOADS_ROOT = config.PROJECTS_ROOT / config.PAYLOADS_DIR_NAME
-
     config.MINIO_SETTINGS = {
         "ENDPOINT": env.str("MINIO_ENDPOINT", default=None),
         "USE_HTTPS": env.bool("MINIO_USE_HTTPS", default=False),

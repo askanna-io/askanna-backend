@@ -3,7 +3,6 @@ from django.urls import re_path
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
-from job.views.payload import JobPayloadView
 from run.views.artifact import RunArtifactView
 from run.views.metric import RunMetricUpdateView, RunMetricView
 from run.views.run import RunView
@@ -45,12 +44,6 @@ run_router.register(
     parents_query_lookups=["run__suuid"],
 )
 
-run_router.register(
-    r"payload",
-    JobPayloadView,
-    basename="run-payload",
-    parents_query_lookups=["run__suuid"],
-)
 
 artifact_router = routers.SimpleRouter()
 artifact_router.register(

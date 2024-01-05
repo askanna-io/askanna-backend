@@ -30,7 +30,7 @@ class Variable(BaseModel):
         "project.Project",
         on_delete=models.CASCADE,
         to_field="uuid",
-        related_name="variable",
+        related_name="variables",
     )
 
     objects = VariableQuerySet().as_manager()

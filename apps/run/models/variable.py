@@ -23,7 +23,7 @@ class RunVariableMeta(FileBaseModel):
     def get_root_location(self) -> Path:
         return settings.VARIABLE_ROOT
 
-    run = models.ForeignKey("run.Run", on_delete=models.CASCADE, related_name="variables_meta")
+    run = models.OneToOneField("run.Run", on_delete=models.CASCADE, related_name="variables_meta")
 
     @property
     def variables(self):

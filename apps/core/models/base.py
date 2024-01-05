@@ -24,7 +24,7 @@ class BaseModel(models.Model):
     """
 
     uuid = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False, verbose_name="UUID")
-    suuid = models.CharField(max_length=32, unique=True, editable=False, verbose_name="SUUID")
+    suuid = models.CharField(max_length=32, default=create_suuid, unique=True, editable=False, verbose_name="SUUID")
 
     created_at = CreationDateTimeField()
     modified_at = ModificationDateTimeField()
@@ -35,15 +35,6 @@ class BaseModel(models.Model):
         abstract = True
         get_latest_by = "modified_at"
         ordering = ["-modified_at"]
-
-    def save(self, *args, **kwargs):
-        if not self.uuid:
-            self.uuid = _uuid.uuid4()
-        if not self.suuid and self.uuid:
-            self.suuid = create_suuid(uuid=self.uuid)
-
-        self.update_modified = kwargs.pop("update_modified", getattr(self, "update_modified", True))
-        super().save(*args, **kwargs)
 
     def to_deleted(self):
         if self.deleted_at:

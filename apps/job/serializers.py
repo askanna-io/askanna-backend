@@ -2,7 +2,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from core.serializers import RelationSerializer
-from job.models import JobDef, JobPayload, RunImage
+from job.models import JobDef, RunImage
 
 
 class ScheduleSerializer(serializers.Serializer):
@@ -69,43 +69,6 @@ class JobSerializer(serializers.ModelSerializer):
             "workspace",
             "created_at",
             "modified_at",
-        ]
-
-
-class RequestJobRunSerializer(serializers.Serializer):
-    payload = serializers.JSONField(required=False, allow_null=True)
-
-
-class JobPayloadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = JobPayload
-        fields = [
-            "suuid",
-            "size",
-            "lines",
-            "created_at",
-            "modified_at",
-        ]
-
-
-class JobPayloadRelationSerializer(serializers.ModelSerializer):
-    relation = serializers.SerializerMethodField()
-    suuid = serializers.CharField(read_only=True)
-    name = serializers.CharField(read_only=True, source="filename")
-    size = serializers.IntegerField(read_only=True)
-    lines = serializers.IntegerField(read_only=True)
-
-    def get_relation(self, instance) -> str:
-        return "payload"
-
-    class Meta:
-        model = JobPayload
-        fields = [
-            "relation",
-            "suuid",
-            "name",
-            "size",
-            "lines",
         ]
 
 

@@ -5,8 +5,8 @@ from celery import shared_task
 from run.models import RunMetric, RunMetricMeta
 
 
-@shared_task(bind=True, name="run.tasks.extract_run_metric_meta")
-def extract_run_metric_meta(self, metric_meta_uuid):
+@shared_task(name="run.tasks.extract_run_metric_meta")
+def extract_run_metric_meta(metric_meta_uuid):
     """
     Extract meta information from metrics and store the meta information in runmetric object
     """
@@ -14,8 +14,8 @@ def extract_run_metric_meta(self, metric_meta_uuid):
     run_metric_meta.update_meta()
 
 
-@shared_task(bind=True, name="run.tasks.move_metrics_to_rows")
-def move_metrics_to_rows(self, metric_meta_uuid):
+@shared_task(name="run.tasks.move_metrics_to_rows")
+def move_metrics_to_rows(metric_meta_uuid):
     run_metric_meta = RunMetricMeta.objects.get(pk=metric_meta_uuid)
 
     # Remove old rows if any
@@ -33,8 +33,8 @@ def move_metrics_to_rows(self, metric_meta_uuid):
     run_metric_meta.update_meta()
 
 
-@shared_task(bind=True, name="run.tasks.post_run_deduplicate_metrics")
-def post_run_deduplicate_metrics(self, run_uuid):
+@shared_task(name="run.tasks.post_run_deduplicate_metrics")
+def post_run_deduplicate_metrics(run_uuid):
     """
     Remove double run metrics if any
     """

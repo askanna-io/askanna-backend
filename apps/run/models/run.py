@@ -1,9 +1,8 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
-from django.db.transaction import on_commit
+from django.db import models, transaction
 from django.utils import timezone
 
-from config.celery_app import app as celery_app
+from config import celery_app
 
 from core.models import AuthorModel, NameDescriptionBaseModel
 
@@ -72,15 +71,17 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=True, null=False, default="", db_index=True)
 
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)
-    payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
+    payload = models.OneToOneField(
+        "storage.File", null=True, on_delete=models.CASCADE, related_name="run_payload_file"
+    )
+
     result = models.OneToOneField("storage.File", null=True, on_delete=models.CASCADE, related_name="run_result_file")
 
     status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
 
     trigger = models.CharField(max_length=20, blank=True, default="API")
 
-    # Register the start and end of a run
     started_at = models.DateTimeField(null=True, editable=False)
     finished_at = models.DateTimeField(null=True, editable=False)
     duration = models.PositiveIntegerField(
@@ -91,7 +92,8 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     timezone = models.CharField(max_length=256, default="UTC")
     run_image = models.ForeignKey("job.RunImage", on_delete=models.CASCADE, null=True)
 
-    celery_task_id = models.CharField(max_length=120, blank=True, help_text="The task ID of the Celery run")
+    # TODO: remove archive_job_payload field after release v0.29.0
+    archive_job_payload = models.ForeignKey("job.JobPayload", on_delete=models.CASCADE, blank=True, null=True)
 
     objects = RunQuerySet().as_manager()
 
@@ -100,12 +102,12 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         (
             "retrieve",
             "log",
-            "manifest",
             "status",
             "storage_file_download",
         ): "project.run.view",
         (
             "create",
+            "manifest",
             "result",
             "artifact",
             "storage_file_upload_part",
@@ -117,12 +119,16 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     }
 
     @property
+    def job(self):
+        return self.jobdef
+
+    @property
     def project(self):
-        return self.jobdef.project
+        return self.job.project
 
     @property
     def workspace(self):
-        return self.jobdef.project.workspace
+        return self.job.project.workspace
 
     @property
     def upload_directory(self):
@@ -162,33 +168,22 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             ]
         )
 
-        on_commit(
+        transaction.on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.send_run_notification",
-                kwargs={"run_uuid": self.uuid},
+                kwargs={"run_suuid": self.suuid},
             )
         )
 
     def to_pending(self):
         self.set_status("PENDING")
 
-        on_commit(
+        transaction.on_commit(
             lambda: celery_app.send_task(
                 "job.tasks.send_run_notification",
-                kwargs={"run_uuid": self.uuid},
+                kwargs={"run_suuid": self.suuid},
             )
         )
-
-    def to_failed(self, exit_code=1):
-        self.output.save_stdout()
-        self.output.save_exitcode(exit_code=exit_code)
-        self.set_finished_at()
-        self.set_status("FAILED")
-
-    def to_completed(self):
-        self.output.save_stdout()
-        self.set_finished_at()
-        self.set_status("COMPLETED")
 
     def to_inprogress(self):
         self.started_at = timezone.now()
@@ -199,6 +194,17 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             ]
         )
         self.set_status("IN_PROGRESS")
+
+    def to_completed(self):
+        self.output.save_stdout()
+        self.set_finished_at()
+        self.set_status("COMPLETED")
+
+    def to_failed(self, exit_code=1):
+        self.output.save_stdout()
+        self.output.save_exitcode(exit_code=exit_code)
+        self.set_finished_at()
+        self.set_status("FAILED")
 
     def set_run_image(self, run_image):
         self.run_image = run_image

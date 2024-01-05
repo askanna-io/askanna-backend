@@ -1,10 +1,10 @@
-from config.celery_app import app as celery_app
+from celery import shared_task
 
 from core.utils.maintenance import remove_objects
 from run.models import Run
 
 
-@celery_app.task(name="run.tasks.delete_runs")
+@shared_task(name="run.tasks.delete_runs")
 def delete_runs():
     """
     We delete runs that are marked to delete. Also check for the condition where the Job (and higher in the

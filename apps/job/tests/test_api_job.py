@@ -48,6 +48,16 @@ class TestJobListAPI(BaseAPITestJob):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 3
 
+    def test_list_as_viewer(self):
+        """
+        We can list job as member of a workspace
+        """
+        self.set_authorization(self.users["workspace_viewer"])
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 3
+
     def test_list_as_non_member(self):
         """
         We can list job as non-member of a workspace but only for public projects

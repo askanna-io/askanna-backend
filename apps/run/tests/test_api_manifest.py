@@ -48,6 +48,15 @@ class TestRunManifestAPI(BaseAPITestRun):
         assert response.status_code == status.HTTP_200_OK
         assert "python my_script.py" in str(response.content)
 
+    def test_manifest_as_viewer(self):
+        """
+        We cannot get the manifest for a run as a viewer
+        """
+        self.set_authorization(self.users["workspace_viewer"])
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_manifest_as_non_member(self):
         """
         We cannot get the manifest for a run as a non-member

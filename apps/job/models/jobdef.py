@@ -42,6 +42,18 @@ class JobDef(NameDescriptionBaseModel):
 
     objects = JobManager()
 
+    permission_by_action = {
+        "list": "project.job.list",
+        "retrieve": "project.job.view",
+        "destroy": "project.job.remove",
+        "partial_update": "project.job.edit",
+        "new_run": "project.run.create",
+    }
+
+    @property
+    def workspace(self):
+        return self.project.workspace
+
     def __str__(self):
         return f"{self.name} ({self.suuid})"
 

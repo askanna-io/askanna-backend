@@ -2,10 +2,9 @@ import datetime
 import logging
 
 import docker
+from celery import shared_task
 from dateutil import parser
 from django.conf import settings
-
-from config.celery_app import app as celery_app
 
 from core.utils.config import get_setting
 from core.utils.maintenance import remove_objects
@@ -14,7 +13,7 @@ from job.models.jobdef import JobDef
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="job.tasks.clean_dangling_images")
+@shared_task(name="job.tasks.clean_dangling_images")
 def clean_dangling_images():
     """
     We clean dangling images and volumes
@@ -27,7 +26,7 @@ def clean_dangling_images():
         logger.info(client.volumes.prune())
 
 
-@celery_app.task(name="job.tasks.clean_containers_after_run")
+@shared_task(name="job.tasks.clean_containers_after_run")
 def clean_containers_after_run():
     """
     We query all containers from Docker
@@ -57,7 +56,7 @@ def clean_containers_after_run():
                 logger.info(container.remove(v=True))
 
 
-@celery_app.task(name="job.tasks.delete_jobs")
+@shared_task(name="job.tasks.delete_jobs")
 def delete_jobs():
     """
     We delete jobs that are marked to delete. We also check whether the Project (and higher in the hierarchy) is not
