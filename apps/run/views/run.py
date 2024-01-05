@@ -162,38 +162,27 @@ class RunView(
     @action(detail=True, methods=["get"])
     def manifest(self, request, suuid, **kwargs):
         """Get the manifest for a specific run"""
-        instance = self.get_object()
-        jr = instance
+        run = self.get_object()
 
-        # What is the jobdef specified?
-        jd = jr.jobdef
-        pr = jd.project
-        pl = jr.payload
-
-        package = jr.package
-        askanna_config = package.get_askanna_config()
+        askanna_config = run.package.get_askanna_config()
         if askanna_config is None:
-            # askanna.yml not found
             return HttpResponse(
                 render_to_string(
                     "entrypoint_no_yaml.sh",
                     {
-                        "pr": pr,
-                        "jd": jd,
+                        "run": run,
                     },
                 )
             )
 
-        # see whether we are on the right job
-        job_config = askanna_config.jobs.get(jd.name)
+        job_config = askanna_config.jobs.get(run.job.name)
         if not job_config:
-            # {jd.name} is not specified in this askanna.yml, cannot start job
+            # The requested job is not specified in this askanna.yml, cannot start this job
             return HttpResponse(
                 render_to_string(
-                    "entrypoint_job_notfound.sh",
+                    "entrypoint_job_not_found.sh",
                     {
-                        "pr": pr,
-                        "jd": jd,
+                        "run": run,
                     },
                 )
             )
@@ -208,18 +197,15 @@ class RunView(
                 }
             )
 
-        entrypoint_string = render_to_string(
-            "entrypoint.sh",
-            {
-                "commands": commands,
-                "pr": pr,
-                "jd": jd,
-                "jr": jr,
-                "pl": pl,
-            },
+        return HttpResponse(
+            render_to_string(
+                "entrypoint.sh",
+                {
+                    "run": run,
+                    "commands": commands,
+                },
+            )
         )
-
-        return HttpResponse(entrypoint_string)
 
     @extend_schema(
         parameters=[

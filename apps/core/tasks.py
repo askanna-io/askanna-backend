@@ -1,6 +1,6 @@
 from celery.schedules import crontab
 
-from config.celery_app import app as celery_app
+from config import celery_app
 
 celery_app.conf.beat_schedule = {
     "askanna.launch_scheduled_jobs": {

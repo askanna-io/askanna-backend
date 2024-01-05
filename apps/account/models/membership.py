@@ -55,9 +55,9 @@ class MemberProfile(BaseModel):
             size=avatar_file.size,
             etag=get_md5_from_file(avatar_file),
             content_type=get_content_type_from_file(avatar_file),
-            completed_at=timezone.now(),
             created_for=self,
             created_by=created_by,
+            completed_at=timezone.now(),
         )
 
         self.save(update_fields=["avatar_file", "modified_at"])

@@ -130,6 +130,21 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RenameField(
+            model_name="run",
+            old_name="payload",
+            new_name="archive_job_payload",
+        ),
+        migrations.AddField(
+            model_name="run",
+            name="payload",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="run_payload_file",
+                to="storage.file",
+            ),
+        ),
         migrations.AddField(
             model_name="run",
             name="result",

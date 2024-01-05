@@ -10,7 +10,7 @@ from storage.utils.file import get_md5_from_file
 
 class TestRunResultAPI(BaseAPITestRun):
     def _test_get_result(
-        self, user_name: str | None = None, run: str = "run_2", expected_status_code=status.HTTP_200_OK
+        self, user_name: str | None = None, run: str = "run_1", expected_status_code=status.HTTP_200_OK
     ):
         self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
         run_url = reverse(

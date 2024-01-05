@@ -273,6 +273,12 @@ project_permissions = {
     "project.code.remove": [
         ProjectAdmin,
     ],
+    "project.job.view": [
+        ProjectAdmin,
+        ProjectMember,
+        ProjectViewer,
+        ProjectPublicViewer,
+    ],
     "project.job.create": [
         ProjectAdmin,
         ProjectMember,

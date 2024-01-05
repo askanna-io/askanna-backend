@@ -5,8 +5,8 @@ from celery import shared_task
 from run.models import RunVariable, RunVariableMeta
 
 
-@shared_task(bind=True, name="run.tasks.extract_run_variable_meta")
-def extract_run_variable_meta(self, variable_meta_uuid):
+@shared_task(name="run.tasks.extract_run_variable_meta")
+def extract_run_variable_meta(variable_meta_uuid):
     """
     Extract meta data from run variables and store the meta data in run variable object
     """
@@ -14,8 +14,8 @@ def extract_run_variable_meta(self, variable_meta_uuid):
     run_variable_meta.update_meta()
 
 
-@shared_task(bind=True, name="run.tasks.move_variables_to_rows")
-def move_variables_to_rows(self, variable_meta_uuid):
+@shared_task(name="run.tasks.move_variables_to_rows")
+def move_variables_to_rows(variable_meta_uuid):
     run_variable_meta = RunVariableMeta.objects.get(pk=variable_meta_uuid)
 
     # Remove old rows with source=run
@@ -41,8 +41,8 @@ def move_variables_to_rows(self, variable_meta_uuid):
     run_variable_meta.update_meta()
 
 
-@shared_task(bind=True, name="run.tasks.post_run_deduplicate_variables")
-def post_run_deduplicate_variables(self, run_uuid):
+@shared_task(name="run.tasks.post_run_deduplicate_variables")
+def post_run_deduplicate_variables(run_uuid):
     """
     Remove double run variables if any
     """

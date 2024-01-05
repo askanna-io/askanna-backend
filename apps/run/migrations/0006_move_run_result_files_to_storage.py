@@ -12,10 +12,10 @@ from storage.utils.file import get_content_type_from_file, get_md5_from_file
 
 logger = logging.getLogger(__name__)
 
-result_root_path = settings.STORAGE_ROOT / "artifacts"
-
 
 def move_run_result_files(apps, schema_editor):
+    result_root_path = settings.STORAGE_ROOT / "artifacts"
+
     run_results = apps.get_model("run", "RunResult").objects.all()
 
     if not run_results.exists():
@@ -36,11 +36,11 @@ def move_run_result_files(apps, schema_editor):
             / str(run_result.run.uuid.hex)
         )
 
-        run = Run.objects.get(uuid=run_result.run.uuid)
-
         if run_result_path.exists():
             result_file = run_result_path / f"result_{run_result.uuid.hex}.output"
             if result_file.exists():
+                run = Run.objects.get(uuid=run_result.run.uuid)
+
                 # Historically we used the created_by_user field to indicate who created the run and created_by_member
                 # was later introduced. If the created_by_member is set we use this value, else we switch to the
                 # created_by_user value.

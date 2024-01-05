@@ -18,10 +18,20 @@ from run.models import (
 class RunAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("uuid", "suuid", "jobdef", "created_by_member")}),
-        ("Run info", {"fields": ("name", "description", "status", "celery_task_id", "duration")}),
+        ("Run info", {"fields": ("name", "description", "status", "duration")}),
         (
             "Metadata",
-            {"fields": ("package", "trigger", "payload", "result", "environment_name", "run_image", "timezone")},
+            {
+                "fields": (
+                    "package",
+                    "trigger",
+                    "payload",
+                    "result",
+                    "environment_name",
+                    "run_image",
+                    "timezone",
+                )
+            },
         ),
         ("Dates", {"fields": ("started_at", "finished_at", "modified_at", "created_at", "deleted_at")}),
     )
@@ -30,7 +40,6 @@ class RunAdmin(admin.ModelAdmin):
         "suuid",
         "jobdef",
         "created_by_member",
-        "celery_task_id",
         "duration",
         "package",
         "trigger",

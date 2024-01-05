@@ -1,10 +1,10 @@
-from config.celery_app import app as celery_app
+from celery import shared_task
 
 from core.utils.maintenance import remove_objects
 from workspace.models import Workspace
 
 
-@celery_app.task(name="workspace.tasks.delete_workspaces")
+@shared_task(name="workspace.tasks.delete_workspaces")
 def delete_workspaces():
     """
     We delete workspaces that are marked to delete.

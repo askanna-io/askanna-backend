@@ -1,9 +1,11 @@
-import io
 import json
 
 import django_filters
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.db import transaction
 from django.db.models import Prefetch, Q
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -14,18 +16,24 @@ from drf_spectacular.utils import (
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError
+from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
+from config import celery_app
+
+from account.models import Membership
 from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
-from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
-from core.permissions import RoleBasedPermission
+from core.mixins import ParserByActionMixin, PartialUpdateModelMixin
+from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
-from job.models import JobDef, JobPayload, ScheduledJob
-from job.serializers import JobSerializer, RequestJobRunSerializer
+from job.models import JobDef, ScheduledJob
+from job.serializers import JobSerializer
 from package.models import Package
 from run.models import Run
 from run.serializers.run import RunStatusSerializer
+from storage.models import File
+from storage.utils.file import get_content_type_from_file, get_md5_from_file
 
 
 class JobFilterSet(django_filters.FilterSet):
@@ -42,13 +50,42 @@ class JobFilterSet(django_filters.FilterSet):
 
 
 @extend_schema_view(
-    list=extend_schema(description="List the jobs you have access to"),
-    retrieve=extend_schema(description="Get info from a specific job"),
-    partial_update=extend_schema(description="Update a job"),
-    destroy=extend_schema(description="Remove a job"),
+    list=extend_schema(
+        summary="List jobs",
+        description="List the jobs you have access to",
+    ),
+    retrieve=extend_schema(
+        summary="Get job info",
+        description="Get info from a specific job",
+    ),
+    partial_update=extend_schema(
+        summary="Update job info",
+        description="Update the info of a job",
+    ),
+    destroy=extend_schema(summary="Remove a job", description="Remove a job"),
+    new_run=extend_schema(
+        summary="Request a new run for a job",
+        description="Request a new run for a job",
+        parameters=[
+            OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Name of the run"),
+            OpenApiParameter(
+                "description", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Description of the run"
+            ),
+        ],
+        examples=[
+            OpenApiExample(
+                name="JSON data payload",
+                description="An example of an optional JSON data payload",
+                value={"data": {"foo": "bar"}},
+                request_only=True,
+            ),
+        ],
+        request=OpenApiTypes.OBJECT,
+        responses={201: RunStatusSerializer},
+    ),
 )
 class JobView(
-    ObjectRoleMixin,
+    ParserByActionMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     PartialUpdateModelMixin,
@@ -82,16 +119,12 @@ class JobView(
     }
     filterset_class = JobFilterSet
 
-    serializer_class = JobSerializer
-
-    permission_classes = [RoleBasedPermission]
-    rbac_permissions_by_action = {
-        "list": ["project.job.list"],
-        "retrieve": ["project.job.list"],
-        "destroy": ["project.job.remove"],
-        "partial_update": ["project.job.edit"],
-        "new_run": ["project.run.create"],
+    parser_classes_by_action = {
+        "new_run": [JSONParser],
     }
+
+    serializer_class = JobSerializer
+    permission_classes = [AskAnnaPermissionByAction]
 
     def get_queryset(self):
         """
@@ -122,48 +155,55 @@ class JobView(
     def perform_destroy(self, instance):
         instance.to_deleted()
 
-    @extend_schema(
-        description="Start a new run for a job",
-        parameters=[
-            OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Name of the run"),
-            OpenApiParameter(
-                "description", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Description of the run"
-            ),
-        ],
-        examples=[
-            OpenApiExample(
-                "JSON data payload",
-                description="An example of an optional JSON data payload",
-                value={"data": {"foo": "bar"}},
-                request_only=True,
-            ),
-        ],
-        request=RequestJobRunSerializer,
-        responses={201: RunStatusSerializer},
-    )
     @action(
         detail=True,
         methods=["post"],
         name="Request new job run",
-        serializer_class=RequestJobRunSerializer,
+        serializer_class=None,
         url_path="run/request/batch",
         queryset=JobDef.objects.active().select_related("project", "project__workspace"),
     )
     def new_run(self, request, suuid, **kwargs):
         job = self.get_object()
-        payload = self.handle_payload(request=request, job=job)
+
+        created_by = Membership.objects.get_workspace_membership(user=request.user, workspace=job.workspace)
 
         # Fetch the latest package found in the job.project
         package = Package.objects.active().filter(project=job.project).order_by("-created_at").first()
+
+        payload = self.handle_payload(request=request, job=job)
 
         run = Run.objects.create(
             name=request.query_params.get("name", ""),
             description=request.query_params.get("description", ""),
             jobdef=job,
-            payload=payload,
             package=package,
             trigger=self.get_trigger_source(request),
-            created_by_user=request.user,
+            created_by_member=created_by,
+        )
+
+        if payload:
+            file = File.objects.create(
+                name=payload.name,
+                file=payload,
+                size=payload.size,
+                etag=get_md5_from_file(payload),
+                content_type=get_content_type_from_file(payload),
+                upload_to=run.upload_result_directory,
+                created_for=run,
+                created_by=Membership.objects.get_workspace_membership(user=request.user, workspace=run.workspace),
+                completed_at=timezone.now(),
+            )
+
+            run.payload = file
+            run.save()
+            run.refresh_from_db()
+
+        transaction.on_commit(
+            lambda: celery_app.send_task(
+                "job.tasks.start_run",
+                kwargs={"run_suuid": run.suuid},
+            )
         )
 
         # Return the run information
@@ -171,7 +211,7 @@ class JobView(
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def handle_payload(self, request, job, **kwargs):
+    def handle_payload(self, request, job, **kwargs) -> ContentFile | None:
         """
         Asses incoming payload, it can be the case that there is no payload given and we don't create a payload
         """
@@ -185,22 +225,12 @@ class JobView(
         except AssertionError as exc:
             raise ParseError(
                 detail={
-                    "payload": ["The JSON data payload is not valid, please check and try again"],
+                    "payload": ["The JSON data payload is not valid, please check the payload and try again"],
                 },
             ) from exc
 
-        # Create new JobPayload
-        json_string = json.dumps(request.data)
-        lines = 0
-        try:
-            lines = len(json.dumps(request.data, indent=1).splitlines())
-        except Exception:  # nosec: B110
-            pass
-
-        job_payload = JobPayload.objects.create(jobdef=job, size=size, lines=lines, owner=request.user)
-        job_payload.write(io.StringIO(json_string))
-
-        return job_payload
+        json_string = json.dumps(request.data).encode("utf-8")
+        return ContentFile(json_string, name="payload.json")
 
     def get_trigger_source(self, request) -> str:
         """

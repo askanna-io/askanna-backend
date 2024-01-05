@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from job.models import JobDef, JobPayload, RunImage, ScheduledJob
+from job.models import JobDef, RunImage, ScheduledJob
 
 
 @admin.register(JobDef)
@@ -45,58 +45,6 @@ class JobDefAdmin(admin.ModelAdmin):
         "name",
         "project__suuid",
         "project__workspace__suuid",
-    ]
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(JobPayload)
-class JobPayloadAdmin(admin.ModelAdmin):
-    fields = [
-        "suuid",
-        "jobdef",
-        "lines",
-        "size",
-        "owner",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
-    readonly_fields = [
-        "suuid",
-        "lines",
-        "size",
-        "modified_at",
-        "created_at",
-    ]
-    raw_id_fields = [
-        "jobdef",
-        "owner",
-    ]
-
-    list_display = [
-        "suuid",
-        "jobdef",
-        "project",
-        "size",
-        "lines",
-        "owner",
-        "created_at",
-    ]
-    date_hierarchy = "created_at"
-    list_filter = [
-        "created_at",
-        "deleted_at",
-    ]
-    search_fields = [
-        "uuid",
-        "suuid",
-        "jobdef__uuid",
-        "jobdef__suuid",
     ]
 
     def has_add_permission(self, request):

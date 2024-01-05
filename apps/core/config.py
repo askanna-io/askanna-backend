@@ -129,7 +129,6 @@ class Schedule:
         try:
             cron_line_parsed = parse_cron_line(schedule)
         except ValueError:
-            # FIXME: in the future we should provide feedback to the user that the proposed Schedule is not valid
             return None
         else:
             return cls(

@@ -1,11 +1,10 @@
 from django.core.exceptions import ObjectDoesNotExist
-from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from account.serializers.membership import MembershipRelationSerializer
 from core.serializers import RelationSerializer
-from job.serializers import JobPayloadRelationSerializer, RunImageRelationSerializer
+from job.serializers import RunImageRelationSerializer
 from run.models import Run
 from run.serializers.artifact import ArtifactRelationSerializer
 from run.serializers.log import LogRelationSerializer
@@ -27,7 +26,7 @@ class NameTypeCountSerializer(NameTypeSerializer):
     count = serializers.IntegerField(read_only=True)
 
 
-class ResultSerializer(serializers.Serializer):
+class FileSerializer(serializers.Serializer):
     filename = serializers.CharField(read_only=True, source="name")
     size = serializers.IntegerField(read_only=True)
     etag = serializers.CharField(read_only=True)
@@ -65,9 +64,9 @@ class RunSerializer(serializers.ModelSerializer):
     created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
 
     package = RelationSerializer(read_only=True)
-    payload = JobPayloadRelationSerializer(read_only=True)
+    payload = FileSerializer(read_only=True)
 
-    result = ResultSerializer(read_only=True)
+    result = FileSerializer(read_only=True)
     artifact = ArtifactRelationSerializer(read_only=True, many=True, source="artifacts")
     metrics_meta = serializers.SerializerMethodField()
     variables_meta = serializers.SerializerMethodField()
@@ -114,7 +113,7 @@ class RunSerializer(serializers.ModelSerializer):
             "label_names": [],
         }
         try:
-            variables_meta = instance.variables_meta.first()
+            variables_meta = instance.variables_meta
         except ObjectDoesNotExist:
             pass
         else:
@@ -177,43 +176,18 @@ class RunSerializer(serializers.ModelSerializer):
 
 
 class RunStatusSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(read_only=True)
+    suuid = serializers.CharField(read_only=True)
     status = serializers.CharField(read_only=True, source="get_status_external")
+    started_at = serializers.DateTimeField(read_only=True)
+    finished_at = serializers.DateTimeField(read_only=True)
     duration = serializers.IntegerField(read_only=True, source="get_duration")
-    created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
-    job = RelationSerializer(read_only=True, source="jobdef")
-    project = RelationSerializer(read_only=True, source="jobdef.project")
-    workspace = RelationSerializer(read_only=True, source="jobdef.project.workspace")
-    next_url = serializers.SerializerMethodField(allow_null=True)
-
-    @extend_schema_field(OpenApiTypes.URI)
-    def get_next_url(self, instance):
-        request = self.context["request"]
-        url_base = f"{request.scheme}://{request.META['HTTP_HOST']}/v1/run/{instance.suuid}/"
-
-        if instance.is_finished:
-            try:
-                if instance.result:
-                    return url_base + "result/"
-            except ObjectDoesNotExist:
-                return None
-
-        return url_base + "status/"
 
     class Meta:
         model = Run
         fields = [
             "suuid",
             "status",
-            "name",
             "started_at",
             "finished_at",
             "duration",
-            "next_url",
-            "created_by",
-            "job",
-            "project",
-            "workspace",
-            "created_at",
-            "modified_at",
         ]

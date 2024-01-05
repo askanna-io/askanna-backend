@@ -4,6 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from job.tests.base import BaseAPITestJob
+from run.models import Run
 
 
 class TestJobRunRequestAPI(BaseAPITestJob):
@@ -21,128 +22,132 @@ class TestJobRunRequestAPI(BaseAPITestJob):
             },
         )
 
-    def test_start_job_as_askanna_admin(self):
+    def _test_new_run(self, user_name: str = None, expect_no_permission: bool = False):
+        self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
+
+        with self.captureOnCommitCallbacks() as callbacks:
+            response = self.client.post(self.url)
+
+        assert (
+            response.status_code == status.HTTP_201_CREATED
+            if expect_no_permission is False
+            else status.HTTP_404_NOT_FOUND
+        )
+
+        if expect_no_permission is True:
+            assert len(callbacks) == 0
+        else:
+            assert response.data["status"] == "queued"
+            assert len(callbacks) == 1
+
+        return True
+
+    def test_start_new_run_as_askanna_admin(self):
         """
         We cannot start a job as an AskAnna admin
         """
-        self.set_authorization(self.users["askanna_super_admin"])
+        assert self._test_new_run(user_name="askanna_super_admin", expect_no_permission=True) is True
 
-        response = self.client.post(self.url, HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_start_job_as_admin(self):
+    def test_start_new_run_as_admin(self):
         """
         We can start a job as an admin
         """
-        self.set_authorization(self.users["workspace_admin"])
+        assert self._test_new_run(user_name="workspace_admin") is True
 
-        response = self.client.post(self.url, HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["status"] == "queued"
-
-    def test_start_job_as_member(self):
+    def test_start_new_run_as_member(self):
         """
         We can start a job as a member
         """
-        self.set_authorization(self.users["workspace_member"])
+        assert self._test_new_run(user_name="workspace_member") is True
 
-        response = self.client.post(self.url, HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["status"] == "queued"
-
-    def test_start_job_as_non_member(self):
+    def test_start_new_run_as_viewer(self):
         """
         We cannot start a job as a non-member of the jobdef
         """
-        self.set_authorization(self.users["no_workspace_member"])
+        assert self._test_new_run(user_name="workspace_viewer", expect_no_permission=True) is True
 
-        response = self.client.post(self.url, HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    def test_start_new_run_as_non_member(self):
+        """
+        We cannot start a job as a non-member of the jobdef
+        """
+        assert self._test_new_run(user_name="no_workspace_member", expect_no_permission=True) is True
 
-    def test_startjob_as_anonymous(self):
+    def test_start_new_run_as_anonymous(self):
         """
         We cannot start jobs as anonymous
         """
-        response = self.client.post(self.url, HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert self._test_new_run(expect_no_permission=True) is True
 
-    def test_startjob_with_invalid_json(self):
+    def test_start_new_run_with_payload(self):
         """
-        Starting jobs with invalid json is not possible
-        in this case the json is posted as string
-        """
-        self.set_authorization(self.users["workspace_member"])
-
-        payload = json.dumps({"example_payload": "startjob"})
-        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "The JSON data payload is not valid, please check and try again" in str(response.content)
-
-    def test_startjob_with_payload_in_uri(self):
-        """
-        We can start jobs with payload given in the uri (as get arguments)
+        We can start jobs with JSON payload
         """
         self.set_authorization(self.users["workspace_member"])
 
         payload = {"example_payload": "startjob"}
-        response = self.client.post(self.url, payload, HTTP_HOST="testserver")
+        response = self.client.post(self.url, data=payload)
+
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == "queued"
 
-    def test_startjob_with_payload_empty(self):
+        run_suuid = response.data["suuid"]
+        run = Run.objects.get(suuid=run_suuid)
+
+        assert run.payload is not None
+        assert run.payload.name == "payload.json"
+        assert run.payload.size == len(json.dumps(payload))
+        assert run.payload.etag is not None
+        assert run.payload.content_type == "application/json"
+        assert run.payload.file.read() == json.dumps(payload).encode("utf-8")
+
+    def test_start_new_run_with_invalid_json(self):
+        """
+        Starting jobs with invalid json is not possible
+        """
+        self.set_authorization(self.users["workspace_member"])
+
+        payload = "test"
+        response = self.client.post(self.url, data=payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "The JSON data payload is not valid, please check the payload and try again" in str(response.content)
+
+    def test_start_new_run_with_empty_payload(self):
         """
         We can start jobs with empty payload
         """
         self.set_authorization(self.users["workspace_member"])
 
         payload = None
-        response = self.client.post(self.url, payload, format="json", HTTP_HOST="testserver")
+        response = self.client.post(self.url, payload, format="json")
+
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == "queued"
 
-    def test_startjob_with_payload_in_uri_empty(self):
-        """
-        We can start jobs with empty payload given by the uri
-        """
-        self.set_authorization(self.users["workspace_member"])
+        run_suuid = response.data["suuid"]
+        run = Run.objects.get(suuid=run_suuid)
 
-        payload = None
-        response = self.client.post(self.url, payload, HTTP_HOST="testserver")
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["status"] == "queued"
+        assert run.payload is None
 
-    def test_startjob_with_askanna_agents(self):
+    def test_start_new_run_with_askanna_agents(self):
         """
         We can start a job as different askanna-agents
         """
         self.set_authorization(self.users["workspace_member"])
 
         for agent, trigger in {
-            "webui": "webui",
-            "cli": "cli",
-            "python-sdk": "python-sdk",
-            "worker": "worker",
-            "invalid": "api",
-            "029340892098340280": "api",
+            "webui": "WEBUI",
+            "cli": "CLI",
+            "python-sdk": "PYTHON-SDK",
+            "worker": "WORKER",
+            "invalid": "API",
+            "029340892098340280": "API",
         }.items():
-            response = self.client.post(
-                self.url,
-                format="json",
-                HTTP_HOST="testserver",
-                HTTP_ASKANNA_AGENT=agent,
-            )
+            response = self.client.post(self.url, HTTP_ASKANNA_AGENT=agent)
+
             assert response.status_code == status.HTTP_201_CREATED
             assert response.data["status"] == "queued"
 
-            runinfo = self.client.get(
-                reverse(
-                    "run-detail",
-                    kwargs={
-                        "version": "v1",
-                        "suuid": response.data.get("suuid"),
-                    },
-                )
-            )
-            assert runinfo.status_code == status.HTTP_200_OK
-            assert runinfo.data.get("status") == "queued"
-            assert runinfo.data.get("trigger") == trigger.upper()
+            run_suuid = response.data["suuid"]
+            run = Run.objects.get(suuid=run_suuid)
+
+            assert run.trigger == trigger

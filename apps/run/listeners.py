@@ -1,11 +1,10 @@
 from django.conf import settings
+from django.db import transaction
 from django.db.models.signals import post_save, pre_delete, pre_save
-from django.db.transaction import on_commit
 from django.dispatch import receiver
 
-from config.celery_app import app as celery_app
+from config import celery_app
 
-from account.models.membership import MSP_WORKSPACE
 from run.models import Run, RunLog, RunMetricMeta, RunVariable, RunVariableMeta
 
 
@@ -22,26 +21,12 @@ def create_run_log_for_new_run_signal(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=Run)
-def create_job_for_celery(sender, instance, created, **kwargs):
-    """
-    Every time a new record is created, send the new job to celery
-    """
-    if created:
-        on_commit(
-            lambda: celery_app.send_task(
-                "job.tasks.start_run",
-                kwargs={"run_uuid": instance.uuid},
-            )
-        )
-
-
-@receiver(post_save, sender=Run)
 def post_run_deduplicate_metrics(sender, instance, created, **kwargs):
     """
     Fix metrics after job is finished
     """
     if instance.is_finished:
-        on_commit(
+        transaction.on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_metrics",
                 kwargs={"run_uuid": instance.uuid},
@@ -55,7 +40,7 @@ def post_run_deduplicate_variables(sender, instance, created, **kwargs):
     Fix variables after job is finished
     """
     if instance.is_finished:
-        on_commit(
+        transaction.on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.post_run_deduplicate_variables",
                 kwargs={"run_uuid": instance.uuid},
@@ -72,27 +57,6 @@ def create_runvariable(sender, instance, created, **kwargs):
         RunVariableMeta.objects.create(**{"run": instance})
 
 
-@receiver(pre_save, sender=Run)
-def add_created_by_member_to_run(sender, instance: Run, **kwargs):
-    """
-    On creation of the run, add the member to it who created this. We already have the user, but we lookup the
-    membership for it. We know this by job->project->workspace.
-    """
-    if instance.created_by_user and (not instance.created_by_member):
-        workspace = instance.jobdef.project.workspace
-        membership = (
-            instance.created_by_user.memberships.filter(
-                object_uuid=workspace.uuid,
-                object_type=MSP_WORKSPACE,
-                deleted_at__isnull=True,
-            )
-            .order_by("-created_at")
-            .first()
-        )
-        if membership:
-            instance.created_by_member = membership
-
-
 @receiver(post_save, sender=RunMetricMeta)
 def extract_meta_from_metric(sender, instance, created, **kwargs):
     """
@@ -102,7 +66,7 @@ def extract_meta_from_metric(sender, instance, created, **kwargs):
     if update_fields:
         return
 
-    on_commit(
+    transaction.on_commit(
         lambda: celery_app.send_task(
             "run.tasks.extract_run_metric_meta",
             kwargs={"metric_meta_uuid": instance.uuid},
@@ -124,7 +88,7 @@ def move_metrics_to_rows(sender, instance, created, **kwargs):
 
         move_metrics_to_rows(**{"metric_meta_uuid": instance.uuid})
     else:
-        on_commit(
+        transaction.on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.move_metrics_to_rows",
                 kwargs={"metric_meta_uuid": instance.uuid},
@@ -146,7 +110,7 @@ def extract_meta_from_variable(sender, instance, created, **kwargs):
     if update_fields or created:
         return
 
-    on_commit(
+    transaction.on_commit(
         lambda: celery_app.send_task(
             "run.tasks.extract_run_variable_meta",
             kwargs={"variable_meta_uuid": instance.uuid},
@@ -169,7 +133,7 @@ def move_variables_to_rows(sender, instance, created, **kwargs):
 
         move_variables_to_rows(**{"variable_meta_uuid": instance.uuid})
     else:
-        on_commit(
+        transaction.on_commit(
             lambda: celery_app.send_task(
                 "run.tasks.move_variables_to_rows",
                 kwargs={"variable_meta_uuid": instance.uuid},

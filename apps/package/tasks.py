@@ -1,10 +1,10 @@
-from config.celery_app import app as celery_app
+from celery import shared_task
 
 from core.utils.maintenance import remove_objects
 from package.models import Package
 
 
-@celery_app.task(name="package.tasks.delete_packages")
+@shared_task(name="package.tasks.delete_packages")
 def delete_packages():
     """
     We delete packages that are marked to delete. Also we check whether we don't have a deletion for the parent

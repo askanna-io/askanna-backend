@@ -442,6 +442,21 @@ def test_runs(
         created_for=runs["run_2"],
         created_by=runs["run_2"].created_by_member,
     )
+    payload_file_path = settings.TEST_RESOURCES_DIR / "payloads/test-payload.json"
+    payload_content_file = ContentFile(
+        content=payload_file_path.read_bytes(),
+        name="payload.json",
+    )
+    runs["run_2"].payload = File.objects.create(
+        name=payload_content_file.name,
+        file=payload_content_file,
+        size=payload_content_file.size,
+        etag=get_md5_from_file(payload_content_file),
+        content_type=get_content_type_from_file(payload_content_file),
+        completed_at=timezone.now(),
+        created_for=runs["run_2"],
+        created_by=runs["run_2"].created_by_member,
+    )
     runs["run_2"].save()
 
     result_content_file = ContentFile(
@@ -454,6 +469,21 @@ def test_runs(
         size=result_content_file.size,
         etag=get_md5_from_file(result_content_file),
         content_type=get_content_type_from_file(result_content_file),
+        completed_at=timezone.now(),
+        created_for=runs["run_4"],
+        created_by=runs["run_4"].created_by_member,
+    )
+    payload_file_path = settings.TEST_RESOURCES_DIR / "payloads/test-payload.json"
+    payload_content_file = ContentFile(
+        content=payload_file_path.read_bytes(),
+        name="payload.json",
+    )
+    runs["run_4"].payload = File.objects.create(
+        name=payload_content_file.name,
+        file=payload_content_file,
+        size=payload_content_file.size,
+        etag=get_md5_from_file(payload_content_file),
+        content_type=get_content_type_from_file(payload_content_file),
         completed_at=timezone.now(),
         created_for=runs["run_4"],
         created_by=runs["run_4"].created_by_member,
