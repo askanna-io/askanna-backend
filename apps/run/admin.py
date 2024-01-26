@@ -3,15 +3,7 @@ import json
 from django.contrib import admin
 from django.template.defaultfilters import truncatechars
 
-from run.models import (
-    Run,
-    RunArtifact,
-    RunLog,
-    RunMetric,
-    RunMetricMeta,
-    RunVariable,
-    RunVariableMeta,
-)
+from run.models import Run, RunArtifact, RunLog, RunMetric, RunVariable
 
 
 @admin.register(Run)
@@ -27,6 +19,10 @@ class RunAdmin(admin.ModelAdmin):
                     "trigger",
                     "payload",
                     "result",
+                    "metrics_file",
+                    "metrics_meta",
+                    "variables_file",
+                    "variables_meta",
                     "environment_name",
                     "run_image",
                     "timezone",
@@ -45,6 +41,10 @@ class RunAdmin(admin.ModelAdmin):
         "trigger",
         "payload",
         "result",
+        "metrics_file",
+        "metrics_meta",
+        "variables_file",
+        "variables_meta",
         "environment_name",
         "run_image",
         "timezone",
@@ -208,63 +208,6 @@ class RunLogAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(RunMetricMeta)
-class RunMetricMetaAdmin(admin.ModelAdmin):
-    list_display = [
-        "suuid",
-        "run",
-        "job",
-        "count",
-        "size",
-        "created_at",
-    ]
-    date_hierarchy = "created_at"
-    list_filter = [
-        "created_at",
-        "deleted_at",
-    ]
-    search_fields = [
-        "uuid",
-        "run__uuid",
-        "run__suuid",
-    ]
-
-    fieldsets = (
-        (None, {"fields": ("suuid", "run", "job", "project", "workspace")}),
-        ("Metrics meta", {"fields": ("count", "size", "metric_names", "label_names")}),
-        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
-    )
-    readonly_fields = [
-        "suuid",
-        "run",
-        "count",
-        "size",
-        "metric_names",
-        "label_names",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
-
-    def job(self, obj):
-        return obj.run.jobdef
-
-    def project(self, obj):
-        return obj.run.jobdef.project
-
-    def workspace(self, obj):
-        return obj.run.jobdef.project.workspace
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(RunMetric)
 class RunMetricAdmin(admin.ModelAdmin):
     list_display = [
@@ -332,63 +275,6 @@ class RunMetricAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(RunVariableMeta)
-class RunVariableMetaAdmin(admin.ModelAdmin):
-    list_display = [
-        "suuid",
-        "run",
-        "job",
-        "count",
-        "size",
-        "created_at",
-    ]
-    date_hierarchy = "created_at"
-    list_filter = [
-        "created_at",
-        "deleted_at",
-    ]
-    search_fields = [
-        "uuid",
-        "run__uuid",
-        "run__suuid",
-    ]
-
-    fieldsets = (
-        (None, {"fields": ("suuid", "run", "job", "project", "workspace")}),
-        ("Variables meta", {"fields": ("count", "size", "variable_names", "label_names")}),
-        ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
-    )
-    readonly_fields = [
-        "suuid",
-        "run",
-        "count",
-        "size",
-        "variable_names",
-        "label_names",
-        "modified_at",
-        "created_at",
-        "deleted_at",
-    ]
-
-    def job(self, obj):
-        return obj.run.jobdef
-
-    def project(self, obj):
-        return obj.run.jobdef.project
-
-    def workspace(self, obj):
-        return obj.run.jobdef.project.workspace
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(RunVariable)
 class RunVariableAdmin(admin.ModelAdmin):
     list_display = [
@@ -401,7 +287,6 @@ class RunVariableAdmin(admin.ModelAdmin):
     ]
     date_hierarchy = "created_at"
     list_filter = [
-        "is_masked",
         "created_at",
         "deleted_at",
     ]
@@ -418,7 +303,7 @@ class RunVariableAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {"fields": ("run", "job", "project", "workspace")}),
-        ("Metric", {"fields": ("variable", "is_masked", "label")}),
+        ("Variable", {"fields": ("variable", "is_masked", "label")}),
         ("Dates", {"fields": ("modified_at", "created_at", "deleted_at")}),
     )
     readonly_fields = [

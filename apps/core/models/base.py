@@ -1,5 +1,4 @@
 import uuid as _uuid
-from pathlib import Path
 
 from django.db import models
 from django.utils import timezone
@@ -83,69 +82,6 @@ class AuthorModel(models.Model):
 
     class Meta:
         abstract = True
-
-
-class FileBaseModel(BaseModel):
-    """
-    Providing basic accessors to a file on the filesystem related to a model
-    """
-
-    file_type = "file"
-    file_extension = ""
-    file_readmode = "r"
-    file_writemode = "w"
-
-    class Meta:
-        abstract = True
-        get_latest_by = "modified_at"
-        ordering = ["-modified_at"]
-
-    @property
-    def filename(self) -> str:
-        base_filename = f"{self.file_type}_{self.uuid.hex}"
-
-        if self.file_extension:
-            return f"{base_filename}.{self.file_extension}"
-
-        return base_filename
-
-    @property
-    def storage_location(self) -> Path:
-        return self.get_storage_location()
-
-    @property
-    def root_storage_location(self) -> Path:
-        return self.get_root_location() / self.storage_location
-
-    @property
-    def stored_path(self) -> Path:
-        return self.root_storage_location / self.filename
-
-    def get_storage_location(self) -> Path:
-        raise NotImplementedError(f"Please implement 'get_storage_location' for {self.__class__.__name__}")
-
-    def get_root_location(self) -> Path:
-        raise NotImplementedError(f"Please implement 'get_root_location' for {self.__class__.__name__}")
-
-    @property
-    def read(self):
-        return self.stored_path.open(mode=self.file_readmode).read()
-
-    def write(self, stream):
-        """
-        Write contents to the filesystem
-        """
-        Path.mkdir(self.root_storage_location, parents=True, exist_ok=True)
-        self.stored_path.open(self.file_writemode).write(stream.read())
-
-    def prune(self):
-        Path.unlink(self.stored_path, missing_ok=True)
-
-        try:
-            Path.rmdir(self.root_storage_location)
-        # If the directory is not empty or does not exist, we don't want to remove it
-        except (FileNotFoundError, OSError):
-            pass
 
 
 class VisibilityModel(models.Model):

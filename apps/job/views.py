@@ -22,7 +22,6 @@ from rest_framework.response import Response
 from config import celery_app
 
 from account.models import Membership
-from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
 from core.mixins import ParserByActionMixin, PartialUpdateModelMixin
 from core.permissions import AskAnnaPermissionByAction
@@ -130,21 +129,11 @@ class JobView(
         """
         Return only values from projects where the user is member of or has access to because it's public.
         """
-        user = self.request.user
-        if user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-            )
-
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
-
         return (
             super()
             .get_queryset()
             .filter(
-                Q(project__workspace__pk__in=member_of_workspaces)
+                Q(project__workspace__pk__in=self.member_of_workspaces)
                 | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
@@ -189,7 +178,6 @@ class JobView(
                 size=payload.size,
                 etag=get_md5_from_file(payload),
                 content_type=get_content_type_from_file(payload),
-                upload_to=run.upload_result_directory,
                 created_for=run,
                 created_by=Membership.objects.get_workspace_membership(user=request.user, workspace=run.workspace),
                 completed_at=timezone.now(),

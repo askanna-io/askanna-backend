@@ -1,4 +1,3 @@
-from django.core.exceptions import ObjectDoesNotExist
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
@@ -13,7 +12,7 @@ from storage.serializers import FileDownloadInfoSerializer
 
 class EnvironmentSerializer(serializers.Serializer):
     name = serializers.CharField(read_only=True)
-    image = RunImageRelationSerializer()
+    image = RunImageRelationSerializer(read_only=True)
     timezone = serializers.CharField(read_only=True)
 
 
@@ -35,17 +34,19 @@ class FileSerializer(serializers.Serializer):
 
 
 class MetricsMetaSerializer(serializers.Serializer):
-    count = serializers.IntegerField(read_only=True, default=0)
-    size = serializers.IntegerField(read_only=True, default=0)
-    metric_names = NameTypeCountSerializer(many=True, default=[])
-    label_names = NameTypeSerializer(many=True, default=[])
+    count = serializers.IntegerField(read_only=True, default=0, source="metrics_meta.count")
+    size = serializers.IntegerField(read_only=True, default=0, source="metrics_file.size")
+    metric_names = NameTypeCountSerializer(many=True, read_only=True, source="metrics_meta.metric_names")
+    label_names = NameTypeSerializer(many=True, read_only=True, source="metrics_meta.label_names")
+    download_info = FileDownloadInfoSerializer(read_only=True, source="metrics_file")
 
 
 class VariablesMetaSerializer(serializers.Serializer):
-    count = serializers.IntegerField(read_only=True, default=0)
-    size = serializers.IntegerField(read_only=True, default=0)
-    variable_names = NameTypeCountSerializer(many=True, default=[])
-    label_names = NameTypeSerializer(many=True, default=[])
+    count = serializers.IntegerField(read_only=True, default=0, source="variables_meta.count")
+    size = serializers.IntegerField(read_only=True, default=0, source="variables_file.size")
+    variable_names = NameTypeCountSerializer(many=True, read_only=True, source="variables_meta.variable_names")
+    label_names = NameTypeSerializer(many=True, read_only=True, source="variables_meta.label_names")
+    download_info = FileDownloadInfoSerializer(read_only=True, source="variables_file")
 
 
 class RunSerializer(serializers.ModelSerializer):
@@ -68,8 +69,8 @@ class RunSerializer(serializers.ModelSerializer):
 
     result = FileSerializer(read_only=True)
     artifact = ArtifactRelationSerializer(read_only=True, many=True, source="artifacts")
-    metrics_meta = serializers.SerializerMethodField()
-    variables_meta = serializers.SerializerMethodField()
+    metrics_meta = MetricsMetaSerializer(source="*")
+    variables_meta = VariablesMetaSerializer(source="*")
     log = LogRelationSerializer(read_only=True, source="output")
 
     environment = serializers.SerializerMethodField()
@@ -80,63 +81,6 @@ class RunSerializer(serializers.ModelSerializer):
 
     created_at = serializers.DateTimeField(read_only=True)
     modified_at = serializers.DateTimeField(read_only=True)
-
-    @extend_schema_field(MetricsMetaSerializer)
-    def get_metrics_meta(self, instance):
-        metrics_meta_data = {
-            "count": 0,
-            "size": 0,
-            "metric_names": [],
-            "label_names": [],
-        }
-        try:
-            metrics_meta = instance.metrics_meta.first()
-        except ObjectDoesNotExist:
-            pass
-        else:
-            if metrics_meta:
-                metrics_meta_data = {
-                    "count": metrics_meta.count,
-                    "size": metrics_meta.size,
-                    "metric_names": metrics_meta.metric_names or [],
-                    "label_names": metrics_meta.label_names or [],
-                }
-
-        return MetricsMetaSerializer(metrics_meta_data).data
-
-    @extend_schema_field(VariablesMetaSerializer)
-    def get_variables_meta(self, instance):
-        run_variables_meta = {
-            "count": 0,
-            "size": 0,
-            "variable_names": [],
-            "label_names": [],
-        }
-        try:
-            variables_meta = instance.variables_meta
-        except ObjectDoesNotExist:
-            pass
-        else:
-            if variables_meta:
-                # For the frontend we make sure that if labels 'source' and/or 'is_masked' are in the label_names
-                # dictionary, that we add them as the first label in the list.
-                label_names = []
-                if variables_meta.label_names:
-                    label_names = list(filter(lambda x: x["name"] != "is_masked", variables_meta.label_names))
-                    if len(label_names) != len(variables_meta.label_names):
-                        label_names = [{"name": "is_masked", "type": "tag"}] + label_names
-                    label_names = list(filter(lambda x: x["name"] != "source", label_names))
-                    if len(label_names) != len(variables_meta.label_names):
-                        label_names = [{"name": "source", "type": "string"}] + label_names
-
-                run_variables_meta = {
-                    "count": variables_meta.count,
-                    "size": variables_meta.size,
-                    "variable_names": variables_meta.variable_names or [],
-                    "label_names": label_names,
-                }
-
-        return VariablesMetaSerializer(run_variables_meta).data
 
     @extend_schema_field(EnvironmentSerializer)
     def get_environment(self, instance):

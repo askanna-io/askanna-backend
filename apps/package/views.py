@@ -10,7 +10,6 @@ from rest_framework.exceptions import NotAuthenticated, NotFound, ValidationErro
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
 from core.mixins import (
     ParserByActionMixin,
@@ -155,22 +154,11 @@ class PackageViewSet(
         """
         Return only values from projects where the user is member of or has access to because it's public.
         """
-        if self.request.user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-            )
-
-        member_of_workspaces = self.request.user.active_memberships.filter(object_type=MSP_WORKSPACE).values_list(
-            "object_uuid", flat=True
-        )
-
         return (
             super()
             .get_queryset()
             .filter(
-                Q(project__workspace__pk__in=member_of_workspaces)
+                Q(project__workspace__pk__in=self.member_of_workspaces)
                 | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )

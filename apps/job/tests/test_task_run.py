@@ -13,7 +13,12 @@ from run.models import RunVariable
 def test_create_run_variable_object(test_runs):
     run = test_runs["run_1"]
 
-    run_variable = create_run_variable_object(run=run, variable_name="foo", variable_value="bar")
+    run_variable = create_run_variable_object(
+        run=run,
+        variable_name="foo",
+        variable_value="bar",
+        variable_type="string",
+    )
 
     assert isinstance(run_variable, RunVariable)
     assert run_variable.run == run
@@ -27,7 +32,6 @@ def test_create_run_variable_object(test_runs):
         variable_name="bar",
         variable_value=True,
         variable_type="boolean",
-        variable_is_masked=True,
         variable_labels=[{"name": "source", "value": "worker", "type": "string"}],
     )
 

@@ -26,10 +26,14 @@ class FileUploadURLField(serializers.HyperlinkedIdentityField):
 
 
 class FileDownloadInfoSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name="storage-file-download", lookup_field="suuid")
     type = serializers.SerializerMethodField(help_text="The type of service that handles the download")
+    url = serializers.HyperlinkedIdentityField(
+        view_name="storage-file-download",
+        lookup_field="suuid",
+        read_only=True,
+    )
 
-    def get_type(self, obj) -> str:
+    def get_type(self, instance) -> str:
         return "askanna"
 
     class Meta:
@@ -90,10 +94,10 @@ class FileInfoSerializer(serializers.ModelSerializer):
 
 
 class FileUploadInfoSerializer(serializers.ModelSerializer):
-    url = FileUploadURLField(read_only=True)
     type = serializers.SerializerMethodField(help_text="The type of service that handles the upload")
+    url = FileUploadURLField(read_only=True)
 
-    def get_type(self, obj) -> str:
+    def get_type(self, instance) -> str:
         return "askanna"
 
     class Meta:

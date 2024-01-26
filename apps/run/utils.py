@@ -1,3 +1,15 @@
+import json
+
+from django.apps import apps
+from django.core.cache import cache
+from django.core.files.base import ContentFile
+from django.utils import timezone
+
+from run.models import Run
+from storage.models import File
+from storage.utils.file import get_content_type_from_file, get_md5_from_file
+
+
 def add_key_to_unique_keys(key: dict, unique_keys: list) -> list:
     """Check if key is already in unique_keys list and add it if not. If the key is already in the list, update the
     count and data type if needed.
@@ -46,3 +58,121 @@ def get_unique_names_with_data_type(all_keys: list) -> list:
         unique_keys = add_key_to_unique_keys(key, unique_keys)
 
     return unique_keys
+
+
+def create_run_tracked_object_file_and_meta_dict(run: Run, type: str) -> tuple[File, dict] | tuple[None, None]:
+    assert type in ("variable", "metric")
+
+    model = apps.get_model("run", f"Run{type.capitalize()}")
+    tracked_objects = model.objects.filter(run__suuid=run.suuid)
+
+    if not tracked_objects:
+        return None, None
+
+    def compose_tracked_object(object, type):
+        return {
+            f"{type}": getattr(object, type),
+            "label": object.label,
+            "run_suuid": run.suuid,
+            "created_at": object.created_at.isoformat(),
+        }
+
+    object_content_file = ContentFile(
+        json.dumps([compose_tracked_object(object, type) for object in tracked_objects]).encode("utf-8"),
+        name=f"{type}s.json",
+    )
+
+    object_file = File.objects.create(
+        name=object_content_file.name,
+        file=object_content_file,
+        size=object_content_file.size,
+        etag=get_md5_from_file(object_content_file),
+        content_type=get_content_type_from_file(object_content_file),
+        created_for=run,
+        created_by=run.created_by_member,
+        completed_at=timezone.now(),
+    )
+
+    count = len(tracked_objects)
+
+    all_object_names = []
+    all_label_names = []
+    for object in tracked_objects:
+        all_object_names.append(
+            {
+                "name": getattr(object, type).get("name"),
+                "type": getattr(object, type).get("type"),
+                "count": 1,
+            }
+        )
+
+        labels = object.label
+        if labels:
+            for label in labels:
+                all_label_names.append(
+                    {
+                        "name": label.get("name"),
+                        "type": label.get("type"),
+                    }
+                )
+
+    unique_object_names = get_unique_names_with_data_type(all_object_names)
+    unique_label_names = get_unique_names_with_data_type(all_label_names) if all_label_names else None
+
+    return object_file, {
+        "count": count,
+        f"{type}_names": unique_object_names,
+        "label_names": unique_label_names,
+    }
+
+
+def update_run_metrics_file_and_meta(run: Run) -> None:
+    """
+    Update the metrics file, and meta information with count and unique metric_names and label_names
+    """
+    lock_key = f"run.RunMetric:update_file_and_meta:{run.suuid}"
+
+    assert cache.get(lock_key) is None, "Run Metrics file and meta is already being updated"
+
+    cache.set(lock_key, True, timeout=60)
+    try:
+        if run.metrics_file:
+            run.metrics_file.delete()
+
+        run.metrics_file, run.metrics_meta = create_run_tracked_object_file_and_meta_dict(run, "metric")
+
+        run.save(
+            update_fields=[
+                "metrics_file",
+                "metrics_meta",
+                "modified_at",
+            ]
+        )
+    finally:
+        cache.delete(lock_key)
+
+
+def update_run_variables_file_and_meta(run: Run) -> None:
+    """
+    Update the variables file, and meta information with count and unique variable_names and label_names
+    """
+    lock_key = f"run.RunVariable:update_file_and_meta:{run.suuid}"
+
+    assert cache.get(lock_key) is None, "Run Variables file and meta is already being updated"
+
+    cache.set(lock_key, True, timeout=60)
+    try:
+        if run.variables_file:
+            run.variables_file.delete()
+
+        run.variables_file, run.variables_meta = create_run_tracked_object_file_and_meta_dict(run, "variable")
+
+        run.save(
+            update_fields=[
+                "variables_file",
+                "variables_meta",
+                "modified_at",
+            ]
+        )
+    finally:
+        cache.delete(lock_key)

@@ -4,7 +4,10 @@ import logging
 import docker
 from celery import shared_task
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
+
+from config import celery_app
 
 from core.config import Job
 from core.container import (
@@ -23,9 +26,9 @@ logger = logging.getLogger(__name__)
 
 def create_run_variable_object(
     run,
-    variable_name,
+    variable_name: str,
     variable_value,
-    variable_type: str = "string",
+    variable_type: str,
     variable_is_masked: bool = False,
     variable_labels: list | None = None,
 ) -> RunVariable:
@@ -33,20 +36,15 @@ def create_run_variable_object(
 
     spec = {
         "run": run,
-        "project_suuid": run.project.suuid,
-        "job_suuid": run.job.suuid,
-        "run_suuid": run.suuid,
         "created_at": timezone.now(),
         "variable": {
             "name": variable_name,
             "value": variable_value,
             "type": variable_type,
         },
+        "is_masked": variable_is_masked,
         "label": variable_labels,
     }
-
-    if variable_is_masked is True:
-        spec["is_masked"] = variable_is_masked
 
     return RunVariable(**spec)
 
@@ -102,6 +100,7 @@ def get_run_variables(run: Run, job_config: Job) -> dict:
                 run=run,
                 variable_name=variable_name,
                 variable_value=variable_value,
+                variable_type="string",
                 variable_is_masked=True if variable_name == "AA_TOKEN" else False,
                 variable_labels=labels,
             )
@@ -112,8 +111,7 @@ def get_run_variables(run: Run, job_config: Job) -> dict:
         project_variables[variable.name] = variable.value
 
         labels = [{"name": "source", "value": "project", "type": "string"}]
-        is_masked = variable.is_masked
-        if is_masked:
+        if variable.is_masked:
             labels.append({"name": "is_masked", "value": None, "type": "tag"})
 
         variables_to_log.append(
@@ -122,7 +120,7 @@ def get_run_variables(run: Run, job_config: Job) -> dict:
                 variable_name=variable.name,
                 variable_value=variable.get_value(),
                 variable_type=get_variable_type(variable.value),
-                variable_is_masked=is_masked,
+                variable_is_masked=variable.is_masked,
                 variable_labels=labels,
             )
         )
@@ -152,13 +150,17 @@ def get_run_variables(run: Run, job_config: Job) -> dict:
                         variable_name=name,
                         variable_value=payload_variables[name],
                         variable_type=variable_type,
-                        variable_is_masked=None,
                         variable_labels=labels,
                     )
                 )
 
     RunVariable.objects.bulk_create(variables_to_log)
-    run.variables_meta.update_meta()
+    transaction.on_commit(
+        lambda: celery_app.send_task(
+            "run.tasks.update_run_variables_file_and_meta",
+            kwargs={"run_suuid": run.suuid},
+        )
+    )
 
     # Create run variables and ensure that variables are unique
     run_variables = {}

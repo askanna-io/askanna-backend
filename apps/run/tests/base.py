@@ -16,8 +16,8 @@ class BaseAPITestRun(AskAnnaAPITestCase):
         test_run_logs,
         test_run_metrics,
         test_run_variables,
-        metric_response_good_small,
-        variable_response_good_small,
+        create_metric_dict_small,
+        create_variable_dict_small,
     ):
         self.users = test_users
         self.memberships = test_memberships
@@ -26,8 +26,6 @@ class BaseAPITestRun(AskAnnaAPITestCase):
         self.runs = test_runs
         self.artifacts = test_run_artifacts
         self.run_logs = test_run_logs
-        self.run_metrics = test_run_metrics
-        self.run_variables = test_run_variables
 
-        self.metric_response_good_small = metric_response_good_small
-        self.variable_response_good_small = variable_response_good_small
+        self.create_metric_dict_small = create_metric_dict_small
+        self.create_variable_dict_small = create_variable_dict_small

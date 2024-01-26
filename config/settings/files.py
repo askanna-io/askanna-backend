@@ -34,9 +34,6 @@ def settings(config, env):
     else:
         config.STORAGE_ROOT = config.BASE_DIR / "storage_root"
 
-    config.METRIC_ROOT = config.STORAGE_ROOT / "artifacts"
-    config.VARIABLE_ROOT = config.STORAGE_ROOT / "artifacts"
-
     config.MINIO_SETTINGS = {
         "ENDPOINT": env.str("MINIO_ENDPOINT", default=None),
         "USE_HTTPS": env.bool("MINIO_USE_HTTPS", default=False),

@@ -4,6 +4,7 @@ import pytest
 
 from tests.fixtures.files import *  # noqa: F403
 from tests.fixtures.model_objects import *  # noqa: F403
+from tests.fixtures.objects import *  # noqa: F403
 
 
 @pytest.fixture(scope="session")

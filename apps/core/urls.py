@@ -3,10 +3,8 @@ from django.conf import settings
 from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.versioning import URLPathVersioning
-from rest_framework_extensions.routers import ExtendedDefaultRouter
 
 env = environ.Env()
-router = ExtendedDefaultRouter()
 
 urlpatterns = [
     re_path(
@@ -19,7 +17,6 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="api-schema"),
         name="api-swagger",
     ),
-    re_path(r"^(?P<version>(v1))/", include(router.urls)),
 ]
 
 if settings.DEBUG:

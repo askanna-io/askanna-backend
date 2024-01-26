@@ -104,7 +104,7 @@ def move_package_files(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0006_objectreference_add_run_run_and_run_artifact"),
+        ("core", "0004_add_objectreference"),
         ("storage", "0001_initial"),
         ("package", "0004_rename_package_and_delete_chunkedpackage"),
     ]

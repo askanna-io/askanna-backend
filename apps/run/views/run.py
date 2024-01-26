@@ -13,7 +13,6 @@ from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from account.models.membership import MSP_WORKSPACE
 from core.mixins import (
     ParserByActionMixin,
     PartialUpdateModelMixin,
@@ -136,21 +135,11 @@ class RunView(
         """
         Return only values from projects where the user is member of or has access to because it's public.
         """
-        user = self.request.user
-        if user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
-            )
-
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE).values_list("object_uuid", flat=True)
-
         return (
             super()
             .get_queryset()
             .filter(
-                Q(jobdef__project__workspace__in=member_of_workspaces)
+                Q(jobdef__project__workspace__in=self.member_of_workspaces)
                 | (Q(jobdef__project__workspace__visibility="PUBLIC") & Q(jobdef__project__visibility="PUBLIC"))
             )
         )

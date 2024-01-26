@@ -5,7 +5,6 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins
 from rest_framework.exceptions import NotAuthenticated
 
-from account.models.membership import MSP_WORKSPACE
 from core.filters import filter_multiple
 from core.mixins import (
     ObjectRoleMixin,
@@ -111,23 +110,11 @@ class VariableView(
         """
         Return only values from projects where the user is member of or has access to because it's public.
         """
-        user = self.request.user
-        if user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
-            )
-
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
-            "object_uuid", flat=True
-        )
-
         return (
             super()
             .get_queryset()
             .filter(
-                Q(project__workspace__pk__in=member_of_workspaces)
+                Q(project__workspace__pk__in=self.member_of_workspaces)
                 | (Q(project__workspace__visibility="PUBLIC") & Q(project__visibility="PUBLIC"))
             )
         )
