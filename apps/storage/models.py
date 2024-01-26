@@ -30,6 +30,8 @@ class FileQuerySet(models.QuerySet):
             "_created_for__account_user",
             "_created_for__account_membership__user",
             "_created_for__package_package__project__workspace__created_by_user",
+            "_created_for__run_run__jobdef__project__workspace__created_by_user",
+            "_created_for__run_artifact__run__jobdef__project__workspace__created_by_user",
         )
 
         if add_select_related is True:

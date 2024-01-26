@@ -86,7 +86,7 @@ def move_avatar_files(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("account", "0002_alter_membership_job_title_delete_userprofile"),
-        ("core", "0006_objectreference_add_run_run_and_run_artifact"),
+        ("core", "0004_add_objectreference"),
         ("storage", "__first__"),
     ]
 

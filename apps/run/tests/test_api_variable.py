@@ -1,78 +1,76 @@
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
 
 from run.tests.base import BaseAPITestRun
 
 
-class TestTrackedVariablesListAPI(BaseAPITestRun):
+class TestRunVariablesListAPI(BaseAPITestRun):
     """
-    Test to list the Tracked Variables
+    Test to get the list of Run Variables for a specific run
     """
 
     def setUp(self):
         super().setUp()
         self.url = reverse(
-            "run-variable-list",
+            "run-variable-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__suuid": self.run_variables["run_2"].suuid,
+                "suuid": self.runs["run_2"].suuid,
             },
         )
 
-    def test_list_as_askanna_admin(self):
-        """
-        We can list tracked variables as AskAnna admin,
-        but response will be empty because of not having access to this workspace.
-        """
-        self.set_authorization(self.users["askanna_super_admin"])
+    def test_get_run_variable_list(self) -> bool:
+        def _test_get_run_variable_list(user_name: str | None = None, expect_no_access: bool = False) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0
+            response = self.client.get(self.url)
+            if expect_no_access is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND if user_name else status.HTTP_401_UNAUTHORIZED
+                return True
 
-    def test_list_as_admin(self):
-        """
-        We can list trackedvariables as admin of a workspace
-        """
-        self.set_authorization(self.users["workspace_admin"])
+            assert response.status_code == status.HTTP_200_OK
+            assert len(response.data["results"]) == 4
 
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4
+            return True
 
-    def test_list_as_member(self):
-        """
-        We can list trackedvariables as member of a workspace
-        """
-        self.set_authorization(self.users["workspace_member"])
+        assert _test_get_run_variable_list(user_name="workspace_admin") is True
+        assert _test_get_run_variable_list(user_name="workspace_member") is True
+        assert _test_get_run_variable_list(user_name="workspace_viewer") is True
 
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4
+        assert _test_get_run_variable_list(user_name="askanna_super_admin", expect_no_access=True) is True
+        assert _test_get_run_variable_list(user_name="no_workspace_member", expect_no_access=True) is True
+        assert _test_get_run_variable_list(expect_no_access=True) is True  # anonymous
 
-    def test_list_as_non_member(self):
-        """
-        We can list tracked variables as non_member of a workspace,
-        but response will be empty because of not having access to this workspace.
-        """
-        self.set_authorization(self.users["no_workspace_member"])
+    def test_get_public_run_variable_list(self) -> bool:
+        def _test_get_run_variable_list(user_name: str | None = None) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0
+            response = self.client.get(
+                reverse(
+                    "run-variable-detail",
+                    kwargs={
+                        "version": "v1",
+                        "suuid": self.runs["run_4"].suuid,
+                    },
+                )
+            )
 
-    def test_list_as_anonymous(self):
-        """
-        We can list tracked variables as anonymous,
-        but response will be empty because of not having access to this workspace.
-        """
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 0
+            assert response.status_code == status.HTTP_200_OK
+            assert len(response.data["results"]) == 2
+
+            return True
+
+        assert _test_get_run_variable_list(user_name="askanna_super_admin") is True
+        assert _test_get_run_variable_list(user_name="workspace_admin") is True
+        assert _test_get_run_variable_list(user_name="workspace_member") is True
+        assert _test_get_run_variable_list(user_name="workspace_viewer") is True
+        assert _test_get_run_variable_list(user_name="no_workspace_member") is True
+        assert _test_get_run_variable_list() is True  # anonymous
 
     def test_list_as_member_order_by_variable_name(self):
         """
-        We get detail tracked variables as member of a workspace and order them by variable name
+        We get detail run variables as member of a workspace and order them by variable name
         """
         self.set_authorization(self.users["workspace_member"])
 
@@ -119,49 +117,16 @@ class TestTrackedVariablesListAPI(BaseAPITestRun):
 
         response = self.client.get(
             self.url,
-            {"label_name": "product"},
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 4
-
-
-class TestTrackedVariablesPublicProjectListAPI(BaseAPITestRun):
-    """
-    Test to list the Tracked Variables from a job in a public project
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse(
-            "run-variable-list",
-            kwargs={
-                "version": "v1",
-                "parent_lookup_run__suuid": self.run_variables["run_4"].suuid,
-            },
+            {"label_name": "Missing data"},
         )
 
-    def test_list_as_non_member(self):
-        """
-        Public project run variables are listable by anyone
-        """
-        self.set_authorization(self.users["no_workspace_member"])
-
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["results"]) == 2
-
-    def test_list_as_anonymous(self):
-        """
-        Public project run variables are listable by anyone
-        """
-        response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 2
 
 
-class TestVariablesUpdateAPI(BaseAPITestRun):
+class TestRunVariablesUpdateAPI(BaseAPITestRun):
     """
-    We update the variables of a run
+    Tests related to updating the run variables for a specific run
     """
 
     def setUp(self):
@@ -170,72 +135,50 @@ class TestVariablesUpdateAPI(BaseAPITestRun):
             "run-variable-detail",
             kwargs={
                 "version": "v1",
-                "parent_lookup_run__suuid": self.run_variables["run_2"].suuid,
-                "run__suuid": self.run_variables["run_2"].suuid,
+                "suuid": self.runs["run_2"].suuid,
             },
         )
 
-    def test_update_as_askanna_admin(self):
-        """
-        We cannot update variables as AskAnna admin that is not member of a workspace
-        """
-        self.set_authorization(self.users["askanna_super_admin"])
+    def test_update_run_variable(self):
+        def _test_update_run_variable(user_name: str | None = None, expect_no_access: bool = False) -> bool:
+            self.set_authorization(self.users[user_name]) if user_name else self.client.credentials()
 
-        response = self.client.patch(
-            self.url,
-            {"variables": self.variable_response_good_small},
-            format="json",
-        )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+            response = self.client.patch(
+                self.url,
+                {"variables": self.create_variable_dict_small(self.runs["run_2"].suuid)},
+                format="json",
+            )
 
-    def test_update_as_admin(self):
-        """
-        We update variables as admin of a workspace
-        """
-        self.set_authorization(self.users["workspace_admin"])
+            if expect_no_access is True:
+                assert response.status_code == status.HTTP_404_NOT_FOUND if user_name else status.HTTP_401_UNAUTHORIZED
+                return True
 
-        response = self.client.patch(
-            self.url,
-            {"variables": self.variable_response_good_small},
-            format="json",
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data is None
+            assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    def test_update_as_member(self):
-        """
-        We update variables as member of a workspace
-        """
+            return True
+
+        assert _test_update_run_variable(user_name="workspace_admin") is True
+        assert _test_update_run_variable(user_name="workspace_member") is True
+
+        assert _test_update_run_variable(user_name="askanna_super_admin", expect_no_access=True) is True
+        assert _test_update_run_variable(user_name="workspace_viewer", expect_no_access=True) is True
+        assert _test_update_run_variable(user_name="no_workspace_member", expect_no_access=True) is True
+        assert _test_update_run_variable(expect_no_access=True) is True  # anonymous
+
+    def test_update_run_variable_locked_run(self):
+        # Set the lock
+        lock_key = f"run.RunVariable:update:{self.runs['run_2'].suuid}"
+        cache.set(lock_key, True, timeout=60)
+
+        # Try to update the RunVariable
         self.set_authorization(self.users["workspace_member"])
-
-        response = self.client.patch(
+        response = response = self.client.patch(
             self.url,
-            {"variables": self.variable_response_good_small},
+            {"variables": self.create_variable_dict_small(self.runs["run_2"].suuid)},
             format="json",
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data is None
 
-    def test_update_as_non_member(self):
-        """
-        We cannot update variables as non-member of a workspace
-        """
-        self.set_authorization(self.users["no_workspace_member"])
+        assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.data == {"detail": "These run's variables are currently being updated"}
 
-        response = self.client.patch(
-            self.url,
-            {"variables": self.variable_response_good_small},
-            format="json",
-        )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_update_as_anonymous(self):
-        """
-        We cannot variables metrics as anonymous
-        """
-        response = self.client.patch(
-            self.url,
-            {"variables": self.variable_response_good_small},
-            format="json",
-        )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        cache.delete(lock_key)

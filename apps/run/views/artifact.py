@@ -2,7 +2,6 @@ from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins
 
-from account.models.membership import MSP_WORKSPACE
 from core.mixins import PartialUpdateModelMixin
 from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
@@ -45,25 +44,11 @@ class RunArtifactView(
         """
         Return only values from projects where the user is member of or has access to because it's public.
         """
-        if self.request.user.is_anonymous:
-            return (
-                super()
-                .get_queryset()
-                .filter(
-                    Q(run__jobdef__project__workspace__visibility="PUBLIC")
-                    & Q(run__jobdef__project__visibility="PUBLIC")
-                )
-            )
-
-        member_of_workspaces = self.request.user.memberships.filter(object_type=MSP_WORKSPACE).values_list(
-            "object_uuid", flat=True
-        )
-
         return (
             super()
             .get_queryset()
             .filter(
-                Q(run__jobdef__project__workspace__in=member_of_workspaces)
+                Q(run__jobdef__project__workspace__in=self.member_of_workspaces)
                 | (
                     Q(run__jobdef__project__workspace__visibility="PUBLIC")
                     & Q(run__jobdef__project__visibility="PUBLIC")

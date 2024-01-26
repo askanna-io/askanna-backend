@@ -58,10 +58,10 @@ class RunQuerySet(models.QuerySet):
                 "result",
                 "output",
                 "run_image",
+                "metrics_file",
+                "variables_file",
             ).prefetch_related(
                 "artifacts__artifact_file",
-                "metrics_meta",
-                "variables_meta",
             )
 
         return active_query
@@ -73,10 +73,46 @@ class Run(AuthorModel, NameDescriptionBaseModel):
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
     payload = models.OneToOneField(
-        "storage.File", null=True, on_delete=models.CASCADE, related_name="run_payload_file"
+        "storage.File",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="run_payload_file",
+        help_text="File with the run payload in JSON format",
     )
 
-    result = models.OneToOneField("storage.File", null=True, on_delete=models.CASCADE, related_name="run_result_file")
+    result = models.OneToOneField(
+        "storage.File",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="run_result_file",
+        help_text="File with the run result",
+    )
+    metrics_file = models.OneToOneField(
+        "storage.File",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="run_metrics_file",
+        help_text="File with the run metrics in JSON format",
+    )
+    metrics_meta = models.JSONField(
+        null=True,
+        editable=False,
+        default=None,
+        help_text="Meta information about run metrics",
+    )
+    variables_file = models.OneToOneField(
+        "storage.File",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="run_variables_file",
+        help_text="File with the run variables in JSON format",
+    )
+    variables_meta = models.JSONField(
+        null=True,
+        editable=False,
+        default=None,
+        help_text="Meta information about run variables",
+    )
 
     status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
 
@@ -103,7 +139,10 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             "retrieve",
             "log",
             "status",
+            "storage_file_info",
             "storage_file_download",
+            "metric_list",
+            "variable_list",
         ): "project.run.view",
         (
             "create",
@@ -114,7 +153,11 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             "storage_file_upload_complete",
             "storage_file_upload_abort",
         ): "project.run.create",
-        "partial_update": "project.run.edit",
+        (
+            "partial_update",
+            "metric_update",
+            "variable_update",
+        ): "project.run.edit",
         "destroy": "project.run.remove",
     }
 

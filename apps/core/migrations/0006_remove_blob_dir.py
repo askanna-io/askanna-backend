@@ -14,8 +14,8 @@ def remove_blob_dir(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("package", "0005_move_package_files_to_storage"),
-        ("run", "0004_move_run_artifact_files_to_storage"),
-        ("core", "0007_alter_objectreference_account_membership_and_more"),
+        ("run", "0005_move_run_related_files_to_storage"),
+        ("core", "0005_alter_setting_suuid"),
     ]
 
     operations = [

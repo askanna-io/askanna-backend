@@ -1,7 +1,6 @@
 from .base import (  # noqa: F401
     AuthorModel,
     BaseModel,
-    FileBaseModel,
     NameDescriptionBaseModel,
     VisibilityModel,
 )

@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins
 from rest_framework.exceptions import NotAuthenticated
 
-from account.models.membership import MSP_WORKSPACE, Membership
+from account.models.membership import Membership
 from core.filters import case_insensitive, filter_multiple
 from core.mixins import (
     ObjectRoleMixin,
@@ -91,10 +91,6 @@ class ProjectView(
                 .annotate(is_member=Value(False, BooleanField()))
             )
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
-            "object_uuid"
-        )
-
         memberships = Membership.objects.active_members().filter(
             Q(user=user, object_uuid=OuterRef("pk")) | Q(user=user, object_uuid=OuterRef("workspace__pk"))
         )
@@ -103,7 +99,7 @@ class ProjectView(
             super()
             .get_queryset()
             .filter(
-                Q(workspace__pk__in=member_of_workspaces)
+                Q(workspace__pk__in=self.member_of_workspaces)
                 | (Q(workspace__visibility="PUBLIC") & Q(visibility="PUBLIC"))
             )
             .annotate(is_member=Exists(memberships))

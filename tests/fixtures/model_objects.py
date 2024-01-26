@@ -14,7 +14,7 @@ from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceVie
 from job.models import JobDef
 from package.models import Package
 from project.models import Project
-from run.models import Run, RunArtifact, RunLog, RunMetricMeta, RunVariableMeta
+from run.models import Run, RunArtifact, RunLog, RunMetric, RunVariable
 from storage.models import File
 from storage.utils.file import get_content_type_from_file, get_md5_from_file
 from variable.models import Variable
@@ -337,10 +337,6 @@ def test_runs(
     test_packages,
     test_storage_files,
     test_memberships,
-    metric_response_good,
-    metric_response_good_small_no_label,
-    variable_response_good,
-    variable_response_good_small_no_label,
 ) -> dict[str, Run]:
     runs = {
         "run_1": Run.objects.create(
@@ -407,27 +403,6 @@ def test_runs(
     ]
     run_logs["run_2"].save(update_fields=["stdout"])
 
-    run_metrics = {
-        "run_2": RunMetricMeta.objects.create(run=runs["run_2"], metrics=metric_response_good),
-        "run_3": RunMetricMeta.objects.create(run=runs["run_3"], metrics=[]),
-        "run_4": RunMetricMeta.objects.create(run=runs["run_4"], metrics=metric_response_good_small_no_label),
-        "run_5": RunMetricMeta.objects.create(run=runs["run_5"], metrics=metric_response_good_small_no_label),
-    }
-
-    run_variables = {
-        "run_2": RunVariableMeta.objects.get(run=runs["run_2"]),
-        "run_3": RunVariableMeta.objects.get(run=runs["run_3"]),
-        "run_4": RunVariableMeta.objects.get(run=runs["run_4"]),
-        "run_5": RunVariableMeta.objects.get(run=runs["run_5"]),
-    }
-
-    run_variables["run_2"].variables = variable_response_good
-    run_variables["run_2"].save()
-    run_variables["run_4"].variables = variable_response_good_small_no_label
-    run_variables["run_4"].save()
-    run_variables["run_5"].variables = variable_response_good_small_no_label
-    run_variables["run_5"].save()
-
     result_content_file = ContentFile(
         content=io.BytesIO(b"some private result content").read(),
         name="result_private.txt",
@@ -492,12 +467,6 @@ def test_runs(
 
     yield runs
 
-    for run_variable in run_variables.values():
-        run_variable.delete()
-
-    for run_metric in run_metrics.values():
-        run_metric.delete()
-
     for run_log in run_logs.values():
         run_log.delete()
 
@@ -544,20 +513,62 @@ def test_run_logs(test_runs) -> dict[str, RunLog]:
 
 
 @pytest.fixture()
-def test_run_metrics(test_runs) -> dict[str, RunMetricMeta]:
-    return {
-        "run_2": RunMetricMeta.objects.get(run=test_runs.get("run_2")),
-        "run_3": RunMetricMeta.objects.get(run=test_runs.get("run_3")),
-        "run_4": RunMetricMeta.objects.get(run=test_runs.get("run_4")),
-        "run_5": RunMetricMeta.objects.get(run=test_runs.get("run_5")),
-    }
+def test_run_metrics(test_runs, create_metric_dict, create_metric_dict_small_no_label) -> None:
+    run_metric_objects = []
+    metrics = create_metric_dict(test_runs["run_2"].suuid)
+    for metric in metrics:
+        run_metric_objects.append(
+            RunMetric.objects.create(
+                run=test_runs["run_2"],
+                metric=metric["metric"],
+                label=metric["label"],
+                created_at=metric["created_at"],
+            )
+        )
+
+    metrics = create_metric_dict_small_no_label(test_runs["run_4"].suuid)
+    for metric in metrics:
+        run_metric_objects.append(
+            RunMetric.objects.create(
+                run=test_runs["run_4"],
+                metric=metric["metric"],
+                label=metric["label"],
+                created_at=metric["created_at"],
+            )
+        )
+
+    yield
+
+    for run_metric_object in run_metric_objects:
+        run_metric_object.delete()
 
 
 @pytest.fixture()
-def test_run_variables(test_runs) -> dict[str, RunVariableMeta]:
-    return {
-        "run_2": RunVariableMeta.objects.get(run=test_runs.get("run_2")),
-        "run_3": RunVariableMeta.objects.get(run=test_runs.get("run_3")),
-        "run_4": RunVariableMeta.objects.get(run=test_runs.get("run_4")),
-        "run_5": RunVariableMeta.objects.get(run=test_runs.get("run_5")),
-    }
+def test_run_variables(test_runs, create_variable_dict, create_variable_dict_small_no_label) -> None:
+    run_variable_objects = []
+    variables = create_variable_dict(test_runs["run_2"].suuid)
+    for variable in variables:
+        run_variable_objects.append(
+            RunVariable.objects.create(
+                run=test_runs["run_2"],
+                variable=variable["variable"],
+                label=variable["label"],
+                created_at=variable["created_at"],
+            )
+        )
+
+    variables = create_variable_dict_small_no_label(test_runs["run_4"].suuid)
+    for variable in variables:
+        run_variable_objects.append(
+            RunVariable.objects.create(
+                run=test_runs["run_4"],
+                variable=variable["variable"],
+                label=variable["label"],
+                created_at=variable["created_at"],
+            )
+        )
+
+    yield
+
+    for run_variable_object in run_variable_objects:
+        run_variable_object.delete()

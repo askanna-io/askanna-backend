@@ -3,7 +3,7 @@ from django.db.models import BooleanField, Exists, OuterRef, Q, Value
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins
 
-from account.models.membership import MSP_WORKSPACE, Membership
+from account.models.membership import Membership
 from core.filters import case_insensitive
 from core.mixins import ObjectRoleMixin, PartialUpdateModelMixin
 from core.permissions import RoleBasedPermission
@@ -61,16 +61,12 @@ class WorkspaceViewSet(
         if user.is_anonymous:
             return super().get_queryset().filter(visibility="PUBLIC").annotate(is_member=Value(False, BooleanField()))
 
-        member_of_workspaces = user.memberships.filter(object_type=MSP_WORKSPACE, deleted_at__isnull=True).values_list(
-            "object_uuid"
-        )
-
-        memberships = Membership.objects.filter(user=user, deleted_at__isnull=True, object_uuid=OuterRef("pk"))
+        memberships = Membership.objects.active_members().filter(user=user, object_uuid=OuterRef("pk"))
 
         return (
             super()
             .get_queryset()
-            .filter(Q(pk__in=member_of_workspaces) | Q(visibility="PUBLIC"))
+            .filter(Q(pk__in=self.member_of_workspaces) | Q(visibility="PUBLIC"))
             .annotate(is_member=Exists(memberships))
         )
 
