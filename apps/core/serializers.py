@@ -35,22 +35,24 @@ class FlexibleField(serializers.Field):
     NULL_VALUES = {"null", "Null", "NULL", "", None}
 
     def to_internal_value(self, data):
-        if data in self.TRUE_VALUES:
-            return True
-        if data in self.FALSE_VALUES:
-            return False
-        if data in self.NULL_VALUES and self.allow_null:
-            return None
+        if isinstance(data, str | bool | None):
+            if data in self.TRUE_VALUES:
+                return True
+            if data in self.FALSE_VALUES:
+                return False
+            if data in self.NULL_VALUES and self.allow_null:
+                return None
 
         return data
 
     def to_representation(self, value):
-        if value in self.TRUE_VALUES:
-            return True
-        if value in self.FALSE_VALUES:
-            return False
-        if value in self.NULL_VALUES and self.allow_null:
-            return None
+        if isinstance(value, str | bool | None):
+            if value in self.TRUE_VALUES:
+                return True
+            if value in self.FALSE_VALUES:
+                return False
+            if value in self.NULL_VALUES and self.allow_null:
+                return None
 
         return value
 
