@@ -1,8 +1,10 @@
+import json
 import logging
 
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import migrations
+from django.utils import timezone
 
 from account.models import Membership, User
 from core.models import ObjectReference
@@ -73,8 +75,8 @@ def move_run_payload_files(apps, schema_editor):
                     completed_at=run_with_payload.modified_at,
                 )
 
-                run_with_payload.payload = file
-                run_with_payload.save(update_fields=["payload"])
+                run_with_payload.payload_file = file
+                run_with_payload.save(update_fields=["payload_file"])
 
                 payload_file.unlink()
             else:
@@ -232,8 +234,8 @@ def move_run_result_files(apps, schema_editor):
                     completed_at=run_result.modified_at,
                 )
 
-                run.result = file
-                run.save(update_fields=["result"])
+                run.result_file = file
+                run.save(update_fields=["result_file"])
 
                 result_file.unlink()
             else:
@@ -248,11 +250,68 @@ def move_run_result_files(apps, schema_editor):
             )
 
 
+def create_run_log_files(apps, schema_editor):
+    runs = Run.objects.all()
+
+    if not runs.exists():
+        logger.info("No run logs found, nothing to do")
+        return
+
+    user_anna = User.objects.get(username="anna")
+
+    for run in runs:
+        # Historically we used the created_by_user field to indicate who created the run and created_by_member
+        # was later introduced. If the created_by_member is set we use this value, else we switch to the
+        # created_by_user value.
+        #
+        # For even older run artifacts where we did not store the created_by_x we use the project's
+        # created_by_user. And if we also don't have a project created_by_user we use the user 'anna'
+        # indicating that it was created before we logged who created a run.
+        if run.created_by_member:
+            created_by = Membership.objects.get(uuid=run.created_by_member.uuid)
+        elif run.created_by_user:
+            created_by = User.objects.get(uuid=run.created_by_user.uuid)
+        elif run.jobdef.project and run.jobdef.project.created_by_user:
+            created_by = User.objects.get(uuid=run.jobdef.project.created_by_user.uuid)
+        else:
+            created_by = user_anna
+
+        # Make sure we have an ObjectReference for run and created_by
+        ObjectReference.get_or_create(object=run)
+        ObjectReference.get_or_create(object=created_by)
+
+        log_content_file = ContentFile(
+            json.dumps(run.output.stdout).encode(),
+            name="log.json",
+        )
+
+        log_file = File.objects.create(
+            name=log_content_file.name,
+            file=log_content_file,
+            size=log_content_file.size,
+            etag=get_md5_from_file(log_content_file),
+            content_type=get_content_type_from_file(log_content_file),
+            created_for=run,
+            created_by=run.created_by_member,
+            completed_at=timezone.now(),
+        )
+
+        run.log_file = log_file
+        run.exit_code = run.output.exit_code
+
+        run.save(update_fields=["log_file", "exit_code"])
+
+
 def recreate_run_metric_and_variable_files(apps, schema_editor):
     runs = Run.objects.all()
 
+    if not runs.exists():
+        logger.info("No run metrics and run variables found, nothing to do")
+        return
+
+    user_anna = User.objects.get(username="anna")
+
     for run in runs:
-        user_anna = User.objects.get(username="anna")
         # Historically we used the created_by_user field to indicate who created the run and created_by_member
         # was later introduced. If the created_by_member is set we use this value, else we switch to the
         # created_by_user value.
@@ -365,5 +424,6 @@ class Migration(migrations.Migration):
         migrations.RunPython(move_run_result_files, migrations.RunPython.noop, elidable=True),
         migrations.RunPython(remove_empty_artifact_root, migrations.RunPython.noop, elidable=True),
         migrations.RunPython(remove_empty_payload_root, migrations.RunPython.noop, elidable=True),
+        migrations.RunPython(create_run_log_files, migrations.RunPython.noop, elidable=True),
         migrations.RunPython(recreate_run_metric_and_variable_files, migrations.RunPython.noop, elidable=True),
     ]

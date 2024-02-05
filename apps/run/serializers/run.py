@@ -6,7 +6,6 @@ from core.serializers import RelationSerializer
 from job.serializers import RunImageRelationSerializer
 from run.models import Run
 from run.serializers.artifact import ArtifactRelationSerializer
-from run.serializers.log import LogRelationSerializer
 from storage.serializers import FileDownloadInfoSerializer
 
 
@@ -34,6 +33,7 @@ class FileSerializer(serializers.Serializer):
 
 
 class MetricsMetaSerializer(serializers.Serializer):
+    filename = serializers.CharField(read_only=True, source="metrics_file.name")
     count = serializers.IntegerField(read_only=True, default=0, source="metrics_meta.count")
     size = serializers.IntegerField(read_only=True, default=0, source="metrics_file.size")
     metric_names = NameTypeCountSerializer(many=True, read_only=True, source="metrics_meta.metric_names")
@@ -47,6 +47,12 @@ class VariablesMetaSerializer(serializers.Serializer):
     variable_names = NameTypeCountSerializer(many=True, read_only=True, source="variables_meta.variable_names")
     label_names = NameTypeSerializer(many=True, read_only=True, source="variables_meta.label_names")
     download_info = FileDownloadInfoSerializer(read_only=True, source="variables_file")
+
+
+class LogRelationSerializer(serializers.Serializer):
+    lines = serializers.IntegerField(read_only=True, source="get_log_lines")
+    size = serializers.IntegerField(read_only=True, source="get_log_size")
+    download_info = FileDownloadInfoSerializer(read_only=True, source="log_file")
 
 
 class RunSerializer(serializers.ModelSerializer):
@@ -65,13 +71,13 @@ class RunSerializer(serializers.ModelSerializer):
     created_by = MembershipRelationSerializer(read_only=True, source="created_by_member")
 
     package = RelationSerializer(read_only=True)
-    payload = FileSerializer(read_only=True)
+    payload = FileSerializer(read_only=True, source="payload_file")
 
-    result = FileSerializer(read_only=True)
+    result = FileSerializer(read_only=True, source="result_file")
     artifact = ArtifactRelationSerializer(read_only=True, many=True, source="artifacts")
-    metrics_meta = MetricsMetaSerializer(source="*")
-    variables_meta = VariablesMetaSerializer(source="*")
-    log = LogRelationSerializer(read_only=True, source="output")
+    metrics_meta = MetricsMetaSerializer(read_only=True, source="*")
+    variables_meta = VariablesMetaSerializer(read_only=True, source="*")
+    log = LogRelationSerializer(read_only=True, source="*")
 
     environment = serializers.SerializerMethodField()
 

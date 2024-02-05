@@ -93,12 +93,12 @@ class TestJobRunRequestAPI(BaseAPITestJob):
         run_suuid = response.data["suuid"]
         run = Run.objects.get(suuid=run_suuid)
 
-        assert run.payload is not None
-        assert run.payload.name == "payload.json"
-        assert run.payload.size == len(json.dumps(payload))
-        assert run.payload.etag is not None
-        assert run.payload.content_type == "application/json"
-        assert run.payload.file.read() == json.dumps(payload).encode("utf-8")
+        assert run.payload_file is not None
+        assert run.payload_file.name == "payload.json"
+        assert run.payload_file.size == len(json.dumps(payload))
+        assert run.payload_file.etag is not None
+        assert run.payload_file.content_type == "application/json"
+        assert run.payload_file.file.read() == json.dumps(payload).encode()
 
     def test_start_new_run_with_invalid_json(self):
         """
@@ -126,7 +126,7 @@ class TestJobRunRequestAPI(BaseAPITestJob):
         run_suuid = response.data["suuid"]
         run = Run.objects.get(suuid=run_suuid)
 
-        assert run.payload is None
+        assert run.payload_file is None
 
     def test_start_new_run_with_askanna_agents(self):
         """

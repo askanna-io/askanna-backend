@@ -10,10 +10,29 @@ from run.utils import (
 )
 
 
+@shared_task(name="run.tasks.save_run_log", bind=True)
+def save_run_log(self, run_suuid: str):
+    """
+    Save the run's log to a file and update the run object with the file information
+
+    Args:
+        run_suuid (str): The run's suuid
+    """
+    run = Run.objects.get(suuid=run_suuid)
+
+    try:
+        run.save_log()
+    except AssertionError as exc:
+        self.retry(countdown=15, max_retries=5, exc=exc)
+
+
 @shared_task(name="run.tasks.update_run_metrics_file_and_meta", bind=True)
 def update_run_metrics_file_and_meta(self, run_suuid: str):
     """
     Update the metrics file, and meta information with count and unique metric_names and label_names
+
+    Args:
+        run_suuid (str): The run's suuid
     """
     run = Run.objects.get(suuid=run_suuid)
 
@@ -27,6 +46,9 @@ def update_run_metrics_file_and_meta(self, run_suuid: str):
 def update_run_variables_file_and_meta(self, run_suuid: str):
     """
     Update the variables file, and meta information with count and unique variable_names and label_names
+
+    Args:
+        run_suuid (str): The run's suuid
     """
     run = Run.objects.get(suuid=run_suuid)
 

@@ -51,7 +51,7 @@ class AskAnnaConfig:
             if not isinstance(job_in_yaml, dict):
                 # no dict, so not a job definition
                 continue
-            self.jobs[job] = Job.from_dict(
+            self.jobs[job] = JobConfig.from_dict(
                 name=job,
                 job_config=job_in_yaml,
                 global_config=self,
@@ -181,7 +181,7 @@ class Environment:
 
 
 @dataclasses.dataclass
-class Job:
+class JobConfig:
     name: str
     environment: Environment
     commands: list[str]

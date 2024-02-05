@@ -1,10 +1,13 @@
-from django.core.exceptions import ObjectDoesNotExist
+import json
+
+from django.core.cache import cache
 from django.db import models, transaction
 from django.utils import timezone
 
 from config import celery_app
 
 from core.models import AuthorModel, NameDescriptionBaseModel
+from run.redis import RedisRunLogQueue
 
 RUN_STATUS = (
     ("SUBMITTED", "SUBMITTED"),
@@ -53,10 +56,10 @@ class RunQuerySet(models.QuerySet):
                 "jobdef__project__workspace",
                 "created_by_member__avatar_file",
                 "created_by_member__user__avatar_file",
-                "payload",
+                "log_file",
+                "payload_file",
                 "package__package_file",
-                "result",
-                "output",
+                "result_file",
                 "run_image",
                 "metrics_file",
                 "variables_file",
@@ -70,9 +73,10 @@ class RunQuerySet(models.QuerySet):
 class Run(AuthorModel, NameDescriptionBaseModel):
     name = models.CharField(max_length=255, blank=True, null=False, default="", db_index=True)
 
+    trigger = models.CharField(max_length=20, blank=True, default="API")
     jobdef = models.ForeignKey("job.JobDef", on_delete=models.CASCADE)
     package = models.ForeignKey("package.Package", on_delete=models.CASCADE, null=True)
-    payload = models.OneToOneField(
+    payload_file = models.OneToOneField(
         "storage.File",
         null=True,
         on_delete=models.SET_NULL,
@@ -80,13 +84,24 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         help_text="File with the run payload in JSON format",
     )
 
-    result = models.OneToOneField(
+    status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
+    exit_code = models.IntegerField(null=True, default=None)
+    log_file = models.OneToOneField(
+        "storage.File",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="run_log_file",
+        help_text="File with the run log in JSON format",
+    )
+
+    result_file = models.OneToOneField(
         "storage.File",
         null=True,
         on_delete=models.SET_NULL,
         related_name="run_result_file",
         help_text="File with the run result",
     )
+
     metrics_file = models.OneToOneField(
         "storage.File",
         null=True,
@@ -100,6 +115,7 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         default=None,
         help_text="Meta information about run metrics",
     )
+
     variables_file = models.OneToOneField(
         "storage.File",
         null=True,
@@ -113,10 +129,6 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         default=None,
         help_text="Meta information about run variables",
     )
-
-    status = models.CharField(max_length=20, choices=RUN_STATUS, default="SUBMITTED")
-
-    trigger = models.CharField(max_length=20, blank=True, default="API")
 
     started_at = models.DateTimeField(null=True, editable=False)
     finished_at = models.DateTimeField(null=True, editable=False)
@@ -161,6 +173,8 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         "destroy": "project.run.remove",
     }
 
+    _log_queue = None
+
     @property
     def job(self):
         return self.jobdef
@@ -190,7 +204,18 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         """
         return self.status in ["COMPLETED", "FAILED"]
 
-    def set_status(self, status_code):
+    @property
+    def log_queue(self) -> RedisRunLogQueue:
+        if self._log_queue is None:
+            self._log_queue = RedisRunLogQueue(self)
+
+        return self._log_queue
+
+    @log_queue.setter
+    def log_queue(self, value) -> RedisRunLogQueue | None:
+        self._log_queue = value
+
+    def set_status(self, status_code: str) -> None:
         self.status = status_code
         self.save(
             update_fields=[
@@ -199,7 +224,16 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             ]
         )
 
-    def set_finished_at(self):
+    def set_exit_code(self, exit_code: int = 0) -> None:
+        self.exit_code = exit_code
+        self.save(
+            update_fields=[
+                "exit_code",
+                "modified_at",
+            ]
+        )
+
+    def set_finished_at(self) -> None:
         self.finished_at = timezone.now()
         if self.started_at:
             self.duration = (self.finished_at - self.started_at).seconds
@@ -218,7 +252,7 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             )
         )
 
-    def to_pending(self):
+    def to_pending(self) -> None:
         self.set_status("PENDING")
 
         transaction.on_commit(
@@ -228,7 +262,7 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             )
         )
 
-    def to_inprogress(self):
+    def to_inprogress(self) -> None:
         self.started_at = timezone.now()
         self.save(
             update_fields=[
@@ -238,18 +272,19 @@ class Run(AuthorModel, NameDescriptionBaseModel):
         )
         self.set_status("IN_PROGRESS")
 
-    def to_completed(self):
-        self.output.save_stdout()
+    def to_completed(self) -> None:
+        self.save_log(force=True, remove_log_queue=True)
         self.set_finished_at()
         self.set_status("COMPLETED")
+        self.set_exit_code(exit_code=0)
 
-    def to_failed(self, exit_code=1):
-        self.output.save_stdout()
-        self.output.save_exitcode(exit_code=exit_code)
+    def to_failed(self, exit_code: int = 1) -> None:
+        self.save_log(force=True, remove_log_queue=True)
         self.set_finished_at()
         self.set_status("FAILED")
+        self.set_exit_code(exit_code=exit_code)
 
-    def set_run_image(self, run_image):
+    def set_run_image(self, run_image) -> None:
         self.run_image = run_image
         self.save(
             update_fields=[
@@ -258,7 +293,7 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             ]
         )
 
-    def set_timezone(self, run_timezone):
+    def set_timezone(self, run_timezone) -> None:
         self.timezone = run_timezone
         self.save(
             update_fields=[
@@ -267,12 +302,64 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             ]
         )
 
-    def get_result(self):
-        try:
-            result = self.result
-        except ObjectDoesNotExist:
-            return None
-        return result
+    def get_log(self) -> list:
+        if self.is_finished:
+            cache_key = f"run.Run:log:{self.suuid}"
+            log = cache.get(cache_key, [])
+            if not log and self.log_file:
+                with self.log_file.file.open() as log_file:
+                    log = json.load(log_file)
+                cache.set(cache_key, log)
+        else:
+            log = self.log_queue.get()
+
+        return log
+
+    def get_log_size(self) -> int:
+        if self.log_file:
+            return self.log_file.file.size
+        return len(json.dumps(self.get_log()).encode())
+
+    def get_log_lines(self) -> int:
+        return len(self.get_log())
+
+    def add_to_log(self, message: str, timestamp: str | None = None, print_log: bool = False) -> None:
+        """
+        Add a message to the run log queue and trigger a task to save the log to a file. The latest is done every
+        5 seconds to prevent too many write actions to the file storage.
+
+        Args:
+            message (str): The message to add to the log.
+            timestamp (str | None): The timestamp of the message. Defaults to None and in that case the current
+                datetime is used.
+            print_log (bool): Whether to print the log. Defaults to False.
+        """
+        self.log_queue.add(message=message, timestamp=timestamp, print_log=print_log)
+
+        if (
+            not hasattr(self, "log_queue_last_save")
+            or not self.log_queue_last_save
+            or (timezone.now() - self.log_queue_last_save).seconds > 5
+        ):
+            self.log_queue_last_save = timezone.now()
+            celery_app.send_task(
+                "run.tasks.save_run_log",
+                kwargs={"run_suuid": self.suuid},
+            )
+
+    def save_log(self, force: bool = False, remove_log_queue: bool = False) -> None:
+        """
+        Save the run log to a file and optionally remove the log queue.
+
+        Args:
+            force (bool): Whether to force the writing to a file. Defaults to False.
+            remove_log_queue (bool): Whether to remove the log queue. Defaults to False.
+        """
+        self.log_queue.write_to_file(force)
+
+        if remove_log_queue:
+            self.log_queue.remove()
+            self.log_queue = None
 
     def get_status_external(self) -> str:
         return get_status_external(self.status)
@@ -286,10 +373,10 @@ class Run(AuthorModel, NameDescriptionBaseModel):
             return (timezone.now() - self.started_at).seconds
         return 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.name:
-            return f"{self.name} ({self.suuid})"
-        return self.suuid
+            return f"Run: {self.name} ({self.suuid})"
+        return f"Run: {self.suuid}"
 
     class Meta:
         ordering = ["-created_at"]

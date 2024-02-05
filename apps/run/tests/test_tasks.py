@@ -4,9 +4,25 @@ from django.core.cache import cache
 
 from run.tasks import (
     delete_runs,
+    save_run_log,
     update_run_metrics_file_and_meta,
     update_run_variables_file_and_meta,
 )
+
+
+def test_save_run_log(test_runs):
+    result = save_run_log.delay(test_runs["run_2"].suuid)
+    assert result.successful() is True
+
+
+def test_save_run_log_with_lock(test_runs):
+    lock_key = f"run.RunLogQueue:save_log_file:{test_runs['run_2'].suuid}"
+    cache.set(lock_key, True, timeout=10)
+    try:
+        with pytest.raises(Retry):
+            save_run_log.delay(test_runs["run_2"].suuid)
+    finally:
+        cache.delete(lock_key)
 
 
 def test_update_run_metrics_file_and_meta(test_runs):

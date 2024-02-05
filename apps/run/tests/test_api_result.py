@@ -25,7 +25,7 @@ class TestRunResultAPI(BaseAPITestRun):
             "storage-file-download",
             kwargs={
                 "version": "v1",
-                "suuid": self.runs[run].result.suuid,
+                "suuid": self.runs[run].result_file.suuid,
             },
         )
 
@@ -35,7 +35,7 @@ class TestRunResultAPI(BaseAPITestRun):
             assert isinstance(response.data["result"], dict)
 
             result = response.data["result"]
-            assert result["filename"] == self.runs[run].result.name
+            assert result["filename"] == self.runs[run].result_file.name
 
             assert download_url in result["download_info"]["url"]
 
@@ -47,8 +47,8 @@ class TestRunResultAPI(BaseAPITestRun):
         )
         assert response.status_code == expected_status_code
         if expected_status_code == status.HTTP_200_OK:
-            assert response["Content-Disposition"] == f'attachment; filename="{self.runs[run].result.name}"'
-            assert b"".join(response.streaming_content) == self.runs[run].result.file.read()
+            assert response["Content-Disposition"] == f'attachment; filename="{self.runs[run].result_file.name}"'
+            assert b"".join(response.streaming_content) == self.runs[run].result_file.file.read()
 
     def test_retrieve_as_askanna_admin(self):
         """
@@ -148,8 +148,8 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
 
             # Clean up
             self.runs["run_1"].refresh_from_db()
-            result_file_suuid = self.runs["run_1"].result.suuid
-            self.runs["run_1"].result = None
+            result_file_suuid = self.runs["run_1"].result_file.suuid
+            self.runs["run_1"].result_file = None
             self.runs["run_1"].save()
             File.objects.get(suuid=result_file_suuid).delete()
 
@@ -198,8 +198,8 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
 
             # Clean up
             self.runs["run_1"].refresh_from_db()
-            result_file_suuid = self.runs["run_1"].result.suuid
-            self.runs["run_1"].result = None
+            result_file_suuid = self.runs["run_1"].result_file.suuid
+            self.runs["run_1"].result_file = None
             self.runs["run_1"].save()
             File.objects.get(suuid=result_file_suuid).delete()
 
@@ -244,8 +244,8 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
 
             # Clean up
             self.runs["run_1"].refresh_from_db()
-            result_file_suuid = self.runs["run_1"].result.suuid
-            self.runs["run_1"].result = None
+            result_file_suuid = self.runs["run_1"].result_file.suuid
+            self.runs["run_1"].result_file = None
             self.runs["run_1"].save()
             File.objects.get(suuid=result_file_suuid).delete()
 
@@ -315,8 +315,8 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
 
             # Clean up
             self.runs["run_1"].refresh_from_db()
-            result_file_suuid = self.runs["run_1"].result.suuid
-            self.runs["run_1"].result = None
+            result_file_suuid = self.runs["run_1"].result_file.suuid
+            self.runs["run_1"].result_file = None
             self.runs["run_1"].save()
             File.objects.get(suuid=result_file_suuid).delete()
 
@@ -405,8 +405,8 @@ class TestResultCreateUploadAPI(BaseAPITestRun):
 
             # Clean up
             self.runs["run_1"].refresh_from_db()
-            result_file_suuid = self.runs["run_1"].result.suuid
-            self.runs["run_1"].result = None
+            result_file_suuid = self.runs["run_1"].result_file.suuid
+            self.runs["run_1"].result_file = None
             self.runs["run_1"].save()
             File.objects.get(suuid=result_file_suuid).delete()
 

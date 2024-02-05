@@ -1,4 +1,5 @@
 import io
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from core.permissions.roles import WorkspaceAdmin, WorkspaceMember, WorkspaceVie
 from job.models import JobDef
 from package.models import Package
 from project.models import Project
-from run.models import Run, RunArtifact, RunLog, RunMetric, RunVariable
+from run.models import Run, RunArtifact, RunMetric, RunVariable
 from storage.models import File
 from storage.utils.file import get_content_type_from_file, get_md5_from_file
 from variable.models import Variable
@@ -389,25 +390,37 @@ def test_runs(
         ),
     }
 
-    run_logs = {
-        "run_2": RunLog.objects.get(run=runs.get("run_2")),
-    }
-
-    run_logs["run_2"].stdout = [
-        [1, datetime.utcnow().isoformat(), "some test stdout 1"],
-        [2, datetime.utcnow().isoformat(), "some test stdout 2"],
-        [3, datetime.utcnow().isoformat(), "some test stdout 3"],
-        [3, datetime.utcnow().isoformat(), "some test stdout 4"],
-        [5, datetime.utcnow().isoformat(), "some test stdout 5"],
-        [6, datetime.utcnow().isoformat(), "some test stdout 6"],
-    ]
-    run_logs["run_2"].save(update_fields=["stdout"])
+    log_content_file = ContentFile(
+        content=io.BytesIO(
+            json.dumps(
+                [
+                    [1, datetime.utcnow().isoformat(), "some test stdout 1"],
+                    [2, datetime.utcnow().isoformat(), "some test stdout 2"],
+                    [3, datetime.utcnow().isoformat(), "some test stdout 3"],
+                    [3, datetime.utcnow().isoformat(), "some test stdout 4"],
+                    [5, datetime.utcnow().isoformat(), "some test stdout 5"],
+                    [6, datetime.utcnow().isoformat(), "some test stdout 6"],
+                ]
+            ).encode()
+        ).read(),
+        name="log.json",
+    )
+    runs["run_2"].log_file = File.objects.create(
+        name=log_content_file.name,
+        file=log_content_file,
+        size=log_content_file.size,
+        etag=get_md5_from_file(log_content_file),
+        content_type=get_content_type_from_file(log_content_file),
+        completed_at=timezone.now(),
+        created_for=runs["run_2"],
+        created_by=runs["run_2"].created_by_member,
+    )
 
     result_content_file = ContentFile(
         content=io.BytesIO(b"some private result content").read(),
         name="result_private.txt",
     )
-    runs["run_2"].result = File.objects.create(
+    runs["run_2"].result_file = File.objects.create(
         name=result_content_file.name,
         file=result_content_file,
         size=result_content_file.size,
@@ -422,7 +435,7 @@ def test_runs(
         content=payload_file_path.read_bytes(),
         name="payload.json",
     )
-    runs["run_2"].payload = File.objects.create(
+    runs["run_2"].payload_file = File.objects.create(
         name=payload_content_file.name,
         file=payload_content_file,
         size=payload_content_file.size,
@@ -438,7 +451,7 @@ def test_runs(
         content=io.BytesIO(b"some public result content").read(),
         name="result_public.txt",
     )
-    runs["run_4"].result = File.objects.create(
+    runs["run_4"].result_file = File.objects.create(
         name=result_content_file.name,
         file=result_content_file,
         size=result_content_file.size,
@@ -453,7 +466,7 @@ def test_runs(
         content=payload_file_path.read_bytes(),
         name="payload.json",
     )
-    runs["run_4"].payload = File.objects.create(
+    runs["run_4"].payload_file = File.objects.create(
         name=payload_content_file.name,
         file=payload_content_file,
         size=payload_content_file.size,
@@ -466,9 +479,6 @@ def test_runs(
     runs["run_4"].save()
 
     yield runs
-
-    for run_log in run_logs.values():
-        run_log.delete()
 
     for run in runs.values():
         run.delete()
@@ -503,13 +513,6 @@ def test_run_artifacts(test_runs, test_memberships) -> dict[str, RunArtifact]:
 
     for artifact in artifacts.values():
         artifact.delete()
-
-
-@pytest.fixture()
-def test_run_logs(test_runs) -> dict[str, RunLog]:
-    return {
-        "run_2": RunLog.objects.get(run=test_runs.get("run_2")),
-    }
 
 
 @pytest.fixture()

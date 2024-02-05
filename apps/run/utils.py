@@ -78,7 +78,7 @@ def create_run_tracked_object_file_and_meta_dict(run: Run, type: str) -> tuple[F
         }
 
     object_content_file = ContentFile(
-        json.dumps([compose_tracked_object(object, type) for object in tracked_objects]).encode("utf-8"),
+        json.dumps([compose_tracked_object(object, type) for object in tracked_objects]).encode(),
         name=f"{type}s.json",
     )
 

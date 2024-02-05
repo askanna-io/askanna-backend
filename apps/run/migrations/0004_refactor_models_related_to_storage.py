@@ -58,7 +58,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="run",
-            name="payload",
+            name="payload_file",
             field=models.OneToOneField(
                 help_text="File with the run payload in JSON format",
                 null=True,
@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="run",
-            name="result",
+            name="result_file",
             field=models.OneToOneField(
                 help_text="File with the run result",
                 null=True,
@@ -98,6 +98,13 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="run",
+            name="metrics_meta",
+            field=models.JSONField(
+                default=None, editable=False, help_text="Meta information about run metrics", null=True
+            ),
+        ),
+        migrations.AddField(
+            model_name="run",
             name="variables_file",
             field=models.OneToOneField(
                 help_text="File with the run variables in JSON format",
@@ -109,22 +116,25 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="run",
-            name="metrics_meta",
-            field=models.JSONField(
-                default=None, editable=False, help_text="Meta information about run metrics", null=True
-            ),
-        ),
-        migrations.AddField(
-            model_name="run",
             name="variables_meta",
             field=models.JSONField(
                 default=None, editable=False, help_text="Meta information about run variables", null=True
             ),
         ),
-        migrations.DeleteModel(
-            name="ChunkedRunArtifactPart",
+        migrations.AddField(
+            model_name="run",
+            name="exit_code",
+            field=models.IntegerField(default=None, null=True),
         ),
-        migrations.DeleteModel(
-            name="ChunkedRunResultPart",
+        migrations.AddField(
+            model_name="run",
+            name="log_file",
+            field=models.OneToOneField(
+                help_text="File with the run log in JSON format",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="run_log_file",
+                to="storage.file",
+            ),
         ),
     ]

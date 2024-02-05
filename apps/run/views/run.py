@@ -21,7 +21,6 @@ from core.mixins import (
 from core.permissions import AskAnnaPermissionByAction
 from core.viewsets import AskAnnaGenericViewSet
 from run.filters import RunFilterSet
-from run.models.log import RedisLogQueue
 from run.models.run import Run, get_status_external
 from run.serializers.artifact import (
     RunArtifactCreateBaseSerializer,
@@ -247,17 +246,13 @@ class RunView(
     @action(detail=True, methods=["get"], serializer_class=None)
     def log(self, request, **kwargs):
         "Get the log from a run"
-        instance = self.get_object()
-        if instance.is_finished:
-            stdout = instance.output.stdout
-        else:
-            logqueue = RedisLogQueue(instance.suuid)
-            stdout = logqueue.get()
+        run: Run = self.get_object()
+        log = run.get_log()
 
         limit = int(request.query_params.get("limit", 10))
         offset = int(request.query_params.get("offset", 0))
 
-        count = len(stdout) if stdout else 0
+        count = len(log)
 
         response_json = {
             "count": count,
@@ -266,9 +261,9 @@ class RunView(
             "results": None,
         }
         if limit == -1:
-            response_json["results"] = stdout
+            response_json["results"] = log
         elif count:
-            response_json["results"] = stdout[offset : offset + limit]
+            response_json["results"] = log[offset : offset + limit]
 
             scheme = request.scheme
             path = request.path
@@ -307,8 +302,8 @@ class RunView(
         validated against these values. If the values are not correct, the upload will fail.
         """
 
-        run = self.get_object()
-        if run.result:
+        run: Run = self.get_object()
+        if run.result_file:
             return Response({"detail": "Run already has a result"}, status=status.HTTP_400_BAD_REQUEST)
 
         if "result" not in request.FILES.keys() and "filename" not in request.data.keys():

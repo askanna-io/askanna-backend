@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 from django.core import mail
@@ -11,8 +11,9 @@ from job.mailer import (
     get_notification_variables,
     send_notification,
 )
-from job.models import JobDef, JobPayload
+from job.models import JobDef
 from run.models import Run
+from storage.models import File
 from variable.models import Variable
 
 pytestmark = pytest.mark.django_db
@@ -111,17 +112,18 @@ def test_get_notification_variables_for_run():
     job = Mock(spec=JobDef)
     job.project = Mock()
 
-    # Create a mcok payload
-    payload = Mock(spec=JobPayload)
-    payload.payload = {
-        "key": "value",
-        "key_2": ["value_1", "value_2"],
-        "key_3": 123,
-    }
-
     # Create a mock run with a payload
-    run = Mock(spec=Run)
-    run.payload = payload
+    run: Run = Mock(spec=Run)
+    run.payload_file = Mock(spec=File)
+    run.payload_file.file.open = mock_open(
+        read_data=json.dumps(
+            {
+                "key": "value",
+                "key_2": ["value_1", "value_2"],
+                "key_3": 123,
+            }
+        )
+    )
 
     variable = Mock(spec=Variable)
     variable.name = "var_name"

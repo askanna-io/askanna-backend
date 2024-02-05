@@ -53,7 +53,7 @@ def launch_scheduled_jobs():
         run = Run.objects.create(
             status="PENDING",
             jobdef=jobdef,
-            payload=None,
+            payload_file=None,
             package=package,
             trigger="SCHEDULE",
             created_by_user=scheduled_job.member.user,

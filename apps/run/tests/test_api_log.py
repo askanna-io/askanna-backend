@@ -36,7 +36,7 @@ class TestRunLogAPI(BaseAPITestRun):
 
         response = self.client.get(self.url, HTTP_HOST="testserver")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == self.run_logs["run_2"].stdout
+        assert response.data["results"] == self.run_log
 
     def test_log_as_member(self):
         """
@@ -46,7 +46,7 @@ class TestRunLogAPI(BaseAPITestRun):
 
         response = self.client.get(self.url, HTTP_HOST="testserver")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == self.run_logs["run_2"].stdout
+        assert response.data["results"] == self.run_log
 
     def test_log_as_non_member(self):
         """
@@ -85,7 +85,7 @@ class TestRunLogLimitAPI(BaseAPITestRun):
 
         response = self.client.get(self.url, HTTP_HOST="testserver")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == self.run_logs["run_2"].stdout
+        assert response.data["results"] == self.run_log
 
     def test_log_as_member_partial(self):
         """
@@ -102,7 +102,7 @@ class TestRunLogLimitAPI(BaseAPITestRun):
             HTTP_HOST="testserver",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == self.run_logs["run_2"].stdout[1:3]
+        assert response.data["results"] == self.run_log[1:3]
 
     def test_log_as_member_limit_full(self):
         """
@@ -119,7 +119,7 @@ class TestRunLogLimitAPI(BaseAPITestRun):
             HTTP_HOST="testserver",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == self.run_logs["run_2"].stdout
+        assert response.data["results"] == self.run_log
 
     def test_log_as_member_while_running(self):
         """
@@ -136,4 +136,4 @@ class TestRunLogLimitAPI(BaseAPITestRun):
             HTTP_HOST="testserver",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == self.run_logs["run_2"].stdout[-1:]
+        assert response.data["results"] == self.run_log[-1:]

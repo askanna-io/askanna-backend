@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from account.models import Membership
 from core.serializers import RelationSerializer
+from run.models import Run
 from storage.models import File
 from storage.serializers import FileDownloadInfoSerializer, FileUploadInfoSerializer
 from storage.utils.file import get_content_type_from_file, get_md5_from_file
@@ -26,7 +27,7 @@ class RunResultCreateBaseSerializer(serializers.Serializer):
     )
 
     def create(self, validated_data):
-        run = self.context["run"]
+        run: Run = self.context["run"]
 
         result_file = validated_data.pop("result", None)
         result_file_info = validated_data.pop("result_file_info", {})
@@ -38,7 +39,7 @@ class RunResultCreateBaseSerializer(serializers.Serializer):
             result_file_info.get("content_type") or (result_file and get_content_type_from_file(result_file)) or ""
         )
 
-        file = File.objects.create(
+        result_file = File.objects.create(
             name=file_name,
             description=result_file_info.get("description", ""),
             file=result_file,
@@ -53,7 +54,7 @@ class RunResultCreateBaseSerializer(serializers.Serializer):
             completed_at=timezone.now() if result_file else None,
         )
 
-        run.result = file
+        run.result_file = result_file
         run.save()
         run.refresh_from_db()
 
@@ -63,7 +64,6 @@ class RunResultCreateBaseSerializer(serializers.Serializer):
             "etag": file_etag,
             "content_type": file_content_type,
         }
-        run.result_file = file
 
         return run
 
