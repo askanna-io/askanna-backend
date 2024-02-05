@@ -153,12 +153,12 @@ class JobView(
         queryset=JobDef.objects.active().select_related("project", "project__workspace"),
     )
     def new_run(self, request, suuid, **kwargs):
-        job = self.get_object()
+        job: JobDef = self.get_object()
 
         created_by = Membership.objects.get_workspace_membership(user=request.user, workspace=job.workspace)
 
         # Fetch the latest package found in the job.project
-        package = Package.objects.active().filter(project=job.project).order_by("-created_at").first()
+        package: Package = Package.objects.active().filter(project=job.project).order_by("-created_at").first()
 
         payload = self.handle_payload(request=request, job=job)
 
@@ -183,7 +183,7 @@ class JobView(
                 completed_at=timezone.now(),
             )
 
-            run.payload = file
+            run.payload_file = file
             run.save()
             run.refresh_from_db()
 
@@ -217,7 +217,7 @@ class JobView(
                 },
             ) from exc
 
-        json_string = json.dumps(request.data).encode("utf-8")
+        json_string = json.dumps(request.data).encode()
         return ContentFile(json_string, name="payload.json")
 
     def get_trigger_source(self, request) -> str:

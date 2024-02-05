@@ -3,7 +3,7 @@ import logging
 import zoneinfo
 
 from account.models.membership import Membership
-from core.config import Job as JobConfig
+from core.config import JobConfig
 from core.mail import send_email
 from core.utils import flatten, is_valid_email, parse_string, pretty_time_delta
 from core.utils.config import get_setting
@@ -61,16 +61,20 @@ def get_notification_variables(job: Job, run: Run | None = None) -> dict:
     for variable in project_variables:
         variables[variable.name] = variable.value
 
-    if run and run.payload and isinstance(run.payload.payload, dict):
-        for key, value in run.payload.payload.items():
-            if isinstance(value, list | dict):
-                # limit to 10.000 chars
-                variables[key] = json.dumps(value)[:10000]
-            elif isinstance(value, str):
-                # limit to 10.000 chars
-                variables[key] = value[:10000]
-            else:
-                variables[key] = value
+    if run and run.payload_file:
+        with run.payload_file.file.open() as payload_file:
+            payload = json.load(payload_file)
+
+        if isinstance(payload, dict):
+            for key, value in payload.items():
+                if isinstance(value, list | dict):
+                    # limit to 10.000 chars
+                    variables[key] = json.dumps(value)[:10000]
+                elif isinstance(value, str):
+                    # limit to 10.000 chars
+                    variables[key] = value[:10000]
+                else:
+                    variables[key] = value
 
     return variables
 
@@ -163,11 +167,6 @@ def send_notification(
         else:
             duration_humanized = pretty_time_delta(0)  # we don't have a duration yet
 
-        if run.output.stdout:
-            log = run.output.stdout[-15:]  # only the last 15 lines
-        else:
-            log = []
-
         if run.created_at:
             run_created_at = run.created_at.astimezone(tz=zoneinfo.ZoneInfo(job.timezone))
         else:
@@ -188,8 +187,8 @@ def send_notification(
         template_context.update(
             **{
                 "run": run,
-                "result": run.get_result(),
-                "log": log,
+                "result": run.result_file,
+                "log": run.get_log()[-15:],  # only the last 15 lines
                 "duration_humanized": duration_humanized,
                 "run_created_at": run_created_at,
                 "run_started_at": run_started_at,

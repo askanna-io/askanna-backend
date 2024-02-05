@@ -23,7 +23,7 @@ class TestRunPayloadAPI(BaseAPITestRun):
             "storage-file-download",
             kwargs={
                 "version": "v1",
-                "suuid": self.runs[run].payload.suuid,
+                "suuid": self.runs[run].payload_file.suuid,
             },
         )
 
@@ -34,7 +34,7 @@ class TestRunPayloadAPI(BaseAPITestRun):
             assert isinstance(response.data["payload"], dict)
 
             payload = response.data["payload"]
-            assert payload["filename"] == self.runs[run].payload.name
+            assert payload["filename"] == self.runs[run].payload_file.name
 
             assert download_url in payload["download_info"]["url"]
 
@@ -42,9 +42,9 @@ class TestRunPayloadAPI(BaseAPITestRun):
 
         if expect_no_access is False:
             assert response.status_code == status.HTTP_200_OK
-            assert response["Content-Disposition"] == f'attachment; filename="{self.runs[run].payload.name}"'
+            assert response["Content-Disposition"] == f'attachment; filename="{self.runs[run].payload_file.name}"'
             assert response["Content-Type"] == "application/json"
-            assert b"".join(response.streaming_content) == self.runs[run].payload.file.read()
+            assert b"".join(response.streaming_content) == self.runs[run].payload_file.file.read()
         else:
             assert (
                 response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -1,19 +1,7 @@
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-from run.models import Run, RunLog, RunVariable
-
-
-@receiver(post_save, sender=Run)
-def create_run_log_for_new_run_signal(sender, instance, created, **kwargs):
-    """
-    Create a RunLog everytime a Run gets created.
-    """
-    if created:
-        try:
-            RunLog.objects.create(run=instance)
-        except Exception as exc:
-            raise Exception(f"Issue creating a RunLog: {exc}") from exc
+from run.models import RunVariable
 
 
 @receiver(pre_save, sender=RunVariable)

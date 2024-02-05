@@ -45,7 +45,7 @@ echo "Loading code package into the run environment"
 run_or_fail_system_command "askanna-run-utils get-package >/dev/null"
 echo "Finished loading code package"
 
-{% if run.payload %}
+{% if run.payload_file %}
 mkdir -p /input >/dev/null
 echo "Loading payload into the run environment"
 run_or_fail_system_command "askanna-run-utils get-payload >/dev/null"

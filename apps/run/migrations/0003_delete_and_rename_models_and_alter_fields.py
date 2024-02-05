@@ -13,6 +13,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.DeleteModel(
+            name="ChunkedRunArtifactPart",
+        ),
+        migrations.DeleteModel(
+            name="ChunkedRunResultPart",
+        ),
+        migrations.DeleteModel(
             name="RunMetricMeta",
         ),
         migrations.DeleteModel(
